@@ -72,7 +72,7 @@ $("#operatorForm").onsubmit=async e=>{
 $("#rateForm").onsubmit=async e=>{
  e.preventDefault();const b=formValues(e.target);
  const unit=b.item_id==="ISLAND_TOUR_CAR"?"car":"person";
- const payload={operator_id:b.operator_id,item_id:b.item_id,unit,net:Number(b.net),capacity:unit==="car"?Number(b.capacity):null,verified=e.target.querySelector('[name="verified"]').checked};
+ const payload={operator_id:b.operator_id,item_id:b.item_id,unit,net:Number(b.net),capacity:unit==="car"?Number(b.capacity):null,verified:e.target.querySelector('[name="verified"]').checked};
  if(payload.verified&&!confirm("Sudah diverifikasi langsung dengan operator? Harga yang salah dapat merugikan guest dan agen."))return;
  try{await api("admin/rates","POST",payload);await refresh();say("#adminFeedback","Versi tarif baru disimpan. Quote lama tetap memakai snapshot.",true)}catch(err){say("#adminFeedback",err.message)}
 };
