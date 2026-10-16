@@ -1,0 +1,1 @@
+import {mkdir,cp,writeFile} from "node:fs/promises";await mkdir("dist",{recursive:true});await cp("public","dist",{recursive:true,force:true});await writeFile("dist/BUILD_INFO.txt","Marketing Tourism web build; requires Cloudflare Worker and D1 for persistent operations.\n");console.log("Built dist/");
