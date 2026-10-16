@@ -45,7 +45,7 @@ function fixture(){
   const req=new Request("https://agent.invalid"+path,{method,headers,...(body===undefined?{}:{body:JSON.stringify(body)})});
   const res=await worker.fetch(req,env);
   const data=await res.json();
-  return {httpStatus:res.httpStatus,...data};
+  return {httpStatus:res.status,...data};
  }
  return {request,db,sqlite,env};
 }
