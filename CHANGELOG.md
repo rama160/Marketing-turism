@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0 — 2026-10-16
+- Added weekly autonomous campaign DRAFT creation via Cloudflare Cron Trigger (only marketing-turism-agent) every Monday 01:00 UTC; no unattended posting.
+- New idempotence ledger migration 0004_scheduling.sql and local D1 scheduled integration test.
+
+
 ## 2.3.0 — 2026-10-16
 - Fix reschedule deadlock that previously prevented handover after owner and operator approval.
 - Prevent payment while booking change is pending, protect payment and handover state transitions against duplicate submissions.

@@ -25,3 +25,11 @@ export function normalizeMarketComparison(ref,guestCount){
  if(ref.unit==="group"&&ref.group_size===guestCount)return ref.price;
  return null; // incomparable group sizes must not be compared as equal
 }
+
+export function weeklyDrafts(day){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error("Tanggal draft tidak valid");
+ return [
+ {activity_id:"SNORKELING_3_SPOTS",platform:"Website",caption:"[AUTO "+day+"] Snorkeling 3 spot Nusa Penida? Konsultasikan tanggal perjalanan, jumlah guest, fasilitas yang tersedia, dan kondisi laut sebelum memilih operator. Tanyakan penawaran resmi kepada agen."},
+ {activity_id:"ISLAND_TOUR_CAR",platform:"Website",caption:"[AUTO "+day+"] Rencanakan Island Tour Nusa Penida dengan kendaraan operator lokal. Tanyakan jumlah penumpang, jadwal, pilihan lunch dan boat sebelum memesan. Ketersediaan dan harga final perlu dikonfirmasi."}
+ ];
+}

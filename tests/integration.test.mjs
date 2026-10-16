@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -181,5 +181,17 @@ test("invalid calendar dates are rejected, cannot create non-existent February d
  await rate(request,op,"ISLAND_TOUR_CAR",600000,"car",6);
  const q=await request("/api/admin/quotes","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",guests:2,requested_date:"2027-02-30",selling_price:750000});
  assert.equal(q.httpStatus,400);
+ sqlite.close();
+});
+
+test("weekly scheduled run creates only two drafts, once, with no automatic publication",async()=>{
+ const {db,sqlite,env}=fixture();
+ await worker.scheduled({cron:"0 1 * * 1"},env,{});
+ let drafts=sqlite.prepare("SELECT status,platform,caption FROM campaign_drafts ORDER BY activity_id").all();
+ assert.equal(drafts.length,2);
+ assert.ok(drafts.every(x=>x.status==="DRAFT"&&x.platform==="Website"&&x.caption.startsWith("[AUTO ")));
+ await worker.scheduled({cron:"0 1 * * 1"},env,{});
+ assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM campaign_drafts").get().n,2);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM scheduled_runs").get().n,1);
  sqlite.close();
 });

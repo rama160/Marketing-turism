@@ -26,3 +26,6 @@ In Cloudflare configure D1 binding DB, Workers AI binding AI, ADMIN_TOKEN secret
 - AI and template sales replies are OWNER REVIEW drafts only, and must not include personal contact values in AI prompts.
 - Marketplace prices entered through dashboard are manually verified snapshots, not scraped. They must not override the minimum price policy or be compared across unlike group sizes/inclusions.
 - Campaigns are not posted by this system. Publishing status requires real URL of an owner-published post. Lead attribution can tag already published campaigns when guest consents and form is enabled.
+
+## v2.4.0 autonomous-but-safe workflow
+A weekly Cloudflare cron on marketing-turism-agent generates two Website campaign DRAFT records using fixed, price-free templates. Owner reviews/publishes manually and adds real publication URL. Scheduled runs use unique run ID to prevent duplicates. Cron timezone is UTC: `0 1 * * 1` = Monday 09:00 Bali time.

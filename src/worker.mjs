@@ -1,6 +1,6 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
-import {leadScore,salesDraft} from "./sales.mjs";
+import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -38,7 +38,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.3.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.4.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
@@ -317,4 +317,18 @@ async function route(req,env){
  }
  return bad("Endpoint tidak ditemukan",404);
 }
-export default {async fetch(req,env){try{return await route(req,env)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}}};
+export default {
+ async fetch(req,env){try{return await route(req,env)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
+ async scheduled(event,env){
+  // Only creates reviewable content drafts. No external posting, guest messaging, or advertising spend.
+  if(event.cron!=="0 1 * * 1"||!env.DB)return;
+  const day=new Date().toISOString().slice(0,10),runId="campaign-week-"+day;
+  const existing=await env.DB.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first();
+  if(existing)return;
+  const drafts=weeklyDrafts(day);
+  const statements=[env.DB.prepare("INSERT OR IGNORE INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS")];
+  for(const item of drafts)statements.push(env.DB.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)").bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
+  statements.push(env.DB.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length})));
+  await env.DB.batch(statements);
+ }
+};

@@ -22,5 +22,10 @@
   },
   "vars": {
     "PUBLIC_LEADS_ENABLED": "false"
+  },
+  "triggers": {
+    "crons": [
+      "0 1 * * 1"
+    ]
   }
 }
