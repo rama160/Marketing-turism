@@ -26,7 +26,7 @@ async function makePrice(db,b){
  for(const item of ["LUNCH","BOAT_OUT","BOAT_RETURN"]){
   const q=number(b.extras?.[item]??0,0,n);
   if(q===null)throw Error("Jumlah tambahan tidak valid");
-  if(q>0)extras.push({item,qty:q,rate:await activeRate(db,op,item)});
+  if(q>0){const extraOperator=str(b.extra_operators?.[item]||op,100);extras.push({item,qty:q,rate:await activeRate(db,extraOperator,item)});}
  }
  const cost=number(b.agency_costs??0),fee=number(b.payment_fee??0),sell=b.selling_price==null?null:number(b.selling_price,1);
  if(cost===null||fee===null||(b.selling_price!=null&&sell===null))throw Error("Biaya/harga tidak valid");
