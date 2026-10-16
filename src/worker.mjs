@@ -326,7 +326,7 @@ export default {
   const existing=await env.DB.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first();
   if(existing)return;
   const drafts=weeklyDrafts(day);
-  const statements=[env.DB.prepare("INSERT OR IGNORE INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS")];
+  const statements=[env.DB.prepare("INSERT INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS")];
   for(const item of drafts)statements.push(env.DB.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)").bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
   statements.push(env.DB.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length})));
   await env.DB.batch(statements);
