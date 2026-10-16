@@ -115,7 +115,7 @@ test("no unauthorized owner calls, no public leads without launch approval",asyn
  assert.equal((await request("/api/admin/finance","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/admin/analytics","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/public/leads","POST",{name:"Guest",consent:true},false)).httpStatus,503);
- assert.equal((await request("/api/health","GET",undefined,false)).version,"2.2.1");
+ assert.equal((await request("/api/health","GET",undefined,false)).version,"2.3.0");
  sqlite.close();
 });
 test("refund requires owner approval and actual external refund, no AI money movement",async()=>{
