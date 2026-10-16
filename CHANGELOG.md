@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0 — 2026-10-16
+- Added owner Business Profile settings with lead intake readiness gates.
+- Created standalone public privacy and service terms pilot notices (not yet production legal policies).
+- Added Cloudflare Turnstile widget and mandatory backend siteverify including origin host and action checks for all accepted leads.
+- Guest form remains disabled while business identity, Turnstile secret, policy approvals and the independent Cloudflare enable flag are incomplete.
+- Added D1 migration 0005, integrated readiness tests, and public smoke checks for privacy/terms and admin boundary.
+- No changes to FinChat/Spenva cloud resources.
+
+
 ## 2.4.0 — 2026-10-16
 - Added weekly autonomous campaign DRAFT creation via Cloudflare Cron Trigger (only marketing-turism-agent) every Monday 01:00 UTC; no unattended posting.
 - New idempotence ledger migration 0004_scheduling.sql and local D1 scheduled integration test.

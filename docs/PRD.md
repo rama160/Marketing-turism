@@ -1,4 +1,4 @@
-# PRD — AI Tourism Marketing & Booking Agent v2.2.0
+# PRD — AI Tourism Marketing & Booking Agent v2.5.0
 ## Goal
 Support an independent travel sales agent in Nusa Penida to attract consenting leads, qualify guests, quote tourism activities without loss, collect guest payments via verified manual processes, hand over activities to local operator, and retain auditable records.
 
@@ -29,6 +29,9 @@ FR-17 Sales assistant computes lead score and drafts messages without auto-sendi
 FR-18 Campaign draft -> owner approved -> manually posted with real URL.
 FR-19 Owner enters dated marketplace prices with comparable units; never replace price floor.
 FR-20 Lead attribution is recorded only for consented leads referring to already published campaigns.
+FR-21 Owner edits legal business contact and must approve final privacy/refund policy before lead intake.
+FR-22 Server must validate Turnstile token against Cloudflare and matching hostname/action; no verified token, no stored customer record.
+FR-23 Public privacy and terms pilot notices are available, but must be replaced with complete legally reviewed documents before activating guest intake.
 
 ## Deferred, NOT launch-ready
 Full WhatsApp outbound, Google/Meta organic post automation, GetYourGuide pricing API, paid ads campaigns, payment gateway/webhook, real availability APIs, operator automated portal, invoice/voucher PDF, partial refund, automatic refund funds transfer, OAuth, scheduling autonomous content, analytics attribution and genuine end-to-end payment testing. None should be described as enabled.

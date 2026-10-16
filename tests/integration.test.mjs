@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -115,7 +115,7 @@ test("no unauthorized owner calls, no public leads without launch approval",asyn
  assert.equal((await request("/api/admin/finance","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/admin/analytics","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/public/leads","POST",{name:"Guest",consent:true},false)).httpStatus,503);
- assert.equal((await request("/api/health","GET",undefined,false)).version,"2.4.0");
+ assert.equal((await request("/api/health","GET",undefined,false)).version,"2.5.0");
  sqlite.close();
 });
 test("refund requires owner approval and actual external refund, no AI money movement",async()=>{
@@ -193,5 +193,28 @@ test("weekly scheduled run creates only two drafts, once, with no automatic publ
  await worker.scheduled({cron:"0 1 * * 1"},env,{});
  assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM campaign_drafts").get().n,2);
  assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM scheduled_runs").get().n,1);
+ sqlite.close();
+});
+
+test("public readiness is fail-closed and business profile edits require owner token",async()=>{
+ const {request,sqlite}=fixture();
+ const before=await request("/api/public/readiness","GET",undefined,false);
+ assert.equal(before.httpStatus,200);
+ assert.equal(before.accepting_leads,false);
+ assert.equal((await request("/api/admin/business","GET",undefined,false)).httpStatus,401);
+ assert.equal((await request("/api/admin/business","PATCH",{legal_name:"Unapproved Business",public_contact:"test@example.invalid"},false)).httpStatus,401);
+ const saved=await request("/api/admin/business","PATCH",{legal_name:"Example Business",public_contact:"test@example.invalid",privacy_approved:true,refund_policy_approved:true});
+ assert.equal(saved.httpStatus,200);
+ const still=await request("/api/public/readiness","GET",undefined,false);
+ assert.equal(still.accepting_leads,false); // OFF unless secret and explicit Cloudflare flag
+ sqlite.close();
+});
+test("turnstile protection refuses missing token even if readiness is fully configured",async()=>{
+ const {request,env,sqlite}=fixture();
+ sqlite.prepare("UPDATE business_profile SET legal_name='Test Business',public_contact='test@example.invalid',privacy_approved=1,refund_policy_approved=1").run();
+ env.PUBLIC_LEADS_ENABLED="true";env.TURNSTILE_SECRET="fixture-not-real-secret";
+ const unverified=await request("/api/public/leads","POST",{name:"Legal Guest",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),consent:true},false);
+ assert.equal(unverified.httpStatus,403,JSON.stringify(unverified));
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,0);
  sqlite.close();
 });

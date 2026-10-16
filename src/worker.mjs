@@ -38,16 +38,31 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.4.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.5.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
   return json({items:rows.results,note:"Produk draft; harga dan jadwal final harus dikonfirmasi."});
  }
+ if(path==="/api/public/readiness"&&method==="GET"){
+  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved FROM business_profile WHERE id=1").first();
+  const live=env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
+  return json({accepting_leads:!!live,business_name:info?.legal_name||"",business_contact:info?.public_contact||"",privacy_page:"/privacy.html",terms_page:"/terms.html",turnstile_required:true});
+ }
  if(path==="/api/public/leads"&&method==="POST"){
-  if(env.PUBLIC_LEADS_ENABLED!=="true")return bad("Form guest belum diaktifkan pemilik",503);
+  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved FROM business_profile WHERE id=1").first();
+  if(env.PUBLIC_LEADS_ENABLED!=="true"||!env.TURNSTILE_SECRET||!info?.legal_name||!info?.public_contact||info.privacy_approved!==1||info.refund_policy_approved!==1)return bad("Form guest belum siap menerima data; hubungi kontak resmi agen",503);
   const b=await parse(req);
   if(b.website)return json({accepted:true});
+  const token=str(b["cf-turnstile-response"],2048);
+  if(!token||token.length<12)return bad("Verifikasi anti-bot diperlukan",403);
+  try{
+   const form=new URLSearchParams({secret:env.TURNSTILE_SECRET,response:token,remoteip:req.headers.get("cf-connecting-ip")||""});
+   const verified=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body:form,signal:AbortSignal.timeout(8000)});
+   if(!verified.ok)return bad("Verifikasi anti-bot sementara tidak tersedia",503);
+   const v=await verified.json();
+   if(v.success!==true||v.hostname!==u.hostname||v.action!=="lead_enquiry")return bad("Verifikasi anti-bot tidak sah",403);
+  }catch(_){return bad("Verifikasi anti-bot sementara tidak tersedia",503);}
   const name=str(b.name,100),contact=str(b.contact,100),activity=str(b.activity_id,80),n=number(b.guests,1,100),day=str(b.requested_date,10),message=str(b.message,800);
   if(name.length<2||contact.length<5||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!n||!dateOK(day)||day<new Date().toISOString().slice(0,10)||b.consent!==true)return bad("Data guest/tanggal/consent tidak lengkap");
   const ip=str(req.headers.get("cf-connecting-ip")||"unknown");
@@ -68,6 +83,21 @@ async function route(req,env){
  if(!path.startsWith("/api/admin/"))return bad("Endpoint tidak ditemukan",404);
  if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<24)return bad("Set ADMIN_TOKEN secret terlebih dahulu",503);
  if(!(await owner(req,env)))return bad("Akses owner diperlukan",401);
+ if(path==="/api/admin/business"){
+  if(method==="GET"){
+   const info=await db.prepare("SELECT * FROM business_profile WHERE id=1").first();
+   return json({business:info});
+  }
+  if(method==="PATCH"){
+   const b=await parse(req),name=str(b.legal_name,150),contact=str(b.public_contact,150);
+   if(name.length<3||contact.length<5)return bad("Identitas bisnis dan kontak resmi wajib diisi");
+   if(!/^([+0-9][0-9 -]{6,}|[^@\s]+@[^@\s]+\.[^@\s]+)$/.test(contact))return bad("Kontak harus berupa telepon atau email resmi");
+   const privacy=b.privacy_approved===true?1:0,refund=b.refund_policy_approved===true?1:0;
+   await db.prepare("UPDATE business_profile SET legal_name=?,public_contact=?,privacy_approved=?,refund_policy_approved=?,updated_at=CURRENT_TIMESTAMP WHERE id=1").bind(name,contact,privacy,refund).run();
+   await audit(db,"business","1","PROFILE_UPDATED",{privacy,refund});
+   return json({updated:true,acceptance_requires_cloudflare_flag:true});
+  }
+ }
  if(path==="/api/admin/summary"&&method==="GET"){
   const table=["operators","leads","quotes","bookings"],values=await Promise.all(table.map(t=>db.prepare("SELECT COUNT(*) n FROM "+t).first()));
   return json(Object.fromEntries(table.map((t,i)=>[t,values[i].n])));

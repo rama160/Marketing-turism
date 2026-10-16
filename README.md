@@ -1,11 +1,12 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.4.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.5.0 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
 ## Implemented
-- Customer catalogue and lead form, disabled until privacy and production settings approved.
+- Customer catalogue with public privacy/terms pilot notices, lead form fail-closed until owner business-profile and Turnstile readiness plus explicit Cloudflare production flag.
+- Owner business configuration in dashboard, including official contact and approval flags (do not check boxes before policies are final).
 - Owner dashboard with secret bearer token.
 - Multiple operators, immutable rate revisions and operator verification.
 - Price guard: minimum markup Rp100,000 per booking, plus agency/payment costs and positive contribution.

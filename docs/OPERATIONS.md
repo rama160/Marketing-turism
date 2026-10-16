@@ -32,3 +32,12 @@ A weekly Cloudflare cron on marketing-turism-agent generates two Website campaig
 
 ## Deployment isolation (permanent)
 Run `npm run ci` before any deploy. This performs `scripts/preflight.mjs` target checks for the dedicated Marketing Turism Worker and D1. Never set Wrangler `name` to `finchat-ai-gateway` or `spenva-play-billing`, and never change account-wide Workers subdomain or shared DNS routes.
+
+## 2.5.0 Guest reception readiness
+1. Worker and D1 remain dedicated to Marketing Turism. Create Turnstile Managed widget on `marketing-turism-agent.finchat-ai-gateway.workers.dev`, public sitekey `0x4AAAAAAFYd9j0rAcoO31Rh` embedded on guest page.
+2. Place the matching SECRET through Cloudflare dashboard **Workers & Pages > marketing-turism-agent > Settings > Variables and Secrets > Add secret** as `TURNSTILE_SECRET`. Secret has not been embedded in this repository. Verify secret exists in Cloudflare before continuing. Never send the secret in chat or commit it.
+3. Replace pilot privacy/terms pages with genuine legal business details, retention policy, refund/cancellation timelines, customer rights and contact.
+4. On owner dashboard, enter official business name and contact. Approve checkboxes ONLY after real policy review.
+5. Verify operator contracts, correct tariff and capacity before creating any sale. After all protections are in place, set Worker variable `PUBLIC_LEADS_ENABLED=true` on the dedicated tourism Worker. Default stays FALSE. Test consent, Turnstile, booking, payment and refunds with permitted test data before receiving real funds.
+6. Turnstile siteverify checks hostname and lead_enquiry action; fail closed if verifier is unavailable or invalid.
+7. Do not change other workers or account-wide DNS. Do not claim this pilot privacy text meets legal requirements for a full commercial launch.

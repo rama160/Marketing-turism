@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.2.0
+# Test and Release Plan — v2.5.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -19,6 +19,13 @@
 - LeadScore tests hot/cold, reply draft with no invented monetary price.
 - Comparable market-price reference normalizes guest count and rejects mismatched group-size comparison.
 - Campaign publication must require owner confirmation and real URL; cannot publish automatically.
+
+## Business/Turnstile protections
+- Confirm public readiness false while no valid business identity/terms approvals exist.
+- Confirm no owner-less edit of business profile.
+- Confirm no accepted lead without Turnstile response even if launch flag is true.
+- Confirm Cloudflare Turnstile action and hostname are verified server-side and fail closed on outage.
+- Test privacy and terms pages load from public origin with appropriate security policy.
 
 ## Manual acceptance before launch
 1. Operator A and B rate versions; old quote snapshot remains unchanged.

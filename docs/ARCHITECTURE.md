@@ -1,4 +1,4 @@
-# Technical Architecture v2.2.0
+# Technical Architecture v2.5.0
 
 ## Components
 Public HTML/CSS/JS PWA (public/) -> Cloudflare Worker (src/worker.mjs) -> D1 SQL (database/migrations/0001_init.sql).
@@ -50,7 +50,8 @@ POST /api/admin/marketing/draft
 ## Security and tradeoffs
 Worker validates owner bearer token against ADMIN_TOKEN secret, not checked in.
 Client token in sessionStorage during current tab session only; susceptible to malicious injected script, mitigated with escaping and CSP; stronger OAuth/Cloudflare Access advisable before expansion.
-Rate-limit public requests by salted hashed IP and honeypot; recommended Turnstile before production.
+Public leads require salted hashed IP rate limits, honeypot, server-verified Cloudflare Turnstile token, approved business_profile in dedicated D1 and separate Cloudflare PUBLIC_LEADS_ENABLED=true. A pilot notice is not sufficient to approve final legal policy.
+Migration 0005_public_readiness.sql adds the singleton business_profile table; GET /api/public/readiness and GET/PATCH /api/admin/business provide controls.
 D1 CRUD does not substitute payment gateway settlement; owner separately confirms bank/payment provider.
 No guest email/phone is exposed by public APIs.
 

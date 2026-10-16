@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 2.2.0 | 2026-10-16 | Repository: rama160/Marketing-turism
+Version: 2.5.0 | 2026-10-16 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -35,3 +35,6 @@ Real operator agreements and tariffs, capacity, cancellation rules, marine safet
 
 ## Scheduling policy
 Cloudflare Cron `0 1 * * 1` on marketing-turism-agent generates only reviewable Website campaign drafts. No outbound messaging, posting, paid ads or AI payments. Do not create triggers in FinChat or Spenva workers.
+
+## Lead intake gate 2.5.0
+Never accept real guest data unless: dedicated Tourism D1 business_profile contains verified legal name, public contact, approved FINAL privacy and refund terms; TURNSTILE_SECRET is configured on marketing-turism-agent; Cloudflare PUBLIC_LEADS_ENABLED is intentionally true. Privacy/terms files in pilot are NOT final business policies; update them before approving. The Turnstile widget key is public; its secret must never appear in GitHub or chat.
