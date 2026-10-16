@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.1.0
+# Test and Release Plan — v2.2.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -14,6 +14,11 @@
 10. Live smoke /api/health, /api/public/catalog, HTML, JavaScript.
 10. Ensure unauthenticated admin request denied.
 11. Ensure public lead intake disabled until compliance authorization.
+
+## AI Marketing regression
+- LeadScore tests hot/cold, reply draft with no invented monetary price.
+- Comparable market-price reference normalizes guest count and rejects mismatched group-size comparison.
+- Campaign publication must require owner confirmation and real URL; cannot publish automatically.
 
 ## Manual acceptance before launch
 1. Operator A and B rate versions; old quote snapshot remains unchanged.

@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 2.1.0 | 2026-10-16 | Repository: rama160/Marketing-turism
+Version: 2.2.0 | 2026-10-16 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -26,6 +26,9 @@ Version: 2.1.0 | 2026-10-16 | Repository: rama160/Marketing-turism
 7. Never claim payment success from a screenshot; require actual externally verified funds.
 8. Validate build locally and in GitHub Actions; live smoke checks are separate.
 9. Never touch existing FinChat/Spenva Cloudflare resources. Marketing Turism resources are isolated.
+
+## Marketing policy
+Market references must preserve observed date, source, included services and pricing unit. NEVER compare a group price to per-person price without normalizing quantity and inclusions. AI Sales replies are drafts only. Campaign status PUBLISHED requires a real external URL entered manually; do not claim auto-posting.
 
 ## Production checklist
 Real operator agreements and tariffs, capacity, cancellation rules, marine safety, contact and legal identity, privacy notice, payment destination, tests, publication rights and guest support process must be confirmed before public lead intake is enabled.

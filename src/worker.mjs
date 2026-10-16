@@ -1,5 +1,6 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
+import {leadScore,salesDraft} from "./sales.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -37,7 +38,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.1.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.2.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
@@ -55,10 +56,13 @@ async function route(req,env){
   const count=await db.prepare("SELECT amount FROM lead_limits WHERE id=?").bind(key).first();
   if((count?.amount||0)>=10)return bad("Batas permintaan harian tercapai",429);
   const leadId=uuid();
-  await db.batch([
+  const statements=[
    db.prepare("INSERT INTO lead_limits(id,amount) VALUES(?,1) ON CONFLICT(id) DO UPDATE SET amount=amount+1").bind(key),
    db.prepare("INSERT INTO leads(id,name,contact,activity_id,guests,requested_date,message,consent) VALUES(?,?,?,?,?,?,?,1)").bind(leadId,name,contact,activity,n,day,message)
-  ]);
+  ];
+  const campaignId=str(b.campaign_id,100);
+  if(campaignId){const campaign=await db.prepare("SELECT id FROM campaign_drafts WHERE id=? AND status='PUBLISHED'").bind(campaignId).first();if(campaign)statements.push(db.prepare("INSERT INTO lead_attribution(lead_id,campaign_id) VALUES(?,?)").bind(leadId,campaign.id));}
+  await db.batch(statements);
   return json({accepted:true,reference:leadId,message:"Permintaan tercatat; belum ada konfirmasi booking."},201);
  }
  if(!path.startsWith("/api/admin/"))return bad("Endpoint tidak ditemukan",404);
@@ -241,6 +245,58 @@ async function route(req,env){
   stmts.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"change",c.id,next,JSON.stringify({booking_id:c.booking_id,external_reference:next==="EXECUTED"?str(b.external_reference,120):null})));
   await db.batch(stmts);
   return json({id:c.id,status:next});
+ }
+
+ if(path==="/api/admin/market"){
+  if(method==="GET")return json({items:(await db.prepare("SELECT * FROM market_price_refs ORDER BY observed_on DESC,created_at DESC LIMIT 200").all()).results});
+  if(method==="POST"){
+   const b=await parse(req),platform=str(b.platform,100),activity=str(b.activity_id,80),url=str(b.source_url,500),price=number(b.price,1,100000000),unit=str(b.unit,12),size=b.group_size==null?null:number(b.group_size,1,100),observed=str(b.observed_on,10),inclusions=str(b.inclusions,600);
+   if(platform.length<2||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!price||!["person","group"].includes(unit)||(unit==="group"&&!size)||!dateOK(observed)||observed>new Date().toISOString().slice(0,10))return bad("Data referensi pasar tidak valid");
+   if(url&&!url.startsWith("https://"))return bad("Sumber harga harus alamat HTTPS");
+   const id=uuid();await db.prepare("INSERT INTO market_price_refs(id,activity_id,platform,source_url,unit,group_size,price,inclusions,observed_on,verified) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(id,activity,platform,url,unit,size,price,inclusions,observed,b.owner_confirmed===true?1:0).run();
+   await audit(db,"market_reference",id,"RECORDED",{platform,activity,price,verified:b.owner_confirmed===true});
+   return json({id,status:"REFERENCE_ONLY"},201);
+  }
+ }
+ if(path==="/api/admin/campaigns"){
+  if(method==="GET")return json({items:(await db.prepare("SELECT * FROM campaign_drafts ORDER BY created_at DESC LIMIT 200").all()).results});
+  if(method==="POST"){
+   const b=await parse(req),activity=str(b.activity_id,80),platform=str(b.platform,50),caption=str(b.caption,2500);
+   if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["Instagram","Facebook","TikTok","Website","WhatsApp Status"].includes(platform)||caption.length<20)return bad("Konten kampanye tidak lengkap");
+   const id=uuid();await db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption) VALUES(?,?,?,?)").bind(id,activity,platform,caption).run();
+   await audit(db,"campaign",id,"DRAFT_CREATED",{platform,activity});return json({id,status:"DRAFT"},201);
+  }
+ }
+ const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
+ if(cm&&method==="PATCH"){
+  const b=await parse(req),status=str(b.status,16),old=await db.prepare("SELECT status FROM campaign_drafts WHERE id=?").bind(cm[1]).first();
+  if(!old)return bad("Kampanye tidak ditemukan",404);
+  if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
+  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib");
+  const posted=str(b.public_url,500);
+  if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL unggahan nyata dibutuhkan. Aplikasi tidak posting otomatis");
+  await db.prepare("UPDATE campaign_drafts SET status=?,public_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,status==="PUBLISHED"?posted:null,cm[1]).run();
+  await audit(db,"campaign",cm[1],status,{url:posted||null});return json({id:cm[1],status});
+ }
+ const sm=path.match(/^\/api\/admin\/leads\/([^/]+)\/assistant$/);
+ if(sm&&method==="POST"){
+  const lead=await db.prepare("SELECT * FROM leads WHERE id=?").bind(sm[1]).first();
+  if(!lead)return bad("Lead tidak ditemukan",404);
+  const b=await parse(req),result={lead_id:lead.id,...leadScore(lead),reply:salesDraft(lead),status:"DRAFT_REVIEW",generator:"template"};
+  if(env.AI&&b.use_ai===true){
+   try{
+    const gen=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages:[
+     {role:"system",content:"Anda AI sales wisata Nusa Penida. Buat draf jawaban singkat. Jangan mengarang atau memastikan harga, spot snorkeling, fasilitas, ketersediaan, keselamatan, cuaca, maupun pembayaran. Draf selalu perlu persetujuan pemilik."},
+     {role:"user",content:"Produk "+lead.activity_id+", peserta "+lead.guests+", tanggal "+lead.requested_date+", pesan "+str(lead.message,400)+". Tanpa mengirim kontak pribadi ke model."}
+    ]});
+    if(gen?.response){result.reply=str(gen.response,1400);result.generator="workers-ai";}
+   }catch(_){}
+  }
+  return json(result);
+ }
+ if(path==="/api/admin/analytics"&&method==="GET"){
+  const [l,q,b,c]=await Promise.all(["leads","quotes","bookings","campaign_drafts"].map(t=>db.prepare("SELECT status,COUNT(*) n FROM "+t+" GROUP BY status").all()));
+  return json({leads:l.results,quotes:q.results,bookings:b.results,campaigns:c.results,note:"Jumlah views/klik marketplace belum tersedia dan tidak dipalsukan"});
  }
  if(path==="/api/admin/marketing/draft"&&method==="POST"){
   const b=await parse(req),activity=str(b.activity_id,80);

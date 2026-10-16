@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0 — 2026-10-16
+- Added AI Sales Assistant with deterministic lead scoring and guarded response drafts.
+- Added manually entered competitor marketplace price comparisons by product, unit, guest count and observed date.
+- Added campaign draft/approval/manual published URL tracking and optional consent-aware attribution on lead intake.
+- New migration 0003_marketing.sql and regression tests; no automated messaging, price scraping or ads spending.
+
+
 ## 2.1.0 — 2026-10-16
 - Added additive D1 migration for booking guest manifest, operator payable allocation and money tracking.
 - Added guarded owner-confirmed reschedule, cancellation before payment, and full-refund request/approval/execution records.

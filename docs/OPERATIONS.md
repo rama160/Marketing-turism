@@ -21,3 +21,8 @@ In Cloudflare configure D1 binding DB, Workers AI binding AI, ADMIN_TOKEN secret
 - Unpaid booking can be cancelled. Paid booking requires full-refund workflow; request, owner approves, bank/provider funds refunded, then EXECUTED with external reference. No partial refunds in this pilot.
 - When a refund is approved, unpaid operator liabilities are put ON_HOLD. Previously paid operators require separate human reconciliation and could result in financial exposure.
 - Cloudflare Resources: only marketing-turism-agent and marketing-turism-db. Avoid any CLI command that changes the account worker subdomain, zone, or existing FinChat/Spenva deployments.
+
+## v2.2.0 AI Sales and marketing
+- AI and template sales replies are OWNER REVIEW drafts only, and must not include personal contact values in AI prompts.
+- Marketplace prices entered through dashboard are manually verified snapshots, not scraped. They must not override the minimum price policy or be compared across unlike group sizes/inclusions.
+- Campaigns are not posted by this system. Publishing status requires real URL of an owner-published post. Lead attribution can tag already published campaigns when guest consents and form is enabled.

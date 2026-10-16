@@ -1,11 +1,11 @@
 {
   "name": "marketing-turism-agent",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/worker.mjs && node --check src/pricing.mjs && node --check src/operations.mjs && node --check public/app.js",
+    "check": "node --check src/worker.mjs && node --check src/pricing.mjs && node --check src/operations.mjs && node --check src/sales.mjs && node --check public/app.js",
     "build": "node scripts/build.mjs",
     "ci": "npm run check && npm test && npm run build"
   }
