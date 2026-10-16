@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.2.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.2.1 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -29,3 +29,5 @@ Set ADMIN_TOKEN secret (24+ chars), RATE_SALT secret, then carefully enable PUBL
 No automatic bank settlement and no partial refunds; full refunds are entered only after owner confirms actual transfer. No live payment gateway, external booking supplier API, mass WhatsApp messaging, auto-posting, or fully autonomous marketing campaigns. No verified real-world operator tariff/contract yet. All starting net rates are DRAFT. Return boat tariff and 7th car seat require operator confirmation. No simultaneous snorkeling+island tour on the same day. Booking payment requires human verification, and handover requires operator acknowledgment.
 
 See docs/OPERATIONS.md. Never commit credentials, personal guest details or bank credentials.
+
+Workers AI draft model: `@cf/meta/llama-3.1-8b-instruct-fast` (active fast variant). If quota/model fails, draft falls back to explicit template; never auto-publish/send.

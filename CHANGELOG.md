@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1 — 2026-10-16
+- Fixed deprecated Workers AI model references: switch from `@cf/meta/llama-3.1-8b-instruct` to supported fast variant in both Sales and Marketing drafts.
+- No other Cloudflare Worker, domain, secret or D1 database modified.
+
+
 ## 2.2.0 — 2026-10-16
 - Added AI Sales Assistant with deterministic lead scoring and guarded response drafts.
 - Added manually entered competitor marketplace price comparisons by product, unit, guest count and observed date.
