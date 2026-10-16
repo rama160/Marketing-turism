@@ -1,4 +1,5 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
+import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -36,7 +37,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.0.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.1.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
@@ -133,11 +134,26 @@ async function route(req,env){
   await db.prepare("UPDATE quotes SET status=? WHERE id=?").bind(status,qm[1]).run();await audit(db,"quote",qm[1],"STATUS",{from:q.status,to:status});return json({id:qm[1],status});
  }
  if(path==="/api/admin/bookings"){
-  if(method==="GET")return json({items:(await db.prepare("SELECT b.*,q.guests,q.activity_id,q.requested_date,q.selling_price FROM bookings b JOIN quotes q ON q.id=b.quote_id ORDER BY b.created_at DESC LIMIT 300").all()).results});
+  if(method==="GET")return json({items:(await db.prepare("SELECT b.*,q.guests,q.activity_id,COALESCE(s.service_date,q.requested_date) requested_date,q.selling_price,m.guest_name,m.guest_contact,m.pickup,m.special_notes,m.confirmed manifest_confirmed FROM bookings b JOIN quotes q ON q.id=b.quote_id LEFT JOIN booking_schedule s ON s.booking_id=b.id LEFT JOIN booking_manifest m ON m.booking_id=b.id ORDER BY b.created_at DESC LIMIT 300").all()).results});
   if(method==="POST"){
-   const b=await parse(req),q=await db.prepare("SELECT id FROM quotes WHERE id=? AND status='APPROVED'").bind(str(b.quote_id,100)).first();
+   const b=await parse(req),q=await db.prepare("SELECT * FROM quotes WHERE id=? AND status='APPROVED'").bind(str(b.quote_id,100)).first();
    if(!q)return bad("Harga/jadwal belum disetujui operator dan owner");
-   const id=uuid();await db.prepare("INSERT INTO bookings(id,quote_id) VALUES(?,?)").bind(id,q.id).run();await audit(db,"booking",id,"CREATE",{quote:q.id});return json({id,status:"AWAITING_PAYMENT"},201);
+   let snapshot;
+   try{snapshot=JSON.parse(q.snapshot)}catch{return bad("Snapshot quote tidak valid",409)}
+   const ids=[...new Set((snapshot.lines||[]).map(l=>l.rate_id))];
+   if(!ids.length)return bad("Penawaran belum memiliki item tarif");
+   const owners={};
+   for(const rateId of ids){const r=await db.prepare("SELECT operator_id FROM rates WHERE id=?").bind(rateId).first();if(!r)return bad("Tarif historis tidak ada",409);owners[rateId]=r.operator_id;}
+   const payables=payablesForLines(snapshot.lines,owners,q.net);
+   const id=uuid(),statements=[db.prepare("INSERT INTO bookings(id,quote_id) VALUES(?,?)").bind(id,q.id)];
+   for(const p of payables)statements.push(db.prepare("INSERT INTO booking_payables(booking_id,operator_id,net_amount) VALUES(?,?,?)").bind(id,p.operator_id,p.net_amount));
+   if(q.lead_id){
+    const lead=await db.prepare("SELECT name,contact FROM leads WHERE id=?").bind(q.lead_id).first();
+    if(lead)statements.push(db.prepare("INSERT INTO booking_manifest(booking_id,guest_name,guest_contact) VALUES(?,?,?)").bind(id,lead.name,lead.contact));
+   }
+   statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"booking",id,"CREATE",JSON.stringify({quote:q.id,providers:payables.length})));
+   await db.batch(statements);
+   return json({id,status:"AWAITING_PAYMENT",operator_payables:payables},201);
   }
  }
  const bm=path.match(/^\/api\/admin\/bookings\/([^/]+)\/(payment|handover)$/);
@@ -151,8 +167,80 @@ async function route(req,env){
    await audit(db,"booking",bm[1],"PAYMENT_VERIFIED",{reference:ref});return json({status:"PAID"});
   }
   if(booking.payment_status!=="PAID"||booking.status!=="PAID"||b.operator_acknowledged!==true)return bad("Pembayaran lunas dan pengakuan operator wajib");
-  await db.prepare("UPDATE bookings SET status='HANDED_OVER',handed_over_at=CURRENT_TIMESTAMP WHERE id=?").bind(bm[1]).run();
+  const manifest=await db.prepare("SELECT confirmed FROM booking_manifest WHERE booking_id=?").bind(bm[1]).first();
+  if(manifest?.confirmed!==1)return bad("Manifest guest belum dikonfirmasi pemilik");
+  const pending=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status IN ('REQUESTED','APPROVED')").bind(bm[1]).first();
+  if(pending?.n)return bad("Masih ada permintaan perubahan/refund yang belum selesai");
+  await db.prepare("UPDATE bookings SET status='HANDED_OVER',handed_over_at=CURRENT_TIMESTAMP WHERE id=? AND status='PAID'").bind(bm[1]).run();
   await audit(db,"booking",bm[1],"HANDOVER");return json({status:"HANDED_OVER"});
+ }
+
+ if(path==="/api/admin/finance" && method==="GET"){
+  const [payables,changes]=await Promise.all([
+    db.prepare("SELECT p.*,o.name operator_name,q.activity_id,q.requested_date,q.selling_price FROM booking_payables p JOIN operators o ON o.id=p.operator_id JOIN bookings b ON b.id=p.booking_id JOIN quotes q ON q.id=b.quote_id ORDER BY p.created_at DESC LIMIT 400").all(),
+    db.prepare("SELECT c.*,q.activity_id FROM booking_changes c JOIN bookings b ON b.id=c.booking_id JOIN quotes q ON q.id=b.quote_id ORDER BY c.created_at DESC LIMIT 400").all()
+  ]);
+  return json({payables:payables.results,changes:changes.results});
+ }
+ const manifestMatch=path.match(/^\/api\/admin\/bookings\/([^/]+)\/manifest$/);
+ if(manifestMatch&&method==="POST"){
+  const booking=await db.prepare("SELECT id,status FROM bookings WHERE id=?").bind(manifestMatch[1]).first();
+  if(!booking)return bad("Booking tidak ditemukan",404);
+  if(["HANDED_OVER","REFUNDED","CANCELLED"].includes(booking.status))return bad("Manifest booking sudah terkunci",409);
+  const b=await parse(req),name=str(b.guest_name,120),contact=str(b.guest_contact,160),pickup=str(b.pickup,300),notes=str(b.special_notes,500);
+  if(name.length<2||contact.length<5||b.owner_confirmed!==true)return bad("Identitas guest dan konfirmasi pemilik wajib");
+  await db.prepare("INSERT INTO booking_manifest(booking_id,guest_name,guest_contact,pickup,special_notes,confirmed) VALUES(?,?,?,?,?,1) ON CONFLICT(booking_id) DO UPDATE SET guest_name=excluded.guest_name,guest_contact=excluded.guest_contact,pickup=excluded.pickup,special_notes=excluded.special_notes,confirmed=1,updated_at=CURRENT_TIMESTAMP").bind(booking.id,name,contact,pickup,notes).run();
+  await audit(db,"manifest",booking.id,"OWNER_CONFIRMED",{pickup,has_contact:true});
+  return json({id:booking.id,manifest_confirmed:true});
+ }
+ const payMatch=path.match(/^\/api\/admin\/bookings\/([^/]+)\/payables\/([^/]+)\/pay$/);
+ if(payMatch && method==="POST"){
+  const b=await parse(req),reference=str(b.reference,120);
+  if(b.owner_confirmed!==true||reference.length<5)return bad("Referensi transfer dan verifikasi pemilik wajib");
+  const booking=await db.prepare("SELECT payment_status,status FROM bookings WHERE id=?").bind(payMatch[1]).first();
+  if(!booking||booking.payment_status!=="PAID"||["REFUNDED","REFUND_PENDING","CANCELLED"].includes(booking.status))return bad("Pembayaran guest belum beres atau refund masih berlangsung",409);
+  const pending=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status IN ('REQUESTED','APPROVED') AND change_type IN ('CANCEL','REFUND')").bind(payMatch[1]).first();
+  if(pending?.n)return bad("Ada permintaan pembatalan/refund aktif");
+  const result=await db.prepare("UPDATE booking_payables SET status='PAID',reference=?,paid_at=CURRENT_TIMESTAMP WHERE booking_id=? AND operator_id=? AND status='DUE'").bind(reference,payMatch[1],payMatch[2]).run();
+  if(result.meta?.changes!==1)return bad("Tagihan operator tidak ada/sudah dibayar",409);
+  await audit(db,"payable",payMatch[1],"PAID",{operator_id:payMatch[2],reference});
+  return json({booking_id:payMatch[1],operator_id:payMatch[2],status:"PAID"});
+ }
+ const changeCreate=path.match(/^\/api\/admin\/bookings\/([^/]+)\/changes$/);
+ if(changeCreate && method==="POST"){
+  const booking=await db.prepare("SELECT b.*,q.selling_price FROM bookings b JOIN quotes q ON q.id=b.quote_id WHERE b.id=?").bind(changeCreate[1]).first();
+  if(!booking)return bad("Booking tidak ditemukan",404);
+  const p=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status IN ('REQUESTED','APPROVED')").bind(booking.id).first();
+  if(p?.n)return bad("Ada permintaan perubahan aktif",409);
+  const b=await parse(req),data={change_type:str(b.change_type,16),reason:str(b.reason,500),requested_date:str(b.requested_date,10),refund_amount:number(b.refund_amount??0)};
+  validateChange(data,booking,booking.selling_price);
+  const cid=uuid();
+  await db.prepare("INSERT INTO booking_changes(id,booking_id,change_type,requested_date,refund_amount,reason) VALUES(?,?,?,?,?,?)").bind(cid,booking.id,data.change_type,data.change_type==="RESCHEDULE"?data.requested_date:null,data.change_type==="REFUND"?data.refund_amount:0,data.reason).run();
+  await audit(db,"change",cid,"REQUESTED",{booking_id:booking.id,type:data.change_type});
+  return json({id:cid,status:"REQUESTED"},201);
+ }
+ const changeMatch=path.match(/^\/api\/admin\/bookings\/([^/]+)\/changes\/([^/]+)$/);
+ if(changeMatch && method==="PATCH"){
+  const b=await parse(req),next=str(b.status,18),c=await db.prepare("SELECT * FROM booking_changes WHERE id=? AND booking_id=?").bind(changeMatch[2],changeMatch[1]).first();
+  if(!c)return bad("Permintaan perubahan tidak ditemukan",404);
+  allowedChangeTransition(c,next,b);
+  const stmts=[db.prepare("UPDATE booking_changes SET status=?,updated_at=CURRENT_TIMESTAMP,external_reference=? WHERE id=? AND status=?").bind(next,next==="EXECUTED"?str(b.external_reference,120):null,c.id,c.status)];
+  if(next==="APPROVED"){
+   if(c.change_type==="RESCHEDULE"){
+    stmts.push(db.prepare("INSERT INTO booking_schedule(booking_id,service_date,change_id) VALUES(?,?,?) ON CONFLICT(booking_id) DO UPDATE SET service_date=excluded.service_date,change_id=excluded.change_id,changed_at=CURRENT_TIMESTAMP").bind(c.booking_id,c.requested_date,c.id));
+   }
+   if(c.change_type==="CANCEL")stmts.push(db.prepare("UPDATE bookings SET status='CANCELLED' WHERE id=? AND payment_status='UNPAID'").bind(c.booking_id));
+   if(c.change_type==="REFUND"){
+    stmts.push(db.prepare("UPDATE bookings SET status='REFUND_PENDING' WHERE id=? AND payment_status='PAID'").bind(c.booking_id));
+    stmts.push(db.prepare("UPDATE booking_payables SET status='ON_HOLD' WHERE booking_id=? AND status='DUE'").bind(c.booking_id));
+   }
+  }
+  if(next==="EXECUTED"){
+   stmts.push(db.prepare("UPDATE bookings SET status='REFUNDED',payment_status='REFUNDED' WHERE id=? AND status='REFUND_PENDING'").bind(c.booking_id));
+  }
+  stmts.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"change",c.id,next,JSON.stringify({booking_id:c.booking_id,external_reference:next==="EXECUTED"?str(b.external_reference,120):null})));
+  await db.batch(stmts);
+  return json({id:c.id,status:next});
  }
  if(path==="/api/admin/marketing/draft"&&method==="POST"){
   const b=await parse(req),activity=str(b.activity_id,80);
@@ -166,4 +254,4 @@ async function route(req,env){
  }
  return bad("Endpoint tidak ditemukan",404);
 }
-export default {async fetch(req,env){try{return await route(req,env)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError?422:400)}}};
+export default {async fetch(req,env){try{return await route(req,env)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}}};

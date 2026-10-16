@@ -13,3 +13,11 @@ No payment gateway, WhatsApp automated outbound, live marketplace scraping, auto
 ## Dev and deployment
 Run npm run ci. D1 migrations: npx wrangler d1 migrations apply marketing-turism-db --remote.
 In Cloudflare configure D1 binding DB, Workers AI binding AI, ADMIN_TOKEN secret and PUBLIC_LEADS_ENABLED public variable. Worker assets at public/. Build artifact dist/ on GitHub Actions.
+
+## 2.1.0 Operations
+- Before handover, populate and confirm booking guest manifest, confirm payment in banking/provider independently and verify operator acknowledgement.
+- Operator payable allocation is based on the initial quote price snapshot; never recompute from today's net rates. Mark an operator as PAID only after the actual transfer has been confirmed with reference.
+- Reschedule requires operator's confirmation of the replacement date. The quote snapshot stays immutable; booking_schedule records the service date override.
+- Unpaid booking can be cancelled. Paid booking requires full-refund workflow; request, owner approves, bank/provider funds refunded, then EXECUTED with external reference. No partial refunds in this pilot.
+- When a refund is approved, unpaid operator liabilities are put ON_HOLD. Previously paid operators require separate human reconciliation and could result in financial exposure.
+- Cloudflare Resources: only marketing-turism-agent and marketing-turism-db. Avoid any CLI command that changes the account worker subdomain, zone, or existing FinChat/Spenva deployments.

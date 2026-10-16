@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[]},lastMarketing="";
+let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]}},lastMarketing="";
 const say=(id,msg,success=false)=>{const el=$(id);if(el){el.textContent=msg;el.style.color=success?"#167058":"#a24836"}};
 async function api(path,method="GET",payload,admin=true){
  const headers={"accept":"application/json"};if(payload!==undefined)headers["content-type"]="application/json";
@@ -31,13 +31,13 @@ $("#unlock").onclick=async()=>{
 };
 async function refresh(){
  try{
-  const [summary,operators,rates,leads,quotes,bookings]=await Promise.all([
-   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings")]);
-  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items};
+  const [summary,operators,rates,leads,quotes,bookings,finance]=await Promise.all([
+   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance")]);
+  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance};
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
-  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();
+  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
 }
@@ -60,10 +60,21 @@ function renderQuotes(){
   (q.status==="APPROVED"?'<button class="primary" data-action="bookQuote" data-id="'+esc(q.id)+'">Buat booking</button>':"")+'</div></div>').join("")||"<p>Belum ada quote.</p>";
 }
 function renderBookings(){
- $("#bookingList").innerHTML=data.bookings.map(b=>'<div class="item"><div class="meta"><b>'+esc(b.activity_id)+' · '+esc(b.requested_date)+'</b><span class="pill '+(b.status==="HANDED_OVER"?"good":"")+'">'+esc(b.status)+'</span></div><div>'+b.guests+' guest · '+money(b.selling_price)+'</div><small>Payment: '+esc(b.payment_status)+' · ID '+esc(b.id)+'</small><div class="actions">'+
-  (b.payment_status!=="PAID"?'<button class="outline" data-action="verifyPayment" data-id="'+esc(b.id)+'">Verifikasi dana masuk</button>':"")+
+ $("#bookingList").innerHTML=data.bookings.map(b=>'<div class="item"><div class="meta"><b>'+esc(b.activity_id)+' · '+esc(b.requested_date)+'</b><span class="pill '+(b.status==="HANDED_OVER"?"good":"")+'">'+esc(b.status)+'</span></div><div>'+b.guests+' guest · '+money(b.selling_price)+'</div><small>Payment: '+esc(b.payment_status)+' · ID '+esc(b.id)+'</small><small>Manifest: '+(b.manifest_confirmed?"terkonfirmasi":"belum")+' · '+esc(b.guest_name||"Guest belum diisi")+'</small><div class="actions">'+
+  (b.payment_status==="UNPAID"&&b.status==="AWAITING_PAYMENT"?'<button class="outline" data-action="verifyPayment" data-id="'+esc(b.id)+'">Verifikasi dana masuk</button>':"")+
+  (!["HANDED_OVER","REFUNDED","CANCELLED"].includes(b.status)?'<button class="outline" data-action="manifest" data-id="'+esc(b.id)+'">Isi manifest</button><button class="outline" data-action="changeBooking" data-id="'+esc(b.id)+'">Reschedule / Cancel / Refund</button>':"")+
   (b.status==="PAID"?'<button class="primary" data-action="handover" data-id="'+esc(b.id)+'">Operator terima guest</button>':"")+
   '</div></div>').join("")||"<p>Belum ada booking.</p>";
+}
+function renderFinance(){
+ const pay=(data.finance?.payables||[]),changes=(data.finance?.changes||[]);
+ $("#financeList").innerHTML='<h4>Utang kepada operator ('+pay.length+')</h4>'+
+ pay.map(p=>'<div class="item"><div class="meta"><b>'+esc(p.operator_name)+'</b><span class="pill '+(p.status==="PAID"?"good":"")+'">'+esc(p.status)+'</span></div><div>'+money(p.net_amount)+'</div><small>Booking: '+esc(p.booking_id)+' · '+esc(p.activity_id)+'</small><div class="actions">'+(p.status==="DUE"?'<button class="outline" data-action="payOperator" data-id="'+esc(p.booking_id)+'" data-operator="'+esc(p.operator_id)+'">Verifikasi transfer net operator</button>':"")+'</div></div>').join("")+
+ '<h4>Reschedule, Pembatalan, Refund ('+changes.length+')</h4>'+
+ changes.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.change_type)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="EXECUTED"?"good":"")+'">'+esc(c.status)+'</span></div><small>Booking: '+esc(c.booking_id)+' · '+esc(c.reason)+'</small><small>'+(c.change_type==="RESCHEDULE"?"Tanggal baru: "+esc(c.requested_date):c.change_type==="REFUND"?"Refund penuh: "+money(c.refund_amount):"Pembatalan tanpa pembayaran")+'</small><div class="actions">'+
+ (c.status==="REQUESTED"?'<button class="outline" data-action="approveChange" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'" data-type="'+esc(c.change_type)+'">Setujui</button><button class="outline" data-action="rejectChange" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'">Tolak</button>':"")+
+ (c.status==="APPROVED"&&c.change_type==="REFUND"?'<button class="primary" data-action="executeRefund" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'">Verifikasi refund terkirim</button>':"")+'</div></div>').join("")||
+ '<p>Tidak ada kewajiban/perubahan tercatat.</p>';
 }
 const formValues=(form)=>Object.fromEntries(new FormData(form));
 $("#operatorForm").onsubmit=async e=>{
@@ -99,6 +110,48 @@ document.addEventListener("click",async e=>{
   if(a==="confirmQuote"){if(!confirm("Operator telah mengonfirmasi ketersediaan di tanggal tersebut?"))return;await api("admin/quotes/"+encodeURIComponent(id)+"/status","PATCH",{status:"OPERATOR_CONFIRMED"})}
   if(a==="approveQuote"){if(!confirm("Anda menyetujui harga final ke guest?"))return;await api("admin/quotes/"+encodeURIComponent(id)+"/status","PATCH",{status:"APPROVED"})}
   if(a==="bookQuote"){if(!confirm("Buat booking dari penawaran yang disetujui?"))return;await api("admin/bookings","POST",{quote_id:id})}
+  if(a==="manifest"){
+   const current=data.bookings.find(x=>x.id===id);
+   const name=prompt("Nama pemesan / guest utama:",current?.guest_name||"");if(name===null)return;
+   const contact=prompt("Nomor WhatsApp/email guest:",current?.guest_contact||"");if(contact===null)return;
+   const pickup=prompt("Titik kumpul atau penjemputan:",current?.pickup||"");if(pickup===null)return;
+   const special_notes=prompt("Catatan kebutuhan guest (hindari data sensitif):",current?.special_notes||"");if(special_notes===null)return;
+   if(!confirm("Manifest sudah diperiksa dan benar?"))return;
+   await api("admin/bookings/"+encodeURIComponent(id)+"/manifest","POST",{guest_name:name,guest_contact:contact,pickup,special_notes,owner_confirmed:true});
+  }
+  if(a==="changeBooking"){
+   const current=data.bookings.find(x=>x.id===id),kind=prompt("Jenis perubahan: RESCHEDULE / CANCEL / REFUND",current?.payment_status==="PAID"?"REFUND":"RESCHEDULE");
+   if(!kind)return;const change_type=kind.toUpperCase().trim();
+   const reason=prompt("Alasan dan konteks permintaan:");if(!reason)return;
+   let requested_date=null,refund_amount=0;
+   if(change_type==="RESCHEDULE"){requested_date=prompt("Tanggal baru YYYY-MM-DD",current?.requested_date||"");if(!requested_date)return;}
+   if(change_type==="REFUND")refund_amount=current.selling_price;
+   await api("admin/bookings/"+encodeURIComponent(id)+"/changes","POST",{change_type,reason,requested_date,refund_amount});
+  }
+  if(a==="payOperator"){
+   const ref=prompt("Masukkan referensi transfer net yang SUDAH diterima operator:");if(!ref)return;
+   if(!confirm("Dana sudah benar-benar ditransfer ke mitra dan referensi bank benar?"))return;
+   await api("admin/bookings/"+encodeURIComponent(id)+"/payables/"+encodeURIComponent(button.dataset.operator)+"/pay","POST",{reference:ref,owner_confirmed:true});
+  }
+  if(a==="approveChange"||a==="rejectChange"||a==="executeRefund"){
+   const booking=button.dataset.booking,kind=button.dataset.type;
+   const next=a==="approveChange"?"APPROVED":a==="rejectChange"?"REJECTED":"EXECUTED";
+   const payload={status:next};
+   if(next==="APPROVED"&&kind==="RESCHEDULE"){
+    if(!confirm("Operator menyatakan tersedia pada tanggal BARU dan guest setuju?"))return;
+    payload.operator_acknowledged=true;
+   }
+   if(next==="APPROVED"&&kind==="REFUND"){
+    if(!confirm("Menyetujui FULL refund? Pembayaran belum dianggap terkirim sampai transfer diverifikasi."))return;
+    payload.owner_confirmed=true;
+   }
+   if(next==="EXECUTED"){
+    const ref=prompt("Referensi transaksi refund BANK yang sudah terkirim:");if(!ref)return;
+    if(!confirm("Dana refund sungguh sudah keluar/settled dan tidak hanya bukti unggahan?"))return;
+    payload.owner_confirmed=true;payload.external_reference=ref;
+   }
+   await api("admin/bookings/"+encodeURIComponent(booking)+"/changes/"+encodeURIComponent(id),"PATCH",payload);
+  }
   if(a==="verifyPayment"){
    const reference=prompt("Masukkan referensi mutasi rekening atau transaksi yang telah Anda verifikasi:");
    if(!reference||reference.trim().length<5)return;

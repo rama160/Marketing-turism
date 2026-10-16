@@ -1,0 +1,13 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "../src/operations.mjs";
+const lines=[{rate_id:"a",qty:1,unit_net:600000},{rate_id:"b",qty:4,unit_net:150000},{rate_id:"c",qty:4,unit_net:150000}];
+test("separate operators get their own payable",()=>assert.deepEqual(payablesForLines(lines,{a:"tour",b:"lunch",c:"boat"},1800000),[{operator_id:"tour",net_amount:600000},{operator_id:"lunch",net_amount:600000},{operator_id:"boat",net_amount:600000}]));
+test("same operator payable is aggregated",()=>assert.deepEqual(payablesForLines(lines,{a:"tour",b:"tour",c:"boat"},1800000),[{operator_id:"tour",net_amount:1200000},{operator_id:"boat",net_amount:600000}]));
+test("mismatched immutable net total rejected",()=>assert.throws(()=>payablesForLines(lines,{a:"a",b:"b",c:"c"},1799999),OperationsError));
+test("unknown historic rate cannot be invoiced",()=>assert.throws(()=>payablesForLines(lines,{a:"a",b:"b"},1800000),OperationsError));
+test("can't cancel paid booking without refund",()=>assert.throws(()=>validateChange({change_type:"CANCEL",reason:"weather changed"},{status:"PAID",payment_status:"PAID"},1800000),OperationsError));
+test("refund only when paid and full amount",()=>assert.throws(()=>validateChange({change_type:"REFUND",reason:"weather changed",refund_amount:1500000},{status:"PAID",payment_status:"PAID"},1800000),OperationsError));
+test("reschedule requires operator acknowledgement",()=>assert.throws(()=>allowedChangeTransition({status:"REQUESTED",change_type:"RESCHEDULE"},"APPROVED",{operator_acknowledged:false}),OperationsError));
+test("can't complete refund from screenshot only",()=>assert.throws(()=>allowedChangeTransition({status:"APPROVED",change_type:"REFUND"},"EXECUTED",{owner_confirmed:true,external_reference:""}),OperationsError));
+test("verified full refund is logged, not executed by AI",()=>assert.equal(allowedChangeTransition({status:"APPROVED",change_type:"REFUND"},"EXECUTED",{owner_confirmed:true,external_reference:"BANK-TRX-123"}),true));

@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.0.0
+# Test and Release Plan — v2.1.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -8,7 +8,10 @@
 6. Reject unverified operator rates and negative contributions.
 7. Reject competitor price below floor; reject underpriced guest sale.
 8. Build public dist/ artifact.
-9. Live smoke /api/health, /api/public/catalog, HTML, JavaScript.
+9. Split payables by immutable rate-provider mapping and block mismatched net sum.
+9a. Reject premature full refund or missing real settlement reference.
+9b. Require verified operator before reschedule approval and manifest before paid handover.
+10. Live smoke /api/health, /api/public/catalog, HTML, JavaScript.
 10. Ensure unauthenticated admin request denied.
 11. Ensure public lead intake disabled until compliance authorization.
 

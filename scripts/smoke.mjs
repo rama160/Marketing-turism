@@ -15,6 +15,8 @@ if(!page.includes("Marketing")||!page.includes("leadForm"))throw Error("Guest pa
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
 await get("/api/admin/summary",401);
+await get("/api/admin/finance",401);
+await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
 console.log("SUCCESS: public HTML, app JS, D1 API, catalogue, admin auth and closed lead intake.");

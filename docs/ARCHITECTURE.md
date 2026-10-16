@@ -1,4 +1,4 @@
-# Technical Architecture v2.0.0
+# Technical Architecture v2.1.0
 
 ## Components
 Public HTML/CSS/JS PWA (public/) -> Cloudflare Worker (src/worker.mjs) -> D1 SQL (database/migrations/0001_init.sql).
@@ -12,6 +12,7 @@ Future deploy workflow: .github/workflows/deploy-cloudflare.yml (requires GitHub
 operators -> rates with immutable version history -> quotes with JSON snapshot -> bookings and manually verified payment/handover status.
 leads with consent are separate from quotes, public acceptance disabled until configured.
 audit_log captures operator/rate/quote/booking actions.
+Additional migration 0002_operations.sql: booking_manifest, booking_payables, booking_changes, booking_schedule. Operator net payables allocate historical rate ID to providers at booking creation; multiple items from same operator aggregate. Quotes remain immutable and reschedule overrides live service date in booking_schedule.
 Rates are per operator per activity; independent providers allowed for base experience and three add-on types.
 
 ## State machine
@@ -32,6 +33,11 @@ GET /api/admin/leads; PATCH /api/admin/leads/:id
 POST /api/admin/quotes/preview
 GET/POST /api/admin/quotes; PATCH /api/admin/quotes/:id/status
 GET/POST /api/admin/bookings
+GET /api/admin/finance
+POST /api/admin/bookings/:id/manifest
+POST /api/admin/bookings/:id/payables/:operatorId/pay
+POST /api/admin/bookings/:id/changes
+PATCH /api/admin/bookings/:id/changes/:changeId
 POST /api/admin/bookings/:id/payment
 POST /api/admin/bookings/:id/handover
 POST /api/admin/marketing/draft

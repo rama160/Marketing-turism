@@ -1,4 +1,4 @@
-# PRD — AI Tourism Marketing & Booking Agent v2.0.0
+# PRD — AI Tourism Marketing & Booking Agent v2.1.0
 ## Goal
 Support an independent travel sales agent in Nusa Penida to attract consenting leads, qualify guests, quote tourism activities without loss, collect guest payments via verified manual processes, hand over activities to local operator, and retain auditable records.
 
@@ -21,9 +21,13 @@ FR-09 Booking from approved quote only. Incoming payment marked after owner chec
 FR-10 Handover only once paid and operator acknowledges guest, date and scope.
 FR-11 AI-assisted caption drafts with owner review, no unattended publishing.
 FR-12 Cloudflare D1 persistent records, dedicated Worker, GitHub CI tests and live smoke.
+FR-13 Guest manifest stored per booking, with manual owner confirmation before handover.
+FR-14 Allocate quote snapshot net to each operator and record separately when owner actually transfers funds to operator.
+FR-15 Allow audited request/approve or reject reschedule, unpaid cancellation, and full refund with an externally verified settlement reference.
+FR-16 Changes cannot rewrite original quote snapshot, ignore held operator liability, or automatically move money.
 
 ## Deferred, NOT launch-ready
-Full WhatsApp outbound, Google/Meta organic post automation, GetYourGuide pricing API, paid ads campaigns, payment gateway/webhook, real availability APIs, operator automated portal, invoice/voucher PDF, cancellation/refund funds workflow, OAuth, scheduling autonomous content, analytics attribution and genuine end-to-end payment testing. None should be described as enabled.
+Full WhatsApp outbound, Google/Meta organic post automation, GetYourGuide pricing API, paid ads campaigns, payment gateway/webhook, real availability APIs, operator automated portal, invoice/voucher PDF, partial refund, automatic refund funds transfer, OAuth, scheduling autonomous content, analytics attribution and genuine end-to-end payment testing. None should be described as enabled.
 
 ## Security
 Public lead collection OFF by default pending legal/privacy readiness. Admin bearer token must be kept outside repository; do not persist guest contacts in public browser storage. Do not attempt competitor price scraping against platform restrictions. Operator in charge of marine risk and guest safety.

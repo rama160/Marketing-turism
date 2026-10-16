@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 2.0.0 | 2026-10-16 | Repository: rama160/Marketing-turism
+Version: 2.1.0 | 2026-10-16 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -20,6 +20,8 @@ Version: 2.0.0 | 2026-10-16 | Repository: rama160/Marketing-turism
 3. Extend existing files where the responsibility already exists. Create new files only for distinct responsibilities.
 4. Update CHANGELOG.md and tests for every behavior change.
 5. Never commit secrets, guest personal data, bank credentials, or OAuth tokens.
+5a. Only change the dedicated Marketing Turism Worker and D1. Never deploy over finchat-ai-gateway or spenva-play-billing.
+5b. When increasing schema, create additive migration; never modify already applied migration.
 6. Always use owner authorization for sensitive CRUD and limit public forms.
 7. Never claim payment success from a screenshot; require actual externally verified funds.
 8. Validate build locally and in GitHub Actions; live smoke checks are separate.
