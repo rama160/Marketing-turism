@@ -150,3 +150,36 @@ test("campaign status requires owner and external posting, marketplace is refere
  assert.equal((await request("/api/admin/market")).items[0].verified,0);
  sqlite.close();
 });
+
+
+test("reschedule can finish and handover after replacement date approval",async()=>{
+ const {request,sqlite}=fixture(),operator=await verifiedOperator(request,"Verified Replacement Tour");
+ await rate(request,operator,"ISLAND_TOUR_CAR",600000,"car",6);
+ const qid=await approvedQuote(request,{operator_id:operator,activity_id:"ISLAND_TOUR_CAR",guests:2,requested_date:tomorrow()},740000);
+ const booked=(await request("/api/admin/bookings","POST",{quote_id:qid})).id;
+ const shifted=new Date();shifted.setUTCDate(shifted.getUTCDate()+9);
+ const newDate=shifted.toISOString().slice(0,10);
+ const change=await request("/api/admin/bookings/"+booked+"/changes","POST",{change_type:"RESCHEDULE",reason:"Guest needs different date",requested_date:newDate});
+ assert.equal(change.httpStatus,201);
+ // Owner may not mark payment while guest's requested date has not been resolved.
+ assert.equal((await request("/api/admin/bookings/"+booked+"/payment","POST",{owner_confirmed:true,reference:"WAIT-RESCHEDULE-REF"})).httpStatus,409);
+ const confirm=await request("/api/admin/bookings/"+booked+"/changes/"+change.id,"PATCH",{status:"APPROVED",operator_acknowledged:true});
+ assert.equal(confirm.httpStatus,200,JSON.stringify(confirm));
+ assert.equal(confirm.status,"EXECUTED");
+ const list=await request("/api/admin/bookings");
+ assert.equal(list.items.find(x=>x.id===booked).requested_date,newDate);
+ assert.equal((await request("/api/admin/bookings/"+booked+"/payment","POST",{owner_confirmed:true,reference:"REAL-DEPOSIT-AFTER-SCHEDULE"})).httpStatus,200);
+ assert.equal((await request("/api/admin/bookings/"+booked+"/manifest","POST",{guest_name:"Booking Guest",guest_contact:"test@example.invalid",owner_confirmed:true})).httpStatus,200);
+ assert.equal((await request("/api/admin/bookings/"+booked+"/handover","POST",{operator_acknowledged:true})).httpStatus,200);
+ sqlite.close();
+});
+test("invalid calendar dates are rejected, cannot create non-existent February date",async()=>{
+ const {request,sqlite}=fixture();
+ const lead=await request("/api/public/leads","POST",{name:"Guest Name",contact:"x@example.invalid",guests:2,requested_date:"2027-02-30",activity_id:"ISLAND_TOUR_CAR",consent:true},false);
+ assert.equal(lead.httpStatus,503); // the public form still defaults off
+ const op=await verifiedOperator(request,"Verified Island Supplier");
+ await rate(request,op,"ISLAND_TOUR_CAR",600000,"car",6);
+ const q=await request("/api/admin/quotes","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",guests:2,requested_date:"2027-02-30",selling_price:750000});
+ assert.equal(q.httpStatus,400);
+ sqlite.close();
+});

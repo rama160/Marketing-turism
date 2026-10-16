@@ -26,7 +26,7 @@ export function validateChange(change, booking, sellingPrice) {
  }
  if (change.change_type === "CANCEL" && booking.payment_status === "PAID") throw new OperationsError("Booking lunas wajib melalui workflow refund");
  if (change.change_type === "RESCHEDULE") {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(change.requested_date||"") || Number.isNaN(Date.parse(change.requested_date+"T00:00:00Z"))) throw new OperationsError("Tanggal pengganti tidak valid");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(change.requested_date||"") || Number.isNaN(Date.parse(change.requested_date+"T00:00:00Z"))||new Date(change.requested_date+"T00:00:00Z").toISOString().slice(0,10)!==change.requested_date) throw new OperationsError("Tanggal pengganti tidak valid");
   if (change.requested_date < new Date().toISOString().slice(0,10)) throw new OperationsError("Tanggal baru sudah berlalu");
  }
  return true;

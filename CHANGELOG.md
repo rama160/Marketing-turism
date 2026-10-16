@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0 — 2026-10-16
+- Fix reschedule deadlock that previously prevented handover after owner and operator approval.
+- Prevent payment while booking change is pending, protect payment and handover state transitions against duplicate submissions.
+- Validate exact calendar dates; expand full D1-backed integration suite for reschedule/payment/manifest/handover.
+
+
 ## 2.2.1 — 2026-10-16
 - Fixed deprecated Workers AI model references: switch from `@cf/meta/llama-3.1-8b-instruct` to supported fast variant in both Sales and Marketing drafts.
 - No other Cloudflare Worker, domain, secret or D1 database modified.

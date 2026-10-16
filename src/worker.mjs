@@ -6,7 +6,7 @@ const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
 const number=(x,min=0,max=100000000)=>Number.isSafeInteger(Number(x))&&Number(x)>=min&&Number(x)<=max?Number(x):null;
 const uuid=()=>crypto.randomUUID();
-const dateOK=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+"T00:00:00Z"));
+const dateOK=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+"T00:00:00Z"))&&new Date(x+"T00:00:00Z").toISOString().slice(0,10)===x;
 async function parse(req){const raw=await req.text();if(raw.length>12000)throw Error("Request terlalu besar");return JSON.parse(raw);}
 async function owner(req,env){
  const expected=env.ADMIN_TOKEN||"";
@@ -38,7 +38,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.2.1",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.3.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
@@ -166,8 +166,11 @@ async function route(req,env){
   if(!booking)return bad("Booking tidak ditemukan",404);
   if(bm[2]==="payment"){
    const ref=str(b.reference,120);
-   if(booking.payment_status!=="UNPAID"||ref.length<5||b.owner_confirmed!==true)return bad("Harus verifikasi dana nyata; pembayaran belum dapat ditandai");
-   await db.prepare("UPDATE bookings SET payment_status='PAID',status='PAID',reference=?,paid_at=CURRENT_TIMESTAMP WHERE id=?").bind(ref,bm[1]).run();
+   if(booking.payment_status!=="UNPAID"||booking.status!=="AWAITING_PAYMENT"||ref.length<5||b.owner_confirmed!==true)return bad("Harus verifikasi dana nyata; pembayaran belum dapat ditandai");
+   const activeChange=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status='REQUESTED'").bind(bm[1]).first();
+   if(activeChange?.n)return bad("Selesaikan perubahan booking sebelum menerima pembayaran",409);
+   const paymentResult=await db.prepare("UPDATE bookings SET payment_status='PAID',status='PAID',reference=?,paid_at=CURRENT_TIMESTAMP WHERE id=? AND payment_status='UNPAID' AND status='AWAITING_PAYMENT'").bind(ref,bm[1]).run();
+   if(paymentResult.meta?.changes!==1)return bad("Pembayaran sudah diproses oleh permintaan lain",409);
    await audit(db,"booking",bm[1],"PAYMENT_VERIFIED",{reference:ref});return json({status:"PAID"});
   }
   if(booking.payment_status!=="PAID"||booking.status!=="PAID"||b.operator_acknowledged!==true)return bad("Pembayaran lunas dan pengakuan operator wajib");
@@ -175,7 +178,8 @@ async function route(req,env){
   if(manifest?.confirmed!==1)return bad("Manifest guest belum dikonfirmasi pemilik");
   const pending=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status IN ('REQUESTED','APPROVED')").bind(bm[1]).first();
   if(pending?.n)return bad("Masih ada permintaan perubahan/refund yang belum selesai");
-  await db.prepare("UPDATE bookings SET status='HANDED_OVER',handed_over_at=CURRENT_TIMESTAMP WHERE id=? AND status='PAID'").bind(bm[1]).run();
+  const result=await db.prepare("UPDATE bookings SET status='HANDED_OVER',handed_over_at=CURRENT_TIMESTAMP WHERE id=? AND status='PAID' AND payment_status='PAID'").bind(bm[1]).run();
+  if(result.meta?.changes!==1)return bad("Booking sudah ditangani oleh permintaan lain",409);
   await audit(db,"booking",bm[1],"HANDOVER");return json({status:"HANDED_OVER"});
  }
 
@@ -228,7 +232,10 @@ async function route(req,env){
   const b=await parse(req),next=str(b.status,18),c=await db.prepare("SELECT * FROM booking_changes WHERE id=? AND booking_id=?").bind(changeMatch[2],changeMatch[1]).first();
   if(!c)return bad("Permintaan perubahan tidak ditemukan",404);
   allowedChangeTransition(c,next,b);
-  const stmts=[db.prepare("UPDATE booking_changes SET status=?,updated_at=CURRENT_TIMESTAMP,external_reference=? WHERE id=? AND status=?").bind(next,next==="EXECUTED"?str(b.external_reference,120):null,c.id,c.status)];
+  // An approved reschedule has already changed booking_schedule, so it is executed immediately.
+  // Leaving it APPROVED would permanently prevent handover.
+  const applied=next==="APPROVED"&&c.change_type==="RESCHEDULE"?"EXECUTED":next;
+  const stmts=[db.prepare("UPDATE booking_changes SET status=?,updated_at=CURRENT_TIMESTAMP,external_reference=? WHERE id=? AND status=?").bind(applied,next==="EXECUTED"?str(b.external_reference,120):null,c.id,c.status)];
   if(next==="APPROVED"){
    if(c.change_type==="RESCHEDULE"){
     stmts.push(db.prepare("INSERT INTO booking_schedule(booking_id,service_date,change_id) VALUES(?,?,?) ON CONFLICT(booking_id) DO UPDATE SET service_date=excluded.service_date,change_id=excluded.change_id,changed_at=CURRENT_TIMESTAMP").bind(c.booking_id,c.requested_date,c.id));
@@ -242,9 +249,9 @@ async function route(req,env){
   if(next==="EXECUTED"){
    stmts.push(db.prepare("UPDATE bookings SET status='REFUNDED',payment_status='REFUNDED' WHERE id=? AND status='REFUND_PENDING'").bind(c.booking_id));
   }
-  stmts.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"change",c.id,next,JSON.stringify({booking_id:c.booking_id,external_reference:next==="EXECUTED"?str(b.external_reference,120):null})));
+  stmts.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"change",c.id,applied,JSON.stringify({booking_id:c.booking_id,external_reference:next==="EXECUTED"?str(b.external_reference,120):null})));
   await db.batch(stmts);
-  return json({id:c.id,status:next});
+  return json({id:c.id,status:applied});
  }
 
  if(path==="/api/admin/market"){
