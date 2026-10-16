@@ -38,7 +38,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.5.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.5.1",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();

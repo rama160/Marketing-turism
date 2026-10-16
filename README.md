@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.5.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.5.1 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 

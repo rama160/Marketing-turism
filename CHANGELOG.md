@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.1 — 2026-10-16
+- Add backend Turnstile integration tests for hostname mismatch, wrong challenge action, and accepted legitimate lead with explicit consent (local mock only).
+- Display configured public business contact in customer page when available, without exposing internal owner credentials.
+
+
 ## 2.5.0 — 2026-10-16
 - Added owner Business Profile settings with lead intake readiness gates.
 - Created standalone public privacy and service terms pilot notices (not yet production legal policies).

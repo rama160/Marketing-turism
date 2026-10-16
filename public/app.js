@@ -23,6 +23,7 @@ async function publicReadiness(){
  try{const readiness=await api("public/readiness","GET",undefined,false);
   const enabled=readiness.accepting_leads===true;
   $("#leadSubmit").disabled=!enabled;
+  $("#publicBusinessContact").textContent=readiness.business_contact?("Kontak resmi usaha: "+readiness.business_contact):"Kontak resmi usaha belum dipublikasikan.";
   if(!enabled)say("#leadFeedback","Penerimaan permintaan guest belum aktif. Agen sedang menyiapkan informasi usaha dan keamanan.");
   else say("#leadFeedback","Form siap menerima permintaan. Mohon selesaikan verifikasi anti-bot.",true);
  }catch(e){$("#leadSubmit").disabled=true;say("#leadFeedback","Layanan belum siap menerima permintaan.");}

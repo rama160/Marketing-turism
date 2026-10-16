@@ -115,7 +115,7 @@ test("no unauthorized owner calls, no public leads without launch approval",asyn
  assert.equal((await request("/api/admin/finance","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/admin/analytics","GET",undefined,false)).httpStatus,401);
  assert.equal((await request("/api/public/leads","POST",{name:"Guest",consent:true},false)).httpStatus,503);
- assert.equal((await request("/api/health","GET",undefined,false)).version,"2.5.0");
+ assert.equal((await request("/api/health","GET",undefined,false )).version,"2.5.1");
  sqlite.close();
 });
 test("refund requires owner approval and actual external refund, no AI money movement",async()=>{
@@ -217,4 +217,22 @@ test("turnstile protection refuses missing token even if readiness is fully conf
  assert.equal(unverified.httpStatus,403,JSON.stringify(unverified));
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,0);
  sqlite.close();
+});
+
+test("Turnstile accepts only genuine matching host/action, and stores one consented lead",async()=>{
+ const {request,env,sqlite}=fixture();
+ sqlite.prepare("UPDATE business_profile SET legal_name='Test Tourism Company',public_contact='test@example.invalid',privacy_approved=1,refund_policy_approved=1").run();
+ env.PUBLIC_LEADS_ENABLED="true";env.TURNSTILE_SECRET="not-a-real-secret";
+ const body={name:"Guest For Test",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),message:"Please confirm snorkeling safety",consent:true,"cf-turnstile-response":"a-reasonably-long-turnstile-token"};
+ const oldFetch=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>new Response(JSON.stringify({success:true,hostname:"unrelated.example",action:"lead_enquiry"}),{status:200,headers:{"content-type":"application/json"}});
+  assert.equal((await request("/api/public/leads","POST",body,false)).httpStatus,403);
+  globalThis.fetch=async()=>new Response(JSON.stringify({success:true,hostname:"agent.invalid",action:"other_form"}),{status:200,headers:{"content-type":"application/json"}});
+  assert.equal((await request("/api/public/leads","POST",body,false)).httpStatus,403);
+  globalThis.fetch=async()=>new Response(JSON.stringify({success:true,hostname:"agent.invalid",action:"lead_enquiry"}),{status:200,headers:{"content-type":"application/json"}});
+  const good=await request("/api/public/leads","POST",body,false);
+  assert.equal(good.httpStatus,201,JSON.stringify(good));
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,1);
+ }finally{globalThis.fetch=oldFetch;sqlite.close();}
 });
