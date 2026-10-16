@@ -8,6 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
+if(health.version!=="2.1.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const cat=JSON.parse(await get("/api/public/catalog"));
 if(!Array.isArray(cat.items)||cat.items.length<5)throw Error("Public catalog missing items");
 const page=await get("/");
