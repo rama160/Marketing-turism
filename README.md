@@ -35,3 +35,5 @@ Workers AI draft model: `@cf/meta/llama-3.1-8b-instruct-fast` (active fast varia
 Reschedule yang telah disetujui operator diselesaikan dalam satu transaksi; pembayaran guest ditahan selama ada permintaan perubahan aktif.
 
 New: weekly draft generation via Cloudflare Cron Trigger (Monday 01:00 UTC / 09:00 Nusa Penida) produces 2 owner-review drafts. No autoposting or sending, and no advertising spend.
+
+Pre-deploy isolation guard: `scripts/preflight.mjs` blocks changes to Worker, D1 ID, shared domain routes or cron. This repository is not authorized to deploy over FinChat or Spenva.

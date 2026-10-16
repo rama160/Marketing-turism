@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify code
+      - name: Verify isolated deployment target and code
         run: npm run ci
       - name: Apply D1 migrations
         run: npx --yes wrangler@4 d1 migrations apply marketing-turism-db --remote

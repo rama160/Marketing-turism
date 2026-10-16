@@ -29,3 +29,6 @@ In Cloudflare configure D1 binding DB, Workers AI binding AI, ADMIN_TOKEN secret
 
 ## v2.4.0 autonomous-but-safe workflow
 A weekly Cloudflare cron on marketing-turism-agent generates two Website campaign DRAFT records using fixed, price-free templates. Owner reviews/publishes manually and adds real publication URL. Scheduled runs use unique run ID to prevent duplicates. Cron timezone is UTC: `0 1 * * 1` = Monday 09:00 Bali time.
+
+## Deployment isolation (permanent)
+Run `npm run ci` before any deploy. This performs `scripts/preflight.mjs` target checks for the dedicated Marketing Turism Worker and D1. Never set Wrangler `name` to `finchat-ai-gateway` or `spenva-play-billing`, and never change account-wide Workers subdomain or shared DNS routes.
