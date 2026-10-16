@@ -38,7 +38,7 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.2.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.2.1",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
@@ -285,7 +285,7 @@ async function route(req,env){
   const b=await parse(req),result={lead_id:lead.id,...leadScore(lead),reply:salesDraft(lead),status:"DRAFT_REVIEW",generator:"template"};
   if(env.AI&&b.use_ai===true){
    try{
-    const gen=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages:[
+    const gen=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
      {role:"system",content:"Anda AI sales wisata Nusa Penida. Buat draf jawaban singkat. Jangan mengarang atau memastikan harga, spot snorkeling, fasilitas, ketersediaan, keselamatan, cuaca, maupun pembayaran. Draf selalu perlu persetujuan pemilik."},
      {role:"user",content:"Produk "+lead.activity_id+", peserta "+lead.guests+", tanggal "+lead.requested_date+", pesan "+str(lead.message,400)+". Tanpa mengirim kontak pribadi ke model."}
     ]});
@@ -304,7 +304,7 @@ async function route(req,env){
   const title=activity==="SNORKELING_3_SPOTS"?"Snorkeling 3 Spot Nusa Penida":"Island Tour Nusa Penida";
   const output={title,caption:"Jelajahi Nusa Penida bersama mitra operator lokal. Hubungi kami untuk konfirmasi tanggal, fasilitas, ketersediaan dan harga yang sesuai jumlah peserta.",status:"DRAFT_REVIEW",generator:"template"};
   if(env.AI&&b.use_ai===true){
-   try{const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages:[{role:"system",content:"Buat caption wisata singkat bahasa Indonesia. Jangan mengarang harga, spot, fasilitas, ketersediaan, asuransi atau klaim keselamatan. Draft butuh persetujuan."},{role:"user",content:"Buat konten promosi "+title}]});if(result?.response){output.caption=str(result.response,1300);output.generator="workers-ai"}}catch(_){}
+   try{const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[{role:"system",content:"Buat caption wisata singkat bahasa Indonesia. Jangan mengarang harga, spot, fasilitas, ketersediaan, asuransi atau klaim keselamatan. Draft butuh persetujuan."},{role:"user",content:"Buat konten promosi "+title}]});if(result?.response){output.caption=str(result.response,1300);output.generator="workers-ai"}}catch(_){}
   }
   return json(output);
  }
