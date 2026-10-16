@@ -223,3 +223,6 @@ $("#generateContent").onclick=async()=>{
 };
 $("#copyMarketing").onclick=async()=>{if(!lastMarketing)return;try{await navigator.clipboard.writeText(lastMarketing);say("#adminFeedback","Teks draf tersalin.",true)}catch(err){say("#adminFeedback","Tidak dapat menyalin otomatis pada browser ini.")}};
 if(token){$("#adminArea").hidden=false;$("#unlockPanel").hidden=true;$("#adminContent").hidden=false;refresh()}
+
+// Offline static shell only; no API, guest data or credentials are cached.
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});

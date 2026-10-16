@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.5.1 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.6.0 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -38,3 +38,5 @@ Reschedule yang telah disetujui operator diselesaikan dalam satu transaksi; pemb
 New: weekly draft generation via Cloudflare Cron Trigger (Monday 01:00 UTC / 09:00 Nusa Penida) produces 2 owner-review drafts. No autoposting or sending, and no advertising spend.
 
 Pre-deploy isolation guard: `scripts/preflight.mjs` blocks changes to Worker, D1 ID, shared domain routes or cron. This repository is not authorized to deploy over FinChat or Spenva.
+
+PWA: SVG install icon, public static offline cache; no offline editing/booking or cached guest personal data. Turnstile CSP is consistent between Worker pilot and `public/_headers` for future deployment.

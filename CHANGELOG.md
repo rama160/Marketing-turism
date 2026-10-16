@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0 — 2026-10-16
+- Aligned Cloudflare Workers static-assets CSP with live pilot: allows Turnstile script and secure frame only.
+- Added privacy-safe PWA offline static shell, scalable SVG icon and install manifest metadata.
+- Offline cache expressly excludes guest PII, admin authentication, API endpoints and payment responses.
+
+
 ## 2.5.1 — 2026-10-16
 - Add backend Turnstile integration tests for hostname mismatch, wrong challenge action, and accepted legitimate lead with explicit consent (local mock only).
 - Display configured public business contact in customer page when available, without exposing internal owner credentials.

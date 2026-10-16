@@ -6,5 +6,12 @@
   "background_color": "#f5f8f7",
   "theme_color": "#103947",
   "description": "PWA agen pemasaran dan reservasi wisata Nusa Penida",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
