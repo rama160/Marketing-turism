@@ -1,6 +1,7 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
+import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -38,8 +39,9 @@ async function makePrice(db,b){
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.6.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.7.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
+ if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
   return json({items:rows.results,note:"Produk draft; harga dan jadwal final harus dikonfirmasi."});
@@ -245,6 +247,14 @@ async function route(req,env){
   await audit(db,"payable",payMatch[1],"PAID",{operator_id:payMatch[2],reference});
   return json({booking_id:payMatch[1],operator_id:payMatch[2],status:"PAID"});
  }
+ const cancelPreview=path.match(/^\/api\/admin\/bookings\/([^/]+)\/cancellation-preview$/);
+ if(cancelPreview&&method==="POST"){
+  const booking=await db.prepare("SELECT b.*,q.selling_price,COALESCE(s.service_date,q.requested_date) service_date FROM bookings b JOIN quotes q ON q.id=b.quote_id LEFT JOIN booking_schedule s ON s.booking_id=b.id WHERE b.id=?").bind(cancelPreview[1]).first();
+  if(!booking)return bad("Booking tidak ditemukan",404);
+  const payload=await parse(req),cause=str(payload.cause,32)||"GUEST";
+  const costs=await db.prepare("SELECT SUM(net_amount) n FROM booking_payables WHERE booking_id=? AND status='PAID'").bind(booking.id).first();
+  return json({preview:cancellationPreview({sellingPrice:booking.selling_price,serviceDate:booking.service_date,requestedOn:new Date().toISOString().slice(0,10),cause,nonRecoverableSupplierIdr:costs?.n??0}),notice:"Beban supplier lain dan hukum berlaku harus diperiksa pemilik."});
+ }
  const changeCreate=path.match(/^\/api\/admin\/bookings\/([^/]+)\/changes$/);
  if(changeCreate && method==="POST"){
   const booking=await db.prepare("SELECT b.*,q.selling_price FROM bookings b JOIN quotes q ON q.id=b.quote_id WHERE b.id=?").bind(changeCreate[1]).first();
@@ -252,9 +262,15 @@ async function route(req,env){
   const p=await db.prepare("SELECT COUNT(*) n FROM booking_changes WHERE booking_id=? AND status IN ('REQUESTED','APPROVED')").bind(booking.id).first();
   if(p?.n)return bad("Ada permintaan perubahan aktif",409);
   const b=await parse(req),data={change_type:str(b.change_type,16),reason:str(b.reason,500),requested_date:str(b.requested_date,10),refund_amount:number(b.refund_amount??0)};
-  validateChange(data,booking,booking.selling_price);
+  let policy=null;
+  if(data.change_type==="REFUND"){
+   const schedule=await db.prepare("SELECT COALESCE(s.service_date,q.requested_date) day FROM bookings bo JOIN quotes q ON q.id=bo.quote_id LEFT JOIN booking_schedule s ON s.booking_id=bo.id WHERE bo.id=?").bind(booking.id).first();
+   const paid=await db.prepare("SELECT SUM(net_amount) n FROM booking_payables WHERE booking_id=? AND status='PAID'").bind(booking.id).first();
+   policy=cancellationPreview({sellingPrice:booking.selling_price,serviceDate:schedule.day,requestedOn:new Date().toISOString().slice(0,10),cause:str(b.cancellation_cause,32)||"GUEST",nonRecoverableSupplierIdr:paid?.n??0});
+  }
+  validateChange(data,booking,booking.selling_price,policy?.refundIdr);
   const cid=uuid();
-  await db.prepare("INSERT INTO booking_changes(id,booking_id,change_type,requested_date,refund_amount,reason) VALUES(?,?,?,?,?,?)").bind(cid,booking.id,data.change_type,data.change_type==="RESCHEDULE"?data.requested_date:null,data.change_type==="REFUND"?data.refund_amount:0,data.reason).run();
+  await db.prepare("INSERT INTO booking_changes(id,booking_id,change_type,requested_date,refund_amount,reason,penalty_amount,cancellation_policy_version,cancellation_cause) VALUES(?,?,?,?,?,?,?,?,?)").bind(cid,booking.id,data.change_type,data.change_type==="RESCHEDULE"?data.requested_date:null,data.change_type==="REFUND"?data.refund_amount:0,data.reason,policy?.penaltyIdr||0,policy?.policyVersion||null,policy?.cause||null).run();
   await audit(db,"change",cid,"REQUESTED",{booking_id:booking.id,type:data.change_type});
   return json({id:cid,status:"REQUESTED"},201);
  }
@@ -262,6 +278,7 @@ async function route(req,env){
  if(changeMatch && method==="PATCH"){
   const b=await parse(req),next=str(b.status,18),c=await db.prepare("SELECT * FROM booking_changes WHERE id=? AND booking_id=?").bind(changeMatch[2],changeMatch[1]).first();
   if(!c)return bad("Permintaan perubahan tidak ditemukan",404);
+  if(next==="APPROVED"&&c.change_type==="REFUND"&&c.cancellation_cause==="GUEST"&&b.supplier_exposure_reviewed!==true)return bad("Owner wajib memeriksa biaya dan kewajiban operator sebelum menyetujui refund",422);
   allowedChangeTransition(c,next,b);
   // An approved reschedule has already changed booking_schedule, so it is executed immediately.
   // Leaving it APPROVED would permanently prevent handover.
@@ -278,7 +295,8 @@ async function route(req,env){
    }
   }
   if(next==="EXECUTED"){
-   stmts.push(db.prepare("UPDATE bookings SET status='REFUNDED',payment_status='REFUNDED' WHERE id=? AND status='REFUND_PENDING'").bind(c.booking_id));
+   if(c.refund_amount===0)stmts.push(db.prepare("UPDATE bookings SET status='CANCELLED' WHERE id=? AND status='REFUND_PENDING'").bind(c.booking_id));
+   else stmts.push(db.prepare("UPDATE bookings SET status='REFUNDED',payment_status='REFUNDED' WHERE id=? AND status='REFUND_PENDING'").bind(c.booking_id));
   }
   stmts.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"change",c.id,applied,JSON.stringify({booking_id:c.booking_id,external_reference:next==="EXECUTED"?str(b.external_reference,120):null})));
   await db.batch(stmts);
