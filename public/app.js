@@ -58,13 +58,13 @@ function renderOperators(){
   (o.status!=="VERIFIED"?'<button class="outline" data-action="verifyOperator" data-id="'+esc(o.id)+'">Tandai operator terverifikasi</button>':'<button class="outline" data-action="disableOperator" data-id="'+esc(o.id)+'">Nonaktifkan</button>')+'</div>').join("")||"<p>Belum ada operator.</p>";
 }
 function renderRates(){
- $("#rateList").innerHTML=data.rates.map(r=>'<div class="item"><div class="meta"><b>'+esc(r.operator_name)+' · '+esc(r.item_title)+'</b><span class="pill '+(r.verified?"good":"")+'">v'+r.version+' '+(r.verified?"Verified":"Draft")+'</span></div><div>'+money(r.net)+' / '+esc(r.unit)+(r.capacity?" · "+r.capacity+" kursi":"")+'</div><small>'+esc(r.active?"Tarif versi aktif":"Versi lama, tidak aktif")+'</small></div>').join("")||"<p>Belum ada tarif.</p>";
+ $("#rateList").innerHTML=data.rates.map(r=>'<div class="item"><div class="meta"><b>'+esc(r.operator_name)+' · '+esc(r.item_title)+' · '+esc(r.booking_mode||"LEGACY")+'</b><span class="pill '+(r.verified?"good":"")+'">v'+r.version+' '+(r.verified?"Verified":"Draft")+'</span></div><div>'+money(r.net)+' / '+esc(r.unit)+(r.capacity?" · "+r.capacity+" kursi":"")+(r.private_fixed_net?" · biaya eksklusif "+money(r.private_fixed_net):"")+(r.sharing_guaranteed?" · net per guest dijamin":"")+'</div><small>'+esc(r.active?"Tarif versi aktif":"Versi lama, tidak aktif")+'</small></div>').join("")||"<p>Belum ada tarif.</p>";
 }
 function renderLeads(){
- $("#leadList").innerHTML=data.leads.map(l=>'<div class="item"><div class="meta"><b>'+esc(l.name)+' · '+esc(l.activity_id)+'</b><span class="pill">'+esc(l.status)+'</span></div><small>'+esc(l.contact)+' · '+esc(l.requested_date)+' · '+l.guests+' guest</small><small>'+esc(l.message)+'</small><small>ID: '+esc(l.id)+'</small><div class="actions"><button class="outline" data-action="leadQualify" data-id="'+esc(l.id)+'">Kualifikasi</button><button class="outline" data-action="leadContact" data-id="'+esc(l.id)+'">Sudah dihubungi</button><button class="outline" data-action="salesAssist" data-id="'+esc(l.id)+'">Saran balasan AI</button></div></div>').join("")||"<p>Belum ada lead.</p>";
+ $("#leadList").innerHTML=data.leads.map(l=>'<div class="item"><div class="meta"><b>'+esc(l.name)+' · '+esc(l.activity_id)+' · '+esc(l.booking_mode||"LEGACY")+'</b><span class="pill">'+esc(l.status)+'</span></div><small>'+esc(l.contact)+' · '+esc(l.requested_date)+' · '+l.guests+' guest</small><small>'+esc(l.message)+'</small><small>ID: '+esc(l.id)+'</small><div class="actions"><button class="outline" data-action="leadQualify" data-id="'+esc(l.id)+'">Kualifikasi</button><button class="outline" data-action="leadContact" data-id="'+esc(l.id)+'">Sudah dihubungi</button><button class="outline" data-action="salesAssist" data-id="'+esc(l.id)+'">Saran balasan AI</button></div></div>').join("")||"<p>Belum ada lead.</p>";
 }
 function renderQuotes(){
- $("#quoteList").innerHTML=data.quotes.map(q=>'<div class="item"><div class="meta"><b>'+esc(q.activity_id)+' · '+q.guests+' guest</b><span class="pill '+(q.status==="APPROVED"?"good":"")+'">'+esc(q.status)+'</span></div><div>Harga guest '+money(q.selling_price)+' · Net '+money(q.net)+'</div><small>'+esc(q.requested_date)+' · '+esc(q.operator_name)+' · ID '+esc(q.id)+'</small><div class="actions">'+
+ $("#quoteList").innerHTML=data.quotes.map(q=>'<div class="item"><div class="meta"><b>'+esc(q.activity_id)+' · '+esc(q.booking_mode||"LEGACY")+' · '+q.guests+' guest</b><span class="pill '+(q.status==="APPROVED"?"good":"")+'">'+esc(q.status)+'</span></div><div>Harga guest '+money(q.selling_price)+' · Net '+money(q.net)+'</div><small>'+esc(q.requested_date)+' · '+esc(q.operator_name)+' · ID '+esc(q.id)+'</small><div class="actions">'+
   (q.status==="DRAFT"?'<button class="outline" data-action="confirmQuote" data-id="'+esc(q.id)+'">Operator konfirmasi tersedia</button>':"")+
   (q.status==="OPERATOR_CONFIRMED"?'<button class="outline" data-action="approveQuote" data-id="'+esc(q.id)+'">Setujui harga final</button>':"")+
   (q.status==="APPROVED"?'<button class="primary" data-action="bookQuote" data-id="'+esc(q.id)+'">Buat booking</button>':"")+'</div></div>').join("")||"<p>Belum ada quote.</p>";
@@ -92,18 +92,24 @@ $("#operatorForm").onsubmit=async e=>{
 };
 $("#rateForm").onsubmit=async e=>{
  e.preventDefault();const b=formValues(e.target);
- const unit=b.item_id==="ISLAND_TOUR_CAR"?"car":"person";
- const payload={operator_id:b.operator_id,item_id:b.item_id,unit,net:Number(b.net),capacity:unit==="car"?Number(b.capacity):null,verified:e.target.querySelector('[name="verified"]').checked};
+ const experience=["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(b.item_id);
+ const mode=experience?b.booking_mode:"LEGACY";
+ const unit=b.item_id==="ISLAND_TOUR_CAR"&&mode!=="SHARING"?"car":"person";
+ const payload={operator_id:b.operator_id,item_id:b.item_id,booking_mode:mode,unit,net:Number(b.net),
+  capacity:experience?Number(b.capacity):null,
+  private_fixed_net:mode==="PRIVATE"&&b.item_id==="SNORKELING_3_SPOTS"?Number(b.private_fixed_net):0,
+  sharing_guaranteed:mode==="SHARING"&&e.target.querySelector('[name="sharing_guaranteed"]').checked,
+  verified:e.target.querySelector('[name="verified"]').checked};
  if(payload.verified&&!confirm("Sudah diverifikasi langsung dengan operator? Harga yang salah dapat merugikan guest dan agen."))return;
  try{await api("admin/rates","POST",payload);await refresh();say("#adminFeedback","Versi tarif baru disimpan. Quote lama tetap memakai snapshot.",true)}catch(err){say("#adminFeedback",err.message)}
 };
 function quotePayload(){
  const b=formValues($("#quoteForm"));const numberOrZero=x=>Number(x)||0;
- return {operator_id:b.operator_id,activity_id:b.activity_id,guests:Number(b.guests),requested_date:b.requested_date,agency_costs:numberOrZero(b.agency_costs),payment_fee:numberOrZero(b.payment_fee),selling_price:b.selling_price?Number(b.selling_price):null,lead_id:b.lead_id||null,extras:{LUNCH:numberOrZero(b.lunch),BOAT_OUT:numberOrZero(b.boat_out),BOAT_RETURN:numberOrZero(b.boat_return)},extra_operators:{LUNCH:b.lunch_operator,BOAT_OUT:b.boat_out_operator,BOAT_RETURN:b.boat_return_operator}};
+ return {operator_id:b.operator_id,activity_id:b.activity_id,booking_mode:b.booking_mode,terms_accepted:$("#quoteForm [name=terms_accepted]").checked,guests:Number(b.guests),requested_date:b.requested_date,agency_costs:numberOrZero(b.agency_costs),payment_fee:numberOrZero(b.payment_fee),selling_price:b.selling_price?Number(b.selling_price):null,lead_id:b.lead_id||null,extras:{LUNCH:numberOrZero(b.lunch),BOAT_OUT:numberOrZero(b.boat_out),BOAT_RETURN:numberOrZero(b.boat_return)},extra_operators:{LUNCH:b.lunch_operator,BOAT_OUT:b.boat_out_operator,BOAT_RETURN:b.boat_return_operator}};
 }
 $("#previewQuote").onclick=async()=>{
  try{const p=(await api("admin/quotes/preview","POST",quotePayload())).preview;
-  $("#previewOutput").textContent="Total net: "+money(p.net)+"\nBatas aman: "+money(p.minimum)+"\nHarga rekomendasi matematika: "+money(p.recommendation)+"\n"+p.lines.map(l=>l.kind+": "+l.qty+" × "+money(l.unit_net)).join("\n")+"\n\nIni belum booking.";
+  $("#previewOutput").textContent="Pilihan: "+(p.booking_mode||"LEGACY")+"\nTotal net: "+money(p.net)+"\nBatas aman (seluruh biaya + margin ≥Rp100.000): "+money(p.minimum)+"\nMinimum rata-rata per guest: "+money(p.minimumPerGuest)+"\nHarga rekomendasi matematika: "+money(p.recommendation)+"\n"+p.lines.map(l=>l.kind+": "+l.qty+" × "+money(l.unit_net)).join("\n")+"\n\nIni belum booking.";
  }catch(err){$("#previewOutput").textContent=err.message}
 };
 $("#quoteForm").onsubmit=async e=>{
