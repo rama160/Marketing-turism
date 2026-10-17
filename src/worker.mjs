@@ -266,7 +266,7 @@ async function route(req,env){
   if(data.change_type==="REFUND"){
    const schedule=await db.prepare("SELECT COALESCE(s.service_date,q.requested_date) day FROM bookings bo JOIN quotes q ON q.id=bo.quote_id LEFT JOIN booking_schedule s ON s.booking_id=bo.id WHERE bo.id=?").bind(booking.id).first();
    const paid=await db.prepare("SELECT SUM(net_amount) n FROM booking_payables WHERE booking_id=? AND status='PAID'").bind(booking.id).first();
-   policy=cancellationPreview({sellingPrice:booking.selling_price,serviceDate:schedule.day,requestedOn:new Date().toISOString().slice(0,10),cause:str(b.cancellation_cause,32)||"GUEST",nonRecoverableSupplierIdr:paid?.n??0});
+   policy=cancellationPreview({sellingPrice:booking.selling_price,serviceDate:schedule.day,requestedOn:new Date().toISOString().slice(0,10),cause:str(b.cancellation_cause,32)||(/\b(weather|cuaca|unsafe|operator cancelled)\b/i.test(data.reason)?"OPERATOR_OR_SAFETY":"GUEST"),nonRecoverableSupplierIdr:paid?.n??0});
   }
   validateChange(data,booking,booking.selling_price,policy?.refundIdr);
   const cid=uuid();
