@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.9.0 — 2026-10-17
+- Guest and agent can select SHARING or PRIVATE for both snorkeling and island tours.
+- D1 migration 0007_booking_modes.sql saves lead/quote mode and mode-specific supplier net versions, independent of LEGACY rates.
+- Sharing requires verified per-person tariff with no-empty-seat-cost operator guarantee and confirmed vehicle/boat capacity.
+- Private accepts 1 guest when full exclusive operator costs plus agent/payment costs and >=IDR 100k contribution are covered. Snorkeling private requires a verified fixed boat/charter net fee.
+- Added pricing, end-to-end integration and separate rate-version tests; preserves legacy quote snapshots.
+- Operator selection/availability and guest acceptance remain human-controlled; no automatic seat assignment, guest payment or public lead intake activated.
+
+
 ## 2.8.0 — 2026-10-17
 - Added product-specific informational Nusa Penida landing pages for snorkeling and island tours, with distinct inclusions and booking caveats.
 - Added draft search/sitemap and OG metadata. Pages marked noindex while business and brand verification are incomplete.
