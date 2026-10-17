@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.9.1 — 2026-10-17
+- Enforce maximum seven verified passenger seats for an island-tour vehicle rate, including Sharing and Private; no operator can accidentally approve a vehicle cap above the agreed safe threshold.
+
+
 ## 2.9.0 — 2026-10-17
 - Guest and agent can select SHARING or PRIVATE for both snorkeling and island tours.
 - D1 migration 0007_booking_modes.sql saves lead/quote mode and mode-specific supplier net versions, independent of LEGACY rates.

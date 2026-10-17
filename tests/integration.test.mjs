@@ -301,3 +301,12 @@ test("shared and private operator tariff versioning cannot deactivate each other
  assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(b.id).active,1);
  sqlite.close();
 });
+
+test("vehicle rate never permits more than 7 passengers even if owner enters 30",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Strict Safe Capacity Operator");
+ const invalid=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",unit:"car",net:600000,capacity:8,verified:true});
+ assert.equal(invalid.httpStatus,400);
+ const allowed=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",unit:"car",net:600000,capacity:7,verified:true});
+ assert.equal(allowed.httpStatus,201);
+ sqlite.close();
+});
