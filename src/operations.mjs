@@ -16,13 +16,13 @@ export function payablesForLines(lines, rateOwners, expectedNet) {
  if (sum !== expectedNet) throw new OperationsError("Total utang operator tidak cocok dengan snapshot");
  return [...totals.entries()].map(([operator_id,net_amount])=>({operator_id,net_amount}));
 }
-export function validateChange(change, booking, sellingPrice) {
+export function validateChange(change, booking, sellingPrice, computedRefund = sellingPrice) {
  if (!["RESCHEDULE","CANCEL","REFUND"].includes(change.change_type)) throw new OperationsError("Jenis perubahan tidak sah");
  if (!change.reason || change.reason.trim().length < 5) throw new OperationsError("Alasan minimal 5 karakter");
  if (booking.status === "HANDED_OVER" || booking.status === "REFUNDED" || booking.status === "CANCELLED") throw new OperationsError("Booking sudah ditutup/diserahkan");
  if (change.change_type === "REFUND") {
   if (booking.payment_status !== "PAID") throw new OperationsError("Belum ada pembayaran untuk dikembalikan");
-  if (change.refund_amount !== sellingPrice) throw new OperationsError("MVP hanya mendukung pencatatan full refund; refund sebagian butuh perhitungan tersendiri");
+  if (!Number.isSafeInteger(change.refund_amount) || change.refund_amount < 0 || change.refund_amount !== computedRefund) throw new OperationsError("Nominal refund tidak sesuai dengan kalkulasi server");
  }
  if (change.change_type === "CANCEL" && booking.payment_status === "PAID") throw new OperationsError("Booking lunas wajib melalui workflow refund");
  if (change.change_type === "RESCHEDULE") {
