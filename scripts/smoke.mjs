@@ -17,7 +17,7 @@ if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));
 if(!Array.isArray(cat.items)||cat.items.length<5)throw Error("Public catalog missing items");
 const page=await get("/");
-if(!page.includes("Marketing")||!page.includes("leadForm"))throw Error("Guest page not served");
+if(!(page.includes("PENIVARA")||page.includes("Marketing"))||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
 await get("/api/admin/summary",401);
