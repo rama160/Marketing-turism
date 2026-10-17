@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.7.0
+# Test and Release Plan — v2.9.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -48,3 +48,12 @@ No real guest sales until privacy policy/business info, operator verification, b
 - New boat return draft price never becomes verified automatically.
 - Official business name stays separate from temporary marketing trade name; intake stays fail closed.
 - Manual social media content is not posted or sent by AI and QRIS stays marked unavailable.
+
+## New mode regression tests
+- Guest mode field must be present and one of SHARING/PRIVATE, persisted with consented lead.
+- Shared tour for one guest only with independently guaranteed per-person supplier tariff; otherwise reject.
+- Private car for one guest still charges full vehicle net and full administrative/payment expenses.
+- Private snorkeling for one guest adds a verified fixed exclusive boat charge to supplier payables.
+- Capacity above verified boat/car limit denied.
+- Rate versions for SHARING and PRIVATE remain separately active, old LEGACY snapshots remain unchanged.
+- No AI/market model can override positive >=Rp100k contribution for new modes.

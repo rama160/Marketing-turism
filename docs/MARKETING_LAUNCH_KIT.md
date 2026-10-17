@@ -37,3 +37,6 @@ For manual social post tracking, create a draft in the admin Campaigns tab, revi
 
 ## No cost promises
 No platform can guarantee leads; rankings/reach depend on quality, user interest and channel eligibility. Do not scrape marketplaces against their terms or buy paid ads without explicit budget approval. Social posting via Metricool or other partner requires connecting the owner's accounts and authorisation.
+
+## Package distinction for every approved channel
+Snorkeling: SHARING (join other guests, subject to guaranteed operator per-person rate and space) or PRIVATE (private boat/service even 1 guest, exclusive cost included). Island Tour: SHARING (shared car, subject to operator guaranteed seat cost and availability) or PRIVATE (exclusive car even 1 guest, full car net included). Never promise guaranteed shared departure without actual operator approval. Both snorkeling and island tour, if booked by one guest, must occur on different days. Do not advertise identical fixed prices across all modes. Never describe unverified Private snorkeling net as Rp350,000 total.

@@ -51,3 +51,11 @@ Run `npm run ci` before any deploy. This performs `scripts/preflight.mjs` target
 - Manual bank transfer only. QRIS has not been created. Do not request or record banking password/OTP or make up payee details.
 - Draft guest cancellation schedule 25% H-7+, 50% H-6..H-3, 75% H-2..H-1, 100% same day/no-show; read /cancellation.html. Review UU No.8 Tahun 1999 Art.18, supplier contracts and clearly obtain consent prior to accepting payment. Supplier cancellation and hazardous/weather cancellation are not guest voluntary forfeiture. Owner approves and verifies any manual bank refund, avoiding unilateral withholding and improper claims of guaranteed profit.
 - Create individual organic content drafts across Instagram, Facebook, TikTok, YouTube Shorts, WhatsApp Business, Google Business Profile, Telegram. Manually publish and enter actual URL. To enable API automation, establish permissions/connectors separately. Partner marketplace listings require separate account approval.
+
+## Sharing and Private operational instructions (v2.9.0)
+1. For each operator and activity create distinct SHARING and PRIVATE rate rows; never reuse an old LEGACY price as proof of the new service.
+2. SHARING requires actual operator agreement for net per passenger regardless of spare seats. If partner demands paying for the whole car/boat when underfilled, do not tick "sharing guaranteed" and do not issue a binding quote. If a common departure is manually arranged, get written confirmed participant roster, seat availability and financial exposure prior to approving.
+3. PRIVATE island tour can carry a single paying passenger but full exclusive vehicle net remains due. Private snorkeling can carry one passenger when boat/charter fixed fee and per-person charges are confirmed and included.
+4. Never sell beyond operator verified capacity. Sharing does NOT guarantee a departure or physical seat until operator acknowledges it.
+5. For all modes, quote floor includes verified supplier charges, agency costs, payment fees and >=Rp100,000 profit contribution per booking. Extra lunch and both boat legs priced per guest separately.
+6. Existing snapshot quotes and paid bookings are never re-priced. Operators still may be onboarded later when there are consenting leads; do not issue binding payment instructions in advance.

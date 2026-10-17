@@ -1,4 +1,4 @@
-# PRD — AI Tourism Marketing & Booking Agent v2.7.0
+# PRD — AI Tourism Marketing & Booking Agent v2.9.0
 ## Goal
 Support an independent travel sales agent in Nusa Penida to attract consenting leads, qualify guests, quote tourism activities without loss, collect guest payments via verified manual processes, hand over activities to local operator, and retain auditable records.
 
@@ -47,3 +47,6 @@ Public lead collection OFF by default pending legal/privacy readiness. Admin bea
 
 ## Success metrics
 Qualified leads; booked and paid conversions; margin contribution; failed quotes; operator response time; refunds and safety incidents; approved marketing content performance.
+
+## Guest-selectable SHARING/PRIVATE (2.9.0)
+Both snorkeling 3 spots and island tour have SHARING (guest can join other parties) and PRIVATE (exclusive activity even with 1 guest). The public form and admin quote must record the selected mode. Provider fare and safe capacity must be verified for that specific mode; do not infer sharing group occupancy. Shared per-person supplier rates must explicitly guarantee there is no cost for unused seats. Private island tour charges a whole vehicle; private snorkeling requires verified person net plus an explicit per-booking exclusive boat/service charge. Selling floor must cover every verified provider cost, agency expenses, payment fees, and >=Rp100,000 contribution per booking. Legacy price rows remain unchanged. No binding guest booking/payment without operator availability confirmation.
