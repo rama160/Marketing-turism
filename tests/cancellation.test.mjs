@@ -1,0 +1,11 @@
+import test from "node:test";import assert from "node:assert/strict";import {cancellationPreview} from "../src/cancellation.mjs";
+const p=(date,cause="GUEST",cost=null)=>cancellationPreview({sellingPrice:2000000,serviceDate:"2026-11-20",requestedOn:date,cause,nonRecoverableSupplierIdr:cost});
+test("7+ days: 25% forfeited",()=>{const x=p("2026-11-10");assert.equal(x.penaltyIdr,500000);assert.equal(x.refundIdr,1500000);});
+test("6 to 3 days: 50% forfeited",()=>{assert.equal(p("2026-11-15").penaltyIdr,1000000);assert.equal(p("2026-11-17").penaltyIdr,1000000);});
+test("2-1 days: 75% forfeited",()=>{assert.equal(p("2026-11-18").refundIdr,500000);assert.equal(p("2026-11-19").refundIdr,500000);});
+test("same day, no show, overdue: 100%",()=>{assert.equal(p("2026-11-20").refundIdr,0);assert.equal(p("2026-11-21").refundIdr,0);});
+test("operator/safety cancellation requires full refund review",()=>{const x=p("2026-11-20","OPERATOR_OR_SAFETY");assert.equal(x.refundIdr,2000000);assert.equal(x.needsOwnerReview,true);});
+test("never claim profitable if supplier nonrecoverable costs exceed penalty",()=>{const x=p("2026-11-10","GUEST",750000);assert.equal(x.estimatedContributionAfterSupplier,-250000);});
+test("no hardcoded assumption about supplier recoverability",()=>assert.equal(p("2026-11-10").estimatedContributionAfterSupplier,null));
+test("exact date validation",()=>assert.throws(()=>cancellationPreview({sellingPrice:100000,serviceDate:"2027-02-30",requestedOn:"2026-11-01"})));
+test("guest cancellation percentages are nondecreasing near activity date",()=>{let last=0;for(const d of ["2026-11-01","2026-11-14","2026-11-17","2026-11-19","2026-11-20"]){const b=p(d).penaltyBps;assert.ok(b>=last);last=b;}});

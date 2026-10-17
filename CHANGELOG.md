@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.7.0 — 2026-10-17
+- Propose public trade branding Penivara Experiences, preserve original repository and Cloudflare targets.
+- User confirmed fast boat RETURN net Rp150,000 per guest per way; add draft supplier rate not a verified supplier rate.
+- Add draft graduated cancellation terms: H-7+ 25%, H-6..H-3 50%, H-2..H-1 75%, H-day/no-show 100%, with separate operator/safety cases.
+- Deterministic cancellation preview, partial refund audit metadata and explicit owner supplier-cost review. No automatic transfer or false payout.
+- Bank transfer supported as manual receipt confirmation; QRIS remains unconfigured.
+- Expand manual campaign draft channels and publishable attribution links without paid promotions or automatic messaging.
+- Business identity, legal/privacy signoff, real operators and channel account permissions are still required for launch; leads remain OFF.
+
+
 ## 2.6.0 — 2026-10-16
 - Aligned Cloudflare Workers static-assets CSP with live pilot: allows Turnstile script and secure frame only.
 - Added privacy-safe PWA offline static shell, scalable SVG icon and install manifest metadata.

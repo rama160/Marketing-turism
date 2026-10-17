@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.5.0
+# Test and Release Plan — v2.7.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -40,3 +40,11 @@
 10. End-to-end real guest journey, including safety and incident escalation.
 ## Release gates
 No real guest sales until privacy policy/business info, operator verification, bank settlement path and refund handling approved.
+
+## New cancellation and sales tests
+- Exact cutoff H-7, H-6..3, H-2..1, H-day; penalties never decrease closer to visit.
+- Operator cancellation/unsafe condition does not apply guest forfeiture.
+- Refund preview cannot override net margin or imply supplier fees refunded; owner must inspect exposure.
+- New boat return draft price never becomes verified automatically.
+- Official business name stays separate from temporary marketing trade name; intake stays fail closed.
+- Manual social media content is not posted or sent by AI and QRIS stays marked unavailable.

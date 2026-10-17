@@ -81,7 +81,7 @@ function renderFinance(){
  $("#financeList").innerHTML='<h4>Utang kepada operator ('+pay.length+')</h4>'+
  pay.map(p=>'<div class="item"><div class="meta"><b>'+esc(p.operator_name)+'</b><span class="pill '+(p.status==="PAID"?"good":"")+'">'+esc(p.status)+'</span></div><div>'+money(p.net_amount)+'</div><small>Booking: '+esc(p.booking_id)+' · '+esc(p.activity_id)+'</small><div class="actions">'+(p.status==="DUE"?'<button class="outline" data-action="payOperator" data-id="'+esc(p.booking_id)+'" data-operator="'+esc(p.operator_id)+'">Verifikasi transfer net operator</button>':"")+'</div></div>').join("")+
  '<h4>Reschedule, Pembatalan, Refund ('+changes.length+')</h4>'+
- changes.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.change_type)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="EXECUTED"?"good":"")+'">'+esc(c.status)+'</span></div><small>Booking: '+esc(c.booking_id)+' · '+esc(c.reason)+'</small><small>'+(c.change_type==="RESCHEDULE"?"Tanggal baru: "+esc(c.requested_date):c.change_type==="REFUND"?"Refund penuh: "+money(c.refund_amount):"Pembatalan tanpa pembayaran")+'</small><div class="actions">'+
+ changes.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.change_type)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="EXECUTED"?"good":"")+'">'+esc(c.status)+'</span></div><small>Booking: '+esc(c.booking_id)+' · '+esc(c.reason)+'</small><small>'+(c.change_type==="RESCHEDULE"?"Tanggal baru: "+esc(c.requested_date):c.change_type==="REFUND"?"Estimasi refund: "+money(c.refund_amount)+" · Potongan: "+money(c.penalty_amount||0):"Pembatalan tanpa pembayaran")+'</small><div class="actions">'+
  (c.status==="REQUESTED"?'<button class="outline" data-action="approveChange" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'" data-type="'+esc(c.change_type)+'">Setujui</button><button class="outline" data-action="rejectChange" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'">Tolak</button>':"")+
  (c.status==="APPROVED"&&c.change_type==="REFUND"?'<button class="primary" data-action="executeRefund" data-id="'+esc(c.id)+'" data-booking="'+esc(c.booking_id)+'">Verifikasi refund terkirim</button>':"")+'</div></div>').join("")||
  '<p>Tidak ada kewajiban/perubahan tercatat.</p>';
@@ -129,7 +129,7 @@ $("#businessForm").onsubmit=async e=>{
  catch(e){say("#adminFeedback",e.message)}
 };
 function renderCampaigns(){
- $("#campaignList").innerHTML=data.campaigns.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div><small>'+esc(c.caption.slice(0,230))+'</small><div class="actions">'+(c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+(c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+'</div><small>ID tracking: '+esc(c.id)+'</small></div>').join("")||"<p>Belum ada kampanye.</p>";
+ $("#campaignList").innerHTML=data.campaigns.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div><small>'+esc(c.caption.slice(0,230))+'</small><div class="actions">'+(c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+(c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+(c.status==="PUBLISHED"?'<button class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+'</div><small>ID tracking: '+esc(c.id)+'</small></div>').join("")||"<p>Belum ada kampanye.</p>";
 }
 function renderMarket(){
  $("#marketList").innerHTML=data.market.map(m=>'<div class="item"><div class="meta"><b>'+esc(m.platform)+' · '+esc(m.activity_id)+'</b><span class="pill">'+esc(m.verified?"Diperiksa":"Belum diverifikasi")+'</span></div><div>'+money(m.price)+' / '+esc(m.unit)+(m.group_size?" ('+m.group_size+' orang)":"")+'</div><small>Diamati '+esc(m.observed_on)+' · '+esc(m.inclusions)+'</small><small>'+esc(m.source_url)+'</small></div>').join("")||"<p>Belum ada referensi harga.</p>";
@@ -150,6 +150,7 @@ document.addEventListener("click",async e=>{
    const res=await api("admin/leads/"+encodeURIComponent(id)+"/assistant","POST",{use_ai:true});
    lastSales=res.reply;$("#salesOutput").textContent="Skor lead "+res.score+"/100 ("+res.stage+"), generator "+res.generator+"\n\n"+res.reply+"\n\nDraf untuk diperiksa sebelum menghubungi guest.";changeTab("leads");
   }
+  if(a==="copyCampaignLink"){const url=location.origin+"/?campaign="+encodeURIComponent(id);await navigator.clipboard.writeText(url);say("#adminFeedback","Tautan kampanye tersalin, publikasi dilakukan manual.",true)}
   if(a==="approveCampaign"||a==="publishCampaign"){
    const status=a==="approveCampaign"?"APPROVED":"PUBLISHED",payload={status,owner_confirmed:true};
    if(status==="PUBLISHED"){
@@ -179,10 +180,16 @@ document.addEventListener("click",async e=>{
    const current=data.bookings.find(x=>x.id===id),kind=prompt("Jenis perubahan: RESCHEDULE / CANCEL / REFUND",current?.payment_status==="PAID"?"REFUND":"RESCHEDULE");
    if(!kind)return;const change_type=kind.toUpperCase().trim();
    const reason=prompt("Alasan dan konteks permintaan:");if(!reason)return;
-   let requested_date=null,refund_amount=0;
+   let requested_date=null,refund_amount=0,cancellation_cause=null;
    if(change_type==="RESCHEDULE"){requested_date=prompt("Tanggal baru YYYY-MM-DD",current?.requested_date||"");if(!requested_date)return;}
-   if(change_type==="REFUND")refund_amount=current.selling_price;
-   await api("admin/bookings/"+encodeURIComponent(id)+"/changes","POST",{change_type,reason,requested_date,refund_amount});
+   if(change_type==="REFUND"){
+    const c=prompt("Penyebab: GUEST (batal sendiri) atau OPERATOR_OR_SAFETY (operator batal/tidak aman)","GUEST");
+    if(!c)return;cancellation_cause=c.trim().toUpperCase();
+    const resp=await api("admin/bookings/"+encodeURIComponent(id)+"/cancellation-preview","POST",{cause:cancellation_cause});
+    const p=resp.preview;refund_amount=p.refundIdr;
+    if(!confirm("Estimasi kebijakan "+p.label+"\nPenalti: "+money(p.penaltyIdr)+"\nRefund: "+money(p.refundIdr)+"\nStatus biaya mitra harus ditinjau manual.\n\nBuat permintaan refund untuk diperiksa?"))return;
+   }
+   await api("admin/bookings/"+encodeURIComponent(id)+"/changes","POST",{change_type,reason,requested_date,refund_amount,cancellation_cause});
   }
   if(a==="payOperator"){
    const ref=prompt("Masukkan referensi transfer net yang SUDAH diterima operator:");if(!ref)return;
@@ -198,12 +205,16 @@ document.addEventListener("click",async e=>{
     payload.operator_acknowledged=true;
    }
    if(next==="APPROVED"&&kind==="REFUND"){
-    if(!confirm("Menyetujui FULL refund? Pembayaran belum dianggap terkirim sampai transfer diverifikasi."))return;
+    if(!confirm("Anda sudah meninjau total biaya operator, pembayaran supplier yang tak dapat kembali, biaya transaksi, dan kewajiban hukum? Menyetujui estimasi refund bukan mengirim dana."))return;
+    payload.supplier_exposure_reviewed=true;
     payload.owner_confirmed=true;
    }
    if(next==="EXECUTED"){
-    const ref=prompt("Referensi transaksi refund BANK yang sudah terkirim:");if(!ref)return;
-    if(!confirm("Dana refund sungguh sudah keluar/settled dan tidak hanya bukti unggahan?"))return;
+    const existing=(data.finance?.changes||[]).find(x=>x.id===id);
+    const isZero=existing?.refund_amount===0;
+    const ref=isZero?"NO_REFUND_DUE":prompt("Referensi transaksi refund BANK yang SUDAH terkirim:");
+    if(!ref)return;
+    if(!confirm(isZero?"Konfirmasi bahwa refund Rp0 sesuai kebijakan yang sudah disetujui guest, tanpa transaksi pengembalian.":"Dana refund sungguh sudah keluar/settled dan tidak hanya bukti unggahan?"))return;
     payload.owner_confirmed=true;payload.external_reference=ref;
    }
    await api("admin/bookings/"+encodeURIComponent(booking)+"/changes/"+encodeURIComponent(id),"PATCH",payload);

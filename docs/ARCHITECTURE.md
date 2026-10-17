@@ -1,4 +1,4 @@
-# Technical Architecture v2.5.0
+# Technical Architecture v2.7.0
 
 ## Components
 Public HTML/CSS/JS PWA (public/) -> Cloudflare Worker (src/worker.mjs) -> D1 SQL (database/migrations/0001_init.sql).
@@ -59,3 +59,8 @@ No guest email/phone is exposed by public APIs.
 Dedicated D1 database marketing-turism-db, Cloudflare Worker marketing-turism-agent, workers.dev pilot URL.
 Assets currently served by Worker modules for live pilot and via Wrangler assets on future deployments; keep origin consistent.
 No VPS. Quotas of Cloudflare Free tier apply. Costs from payment processors and messaging must be evaluated.
+
+## Cancellation and trading brand 2.7.0
+Canonical calculation in `src/cancellation.mjs`; policy ID stays with change records. D1 migration 0006 adds trade_brand to business_profile, audit columns to booking_changes, and DRAFT boat return net rate.
+Temporary public brand name is separate from legally accountable business name; readiness gate still needs legal name and public contact. Manual bank transfer only, QRIS not provisioned; owner review of supplier exposure and transaction required.
+Marketing channels merely label owner-created drafts. There is no account connector granting automated posting. Do not claim account reach or impressions from external media.

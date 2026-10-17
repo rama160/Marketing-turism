@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){

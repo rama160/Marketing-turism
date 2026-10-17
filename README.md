@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.6.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.7.0 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -40,3 +40,17 @@ New: weekly draft generation via Cloudflare Cron Trigger (Monday 01:00 UTC / 09:
 Pre-deploy isolation guard: `scripts/preflight.mjs` blocks changes to Worker, D1 ID, shared domain routes or cron. This repository is not authorized to deploy over FinChat or Spenva.
 
 PWA: SVG install icon, public static offline cache; no offline editing/booking or cached guest personal data. Turnstile CSP is consistent between Worker pilot and `public/_headers` for future deployment.
+
+## Penivara Experiences — provisional trade brand
+Public facing trade brand draft is **Penivara Experiences**, tagline **Discover Nusa Penida, Your Way**. This is not the business legal name, trademark clearance, registration or verified social handle. Original GitHub repository, Worker, secrets and D1 target remain unchanged.
+
+## Payment, providers and lead conversion
+Transfer bank is manual only; confirm real funds directly before marking PAID. QRIS is NOT CONFIGURED and no QR code/account may be invented. New guest enquiries may be collected when separately authorised, while operators can be assigned and contacted later. No binding price/payment before validated provider, availability and safe capacity of 6 or 7 as applicable.
+
+Boat return owner-confirmed draft net Rp150,000/person/way; draft operator rates must be confirmed with each supplier before quoting.
+
+## DRAFT cancellation policy
+Voluntary guest cancellations (after explicit consent): H-7+ 25%, H-6..H-3 50%, H-2..H-1 75%, on date/no-show 100% proposed forfeiture. View /cancellation.html. Supplier cancellation/unsafe operations receive separate, fair review; customer rights prevail. Algorithm suggests an amount only; owner checks unrecoverable supplier fees, laws and bank transactions. Do not apply penalty unilaterally or to historic quotations without agreement. Partial refund bookkeeping requires documented payment confirmation. Live customer sales remain disabled until the legal/business information and real operators are ready.
+
+## Marketing channels
+Draft and manually publish to Instagram, Facebook, TikTok, YouTube Shorts, WhatsApp Business/Status, Google Business Profile, Telegram and travel marketplaces if legitimately registered. Platform logins/permissions and media are NOT connected, no automated cross-posting or ad spend. Published campaigns can supply an attributable guest link when website form is enabled.

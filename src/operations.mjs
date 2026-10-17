@@ -38,7 +38,7 @@ export function allowedChangeTransition(change, next, b) {
   return true;
  }
  if (change.status === "APPROVED" && next === "EXECUTED" && change.change_type === "REFUND") {
-  if (b.owner_confirmed !== true || String(b.external_reference||"").trim().length < 5) throw new OperationsError("Bukti refund melalui bank/provider wajib diverifikasi oleh pemilik");
+  if (b.owner_confirmed !== true || (change.refund_amount !== 0 && String(b.external_reference||"").trim().length < 5) || (change.refund_amount === 0 && b.external_reference !== "NO_REFUND_DUE")) throw new OperationsError("Bukti refund melalui bank/provider wajib diverifikasi oleh pemilik");
   return true;
  }
  throw new OperationsError("Perubahan status tidak valid");

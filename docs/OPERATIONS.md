@@ -41,3 +41,13 @@ Run `npm run ci` before any deploy. This performs `scripts/preflight.mjs` target
 5. Verify operator contracts, correct tariff and capacity before creating any sale. After all protections are in place, set Worker variable `PUBLIC_LEADS_ENABLED=true` on the dedicated tourism Worker. Default stays FALSE. Test consent, Turnstile, booking, payment and refunds with permitted test data before receiving real funds.
 6. Turnstile siteverify checks hostname and lead_enquiry action; fail closed if verifier is unavailable or invalid.
 7. Do not change other workers or account-wide DNS. Do not claim this pilot privacy text meets legal requirements for a full commercial launch.
+
+## 2.7.0 Penivara Experiences setup
+- The trade name Penivara Experiences is a provisional branding suggestion; search DJKI and platform handles before launch and obtain owner confirmation.
+- Do not modify the dedicated worker/database names or shared Cloudflare Workers subdomain.
+- Operator details may wait until a guest enquiry; do not quote or collect guest money until verified price, capacity, time and availability are confirmed.
+- Owner says 6–7 passengers car: actual max seats is verified per operator and vehicle, cannot assume 7 without evidence.
+- Boat net Rp150,000/guest/leg both ways, still unverified supplier DRAFT. Lunch net Rp150,000/guest; island car net Rp600,000/car; snorkeling net Rp350,000/guest; markup ≥Rp100,000 per booking after costs checks.
+- Manual bank transfer only. QRIS has not been created. Do not request or record banking password/OTP or make up payee details.
+- Draft guest cancellation schedule 25% H-7+, 50% H-6..H-3, 75% H-2..H-1, 100% same day/no-show; read /cancellation.html. Review UU No.8 Tahun 1999 Art.18, supplier contracts and clearly obtain consent prior to accepting payment. Supplier cancellation and hazardous/weather cancellation are not guest voluntary forfeiture. Owner approves and verifies any manual bank refund, avoiding unilateral withholding and improper claims of guaranteed profit.
+- Create individual organic content drafts across Instagram, Facebook, TikTok, YouTube Shorts, WhatsApp Business, Google Business Profile, Telegram. Manually publish and enter actual URL. To enable API automation, establish permissions/connectors separately. Partner marketplace listings require separate account approval.

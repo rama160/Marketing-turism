@@ -45,12 +45,12 @@ async function route(req,env){
   return json({items:rows.results,note:"Produk draft; harga dan jadwal final harus dikonfirmasi."});
  }
  if(path==="/api/public/readiness"&&method==="GET"){
-  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved FROM business_profile WHERE id=1").first();
+  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
   const live=env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
-  return json({accepting_leads:!!live,business_name:info?.legal_name||"",business_contact:info?.public_contact||"",privacy_page:"/privacy.html",terms_page:"/terms.html",turnstile_required:true});
+  return json({accepting_leads:!!live,business_name:info?.legal_name||"",trade_brand:info?.trade_brand||"Penivara Experiences",payment_methods:{bank_transfer:"manual_only",qris:"NOT_CONFIGURED"},business_contact:info?.public_contact||"",privacy_page:"/privacy.html",terms_page:"/terms.html",turnstile_required:true});
  }
  if(path==="/api/public/leads"&&method==="POST"){
-  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved FROM business_profile WHERE id=1").first();
+  const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
   if(env.PUBLIC_LEADS_ENABLED!=="true"||!env.TURNSTILE_SECRET||!info?.legal_name||!info?.public_contact||info.privacy_approved!==1||info.refund_policy_approved!==1)return bad("Form guest belum siap menerima data; hubungi kontak resmi agen",503);
   const b=await parse(req);
   if(b.website)return json({accepted:true});
@@ -89,11 +89,11 @@ async function route(req,env){
    return json({business:info});
   }
   if(method==="PATCH"){
-   const b=await parse(req),name=str(b.legal_name,150),contact=str(b.public_contact,150);
+   const b=await parse(req),name=str(b.legal_name,150),contact=str(b.public_contact,150),brand=str(b.trade_brand,150)||"Penivara Experiences";
    if(name.length<3||contact.length<5)return bad("Identitas bisnis dan kontak resmi wajib diisi");
    if(!/^([+0-9][0-9 -]{6,}|[^@\s]+@[^@\s]+\.[^@\s]+)$/.test(contact))return bad("Kontak harus berupa telepon atau email resmi");
    const privacy=b.privacy_approved===true?1:0,refund=b.refund_policy_approved===true?1:0;
-   await db.prepare("UPDATE business_profile SET legal_name=?,public_contact=?,privacy_approved=?,refund_policy_approved=?,updated_at=CURRENT_TIMESTAMP WHERE id=1").bind(name,contact,privacy,refund).run();
+   await db.prepare("UPDATE business_profile SET legal_name=?,public_contact=?,privacy_approved=?,refund_policy_approved=?,trade_brand=?,updated_at=CURRENT_TIMESTAMP WHERE id=1").bind(name,contact,privacy,refund,brand).run();
    await audit(db,"business","1","PROFILE_UPDATED",{privacy,refund});
    return json({updated:true,acceptance_requires_cloudflare_flag:true});
   }
@@ -151,10 +151,11 @@ async function route(req,env){
   if(method==="GET")return json({items:(await db.prepare("SELECT q.*,o.name operator_name FROM quotes q JOIN operators o ON o.id=q.operator_id ORDER BY q.created_at DESC LIMIT 300").all()).results});
   if(method==="POST"){
    const b=await parse(req);
+   if(env.PUBLIC_LEADS_ENABLED==="true"&&b.terms_accepted!==true)return bad("Guest wajib menyetujui ketentuan yang diberikan sebelum penawaran disimpan",422);
    if(!dateOK(b.requested_date)||b.requested_date<new Date().toISOString().slice(0,10))return bad("Tanggal wisata tidak valid");
    const quote=await makePrice(db,b);if(quote.sellingPrice===null)return bad("Harga jual harus disetujui owner");
    const id=uuid();
-   await db.prepare("INSERT INTO quotes(id,lead_id,operator_id,activity_id,guests,requested_date,net,minimum,selling_price,snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(id,b.lead_id||null,quote.operator_id,quote.activity_id,quote.guests,b.requested_date,quote.net,quote.minimum,quote.sellingPrice,JSON.stringify(quote)).run();
+   await db.prepare("INSERT INTO quotes(id,lead_id,operator_id,activity_id,guests,requested_date,net,minimum,selling_price,snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(id,b.lead_id||null,quote.operator_id,quote.activity_id,quote.guests,b.requested_date,quote.net,quote.minimum,quote.sellingPrice,JSON.stringify({...quote,cancellation_policy_version:CANCELLATION_POLICY_VERSION,guest_terms_acknowledged:b.terms_accepted===true,payment_method:"BANK_TRANSFER_MANUAL",qris_available:false})).run();
    await audit(db,"quote",id,"CREATE",{status:"DRAFT"});return json({id,quote,status:"DRAFT"},201);
   }
  }
@@ -299,7 +300,7 @@ async function route(req,env){
   if(method==="GET")return json({items:(await db.prepare("SELECT * FROM campaign_drafts ORDER BY created_at DESC LIMIT 200").all()).results});
   if(method==="POST"){
    const b=await parse(req),activity=str(b.activity_id,80),platform=str(b.platform,50),caption=str(b.caption,2500);
-   if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["Instagram","Facebook","TikTok","Website","WhatsApp Status"].includes(platform)||caption.length<20)return bad("Konten kampanye tidak lengkap");
+   if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["Instagram","Facebook","TikTok","Website","WhatsApp Status","WhatsApp Business","Google Business Profile","YouTube Shorts","Telegram","Tripadvisor","GetYourGuide (mitra)","Klook (mitra)"].includes(platform)||caption.length<20)return bad("Konten kampanye tidak lengkap");
    const id=uuid();await db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption) VALUES(?,?,?,?)").bind(id,activity,platform,caption).run();
    await audit(db,"campaign",id,"DRAFT_CREATED",{platform,activity});return json({id,status:"DRAFT"},201);
   }

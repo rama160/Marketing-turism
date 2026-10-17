@@ -1,11 +1,11 @@
 {
-  "name": "Marketing Turism Agent",
-  "short_name": "Turism Agent",
+  "name": "Penivara Experiences",
+  "short_name": "Penivara",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f8f7",
   "theme_color": "#103947",
-  "description": "PWA agen pemasaran dan reservasi wisata Nusa Penida",
+  "description": "Explore Nusa Penida snorkeling and island tours with verified local operators.",
   "icons": [
     {
       "src": "/icon.svg",
