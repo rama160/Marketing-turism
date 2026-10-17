@@ -19,13 +19,14 @@ async function owner(req,env){
 async function audit(db,kind,key,action,detail={}){
  await db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),kind,key,action,JSON.stringify(detail)).run();
 }
-async function activeRate(db,operator,item){
- return db.prepare("SELECT r.* FROM rates r JOIN operators o ON o.id=r.operator_id WHERE r.operator_id=? AND r.item_id=? AND r.active=1 AND r.verified=1 AND o.status='VERIFIED' ORDER BY r.version DESC LIMIT 1").bind(operator,item).first();
+async function activeRate(db,operator,item,bookingMode="LEGACY"){
+ return db.prepare("SELECT r.* FROM rates r JOIN operators o ON o.id=r.operator_id WHERE r.operator_id=? AND r.item_id=? AND r.booking_mode=? AND r.active=1 AND r.verified=1 AND o.status='VERIFIED' ORDER BY r.version DESC LIMIT 1").bind(operator,item,bookingMode).first();
 }
 async function makePrice(db,b){
- const a=str(b.activity_id,80),op=str(b.operator_id,80),n=number(b.guests,1,100);
+ const a=str(b.activity_id,80),op=str(b.operator_id,80),n=number(b.guests,1,100),mode=str(b.booking_mode,16)||"LEGACY";
+ if(!["LEGACY","SHARING","PRIVATE"].includes(mode))throw new PricingError("Mode paket tidak valid");
  if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(a)||!n)throw Error("Aktivitas atau guest tidak valid");
- const base=await activeRate(db,op,a),extras=[];
+ const base=await activeRate(db,op,a,mode),extras=[];
  for(const item of ["LUNCH","BOAT_OUT","BOAT_RETURN"]){
   const q=number(b.extras?.[item]??0,0,n);
   if(q===null)throw Error("Jumlah tambahan tidak valid");
@@ -33,18 +34,18 @@ async function makePrice(db,b){
  }
  const cost=number(b.agency_costs??0),fee=number(b.payment_fee??0),sell=b.selling_price==null?null:number(b.selling_price,1);
  if(cost===null||fee===null||(b.selling_price!=null&&sell===null))throw Error("Biaya/harga tidak valid");
- const p=calculate({guests:n,base,extras,agencyCosts:cost,paymentFee:fee,sellingPrice:sell});
- return {...p,activity_id:a,operator_id:op,guests:n,recommendation:aiSuggestion(p,number(b.market_reference,1)||null)};
+ const p=calculate({guests:n,base,extras,agencyCosts:cost,paymentFee:fee,sellingPrice:sell,bookingMode:mode});
+ return {...p,activity_id:a,operator_id:op,guests:n,booking_mode:mode,recommendation:aiSuggestion(p,number(b.market_reference,1)||null),fulfillment:mode==="SHARING"?"OPERATOR_PER_PERSON_GUARANTEE_REQUIRED":mode==="PRIVATE"?"EXCLUSIVE_OPERATOR_AVAILABILITY_REQUIRED":"LEGACY_QUOTE"};
 }
 async function route(req,env){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.8.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"2.9.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
-  return json({items:rows.results,note:"Produk draft; harga dan jadwal final harus dikonfirmasi."});
+  return json({items:rows.results,modes:[{id:"SHARING",description:"Bisa digabung dengan guest lain; operator menjamin tarif per peserta tanpa minimal kuota yang dibebankan ke agen."},{id:"PRIVATE",description:"Perjalanan eksklusif mulai satu guest, selama biaya tetap, tambahan dan margin aman terpenuhi."}],note:"Snorkeling dan island tour tidak dilaksanakan pada hari yang sama. Harga dan jadwal final harus dikonfirmasi."});
  }
  if(path==="/api/public/readiness"&&method==="GET"){
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
@@ -65,8 +66,8 @@ async function route(req,env){
    const v=await verified.json();
    if(v.success!==true||v.hostname!==u.hostname||v.action!=="lead_enquiry")return bad("Verifikasi anti-bot tidak sah",403);
   }catch(_){return bad("Verifikasi anti-bot sementara tidak tersedia",503);}
-  const name=str(b.name,100),contact=str(b.contact,100),activity=str(b.activity_id,80),n=number(b.guests,1,100),day=str(b.requested_date,10),message=str(b.message,800);
-  if(name.length<2||contact.length<5||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!n||!dateOK(day)||day<new Date().toISOString().slice(0,10)||b.consent!==true)return bad("Data guest/tanggal/consent tidak lengkap");
+  const name=str(b.name,100),contact=str(b.contact,100),activity=str(b.activity_id,80),mode=str(b.booking_mode,16),n=number(b.guests,1,100),day=str(b.requested_date,10),message=str(b.message,800);
+  if(name.length<2||contact.length<5||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["SHARING","PRIVATE"].includes(mode)||!n||!dateOK(day)||day<new Date().toISOString().slice(0,10)||b.consent!==true)return bad("Data guest/tanggal/consent tidak lengkap");
   const ip=str(req.headers.get("cf-connecting-ip")||"unknown");
   const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ip+":"+(env.RATE_SALT||"tour")));
   const key=Array.from(new Uint8Array(hash)).slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join("")+":"+new Date().toISOString().slice(0,10);
@@ -75,7 +76,7 @@ async function route(req,env){
   const leadId=uuid();
   const statements=[
    db.prepare("INSERT INTO lead_limits(id,amount) VALUES(?,1) ON CONFLICT(id) DO UPDATE SET amount=amount+1").bind(key),
-   db.prepare("INSERT INTO leads(id,name,contact,activity_id,guests,requested_date,message,consent) VALUES(?,?,?,?,?,?,?,1)").bind(leadId,name,contact,activity,n,day,message)
+   db.prepare("INSERT INTO leads(id,name,contact,activity_id,guests,requested_date,message,consent,booking_mode) VALUES(?,?,?,?,?,?,?,1,?)").bind(leadId,name,contact,activity,n,day,message,mode)
   ];
   const campaignId=str(b.campaign_id,100);
   if(campaignId){const campaign=await db.prepare("SELECT id FROM campaign_drafts WHERE id=? AND status='PUBLISHED'").bind(campaignId).first();if(campaign)statements.push(db.prepare("INSERT INTO lead_attribution(lead_id,campaign_id) VALUES(?,?)").bind(leadId,campaign.id));}
@@ -125,19 +126,27 @@ async function route(req,env){
  if(path==="/api/admin/rates"){
   if(method==="GET")return json({items:(await db.prepare("SELECT r.*,o.name operator_name,a.title item_title FROM rates r JOIN operators o ON o.id=r.operator_id JOIN activities a ON a.id=r.item_id ORDER BY r.created_at DESC,r.version DESC").all()).results});
   if(method==="POST"){
-   const b=await parse(req),op=str(b.operator_id,100),item=str(b.item_id,80),net=number(b.net,1),unit=str(b.unit,12),cap=b.capacity==null?null:number(b.capacity,1,30);
+   const b=await parse(req),op=str(b.operator_id,100),item=str(b.item_id,80),net=number(b.net,1),unit=str(b.unit,12),cap=b.capacity==null?null:number(b.capacity,1,30),mode=str(b.booking_mode,16)||"LEGACY",fixed=number(b.private_fixed_net??0,0),guaranteed=b.sharing_guaranteed===true?1:0;
    const products=["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR","LUNCH","BOAT_OUT","BOAT_RETURN"];
-   if(!products.includes(item)||net===null||(item==="ISLAND_TOUR_CAR"?(unit!=="car"||cap===null):unit!=="person"))return bad("Tarif, satuan, atau kapasitas tidak valid");
+   if(!products.includes(item)||net===null||fixed===null||!["LEGACY","SHARING","PRIVATE"].includes(mode))return bad("Tarif/mode belum valid");
+   const isExperience=["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(item);
+   if(!isExperience&&mode!=="LEGACY")return bad("Lunch dan fast boat ditarifkan per orang, bukan sebagai mode pengalaman");
+   if(isExperience&&mode!=="LEGACY"){
+    if(cap===null)return bad("Kapasitas kursi/kapal wajib diverifikasi");
+    if(mode==="SHARING"&&(unit!=="person"||guaranteed!==1||fixed!==0))return bad("Sharing wajib tarif net per orang yang dijamin tanpa risiko sisa kursi");
+    if(mode==="PRIVATE"&&item==="SNORKELING_3_SPOTS"&&(unit!=="person"||fixed<1))return bad("Private snorkeling memerlukan biaya eksklusif tetap kapal/aktivitas");
+    if(mode==="PRIVATE"&&item==="ISLAND_TOUR_CAR"&&(unit!=="car"||fixed!==0||guaranteed!==0))return bad("Private island tour wajib net per mobil sesuai kapasitas");
+   }else if(item==="ISLAND_TOUR_CAR"?(unit!=="car"||cap===null):unit!=="person")return bad("Satuan/kapasitas tarif lama tidak valid");
    const ownerOp=await db.prepare("SELECT status FROM operators WHERE id=?").bind(op).first();
    if(!ownerOp)return bad("Operator tidak ditemukan",404);
    const approved=b.verified===true&&ownerOp.status==="VERIFIED"?1:0;
-   const prev=await db.prepare("SELECT COALESCE(MAX(version),0) n FROM rates WHERE operator_id=? AND item_id=?").bind(op,item).first();
+   const prev=await db.prepare("SELECT COALESCE(MAX(version),0) n FROM rates WHERE operator_id=? AND item_id=? AND booking_mode=?").bind(op,item,mode).first();
    const id=uuid();
    await db.batch([
-    db.prepare("UPDATE rates SET active=0 WHERE operator_id=? AND item_id=?").bind(op,item),
-    db.prepare("INSERT INTO rates(id,operator_id,item_id,unit,net,capacity,verified,version) VALUES(?,?,?,?,?,?,?,?)").bind(id,op,item,unit,net,cap,approved,prev.n+1)
+    db.prepare("UPDATE rates SET active=0 WHERE operator_id=? AND item_id=? AND booking_mode=?").bind(op,item,mode),
+    db.prepare("INSERT INTO rates(id,operator_id,item_id,unit,net,capacity,verified,version,booking_mode,private_fixed_net,sharing_guaranteed) VALUES(?,?,?,?,?,?,?,?,?,?,?)").bind(id,op,item,unit,net,cap,approved,prev.n+1,mode,fixed,guaranteed)
    ]);
-   await audit(db,"rate",id,"NEW_VERSION",{operator:op,item,net,approved});
+   await audit(db,"rate",id,"NEW_VERSION",{operator:op,item,net,booking_mode:mode,private_fixed_net:fixed,sharing_guaranteed:guaranteed,approved});
    return json({id,version:prev.n+1,verified:!!approved},201);
   }
  }
@@ -157,7 +166,7 @@ async function route(req,env){
    if(!dateOK(b.requested_date)||b.requested_date<new Date().toISOString().slice(0,10))return bad("Tanggal wisata tidak valid");
    const quote=await makePrice(db,b);if(quote.sellingPrice===null)return bad("Harga jual harus disetujui owner");
    const id=uuid();
-   await db.prepare("INSERT INTO quotes(id,lead_id,operator_id,activity_id,guests,requested_date,net,minimum,selling_price,snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(id,b.lead_id||null,quote.operator_id,quote.activity_id,quote.guests,b.requested_date,quote.net,quote.minimum,quote.sellingPrice,JSON.stringify({...quote,cancellation_policy_version:CANCELLATION_POLICY_VERSION,guest_terms_acknowledged:b.terms_accepted===true,payment_method:"BANK_TRANSFER_MANUAL",qris_available:false})).run();
+   await db.prepare("INSERT INTO quotes(id,lead_id,operator_id,activity_id,guests,requested_date,net,minimum,selling_price,snapshot,booking_mode) VALUES(?,?,?,?,?,?,?,?,?,?,?)").bind(id,b.lead_id||null,quote.operator_id,quote.activity_id,quote.guests,b.requested_date,quote.net,quote.minimum,quote.sellingPrice,JSON.stringify({...quote,cancellation_policy_version:CANCELLATION_POLICY_VERSION,guest_terms_acknowledged:b.terms_accepted===true,payment_method:"BANK_TRANSFER_MANUAL",qris_available:false}),quote.booking_mode).run();
    await audit(db,"quote",id,"CREATE",{status:"DRAFT"});return json({id,quote,status:"DRAFT"},201);
   }
  }
