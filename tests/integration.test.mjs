@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -223,7 +223,7 @@ test("Turnstile accepts only genuine matching host/action, and stores one consen
  const {request,env,sqlite}=fixture();
  sqlite.prepare("UPDATE business_profile SET legal_name='Test Tourism Company',public_contact='test@example.invalid',privacy_approved=1,refund_policy_approved=1").run();
  env.PUBLIC_LEADS_ENABLED="true";env.TURNSTILE_SECRET="not-a-real-secret";
- const body={name:"Guest For Test",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),message:"Please confirm snorkeling safety",consent:true,"cf-turnstile-response":"a-reasonably-long-turnstile-token"};
+ const body={name:"Guest For Test",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),booking_mode:"SHARING",message:"Please confirm snorkeling safety",consent:true,"cf-turnstile-response":"a-reasonably-long-turnstile-token"};
  const oldFetch=globalThis.fetch;
  try{
   globalThis.fetch=async()=>new Response(JSON.stringify({success:true,hostname:"unrelated.example",action:"lead_enquiry"}),{status:200,headers:{"content-type":"application/json"}});
@@ -235,4 +235,69 @@ test("Turnstile accepts only genuine matching host/action, and stores one consen
   assert.equal(good.httpStatus,201,JSON.stringify(good));
   assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,1);
  }finally{globalThis.fetch=oldFetch;sqlite.close();}
+});
+
+
+test("sharing island tour: verified cost-per-passenger contract, 1 guest allowed, no vacant-seat debt",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Operator sharing guaranteed");
+ const rate=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",unit:"person",net:185000,capacity:6,sharing_guaranteed:true,verified:true});
+ assert.equal(rate.httpStatus,201,JSON.stringify(rate));
+ const quote=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",guests:1,requested_date:tomorrow(),agency_costs:10000});
+ assert.equal(quote.httpStatus,200,JSON.stringify(quote));
+ assert.equal(quote.preview.net,185000);
+ assert.equal(quote.preview.minimum,295000);
+ assert.equal(quote.preview.minimumPerGuest,295000);
+ const qid=await approvedQuote(request,{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",guests:1,requested_date:tomorrow(),agency_costs:10000},295000);
+ const b=await request("/api/admin/bookings","POST",{quote_id:qid});
+ assert.equal(b.httpStatus,201,JSON.stringify(b));
+ assert.equal(b.operator_payables[0].net_amount,185000);
+ assert.equal(sqlite.prepare("SELECT booking_mode FROM quotes WHERE id=?").get(qid).booking_mode,"SHARING");
+ sqlite.close();
+});
+test("sharing rejects per-person rate without genuine operator no-empty-seat guarantee",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Operator unguaranteed");
+ const r=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",unit:"person",net:200000,capacity:6,sharing_guaranteed:false,verified:true});
+ assert.notEqual(r.httpStatus,201);
+ assert.equal((await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",guests:1,requested_date:tomorrow()})).httpStatus,422);
+ sqlite.close();
+});
+test("private island car quotes 1 guest full car without needing other guests",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Operator private vehicle");
+ const rr=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",unit:"car",net:600000,capacity:7,verified:true});
+ assert.equal(rr.httpStatus,201,JSON.stringify(rr));
+ const p=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",guests:1,requested_date:tomorrow(),agency_costs:12000,payment_fee:8000});
+ assert.equal(p.httpStatus,200,JSON.stringify(p));
+ assert.equal(p.preview.net,600000);
+ assert.equal(p.preview.minimum,720000);
+ assert.equal(p.preview.minimumPerGuest,720000);
+ sqlite.close();
+});
+test("private snorkeling requires actual exclusive group cost and includes it in supplier payable",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Snorkeling boat exclusive");
+ const missing=await request("/api/admin/rates","POST",{operator_id:op,item_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",unit:"person",net:350000,capacity:8,verified:true});
+ assert.notEqual(missing.httpStatus,201);
+ const rate=await request("/api/admin/rates","POST",{operator_id:op,item_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",unit:"person",net:350000,capacity:8,private_fixed_net:950000,verified:true});
+ assert.equal(rate.httpStatus,201,JSON.stringify(rate));
+ const p=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",guests:1,requested_date:tomorrow(),agency_costs:10000});
+ assert.equal(p.httpStatus,200,JSON.stringify(p));
+ assert.equal(p.preview.net,1300000);
+ assert.equal(p.preview.minimum,1410000);
+ const id=await approvedQuote(request,{operator_id:op,activity_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",guests:1,requested_date:tomorrow(),agency_costs:10000},1410000);
+ const booking=await request("/api/admin/bookings","POST",{quote_id:id});
+ assert.equal(booking.httpStatus,201,JSON.stringify(booking));
+ assert.equal(booking.operator_payables[0].net_amount,1300000);
+ sqlite.close();
+});
+test("shared and private operator tariff versioning cannot deactivate each other",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Tour both modes");
+ const a=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",unit:"person",net:180000,capacity:6,sharing_guaranteed:true,verified:true});
+ const b=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",unit:"car",net:600000,capacity:6,verified:true});
+ assert.equal(a.httpStatus,201);assert.equal(b.httpStatus,201);
+ const rows=sqlite.prepare("SELECT booking_mode,active FROM rates WHERE operator_id=? AND item_id='ISLAND_TOUR_CAR' AND booking_mode!='LEGACY'").all(op);
+ assert.equal(rows.length,2);assert.ok(rows.every(x=>x.active===1));
+ const c=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",unit:"person",net:210000,capacity:6,sharing_guaranteed:true,verified:true});
+ assert.equal(c.httpStatus,201);
+ assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(a.id).active,0);
+ assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(b.id).active,1);
+ sqlite.close();
 });
