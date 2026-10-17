@@ -10,3 +10,27 @@ test("agency costs raise floor",()=>assert.equal(calculate({guests:1,base:r("s",
 test("AI market price cannot undercut floor",()=>assert.equal(aiSuggestion(calculate({guests:1,base:r("s",350000,"person")}),313500),450000));
 test("seller cannot sell at loss",()=>assert.throws(()=>calculate({guests:1,base:r("s",350000,"person"),sellingPrice:449999}),PricingError));
 test("contribution accounting",()=>assert.equal(calculate({guests:1,base:r("s",350000,"person"),agencyCosts:20000,sellingPrice:500000}).contribution,130000));
+
+test("private 1-pax island still covers full exclusive vehicle and all agency costs",()=>{
+ const base={...r("vehicle",600000,"car",7),item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE"};
+ const q=calculate({guests:1,base,bookingMode:"PRIVATE",agencyCosts:45000,paymentFee:5000});
+ assert.equal(q.minimum,750000);assert.equal(q.minimumPerGuest,750000);
+ assert.throws(()=>calculate({guests:1,base,bookingMode:"PRIVATE",agencyCosts:45000,paymentFee:5000,sellingPrice:749999}),PricingError);
+});
+test("sharing must be per guest with guaranteed terms and confirmed capacity",()=>{
+ const r1={...r("tour",170000,"person",6),item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",sharing_guaranteed:1};
+ assert.equal(calculate({guests:1,base:r1,bookingMode:"SHARING"}).minimum,270000);
+ assert.throws(()=>calculate({guests:1,base:{...r1,sharing_guaranteed:0},bookingMode:"SHARING"}),PricingError);
+ assert.throws(()=>calculate({guests:7,base:r1,bookingMode:"SHARING"}),PricingError);
+});
+test("private snorkeling has real per-booking exclusive boat fee even with one guest",()=>{
+ const boat={...r("snork",350000,"person",8),item_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",private_fixed_net:900000};
+ const q=calculate({guests:1,base:boat,bookingMode:"PRIVATE",agencyCosts:15000,paymentFee:5000});
+ assert.equal(q.net,1250000);assert.equal(q.minimum,1370000);
+ assert.equal(q.lines.find(x=>x.kind==="PRIVATE_EXCLUSIVE_FIXED").unit_net,900000);
+ assert.throws(()=>calculate({guests:1,base:{...boat,private_fixed_net:0},bookingMode:"PRIVATE"}),PricingError);
+});
+test("private mode quote cannot accidentally use sharing operator rate",()=>{
+ const base={...r("snork",350000,"person",8),item_id:"SNORKELING_3_SPOTS",booking_mode:"SHARING",sharing_guaranteed:1};
+ assert.throws(()=>calculate({guests:1,base,bookingMode:"PRIVATE"}),PricingError);
+});
