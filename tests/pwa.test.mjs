@@ -13,3 +13,24 @@ test("PWA install icon exists and manifest links to SVG",()=>{
  assert.equal(manifest.icons[0].src,"/icon.svg");assert.match(read("icon.svg"),/<svg/);
  assert.match(read("app.js"),/serviceWorker\.register/);
 });
+
+
+test("separate public activity pages retain guarded marketing disclosures",()=>{
+ const sea=read("snorkeling.html"),island=read("island-tour.html"),home=read("index.html");
+ assert.match(sea,/Snorkeling 3 Spot/);
+ assert.match(island,/Island Tour/);
+ assert.match(sea,/noindex, follow/);
+ assert.match(island,/noindex, follow/);
+ assert.match(home,/snorkeling\.html/);
+ assert.match(home,/island-tour\.html/);
+ assert.match(island,/6–7/);
+ assert.match(sea,/konfirmasi/);
+});
+test("public marketing resources never promise unattended booking",()=>{
+ const robots=read("robots.txt"),site=read("sitemap.xml"),home=read("index.html");
+ assert.match(robots,/Disallow: \/api\//);
+ assert.match(site,/snorkeling\.html/);
+ assert.match(site,/island-tour\.html/);
+ assert.match(home,/noindex, follow/);
+ assert.doesNotMatch(home,/BANK_ACCOUNT_NUMBER|api_key|secret_key/);
+});

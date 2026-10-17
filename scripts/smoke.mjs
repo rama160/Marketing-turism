@@ -8,10 +8,13 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="2.7.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="2.8.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
+const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling 3 Spot"))throw Error("Snorkeling landing page missing");
+const island=await get("/island-tour.html");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
+await get("/robots.txt");await get("/sitemap.xml");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));

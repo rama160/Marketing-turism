@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.8.0 — 2026-10-17
+- Added product-specific informational Nusa Penida landing pages for snorkeling and island tours, with distinct inclusions and booking caveats.
+- Added draft search/sitemap and OG metadata. Pages marked noindex while business and brand verification are incomplete.
+- Added editable organic marketing launch kit for Instagram, TikTok, Facebook, WhatsApp Business, YouTube Shorts, Google and travel marketplace applications.
+- PWA public-static offline cache now includes informational landing pages only.
+- No social account automatically created, linked, or posted to. No guest payment or lead intake enabled.
+
+
 ## 2.7.0 — 2026-10-17
 - Propose public trade branding Penivara Experiences, preserve original repository and Cloudflare targets.
 - User confirmed fast boat RETURN net Rp150,000 per guest per way; add draft supplier rate not a verified supplier rate.

@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 2.7.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 2.8.0 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -54,3 +54,8 @@ Voluntary guest cancellations (after explicit consent): H-7+ 25%, H-6..H-3 50%, 
 
 ## Marketing channels
 Draft and manually publish to Instagram, Facebook, TikTok, YouTube Shorts, WhatsApp Business/Status, Google Business Profile, Telegram and travel marketplaces if legitimately registered. Platform logins/permissions and media are NOT connected, no automated cross-posting or ad spend. Published campaigns can supply an attributable guest link when website form is enabled.
+
+## Guest acquisition preparation
+- Informational landing pages: `/snorkeling.html`, `/island-tour.html`, with independent dates and operator-verified inclusions.
+- `robots.txt` and `sitemap.xml` exist, but site pages remain `noindex,follow` until trade brand, business identity and public contact/legal policies approved by owner.
+- Read `docs/MARKETING_LAUNCH_KIT.md` for organic channel plan; external apps are not automatically connected.
