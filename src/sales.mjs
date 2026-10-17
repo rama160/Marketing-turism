@@ -16,8 +16,8 @@ export function leadScore(lead, today=new Date().toISOString().slice(0,10)){
 }
 export function salesDraft(lead){
  const name=(lead.name||"Guest").trim().slice(0,80),n=Number(lead.guests)||1,date=lead.requested_date||"tanggal pilihan";
- const activity=lead.activity_id==="SNORKELING_3_SPOTS"?"snorkeling 3 spot":"island tour Nusa Penida";
- return "Halo "+name+", terima kasih sudah tertarik dengan "+activity+" untuk "+n+" peserta pada "+date+". Boleh diinformasikan titik keberangkatan/penjemputan dan kebutuhan tambahan (lunch atau fast boat)? Kami akan cek ketersediaan operator serta fasilitas dan mengirim penawaran resmi sebelum pembayaran. Terima kasih!";
+ const activity=lead.activity_id==="SNORKELING_3_SPOTS"?"snorkeling 3 spot":"island tour Nusa Penida";const mode=lead.booking_mode==="SHARING"?"Sharing (gabung guest lain)":lead.booking_mode==="PRIVATE"?"Private (eksklusif)":"belum ditentukan";
+ return "Halo "+name+", terima kasih sudah tertarik dengan "+activity+" mode "+mode+" untuk "+n+" peserta pada "+date+". Boleh diinformasikan titik keberangkatan/penjemputan dan kebutuhan tambahan (lunch atau fast boat)? Kami akan cek ketersediaan operator serta fasilitas dan mengirim penawaran resmi sebelum pembayaran. Terima kasih!";
 }
 export function normalizeMarketComparison(ref,guestCount){
  if(!Number.isSafeInteger(ref.price)||ref.price<1)throw Error("Harga pasar tidak valid");
