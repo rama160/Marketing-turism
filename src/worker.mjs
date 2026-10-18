@@ -11,7 +11,7 @@ const experienceVariants={
  SNORKELING_3_SPOTS:{SHARING:["STANDARD_3_SPOTS"],PRIVATE:["MANTA_BAY","MANTA_POINT"]},
  ISLAND_TOUR_CAR:{SHARING:["WEST","EAST"],PRIVATE:["WEST","EAST"]}
 };
-const variantAllowed=(activity,mode,variant)=>mode==="LEGACY"?variant==="DEFAULT":!!experienceVariants[activity]?.[mode]?.includes(variant);
+const variantAllowed=(activity,mode,variant)=>mode==="LEGACY"?variant==="DEFAULT":variant==="DEFAULT"||!!experienceVariants[activity]?.[mode]?.includes(variant);
 
 const dateOK=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+"T00:00:00Z"))&&new Date(x+"T00:00:00Z").toISOString().slice(0,10)===x;
 async function parse(req){const raw=await req.text();if(raw.length>12000)throw Error("Request terlalu besar");return JSON.parse(raw);}
@@ -142,12 +142,12 @@ async function route(req,env){
    if(!isExperience&&mode!=="LEGACY")return bad("Lunch dan fast boat ditarifkan per orang, bukan sebagai mode pengalaman");
    if(isExperience&&mode!=="LEGACY"){
     if(cap===null)return bad("Kapasitas kendaraan/kapal wajib dikonfirmasi operator");
-    if(item==="ISLAND_TOUR_CAR"){
+    if(item==="ISLAND_TOUR_CAR"&&variant!=="DEFAULT"){
       if(unit!=="car"||scheme!=="FIXED_VEHICLE"||cap>7||fixed!==0||guaranteed!==0)return bad("Tour Barat/Timur Sharing maupun Private harus memakai biaya SATU mobil penuh, maksimal 7 guest");
     }else if(mode==="SHARING"){
-      if(unit!=="person"||scheme!=="STANDARD"||guaranteed!==1||fixed!==0||cap>20)return bad("Snorkeling Sharing harus dijamin operator per orang, maksimal 20");
+      if(unit!=="person"||scheme!=="STANDARD"||guaranteed!==1||fixed!==0||(item==="SNORKELING_3_SPOTS"?cap>20:cap>7))return bad("Snorkeling Sharing harus dijamin operator per orang, maksimal 20");
     }else if(mode==="PRIVATE"){
-      if(unit!=="person"||scheme!=="FIXED_PACKAGE"||fixed!==0||guaranteed!==0)return bad("Snorkeling Private harga paket all-in satu booking, bukan per guest");
+      if(unit!=="person"||(variant==="DEFAULT"?scheme!=="STANDARD"||fixed<1:scheme!=="FIXED_PACKAGE"||fixed!==0)||guaranteed!==0)return bad("Snorkeling Private harga paket all-in satu booking, bukan per guest");
     }
    }else if(item==="ISLAND_TOUR_CAR"?(unit!=="car"||cap===null):unit!=="person")return bad("Satuan/kapasitas tarif lama tidak valid");
    const ownerOp=await db.prepare("SELECT status FROM operators WHERE id=?").bind(op).first();

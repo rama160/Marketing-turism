@@ -12,7 +12,7 @@ export function calculate({guests,base,extras=[],agencyCosts=0,paymentFee=0,sell
     if(base.booking_mode!==bookingMode||base.variant_id!==variantId)throw new PricingError("Tarif operator untuk varian dan mode yang dipilih belum tersedia");
     if(!Number.isSafeInteger(base.capacity)||base.capacity<1||guests>base.capacity)throw new PricingError("Kapasitas kendaraan atau kapal belum terverifikasi");
     if(base.item_id==="ISLAND_TOUR_CAR"){
-      if(base.unit!=="car"||scheme!=="FIXED_VEHICLE")throw new PricingError("Tour Sharing/Private membutuhkan biaya satu mobil penuh per booking");
+      if(!(base.unit==="car"&&scheme==="FIXED_VEHICLE")&&!(base.variant_id==="DEFAULT"&&bookingMode==="SHARING"&&base.unit==="person"&&base.sharing_guaranteed===1&&scheme==="STANDARD"))throw new PricingError("Tour Sharing/Private membutuhkan biaya satu mobil penuh per booking atau tarif kursi yang dijamin operator");
       if(base.capacity>7)throw new PricingError("Batas tour maksimal 7 guest");
     }else if(base.item_id==="SNORKELING_3_SPOTS"){
       if(base.unit!=="person")throw new PricingError("Unit snorkeling tidak sesuai");
