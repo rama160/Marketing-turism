@@ -8,17 +8,18 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="2.9.1")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.0.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
 const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling 3 Spot"))throw Error("Snorkeling landing page missing");
-const island=await get("/island-tour.html");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
+const island=await get("/island-tour.html");
+await get("/west-tour.html");await get("/east-tour.html");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
 await get("/robots.txt");await get("/sitemap.xml");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));
-if(!Array.isArray(cat.items)||cat.items.length<5||cat.modes?.length!==2)throw Error("Public catalog missing items");
+if(!Array.isArray(cat.items)||cat.items.length<5||cat.modes?.length!==2||!cat.variants?.ISLAND_TOUR_CAR)throw Error("Public catalog missing items");
 const page=await get("/");
 if(!(page.includes("PENIVARA")||page.includes("Marketing"))||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");
