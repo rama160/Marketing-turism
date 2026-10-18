@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -223,7 +223,7 @@ test("Turnstile accepts only genuine matching host/action, and stores one consen
  const {request,env,sqlite}=fixture();
  sqlite.prepare("UPDATE business_profile SET legal_name='Test Tourism Company',public_contact='test@example.invalid',privacy_approved=1,refund_policy_approved=1").run();
  env.PUBLIC_LEADS_ENABLED="true";env.TURNSTILE_SECRET="not-a-real-secret";
- const body={name:"Guest For Test",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),booking_mode:"SHARING",message:"Please confirm snorkeling safety",consent:true,"cf-turnstile-response":"a-reasonably-long-turnstile-token"};
+ const body={name:"Guest For Test",contact:"guest@example.invalid",activity_id:"SNORKELING_3_SPOTS",guests:2,requested_date:tomorrow(),booking_mode:"SHARING",variant_id:"STANDARD_3_SPOTS",message:"Please confirm snorkeling safety",consent:true,"cf-turnstile-response":"a-reasonably-long-turnstile-token"};
  const oldFetch=globalThis.fetch;
  try{
   globalThis.fetch=async()=>new Response(JSON.stringify({success:true,hostname:"unrelated.example",action:"lead_enquiry"}),{status:200,headers:{"content-type":"application/json"}});
@@ -308,5 +308,58 @@ test("vehicle rate never permits more than 7 passengers even if owner enters 30"
  assert.equal(invalid.httpStatus,400);
  const allowed=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",unit:"car",net:600000,capacity:7,verified:true});
  assert.equal(allowed.httpStatus,201);
+ sqlite.close();
+});
+
+
+test("initial owner rate references exist, remain unverified without partner",async()=>{
+ const {request,sqlite}=fixture();
+ const rows=sqlite.prepare("SELECT id,net,capacity,verified,variant_id,pricing_scheme FROM rates WHERE id LIKE 'INITIAL_%' ORDER BY id").all();
+ assert.equal(rows.length,7);
+ const map=Object.fromEntries(rows.map(x=>[x.id,x]));
+ assert.equal(map.INITIAL_SNORK_SHARING_200.net,200000);assert.equal(map.INITIAL_SNORK_SHARING_200.capacity,20);
+ assert.equal(map.INITIAL_SNORK_PRIVATE_MANTA_BAY.net,1500000);
+ assert.equal(map.INITIAL_SNORK_PRIVATE_MANTA_POINT.net,2800000);
+ assert.equal(map.INITIAL_TOUR_EAST_SHARING.net,600000);
+ assert.ok(rows.every(x=>x.verified===0));
+ const cat=await request("/api/public/catalog","GET",undefined,false);
+ assert.deepEqual(cat.variants.ISLAND_TOUR_CAR.SHARING,["WEST","EAST"]);
+ sqlite.close();
+});
+test("private Manta Bay and Point pricing is one full package regardless of guests",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Verified Manta Boat Operator");
+ for(const [variant,net] of [["MANTA_BAY",1500000],["MANTA_POINT",2800000]]){
+  const rate=await request("/api/admin/rates","POST",{operator_id:op,item_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",variant_id:variant,pricing_scheme:"FIXED_PACKAGE",unit:"person",net,capacity:8,verified:true});
+  assert.equal(rate.httpStatus,201,JSON.stringify(rate));
+  const p=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"SNORKELING_3_SPOTS",booking_mode:"PRIVATE",variant_id:variant,guests:3,requested_date:tomorrow(),agency_costs:20000});
+  assert.equal(p.httpStatus,200,JSON.stringify(p));
+  assert.equal(p.preview.net,net);
+  assert.equal(p.preview.minimum,net+120000);
+  assert.equal(p.preview.lines.length,1);
+  assert.equal(p.preview.lines[0].qty,1);
+ }
+ sqlite.close();
+});
+test("shared tour east safely charges entire vehicle net for 1 guest, sharing does not assume 7",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Verified East driver");
+ const rate=await request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",variant_id:"EAST",pricing_scheme:"FIXED_VEHICLE",unit:"car",net:600000,capacity:7,verified:true});
+ assert.equal(rate.httpStatus,201,JSON.stringify(rate));
+ for(const [guests,minimum] of [[1,700000],[2,700000],[7,700000]]){
+  const p=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",variant_id:"EAST",guests,requested_date:tomorrow()});
+  assert.equal(p.httpStatus,200,JSON.stringify(p));
+  assert.equal(p.preview.minimum,minimum);
+  assert.equal(p.preview.minimumPerGuest,Math.ceil(minimum/guests));
+ }
+ const tooMany=await request("/api/admin/quotes/preview","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",booking_mode:"SHARING",variant_id:"EAST",guests:8,requested_date:tomorrow()});
+ assert.equal(tooMany.httpStatus,422);
+ sqlite.close();
+});
+test("west and east rates are independently versioned",async()=>{
+ const {request,sqlite}=fixture(),op=await verifiedOperator(request,"Verified Island driver");
+ const mk=v=>request("/api/admin/rates","POST",{operator_id:op,item_id:"ISLAND_TOUR_CAR",booking_mode:"PRIVATE",variant_id:v,pricing_scheme:"FIXED_VEHICLE",unit:"car",net:600000,capacity:7,verified:true});
+ const west=await mk("WEST"),east=await mk("EAST");assert.equal(west.httpStatus,201);assert.equal(east.httpStatus,201);
+ assert.equal((await mk("WEST")).httpStatus,201);
+ assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(west.id).active,0);
+ assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(east.id).active,1);
  sqlite.close();
 });
