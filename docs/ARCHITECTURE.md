@@ -1,4 +1,4 @@
-# Technical Architecture v2.9.0
+# Technical Architecture v3.0.0
 
 ## Components
 Public HTML/CSS/JS PWA (public/) -> Cloudflare Worker (src/worker.mjs) -> D1 SQL (database/migrations/0001_init.sql).
@@ -67,3 +67,6 @@ Marketing channels merely label owner-created drafts. There is no account connec
 
 ## Mode-aware supplier rate model: migration 0007
 `rates.booking_mode` distinguishes LEGACY/SHARING/PRIVATE and rate activation/versioning uses `(operator_id, item_id, booking_mode)`. SHARING rates must be `unit=person` and `sharing_guaranteed=1` with operator-confirmed max capacity. PRIVATE snorkeling uses `unit=person` plus `private_fixed_net` charged once per quote, included as a second immutable price line under the same rate ID for supplier payable allocation; PRIVATE island tour uses `unit=car` (one full vehicle). `leads.booking_mode` and `quotes.booking_mode` preserve selection; older records default LEGACY. Existing addon supplier rates remain mode LEGACY. No automated shared-departure inventory exists: verified operator confirmation remains mandatory.
+
+### v3 supplier rate variants
+`rates.variant_id` includes STANDARD_3_SPOTS, MANTA_BAY, MANTA_POINT, WEST, EAST. `rates.pricing_scheme`: STANDARD per pax, FIXED_PACKAGE per whole snorkeling booking, FIXED_VEHICLE per whole car. Per-mode/variant supplier rate versioning avoids cross-deactivation. `leads.variant_id` and `quotes.variant_id` persist selected variant. `DEFAULT` remains for historical pre-v3 supplier contracts. Base quote snapshots remain immutable. Tour Sharing variant WEST/EAST accounts for full car Rp600k until a genuine pooled cohort is supported; there is currently no automatic seat mixing service.

@@ -1,4 +1,4 @@
-# PRD — AI Tourism Marketing & Booking Agent v2.9.0
+# PRD — AI Tourism Marketing & Booking Agent v3.0.0
 ## Goal
 Support an independent travel sales agent in Nusa Penida to attract consenting leads, qualify guests, quote tourism activities without loss, collect guest payments via verified manual processes, hand over activities to local operator, and retain auditable records.
 
@@ -50,3 +50,14 @@ Qualified leads; booked and paid conversions; margin contribution; failed quotes
 
 ## Guest-selectable SHARING/PRIVATE (2.9.0)
 Both snorkeling 3 spots and island tour have SHARING (guest can join other parties) and PRIVATE (exclusive activity even with 1 guest). The public form and admin quote must record the selected mode. Provider fare and safe capacity must be verified for that specific mode; do not infer sharing group occupancy. Shared per-person supplier rates must explicitly guarantee there is no cost for unused seats. Private island tour charges a whole vehicle; private snorkeling requires verified person net plus an explicit per-booking exclusive boat/service charge. Selling floor must cover every verified provider cost, agency expenses, payment fees, and >=Rp100,000 contribution per booking. Legacy price rows remain unchanged. No binding guest booking/payment without operator availability confirmation.
+
+## v3.0.0 — operator-supplied price and routes confirmed by owner
+- Official operating/trade name supplied: **Nusa Penida Experiences** (business registration and public contact still require separate validation; do not assert legal registration has been independently checked).
+- Snorkeling **Sharing 3 spot** initial **net Rp200,000 per guest**, at most 20 guests; operator must confirm actual boat capacity and per-person, no-vacant-seat fee guarantee. Prior Rp350k historical rate remains preserved as LEGACY, not the new selling price.
+- Snorkeling **Private 3 spot Manta Bay** net **Rp1,500,000 for a whole private booking**, and **Private 3 spot Manta Point** net **Rp2,800,000 per private booking**. Never add per-guest Rp350k again: these are all-in initial supplier net for the private experience, subject to operator confirmation. Which other two spots are included in each 3-spot circuit must be confirmed by actual operator; manta sightings never guaranteed.
+- Island Tour **West or East**, Private or Sharing: operator net **Rp600,000 per whole car**, max **7 confirmed safe seats**. Until actual sharing guest group pooling, price the FULL vehicle against the known guests in the CURRENT booking, not hypothetical 7 guests. Group minimum before other costs Rp700,000, with extra lunch/boat and actual agency/payment costs added. Do not promise a flat per-seat price using future, unconfirmed occupancy.
+- Additional lunch and fast boat each use separately confirmed provider/net, do not assume included in car price.
+- All initial preset rates are DRAFT against DRAFT_OPERATOR and cannot be used in binding quote until verified operator, capacity and dates are confirmed. Historical rates/quotes preserved.
+- Web pages now group West attractions: Kelingking, Broken Beach, Angel's Billabong, Crystal Bay; East attractions: Diamond, Atuh, Rumah Pohon. Photo URLs sourced from Wikimedia Commons with credits/attribution and appropriate licensing; some underwater photos illustrative, not necessarily of the exact named spot. Safety disclaimers required.
+- D1 migration 0008_variants_and_supplier_net.sql adds variant_id and pricing_scheme. Modes and variants are an indivisible supplier rate key. Fixed-package PRIVATE snorkeling and fixed-vehicle SHARING tour keep net per full booking (not per guest).
+- Do NOT change Cloudflare FinChat/Spenva resources. Real public leads remain OFF pending verified contact, privacy/refund policies and operator confirmations. External publishing and bookings still require permission/approval.

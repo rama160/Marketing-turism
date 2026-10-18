@@ -1,4 +1,4 @@
-# Test and Release Plan — v2.9.0
+# Test and Release Plan — v3.0.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
 2. Verify snorkeling per-person pricing and Rp100k minimum per booking.
@@ -57,3 +57,10 @@ No real guest sales until privacy policy/business info, operator verification, b
 - Capacity above verified boat/car limit denied.
 - Rate versions for SHARING and PRIVATE remain separately active, old LEGACY snapshots remain unchanged.
 - No AI/market model can override positive >=Rp100k contribution for new modes.
+
+### v3 tests
+- Manta Bay and Manta Point Private fixed supplier cost charged once, not multiplied by guests.
+- WEST and EAST rate versions independent; Sharing one guest reserves full Rp600k vehicle exposure.
+- Snork Sharing draft Rp200k/pax at <=20 passengers cannot be binding until provider guarantee verified.
+- Both public tour photo groups, alt text, Commons credit URLs, snork spot descriptions, and restrictive CSP.
+- Branch CI, D1 migration remote on the dedicated Marketing Turism DB, and live HTTP smoke after deploy.

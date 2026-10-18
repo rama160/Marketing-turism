@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0 — 2026-10-18
+- Owner confirmed Nusa Penida Experiences as official business/trade name; public web copy and PWA naming updated.
+- Sharing snork net Rp200k per guest, max 20 (draft); private Manta Bay all-in Rp1.5m and Manta Point all-in Rp2.8m per booking (draft).
+- West/East island tour route variants, Private/Sharing net Rp600k per full car up to 7; Sharing financial floor never relies on hypothetical future passenger counts.
+- New versioned route_id and pricing_scheme schema (D1 0008) and historical rates preserved.
+- Licensed scenic Nusa Penida West/East galleries and snorkeling spot descriptions with Wikimedia Commons attribution and safety caveats.
+- Public guest lead intake remains disabled until real contact, privacy/refund business approval and supplier confirmation.
+
+
 ## 2.9.1 — 2026-10-17
 - Enforce maximum seven verified passenger seats for an island-tour vehicle rate, including Sharing and Private; no operator can accidentally approve a vehicle cap above the agreed safe threshold.
 
