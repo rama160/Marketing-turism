@@ -12,9 +12,11 @@ if(health.version!=="3.0.0")throw Error("Cloudflare release version mismatch: "+
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
-const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling 3 Spot"))throw Error("Snorkeling landing page missing");
+const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling Nusa Penida")||!snorkeling.includes("Manta Bay")||!snorkeling.includes("Wikimedia Commons"))throw Error("Snorkeling/gallery missing");
 const island=await get("/island-tour.html");
-await get("/west-tour.html");await get("/east-tour.html");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
+const west=await get("/west-tour.html");const east=await get("/east-tour.html");
+if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
+if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
 await get("/robots.txt");await get("/sitemap.xml");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
