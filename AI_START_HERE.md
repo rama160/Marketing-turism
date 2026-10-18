@@ -70,3 +70,6 @@ Never accept real guest data unless: dedicated Tourism D1 business_profile conta
 
 ## Photo source CSP consistency
 For every deployment path (GitHub Wrangler assets AND manually uploaded `entry.mjs` modules), the live HTML response CSP must include `img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org`. Otherwise every attraction photo is blocked, despite a green HTTP page smoke check. Keep the allowlist restricted to these sources, maintain photographer credits, and verify live response CSP in `scripts/smoke.mjs`. Avoid touching FinChat or Spenva Workers.
+
+## Gallery resilience v3.0.2
+Photo images MUST use same-origin `/photos/{slug}` served from canonical Wikimedia thumbnail URLs by `src/photos.mjs`, not `Special:FilePath?width=900`. Only known slugs are allowed; CDN retrieval is cached, falls back to original if thumbnail fails, and frontend displays a local honest placeholder if origin is unavailable. All galleries preserve Commons author/source attribution. Both manual Cloudflare multipart deployment entry router and Wrangler `run_worker_first` must route `/photos/*` through `src/worker.mjs`. Verify 200 image responses for at least Kelingking, Diamond Beach, Manta Point. Do not update Spenva/FinChat.

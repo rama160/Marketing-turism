@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520" viewBox="0 0 800 520" role="img" aria-label="Foto destinasi sedang tidak tersedia">
+<defs><linearGradient id="sea" x2="1" y2="1"><stop stop-color="#0f4554"/><stop offset="1" stop-color="#1d848c"/></linearGradient></defs>
+<rect width="800" height="520" fill="url(#sea)"/><path d="M0 370Q180 270 360 380T800 340V520H0Z" fill="#5ec7bb" opacity=".3"/>
+<circle cx="630" cy="110" r="48" fill="#e6c68e" opacity=".85"/><text x="400" y="260" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="30" font-weight="bold">Foto sementara tidak tersedia</text>
+<text x="400" y="310" text-anchor="middle" fill="#ecfffc" font-family="Arial,sans-serif" font-size="19">Buka tautan kredit foto untuk melihat sumber aslinya</text></svg>

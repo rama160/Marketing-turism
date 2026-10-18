@@ -59,6 +59,14 @@ test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus
   const content=read(page);
   const srcs=[...content.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(x=>x[1]);
   assert.ok(srcs.length>0, "Expected destination photos on "+page);
-  for(const src of srcs)assert.match(src,/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//);
+  for(const src of srcs)assert.match(src,/^\/photos\/[a-z-]+$/);
+ }
+});
+
+test("photo galleries use same-origin image gateway, recover locally and retain Commons credits",()=>{
+ const loader=read("photo-loader.js"),fallback=read("photo-unavailable.svg");
+ assert.match(loader,/localPhotoFailed/);assert.match(loader,/photo-unavailable.svg/);assert.match(fallback,/Foto sementara tidak tersedia/);
+ for(const page of ["index.html","island-tour.html","west-tour.html","east-tour.html","snorkeling.html"]){const h=read(page);
+  assert.match(h,/src="\/photos\//);assert.match(h,/photo-loader.js/);assert.doesNotMatch(h,/src="https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//);
  }
 });

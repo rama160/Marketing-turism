@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.0.1")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.0.2")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -26,6 +26,13 @@ const landingResp=await fetch(base+"/",{signal:AbortSignal.timeout(20000)});
 const photoPolicy=landingResp.headers.get("content-security-policy")||"";
 for(const imageHost of ["https://commons.wikimedia.org","https://upload.wikimedia.org"]){
  if(!photoPolicy.includes(imageHost))throw Error("Photo loading blocked by CSP: "+imageHost);
+}
+const imageChecks=["kelingking","diamond-beach","manta-point"];
+for(const id of imageChecks){
+ const response=await fetch(base+"/photos/"+id,{signal:AbortSignal.timeout(20000)});
+ const type=response.headers.get("content-type")||"";
+ if(response.status!==200||!type.startsWith("image/")||response.headers.get("x-photo-status")!=="upstream-ok")
+  throw Error("Tourism photo gateway unavailable: "+id+" HTTP "+response.status+" "+type);
 }
 const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");

@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.2 — 2026-10-19
+- Fix guest photo failures with same-origin `/photos/{slug}` gateway, fixed canonical Wikimedia thumbnails, original fallback, and Cloudflare edge caching.
+- Every gallery retains photographer/source credits. Missing upstream displays clear local SVG placeholder instead of broken image icon.
+- Added tests for image slug whitelist and live photo retrieval; updated both Cloudflare Worker and Wrangler routing for `/photos/*`.
+- No changes to booking, pricing, D1 guest data, secrets or FinChat/Spenva deployments.
+
+
 ## 3.0.1 — 2026-10-18
 - Fixed all off-domain Wikimedia attraction photos being blocked by the separately deployed Worker CSP, while preserving restriction to trusted Commons and upload.wikimedia.org hosts.
 - Added gallery image-origin allowlist regression test and live Cloudflare CSP smoke check; the static `_headers` rule was already correct.

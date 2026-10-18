@@ -84,3 +84,6 @@ To configure each operator: Dashboard > Tariff net > choose activity + Sharing/P
 
 ## Photo display (3.0.1)
 The tourism pages use Wikimedia Commons photo sources with author links and CC attribution. The production Worker serving these pages MUST set `Content-Security-Policy: img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org` to allow Commons redirects. The same policy exists in `public/_headers` for Wrangler static assets. `scripts/smoke.mjs` checks the live response header to catch deployment drift. Photos require connectivity to Wikimedia; the public offline cache deliberately excludes third-party images and customer data.
+
+## Reliable destination photos v3.0.2
+Destination pages use `/photos/<slug>` on the tourism Worker instead of browser-side Wikimedia `Special:FilePath` hotlinks. `src/photos.mjs` restricts requests to vetted Commons paths, tries 640px thumbnails and originals, caches successes, returns HTTP 502 for upstream failures. `public/photo-loader.js` swaps unsuccessful photos for transparent honest SVG placeholder. Photographer/CC BY-SA links are displayed in captions. External origin availability is still a dependency on a cold cache: live verification checks the upstream at selected photo URLs. Image cache contains only freely licensed public photos, not user data.

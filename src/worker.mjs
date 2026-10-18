@@ -2,6 +2,7 @@ import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
+import {servePhoto} from "./photos.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -43,10 +44,11 @@ async function makePrice(db,b){
  const p=calculate({guests:n,base,extras,agencyCosts:cost,paymentFee:fee,sellingPrice:sell,bookingMode:mode,variantId:variant});
  return {...p,activity_id:a,operator_id:op,guests:n,booking_mode:mode,variant_id:variant,recommendation:aiSuggestion(p,number(b.market_reference,1)||null),fulfillment:mode==="SHARING"?"OPERATOR_PER_PERSON_GUARANTEE_REQUIRED":mode==="PRIVATE"?"EXCLUSIVE_OPERATOR_AVAILABILITY_REQUIRED":"LEGACY_QUOTE"};
 }
-async function route(req,env){
+async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
+ if(path.startsWith("/photos/"))return servePhoto(req,ctx);
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.0.1",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.0.2",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/catalog"&&method==="GET"){
@@ -392,7 +394,7 @@ async function route(req,env){
  return bad("Endpoint tidak ditemukan",404);
 }
 export default {
- async fetch(req,env){try{return await route(req,env)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
+ async fetch(req,env,ctx){try{return await route(req,env,ctx)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
  async scheduled(event,env){
   // Only creates reviewable content drafts. No external posting, guest messaging, or advertising spend.
   if(event.cron!=="0 1 * * 1"||!env.DB)return;
