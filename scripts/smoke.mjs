@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.0.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.0.1")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -22,6 +22,11 @@ const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));
 if(!Array.isArray(cat.items)||cat.items.length<5||cat.modes?.length!==2||!cat.variants?.ISLAND_TOUR_CAR)throw Error("Public catalog missing items");
+const landingResp=await fetch(base+"/",{signal:AbortSignal.timeout(20000)});
+const photoPolicy=landingResp.headers.get("content-security-policy")||"";
+for(const imageHost of ["https://commons.wikimedia.org","https://upload.wikimedia.org"]){
+ if(!photoPolicy.includes(imageHost))throw Error("Photo loading blocked by CSP: "+imageHost);
+}
 const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");

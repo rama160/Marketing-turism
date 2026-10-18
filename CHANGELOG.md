@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.1 — 2026-10-18
+- Fixed all off-domain Wikimedia attraction photos being blocked by the separately deployed Worker CSP, while preserving restriction to trusted Commons and upload.wikimedia.org hosts.
+- Added gallery image-origin allowlist regression test and live Cloudflare CSP smoke check; the static `_headers` rule was already correct.
+- No tariff, booking, customer data, D1 migrations, worker secrets or FinChat/Spenva worker changes.
+
+
 ### 3.0.0 — Public website finishing pass (2026-10-18)
 - Island tour hub now clearly offers West and East, photos, and a mobile-readable table with conservative one-car Sharing economics.
 - New 3.0.0 web regression tests cover credited photo galleries and group floor; official Nusa Penida Experiences icon and masthead aligned.

@@ -51,3 +51,14 @@ test("all Wikimedia gallery photos credit actual photographers",()=>{
 });
 
 test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/>NP</);assert.doesNotMatch(home,/PENIVARA/)});
+
+test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus local site assets",()=>{
+ const policy=read("_headers");
+ assert.match(policy,/img-src 'self' data: https:\/\/commons\.wikimedia\.org https:\/\/upload\.wikimedia\.org/);
+ for(const page of ["index.html","island-tour.html","west-tour.html","east-tour.html","snorkeling.html"]){
+  const content=read(page);
+  const srcs=[...content.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(x=>x[1]);
+  assert.ok(srcs.length>0, "Expected destination photos on "+page);
+  for(const src of srcs)assert.match(src,/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//);
+ }
+});
