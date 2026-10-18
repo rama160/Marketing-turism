@@ -73,7 +73,7 @@ async function route(req,env){
    if(v.success!==true||v.hostname!==u.hostname||v.action!=="lead_enquiry")return bad("Verifikasi anti-bot tidak sah",403);
   }catch(_){return bad("Verifikasi anti-bot sementara tidak tersedia",503);}
   const name=str(b.name,100),contact=str(b.contact,100),activity=str(b.activity_id,80),mode=str(b.booking_mode,16),variant=str(b.variant_id,40),n=number(b.guests,1,100),day=str(b.requested_date,10),message=str(b.message,800);
-  if(name.length<2||contact.length<5||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["SHARING","PRIVATE"].includes(mode)||!variantAllowed(activity,mode,variant)||!n||!dateOK(day)||day<new Date().toISOString().slice(0,10)||b.consent!==true)return bad("Data guest/tanggal/consent tidak lengkap");
+  if(name.length<2||contact.length<5||n>(activity==="ISLAND_TOUR_CAR"?7:20)||!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["SHARING","PRIVATE"].includes(mode)||!variantAllowed(activity,mode,variant)||!n||!dateOK(day)||day<new Date().toISOString().slice(0,10)||b.consent!==true)return bad("Data guest/tanggal/consent tidak lengkap");
   const ip=str(req.headers.get("cf-connecting-ip")||"unknown");
   const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ip+":"+(env.RATE_SALT||"tour")));
   const key=Array.from(new Uint8Array(hash)).slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join("")+":"+new Date().toISOString().slice(0,10);
@@ -141,7 +141,7 @@ async function route(req,env){
    const isExperience=["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(item);
    if(!isExperience&&mode!=="LEGACY")return bad("Lunch dan fast boat ditarifkan per orang, bukan sebagai mode pengalaman");
    if(isExperience&&mode!=="LEGACY"){
-    if(cap===null)return bad("Kapasitas kendaraan/kapal wajib dikonfirmasi operator");
+    if(cap===null&&b.verified===true)return bad("Kapasitas kendaraan/kapal wajib dikonfirmasi operator sebelum verifikasi tarif");
     if(item==="ISLAND_TOUR_CAR"&&variant!=="DEFAULT"){
       if(unit!=="car"||scheme!=="FIXED_VEHICLE"||cap>7||fixed!==0||guaranteed!==0)return bad("Tour Barat/Timur Sharing maupun Private harus memakai biaya SATU mobil penuh, maksimal 7 guest");
     }else if(mode==="SHARING"){
