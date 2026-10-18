@@ -17,7 +17,7 @@ test("PWA install icon exists and manifest links to SVG",()=>{
 
 test("separate public activity pages retain guarded marketing disclosures",()=>{
  const sea=read("snorkeling.html"),island=read("island-tour.html"),home=read("index.html");
- assert.match(sea,/Snorkeling 3 Spot/);
+ assert.match(sea,/Snorkeling Nusa Penida.*Manta Bay/);
  assert.match(island,/Island Tour/);
  assert.match(sea,/noindex, follow/);
  assert.match(island,/noindex, follow/);
