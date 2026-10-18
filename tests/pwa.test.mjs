@@ -34,3 +34,18 @@ test("public marketing resources never promise unattended booking",()=>{
  assert.match(home,/noindex, follow/);
  assert.doesNotMatch(home,/BANK_ACCOUNT_NUMBER|api_key|secret_key/);
 });
+
+test("tour guide distinguishes west/east, uses one full vehicle rather than expected seat fills",()=>{
+ const island=read("island-tour.html"),west=read("west-tour.html"),east=read("east-tour.html");
+ assert.match(island,/Wisata Barat/);assert.match(island,/Wisata Timur/);assert.match(island,/Rp700.000/);
+ assert.match(island,/Rp600.000/);assert.match(island,/mobil penuh/);
+ assert.match(west,/Kelingking/);assert.match(west,/Broken Beach/);assert.match(west,/Crystal Bay/);
+ assert.match(east,/Diamond Beach/);assert.match(east,/Atuh Beach/);
+ assert.doesNotMatch(island,/PENIVARA/);
+});
+test("all Wikimedia gallery photos credit actual photographers",()=>{
+ for(const path of ["snorkeling.html","west-tour.html","east-tour.html"]){const html=read(path);
+  const imageCount=(html.match(/<img /g)||[]).length,credits=(html.match(/Wikimedia Commons/g)||[]).length;
+  assert.ok(imageCount>=3, path+" missing image gallery");assert.ok(credits>=imageCount,path+" attribution missing");
+ }
+});

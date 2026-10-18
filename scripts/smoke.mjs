@@ -16,14 +16,14 @@ const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeli
 const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
-if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour"))throw Error("Island tour landing page missing");
+if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||!island.includes("Rp700.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
 await get("/robots.txt");await get("/sitemap.xml");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));
 if(!Array.isArray(cat.items)||cat.items.length<5||cat.modes?.length!==2||!cat.variants?.ISLAND_TOUR_CAR)throw Error("Public catalog missing items");
 const page=await get("/");
-if(!(page.includes("PENIVARA")||page.includes("Marketing"))||!page.includes("leadForm"))throw Error("Guest page not served");
+if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
 await get("/api/admin/summary",401);
