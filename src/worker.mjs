@@ -142,7 +142,10 @@ async function route(req,env){
    if(!isExperience&&mode!=="LEGACY")return bad("Lunch dan fast boat ditarifkan per orang, bukan sebagai mode pengalaman");
    if(isExperience&&mode!=="LEGACY"){
     if(cap===null&&b.verified===true)return bad("Kapasitas kendaraan/kapal wajib dikonfirmasi operator sebelum verifikasi tarif");
-    if(item==="ISLAND_TOUR_CAR"&&variant!=="DEFAULT"){
+    if(item==="ISLAND_TOUR_CAR"&&variant==="DEFAULT"){
+      if(mode==="SHARING"&&(unit!=="person"||scheme!=="STANDARD"||guaranteed!==1||fixed!==0||cap>7))return bad("Tarif sharing lama perlu jaminan operator");
+      if(mode==="PRIVATE"&&(unit!=="car"||scheme!=="STANDARD"||fixed!==0||cap>7))return bad("Tarif private mobil lama tidak valid");
+    }else if(item==="ISLAND_TOUR_CAR"&&variant!=="DEFAULT"){
       if(unit!=="car"||scheme!=="FIXED_VEHICLE"||cap>7||fixed!==0||guaranteed!==0)return bad("Tour Barat/Timur Sharing maupun Private harus memakai biaya SATU mobil penuh, maksimal 7 guest");
     }else if(mode==="SHARING"){
       if(unit!=="person"||scheme!=="STANDARD"||guaranteed!==1||fixed!==0||(item==="SNORKELING_3_SPOTS"?cap>20:cap>7))return bad("Snorkeling Sharing harus dijamin operator per orang, maksimal 20");

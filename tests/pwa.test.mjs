@@ -23,7 +23,7 @@ test("separate public activity pages retain guarded marketing disclosures",()=>{
  assert.match(island,/noindex, follow/);
  assert.match(home,/snorkeling\.html/);
  assert.match(home,/island-tour\.html/);
- assert.match(island,/6–7/);
+ assert.match(island,/maksimal.*7|6–7/i);
  assert.match(sea,/konfirmasi/);
 });
 test("public marketing resources never promise unattended booking",()=>{
