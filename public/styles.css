@@ -14,3 +14,8 @@
 .scene-notice{padding:22px;border-radius:18px;background:#eef7f4;margin:28px 0}
 .scene-notice h2{margin:0 0 8px}.gallery-heading{margin-top:28px}
 @media (max-width:720px){.scene-grid{grid-template-columns:1fr;gap:17px}.scene-card img{height:230px}.scene-body{padding:17px}}
+
+/* Mobile-safe operator cost comparison table; estimates are not binding offers */
+.pricing-table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;white-space:nowrap;margin:12px 0 18px;font-variant-numeric:tabular-nums}
+.pricing-table th,.pricing-table td{padding:11px 18px;border-bottom:1px solid #dce8e7;text-align:left;font-size:14px}
+.pricing-table thead{background:#eff7f5}.pricing-table tr:nth-child(even){background:#f8faf9}

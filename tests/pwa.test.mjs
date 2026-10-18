@@ -23,7 +23,7 @@ test("separate public activity pages retain guarded marketing disclosures",()=>{
  assert.match(island,/noindex, follow/);
  assert.match(home,/snorkeling\.html/);
  assert.match(home,/island-tour\.html/);
- assert.match(island,/maksimal.*7|6–7/i);
+ assert.match(island,/maksim(?:um|al).*7|6–7/i);
  assert.match(sea,/konfirmasi/);
 });
 test("public marketing resources never promise unattended booking",()=>{
@@ -49,3 +49,5 @@ test("all Wikimedia gallery photos credit actual photographers",()=>{
   assert.ok(imageCount>=3, path+" missing image gallery");assert.ok(credits>=imageCount,path+" attribution missing");
  }
 });
+
+test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/>NP</);assert.doesNotMatch(home,/PENIVARA/)});

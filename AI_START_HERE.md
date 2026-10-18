@@ -3,7 +3,7 @@ Version: 3.0.0 | 2026-10-17 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
-- Snorkeling 3 spots: initial net Rp350,000 per person.
+- Snorkeling 3 spots: CURRENT owner-provided draft net SHARING Rp200,000 per guest, max 20; PRIVATE Manta Bay Rp1,500,000 per booking (3 spots), Manta Point Rp2,800,000 per booking (3 spots). Historic Rp350,000 LEGACY rate is only for previous quotes.
 - Island car: initial net Rp600,000 per car, seating 6 or 7 must be verified by each partner.
 - Lunch: initial net Rp150,000 per person; extra to island car.
 - Fast boat: initial net Rp150,000 per person per ONE WAY in either direction, owner-confirmed base cost. Each actual boat operator and quote still requires verification.

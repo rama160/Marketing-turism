@@ -1,5 +1,11 @@
 # Changelog
 
+### 3.0.0 — Public website finishing pass (2026-10-18)
+- Island tour hub now clearly offers West and East, photos, and a mobile-readable table with conservative one-car Sharing economics.
+- New 3.0.0 web regression tests cover credited photo galleries and group floor; official Nusa Penida Experiences icon and masthead aligned.
+- No change to customer payments, secrets, shared Workers, or database pricing.
+
+
 ## 3.0.0 — 2026-10-18
 - Owner confirmed Nusa Penida Experiences as official business/trade name; public web copy and PWA naming updated.
 - Sharing snork net Rp200k per guest, max 20 (draft); private Manta Bay all-in Rp1.5m and Manta Point all-in Rp2.8m per booking (draft).

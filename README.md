@@ -27,7 +27,7 @@ Dedicated D1: marketing-turism-db, binding DB. Worker: marketing-turism-agent.
 Set ADMIN_TOKEN secret (24+ chars), RATE_SALT secret, then carefully enable PUBLIC_LEADS_ENABLED=true when privacy/anti-abuse controls are approved. Site served at workers.dev or assigned domain after deployment.
 
 ## Restrictions
-No automatic bank settlement and no partial refunds; full refunds are entered only after owner confirms actual transfer. No live payment gateway, external booking supplier API, mass WhatsApp messaging, auto-posting, or fully autonomous marketing campaigns. No verified real-world operator tariff/contract yet. All starting net rates are DRAFT. Return boat tariff and 7th car seat require operator confirmation. No simultaneous snorkeling+island tour on the same day. Booking payment requires human verification, and handover requires operator acknowledgment.
+No automatic bank settlement; any eligible refund is calculated server-side under the draft cancellation rules, reviewed by owner and recorded only after actual external transfer verification. No live payment gateway, external booking supplier API, mass WhatsApp messaging, auto-posting, or fully autonomous marketing campaigns. No verified real-world operator tariff/contract yet. All starting net rates are DRAFT. Return boat tariff and 7th car seat require operator confirmation. No simultaneous snorkeling+island tour on the same day. Booking payment requires human verification, and handover requires operator acknowledgment.
 
 See docs/OPERATIONS.md. Never commit credentials, personal guest details or bank credentials.
 
