@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.1.0 (MVP pilot; brand, bilingual homepage and owner CMS).
+Repository: rama160/Marketing-turism. Release 3.2.1 (pilot; premium bilingual tourism landing page, owner CMS, and reliable mobile image previews).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -114,3 +114,7 @@ The ten CC-licensed JPEGs are already committed at `public/photos/*.jpg`. Cloudf
 Dashboard quick edit fields store `hero.title` and `hero.description` in both languages via the same owner-only CMS D1 API. Edits are version checked and applied independently, not atomically; errors report possible partial save. Changes to website fallback copy do not overwrite any existing published CMS content. Statistics are real; the mockup's sample numbers are not fabricated on the live dashboard. Photo authors and Commons source links remain visible.
 
 **Important:** The public enquiry form stays disabled pending approved launch prerequisites, and the primary visitor action is to explore tour options rather than implying an immediately confirmed booking. Availability, sea conditions and manta sightings are not guaranteed. GitHub Actions automatic Worker deployments still need explicit Cloudflare secrets and opt-in variable; the latest live release was pushed through authorized direct Cloudflare API.
+
+## v3.2.1 — Mobile image preview fix (2026-10-19)
+
+Published live directly to the dedicated Tourism Cloudflare Worker, version `c1b9d5cd-e712-41d1-baf5-475c2d6ff7c9` deployed to 100% of traffic. The real mobile bug was blank large photo previews despite loaded thumbnails. Homepage hero (1 image), package covers (2 images), and tour cards (3 images) now use genuine accessible `<img>` elements with `object-fit: cover`, layered dark gradients for legible labels, and a navy fallback if assets fail. All photography still passes through the preexisting same-origin `/photos/{slug}` gateway and `photo-loader.js` local/GitHub/placeholder fallback, keeping visible Wikimedia credits. Fragile `--spot-photo` and `--tour-photo` CSS-background variables are removed from the homepage. PWA public-only cache increased to v10; no cached private API, guest or admin data. Added CI and live regression assertions for all six image covers and existing safety controls. Operator pricing and lead intake status remain unchanged.
