@@ -19,3 +19,12 @@
 .pricing-table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;white-space:nowrap;margin:12px 0 18px;font-variant-numeric:tabular-nums}
 .pricing-table th,.pricing-table td{padding:11px 18px;border-bottom:1px solid #dce8e7;text-align:left;font-size:14px}
 .pricing-table thead{background:#eff7f5}.pricing-table tr:nth-child(even){background:#f8faf9}
+
+/* Brand system, bilingual selector and owner-only content editor. */
+.brandLogo{height:42px;width:42px;border-radius:11px;object-fit:contain;flex:none}
+.languagePicker{display:inline-flex;align-items:center;gap:5px;border:1px solid #bed6d5;border-radius:10px;padding:4px 7px;background:#f7fcfa;color:#205361}
+.languagePicker select{border:0;background:transparent;color:#205361;font-size:12px;max-width:145px;cursor:pointer}
+.cmsPreview{white-space:pre-wrap;overflow-wrap:anywhere;background:#eff7f4;border:1px solid #cfe3de;border-radius:12px;padding:22px;line-height:1.7;min-height:120px}
+#tab-website textarea{width:100%;resize:vertical;line-height:1.5}
+#tab-website .panel{min-width:0}
+@media(max-width:760px){.top{flex-wrap:wrap}.top nav{display:flex;flex-wrap:wrap;gap:9px;width:100%;justify-content:space-between}.languagePicker{order:4}.brandLogo{width:38px;height:38px}}
