@@ -100,3 +100,21 @@ test("premium tourism visuals use real credited destination images and honest ac
  assert.match(read("app.js"),/admin\/site-content/);
  assert.match(home,/Penerimaan permintaan|Pengiriman lead akan tersedia/);
 });
+test("all large cover images render as genuine img elements with safe mobile fallbacks",()=>{
+ const home=read("index.html"),css=read("styles.css"),loader=read("photo-loader.js");
+ assert.equal((home.match(/class="heroBackdrop"/g)||[]).length,1,"hero cover must use img");
+ assert.equal((home.match(/class="package-cover-image"/g)||[]).length,2,"both package covers must use img");
+ assert.equal((home.match(/class="spot-cover-image"/g)||[]).length,3,"West, East, and snorkeling covers must use img");
+ assert.doesNotMatch(home,/--spot-photo|--tour-photo/,"do not rely on CSS variables for critical photos");
+ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","manta-bay"]){
+  assert.match(home,new RegExp('src="/photos/'+slug+'"'));
+ }
+ assert.match(css,/\.spot-cover \.spot-cover-image\{[^}]*object-fit:cover/);
+ assert.match(css,/\.packageArt \.package-cover-image\{[^}]*object-fit:cover/);
+ assert.match(css,/\.premiumHero \.heroBackdrop\{[^}]*object-fit:cover/);
+ assert.match(css,/\.spot-cover:after\{/);
+ assert.match(css,/background:#063c58!important/);
+ assert.match(loader,/photoFallbackStage/);
+ assert.match(loader,/photo-unavailable\.svg/);
+ assert.match(read("service-worker.js"),/public-v10/);
+});
