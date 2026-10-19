@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - scripts/sync-photos.mjs
+      - scripts/optimize-photos.py
       - .github/workflows/sync-photos.yml
   workflow_dispatch:
 permissions:
