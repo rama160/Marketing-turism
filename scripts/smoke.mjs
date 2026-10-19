@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.3.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.4.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -80,7 +80,18 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v12"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v13"))throw Error("PWA asset cache did not bump");
+// Guest contact: primary click-to-chat must not be confused with public catalog.
+const number="628561752525";
+const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
+if(!home.includes('id="whatsapp"')||!home.includes('class="wa-floating"')||!home.includes(contact)||!home.includes(catalog))throw Error("Public WhatsApp contact links missing");
+if(!home.includes('id="tab-whatsapp"')||!home.includes('data-tab="whatsapp"'))throw Error("Owner WhatsApp reply workspace missing");
+if(!home.includes("Koneksi otomatis ke inbox WhatsApp")||!home.includes("Tidak ada pengiriman otomatis"))throw Error("WhatsApp connection falsely presented as active");
+if(!langJS.includes('encodeURIComponent(message)')||!langJS.includes('View WhatsApp Catalog'))throw Error("Guest WhatsApp language handling absent");
+for(const page of [snorkeling,island,west,east]){
+ if(!page.includes('data-whatsapp-chat')||!page.includes(catalog))throw Error("Travel detail WhatsApp contact missing");
+}
+if(!styles.includes('.wa-floating')||!styles.includes('.wa-contact-card'))throw Error("Mobile WhatsApp CSS missing");
 const emblem=await get("/icon.svg");if(!emblem.includes("pari manta")||!emblem.includes("cliff"))throw Error("Manta cliff brand not live");
 for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
  const h=await get(subpage);
@@ -102,4 +113,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS v3.3.0 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
+console.log("SUCCESS v3.4.0 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
