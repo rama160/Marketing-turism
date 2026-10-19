@@ -18,7 +18,7 @@ Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Pen
 
 ## Basic commands
 Run: npm run ci
-Migrate: npx wrangler d1 migrations apply marketing-turism-db --remote
+Migrate (pilot v3.1.0): npx wrangler d1 execute marketing-turism-db --remote --file=database/migrations/0009_site_content.sql
 Local server: npx wrangler dev
 Deploy: npx wrangler deploy (only after checking settings and secrets).
 
@@ -98,5 +98,12 @@ The ten CC-licensed JPEGs are already committed at `public/photos/*.jpg`. Cloudf
 - Website uses the canonical Nusa Penida Experiences SVG brand in navigation and install icon.
 - Locale picker in the header: Auto (browser language, Indonesian if `id`, English otherwise), Bahasa Indonesia, English. Manual selection stays in the browser. This does not identify the guest's nationality.
 - Dashboard > Editor Website: choose a homepage or experience-page section and ID/EN language, edit plain-text copy, preview, then publish. CMS values persist to dedicated D1 with revision/version history and cannot be edited without `ADMIN_TOKEN`. Collision between open admin tabs returns HTTP 409.
-- Execute `npx wrangler d1 migrations apply marketing-turism-db --remote` before `npx wrangler deploy` (dedicated Worker only). The migration is additive and leaves existing operator rates, quotes and bookings untouched.
+- Execute `npx wrangler d1 execute marketing-turism-db --remote --file=database/migrations/0009_site_content.sql` before `npx wrangler deploy` (dedicated Worker only). The migration is additive and leaves existing operator rates, quotes and bookings untouched.
 - Public copy is intended for marketing text, not legal notices or unconfirmed commercial claims. Operator quotes and margins remain controlled by canonical pricing rules; lead intake stays OFF until readiness approval.
+
+## Deploy blocked until GitHub Cloudflare secrets are connected
+Code and tests are merged into `main`; D1 tables for CMS are already created in the **dedicated** Tourism database via authorized Cloudflare API. Production site deployment requires repository Actions secrets `CLOUDFLARE_API_TOKEN` (Cloudflare token scoped to the dedicated account with Workers Scripts edit and D1 edit) and `CLOUDFLARE_ACCOUNT_ID`, plus repository Actions variable `ENABLE_CLOUDFLARE_DEPLOY=true`. Do NOT commit either secret or post it in chat.
+
+Use [Actions secrets](https://github.com/rama160/Marketing-turism/settings/secrets/actions) and [Actions variables](https://github.com/rama160/Marketing-turism/settings/variables/actions); then run [Deploy Tourism Cloudflare (manual)](https://github.com/rama160/Marketing-turism/actions/workflows/deploy-cloudflare.yml) on `main`. Job refuses to run unless opted in. Wrangler executes the idempotent **0009** schema (already present), then deploys only `marketing-turism-agent` with `public/` static assets. No FinChat/Spenva resources are accessed. The historical D1 schema was populated without a Wrangler `d1_migrations` ledger, so DO NOT indiscriminately re-run all older ALTER TABLE migrations in production.
+
+The credential-free deployment trial on 2026-10-19 was stopped by Wrangler *before* updating the Worker, because both Actions secrets were unset. Github CI and the production pilot smoke check remained green. New guest intake is still OFF.
