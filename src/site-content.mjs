@@ -7,6 +7,10 @@ export const CONTENT_FIELDS=Object.freeze([
  ["regions.eyebrow","Destinasi · label"],["regions.title","Destinasi · judul"],["regions.description","Destinasi · deskripsi"],
  ["west.title","Destinasi · Barat"],["west.description","Destinasi · deskripsi Barat"],
  ["east.title","Destinasi · Timur"],["east.description","Destinasi · deskripsi Timur"],
+ ["snorkelingPage.eyebrow","Halaman Snorkeling · label"],["snorkelingPage.title","Halaman Snorkeling · judul"],["snorkelingPage.lead","Halaman Snorkeling · ringkasan"],["snorkelingPage.description","Halaman Snorkeling · ketentuan"],
+ ["islandPage.eyebrow","Halaman Island Tour · label"],["islandPage.title","Halaman Island Tour · judul"],["islandPage.lead","Halaman Island Tour · ringkasan"],["islandPage.description","Halaman Island Tour · ketentuan"],
+ ["westPage.eyebrow","Halaman Barat · label"],["westPage.title","Halaman Barat · judul"],["westPage.lead","Halaman Barat · ringkasan"],["westPage.description","Halaman Barat · ketentuan"],
+ ["eastPage.eyebrow","Halaman Timur · label"],["eastPage.title","Halaman Timur · judul"],["eastPage.lead","Halaman Timur · ringkasan"],["eastPage.description","Halaman Timur · ketentuan"],
  ["contact.eyebrow","Kontak · label"],["contact.title","Kontak · judul"],["contact.description","Kontak · deskripsi"],["contact.notice","Kontak · pemberitahuan"]
 ]);
 const allowed=new Set(CONTENT_FIELDS.map(([key])=>key));
