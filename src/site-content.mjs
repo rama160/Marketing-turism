@@ -1,5 +1,9 @@
 // Canonical server-side allowlist and persistence for the public homepage editor.
 export const CONTENT_FIELDS=Object.freeze([
+ ["price.snorkeling","Foto · harga Snorkeling Sharing (per orang)"],
+ ["price.island","Foto · harga Island Tour (per mobil)"],
+ ["price.west","Foto · harga wisata Barat (per mobil)"],
+ ["price.east","Foto · harga wisata Timur (per mobil)"],
  ["hero.eyebrow","Hero · label"],["hero.title","Hero · judul"],["hero.subtitle","Hero · subjudul"],["hero.description","Hero · deskripsi"],["hero.cta","Hero · tombol"],
  ["packages.eyebrow","Paket · label"],["packages.title","Paket · judul"],["packages.description","Paket · deskripsi"],
  ["snorkeling.title","Kartu · judul snorkeling"],["snorkeling.description","Kartu · deskripsi snorkeling"],
