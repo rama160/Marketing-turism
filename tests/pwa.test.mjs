@@ -23,7 +23,7 @@ test("separate public activity pages retain guarded marketing disclosures",()=>{
  assert.match(island,/noindex, follow/);
  assert.match(home,/snorkeling\.html/);
  assert.match(home,/island-tour\.html/);
- assert.match(island,/maksim(?:um|al).*7|6–7/i);
+ assert.match(island,/maksim(?:um|al).*(?:7|tujuh)|6–7/i);
  assert.match(sea,/konfirmasi/);
 });
 test("public marketing resources never promise unattended booking",()=>{
@@ -35,14 +35,32 @@ test("public marketing resources never promise unattended booking",()=>{
  assert.doesNotMatch(home,/BANK_ACCOUNT_NUMBER|api_key|secret_key/);
 });
 
-test("tour guide distinguishes west/east, uses one full vehicle rather than expected seat fills",()=>{
- const island=read("island-tour.html"),west=read("west-tour.html"),east=read("east-tour.html");
- assert.match(island,/Wisata Barat/);assert.match(island,/Wisata Timur/);assert.match(island,/Rp700.000/);
- assert.match(island,/Rp600.000/);assert.match(island,/mobil penuh/);
+test("guest tour guides show experiences instead of private supplier calculations",()=>{
+ const island=read("island-tour.html"),west=read("west-tour.html"),east=read("east-tour.html"),sea=read("snorkeling.html");
+ assert.match(island,/Wisata Barat/);assert.match(island,/Wisata Timur/);
  assert.match(west,/Kelingking/);assert.match(west,/Broken Beach/);assert.match(west,/Crystal Bay/);
  assert.match(east,/Diamond Beach/);assert.match(east,/Atuh Beach/);
- assert.doesNotMatch(island,/PENIVARA/);
+ for(const page of [island,west,east,sea]){
+  assert.doesNotMatch(page,/Tarif net awal|margin minimum|keuntungan minimum agen|Harga minimum per booking|Net mobil \/ guest|Hitung Sharing tanpa menebak/i);
+ }
+ assert.doesNotMatch(island,/Rp600.000|Rp700.000|Rp85.715|pricing-table|PENIVARA/);
 });
+test("starting selling prices appear only on photo previews, are clear about their units and editable by owner",()=>{
+ const home=read("index.html"),css=read("styles.css"),i18n=read("language.js");
+ assert.equal((home.match(/data-copy="price.snorkeling"/g)||[]).length,2);
+ for(const key of ["price.island","price.west","price.east"])assert.equal((home.match(new RegExp('data-copy="'+key+'"','g'))||[]).length,1);
+ assert.match(home,/Rp350.000\/orang/);
+ assert.match(home,/Rp800.000\/mobil/);
+ assert.match(home,/class="price-preview package-price"/);
+ assert.match(home,/class="price-preview" data-copy="price.west"/);
+ assert.match(home,/penawaran mulai dan belum mengikat/);
+ assert.match(css,/\.spot-cover>\.price-preview/);
+ assert.match(i18n,/price\.snorkeling/);
+ assert.match(i18n,/Rp350,000\/person/);
+ assert.match(i18n,/Rp800,000\/car/);
+ assert.doesNotMatch(i18n,/Tarif net awal mobil adalah Rp600.000|Rp600,000 for a full vehicle/);
+});
+
 test("all Wikimedia gallery photos credit actual photographers",()=>{
  for(const path of ["snorkeling.html","west-tour.html","east-tour.html"]){const html=read(path);
   const imageCount=html.split('src="/photos/').length-1,credits=(html.match(/Wikimedia Commons/g)||[]).length;
