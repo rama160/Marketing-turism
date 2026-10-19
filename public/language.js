@@ -226,6 +226,26 @@ Object.assign(englishText,{
  "Kapasitas kendaraan maksimal tujuh tamu jika telah dikonfirmasi aman. Harga mulai per mobil dapat dilihat pada kartu foto beranda; makan siang dan fast boat belum termasuk. Akses ke titik foto Rumah Pohon akan diperiksa bersama operator agar fasilitas yang ditawarkan sesuai kondisi di lapangan.": "Vehicles carry up to seven guests only with verified safe seating. Starting prices per vehicle appear on the homepage photo cards; lunch and fast boat tickets are extra. Tree House viewpoints and access are confirmed with the operator.",
  "Harga promosi wisata darat ditampilkan pada kartu foto di beranda. Makan siang, tiket fast boat, biaya masuk destinasi bila berlaku, dan layanan tambahan belum otomatis termasuk. Kami akan memastikan rute, kapasitas kendaraan, fasilitas, cuaca, serta ketersediaan operator sebelum memberikan penawaran akhir.": "Island tour starting prices are displayed on homepage photo cards. Lunch, fast boat transfers, applicable entrance fees and other extras are not automatically included. Routes, safe capacity, weather, inclusions and operator availability are verified before we issue a final quotation."
 });
+
+Object.assign(englishHome,{
+ "whatsapp.eyebrow":"DIRECT CONTACT",
+ "whatsapp.heading":"Dreaming of Nusa Penida? Let's talk on WhatsApp.",
+ "whatsapp.description":"Share your travel dates, group size, and preferred experiences. Our team can explain available tours and check availability. No automatic booking or payment.",
+ "whatsapp.disclaimer":"Prices, activities and schedules are confirmed before booking."
+});
+Object.assign(idDefaults,{
+ "whatsapp.eyebrow":"KONTAK LANGSUNG",
+ "whatsapp.heading":"Punya rencana liburan? Chat kami di WhatsApp.",
+ "whatsapp.description":"Ceritakan tanggal perjalanan, jumlah tamu, dan paket favorit Anda. Tim kami akan membantu menjelaskan pilihan tur serta mengecek ketersediaan. Tidak ada pemesanan atau pembayaran otomatis.",
+ "whatsapp.disclaimer":"Penawaran, spot, dan jadwal dikonfirmasi sebelum booking."
+});
+Object.assign(englishText,{
+ "Chat WhatsApp":"Chat on WhatsApp",
+ "Chat via WhatsApp ↗":"Chat on WhatsApp ↗",
+ "Lihat Katalog WhatsApp":"View WhatsApp Catalog",
+ "WhatsApp Business:":"WhatsApp Business:",
+ "Kontak Kami ↗":"Contact Us ↗"
+});
 const originalNodes=[];
 const originals={};
 for(const node of document.querySelectorAll("[data-copy]"))originals[node.dataset.copy]=node.textContent.trim();
@@ -268,6 +288,10 @@ async function apply(){
   const translated=lang==="en"?(englishText[trim]||trim):trim;
   node.nodeValue=source.replace(trim,translated);
  }
+ const message=lang==="en"
+  ?"Hello Nusa Penida Experiences, I would like to ask about Island Tours or Snorkeling. Can you help?"
+  :"Halo Nusa Penida Experiences, saya ingin informasi Island Tour atau Snorkeling. Bisa bantu?";
+ for(const link of document.querySelectorAll("[data-whatsapp-chat]"))link.href="https://wa.me/628561752525?text="+encodeURIComponent(message);
  const translations=await load(lang);
  for(const el of document.querySelectorAll("[data-copy]")){
   const key=el.dataset.copy;
