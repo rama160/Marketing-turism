@@ -97,6 +97,6 @@ The ten CC-licensed JPEGs are already committed at `public/photos/*.jpg`. Cloudf
 ## Website content & guest language
 - Website uses the canonical Nusa Penida Experiences SVG brand in navigation and install icon.
 - Locale picker in the header: Auto (browser language, Indonesian if `id`, English otherwise), Bahasa Indonesia, English. Manual selection stays in the browser. This does not identify the guest's nationality.
-- Dashboard > Editor Website: choose a homepage section and ID/EN language, edit plain-text copy, preview, then publish. CMS values persist to dedicated D1 with revision/version history and cannot be edited without `ADMIN_TOKEN`. Collision between open admin tabs returns HTTP 409.
+- Dashboard > Editor Website: choose a homepage or experience-page section and ID/EN language, edit plain-text copy, preview, then publish. CMS values persist to dedicated D1 with revision/version history and cannot be edited without `ADMIN_TOKEN`. Collision between open admin tabs returns HTTP 409.
 - Execute `npx wrangler d1 migrations apply marketing-turism-db --remote` before `npx wrangler deploy` (dedicated Worker only). The migration is additive and leaves existing operator rates, quotes and bookings untouched.
 - Public copy is intended for marketing text, not legal notices or unconfirmed commercial claims. Operator quotes and margins remain controlled by canonical pricing rules; lead intake stays OFF until readiness approval.
