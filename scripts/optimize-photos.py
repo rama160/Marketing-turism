@@ -9,8 +9,9 @@ manifest=json.loads(manifest_path.read_text())
 for item in manifest["photos"]:
     path=Path("public/photos")/(item["slug"]+".jpg")
     with Image.open(path) as opened:
-        if opened.format!="JPEG":
-            raise ValueError(f"{path} is not a JPEG")
+        # Wikimedia JPEG files may be detected as MPO depending on embedded camera data.
+        # Accept only photos PIL can actually decode and transcode to clean RGB JPEG.
+        print(f"DECODE {item['slug']} source format: {opened.format}")
         im=ImageOps.exif_transpose(opened).convert("RGB")
         im.thumbnail((960, 720), Image.Resampling.LANCZOS)
         im.save(path,"JPEG",quality=82,optimize=True,progressive=True,subsampling=0)
