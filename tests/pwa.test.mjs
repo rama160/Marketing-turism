@@ -118,3 +118,88 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(loader,/photo-unavailable\.svg/);
  assert.match(read("service-worker.js"),/public-v10/);
 });
+
+test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
+ const {runInNewContext}=await import("node:vm");
+ const html=read("index.html"),app=read("app.js");
+ const tabs=[...html.matchAll(/<button data-tab="([^"]+)"/g)].map(x=>x[1]);
+ const routes=[...html.matchAll(/data-go-tab="([^"]+)"/g)].map(x=>x[1]);
+ const contentNames=[...html.matchAll(/id="tab-([a-z-]+)" class="tabcontent"/g)].map(x=>x[1]);
+ assert.ok(tabs.length>=8,"expected functional admin tab buttons");
+ assert.ok(routes.length>=8,"expected dashboard shortcut tiles");
+ const elements=new Map();
+ function element(selector,dataset={}){
+  const listeners=new Map();
+  const classes=new Set();
+  return {selector,dataset,listeners,classes,
+   style:{},hidden:selector==="#adminArea"||selector==="#adminContent"||selector.startsWith("#tab-")&&selector!=="#tab-summary",
+   value:"",textContent:"",innerHTML:"",checked:false,disabled:false,
+   classList:{toggle(c,active){if(active)classes.add(c);else classes.delete(c)},contains(c){return classes.has(c)}},
+   addEventListener(name,fn){listeners.set(name,fn)},
+   querySelector(){return null},
+   querySelectorAll(){return []},
+   scrollIntoView(){this.scrolled=true},
+   click(){const fn=listeners.get("click")||this.onclick;assert.equal(typeof fn,"function",selector+" missing click handler");return fn()},
+  };
+ }
+ function get(selector){
+  if(!elements.has(selector))elements.set(selector,element(selector));
+  return elements.get(selector);
+ }
+ const tabButtons=tabs.map((tab,i)=>element("tab:"+i,{tab}));
+ const shortcuts=routes.map((goTab,i)=>element("tile:"+i,{goTab}));
+ const tabContents=contentNames.map(tab=>{const x=element("#tab-"+tab);elements.set("#tab-"+tab,x);return x});
+ const session=new Map();
+ const OWNER="test-owner-token-not-used-in-production";
+ const fakeFetch=async(url,opts={})=>{
+  const p=String(url).replace(/^\\/api\\//,"");
+  const auth=(opts.headers?.authorization||"");
+  if(p.startsWith("admin/")&&auth!=="Bearer "+OWNER)return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{"content-type":"application/json"}});
+  let body;
+  if(p==="public/readiness")body={accepting_leads:false,business_contact:null};
+  else if(p==="admin/summary")body={operators:0,leads:0,quotes:0,bookings:0};
+  else if(p==="admin/site-content")body={fields:[["hero.title","Title"]],items:[]};
+  else if(p==="admin/finance")body={payables:[],changes:[]};
+  else if(p==="admin/business")body={business:null};
+  else body={items:[]};
+  return new Response(JSON.stringify(body),{status:200,headers:{"content-type":"application/json"}});
+ };
+ const document={
+  querySelector:get,
+  querySelectorAll(selector){
+   if(selector===".tabs button")return tabButtons;
+   if(selector==="[data-go-tab]")return shortcuts;
+   if(selector===".tabcontent")return tabContents;
+   return [];
+  },
+  addEventListener(){},
+ };
+ const context={document,window:{NusaLanguage:{defaults:()=>({}),resetCache(){},async apply(){}}},navigator:{},
+  sessionStorage:{getItem:key=>session.get(key)||null,setItem:(key,val)=>session.set(key,val),removeItem:key=>session.delete(key)},
+  location:{href:"https://tour.example/",origin:"https://tour.example"},fetch:fakeFetch,Response,URL,
+  Intl,Date,Number,Array,Object,Map,String,console,confirm:()=>true,prompt:()=>null};
+ assert.doesNotThrow(()=>runInNewContext(app,context,{filename:"public/app.js"}),"app bootstrap must not crash before binding owner login");
+ assert.equal(typeof get("#adminToggle").onclick,"function");
+ get("#adminToggle").click();
+ assert.equal(get("#adminArea").hidden,false);
+ assert.equal(get("#adminArea").scrolled,true);
+ assert.ok(tabButtons.every(btn=>btn.listeners.has("click")),"every sidebar tab must bind a click");
+ assert.ok(shortcuts.every(btn=>btn.listeners.has("click")),"every dashboard shortcut must bind a click");
+ tabButtons.find(x=>x.dataset.tab==="bookings").click();
+ assert.equal(get("#tab-bookings").hidden,false);
+ assert.equal(get("#tab-summary").hidden,true);
+ shortcuts.find(x=>x.dataset.goTab==="rates").click();
+ assert.equal(get("#tab-rates").hidden,false);
+ assert.equal(get("#tab-bookings").hidden,true);
+ assert.equal(typeof get("#unlock").onclick,"function","owner login handler missing");
+ get("#adminToken").value=OWNER;
+ await get("#unlock").click();
+ assert.equal(get("#adminContent").hidden,false,"verified owner should access dashboard");
+ assert.equal(get("#unlockPanel").hidden,true,"login form should close after successful owner auth");
+ assert.equal(session.get("tourAdmin"),OWNER,"token must remain session-only");
+ assert.ok(get("#stats").innerHTML.includes("Operator"),"live summary cards did not render");
+ get("#lock").click();
+ assert.equal(get("#adminContent").hidden,true);
+ assert.equal(get("#unlockPanel").hidden,false);
+ assert.equal(session.has("tourAdmin"),false);
+});
