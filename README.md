@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.3.0 (pilot; guest-friendly photo price labels, owner dashboard and bilingual CMS; public lead intake OFF).
+Repository: rama160/Marketing-turism. Release 3.5.0 (pilot; public WhatsApp chat/catalog, owner inbox foundation prepared but not connected, bilingual CMS; public lead intake OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -134,3 +134,11 @@ From **Dashboard agen → Editor Website**, the owner can edit `price.snorkeling
 Current public image/photo prices are **not final offers**; inclusions, fast-boat, lunch, weather, capacity and vendor availability require review. Real public enquiries remain OFF until launch approval.
 
 This is Cloudflare Worker v3.3.0, version `06852dc8-6d4c-4a8a-8a3f-a2ea589d056b`, at 100% live traffic. The old domain's private reservation/auth workflows were preserved.
+
+## WhatsApp contact and owner inbox (v3.5.0)
+
+Guest contact buttons are shown on the public homepage, on the four activity detail pages, and as a mobile floating shortcut. The **chat URL** is `https://wa.me/628561752525`; the **catalog URL** is `https://wa.me/c/628561752525`. The language selector provides matching Indonesian/English prefilled text. They are different URLs by design.
+
+The owner-only **Dashboard Agen → WhatsApp** includes safe copied reply templates and a Cloudflare/Meta integration inbox panel for verified messages, owner-requested AI drafting and deliberate owner-approved sends. **The official WhatsApp Business Platform connection is NOT yet active.** Both webhook and sending features fail closed until Meta onboarding and required Worker variables/secrets are supplied by the owner. There is no WhatsApp login automation, OTP harvesting, auto-response, broadcast messaging or false claim of inbox access.
+
+Setup and privacy checklist: [docs/WHATSAPP_SETUP.md](docs/WHATSAPP_SETUP.md). The new D1 tables in `database/migrations/0010_whatsapp_inbox.sql` are additive and contain no connection credentials. Do not activate reception before updating and approving the final business privacy/retention policies. Meta messaging may have platform fees; existing booking/operator rules remain unchanged.
