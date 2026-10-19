@@ -391,3 +391,30 @@ test("site content CMS: public read, owner-only writes, versioned audit, and inj
  assert.equal(sqlite.prepare("SELECT count(*) c FROM audit_log WHERE entity='site_content'").get().c,2);
  sqlite.close();
 });
+
+test("public photo price labels are owner-editable but never permit anonymous edits",async()=>{
+ const {request,sqlite}=fixture();
+ const anonymous=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Sharing Rp350.000/orang",expected_version:0,owner_confirmed:true},false);
+ assert.equal(anonymous.httpStatus,401);
+ for(const [key,locale,value] of [
+  ["price.snorkeling","id","Sharing Rp350.000/orang"],
+  ["price.snorkeling","en","Sharing Rp350,000/person"],
+  ["price.west","id","Mulai Rp800.000/mobil"],
+  ["price.east","id","Mulai Rp800.000/mobil"],
+  ["price.island","id","Mulai Rp800.000/mobil"]]){
+  const saved=await request("/api/admin/site-content","POST",{key,locale,value,expected_version:0,owner_confirmed:true});
+  assert.equal(saved.httpStatus,200,JSON.stringify(saved));
+ }
+ const id=await request("/api/public/site-content?lang=id","GET",undefined,false);
+ const en=await request("/api/public/site-content?lang=en","GET",undefined,false);
+ assert.equal(id.items["price.snorkeling"],"Sharing Rp350.000/orang");
+ assert.equal(id.items["price.island"],"Mulai Rp800.000/mobil");
+ assert.equal(en.items["price.snorkeling"],"Sharing Rp350,000/person");
+ assert.equal(en.items["price.island"],undefined);
+ const fields=await request("/api/admin/site-content");
+ assert.ok(fields.fields.some(([key])=>key==="price.west"));
+ const stale=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Rp10.000/orang",expected_version:0,owner_confirmed:true});
+ assert.equal(stale.httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT count(*) c FROM site_content_revisions").get().c,5);
+ sqlite.close();
+});
