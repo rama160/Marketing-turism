@@ -1,3 +1,9 @@
+## 3.2.1 — Fix blank destination previews on Android/mobile — 2026-10-19
+- Replaced CSS variable backgrounds with six genuine `<img>` elements: hero, two package covers, and three large West/East/Snorkeling tour covers; thumbnails and photo credits remain unchanged.
+- Added object-fit, stable overlay, and dark fallback styles so missing or loading imagery cannot produce white-on-white headings. Existing multi-stage `photo-loader.js` fallback now applies to all large photo previews as well.
+- Revved public-only offline PWA cache v9 → v10. Tested in CI with assertions covering image counts, required source slugs, removed CSS variables, and safe fallback styles. Live smoke also checks v3.2.1 assets, photo gateway, admin auth, D1 and lead-off gate.
+- Uploaded directly to dedicated tourism Worker `marketing-turism-agent`, Cloudflare deployment version `c1b9d5cd-e712-41d1-baf5-475c2d6ff7c9` at 100% traffic, inheriting all seven existing bindings. No changes to FinChat/Spenva Workers, supplier prices, guest information or launch readiness.
+
 ## 3.2.0 — Premium tourism redesign, verified production — 2026-10-19
 - Replaced the legacy NP monogram with a responsive vector emblem combining an elegant manta-ray silhouette, Nusa Penida cliffs, turquoise ocean and warm-gold sunlight; logo remains available offline via PWA cache.
 - Redesigned the public landing page around live licensed destination photography, cinematic hero, West/East/three-spot snorkeling photo collections and prominent tour exploration calls-to-action, including photographer attribution. Preserved public enquiry and non-guaranteed manta disclosures and did not open public lead intake.
