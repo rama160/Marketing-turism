@@ -173,3 +173,6 @@ body{background:#f3f7fa;color:#17374b}
 @media(max-width:850px){.wa-template-grid{grid-template-columns:1fr}.wa-floating{right:13px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}.wa-contact-actions>a{flex-grow:1}}
 @media(max-width:520px){.wa-floating{padding:11px 14px;min-height:50px}.wa-floating-text{font-size:12px}.wa-contact-card{margin-top:14px}.wa-contact-card h3{font-size:23px}}
 @media(prefers-reduced-motion:reduce){.wa-floating:hover{transform:none}}
+
+.wa-tour-links{display:flex;flex-wrap:wrap;gap:12px;margin:3px 0 18px}.wa-tour-links a{min-width:160px}
+@media(max-width:520px){.wa-tour-links>a{flex:1 1 100%}}
