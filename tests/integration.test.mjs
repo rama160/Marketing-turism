@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -361,5 +361,33 @@ test("west and east rates are independently versioned",async()=>{
  assert.equal((await mk("WEST")).httpStatus,201);
  assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(west.id).active,0);
  assert.equal(sqlite.prepare("SELECT active FROM rates WHERE id=?").get(east.id).active,1);
+ sqlite.close();
+});
+
+test("site content CMS: public read, owner-only writes, versioned audit, and injection rejection",async()=>{
+ const {request,sqlite}=fixture();
+ const initial=await request("/api/public/site-content?lang=en","GET",undefined,false);
+ assert.equal(initial.httpStatus,200);
+ assert.deepEqual(initial.items,{});
+ assert.equal((await request("/api/admin/site-content","GET",undefined,false)).httpStatus,401);
+ assert.equal((await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"Explore safely",expected_version:0,owner_confirmed:true},false)).httpStatus,401);
+ assert.equal((await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"<script>alert(1)</script>",expected_version:0,owner_confirmed:true})).httpStatus,400);
+ assert.equal((await request("/api/admin/site-content","POST",{key:"tour.pricing",locale:"en",value:"Discount everything",expected_version:0,owner_confirmed:true})).httpStatus,400);
+ assert.equal((await request("/api/admin/site-content","POST",{key:"hero.title",locale:"fr",value:"Bonjour",expected_version:0,owner_confirmed:true})).httpStatus,400);
+ assert.equal((await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"Explore safely",expected_version:0})).httpStatus,400);
+ const first=await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"Explore safely",expected_version:0,owner_confirmed:true});
+ assert.equal(first.httpStatus,200,JSON.stringify(first));
+ assert.equal(first.version,1);
+ const publicEnglish=await request("/api/public/site-content?lang=en","GET",undefined,false);
+ assert.equal(publicEnglish.items["hero.title"],"Explore safely");
+ assert.deepEqual((await request("/api/public/site-content?lang=id","GET",undefined,false)).items,{});
+ const stale=await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"Stale update",expected_version:0,owner_confirmed:true});
+ assert.equal(stale.httpStatus,409);
+ const next=await request("/api/admin/site-content","POST",{key:"hero.title",locale:"en",value:"Discover Penida",expected_version:1,owner_confirmed:true});
+ assert.equal(next.httpStatus,200);
+ assert.equal(next.version,2);
+ assert.equal((await request("/api/admin/site-content","GET")).items.length,1);
+ assert.equal(sqlite.prepare("SELECT count(*) c FROM site_content_revisions").get().c,2);
+ assert.equal(sqlite.prepare("SELECT count(*) c FROM audit_log WHERE entity='site_content'").get().c,2);
  sqlite.close();
 });
