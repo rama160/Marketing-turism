@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v13/);
+ assert.match(read("service-worker.js"),/public-v14/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -252,4 +252,19 @@ test("official WhatsApp Business contact and catalog links are visible, separate
  assert.match(home,/Koneksi otomatis ke inbox WhatsApp/);
  assert.match(home,/Tidak ada pengiriman otomatis/);
  assert.doesNotMatch(home,/WhatsApp API sudah terhubung|Balasan terkirim secara otomatis/);
+});
+
+test("official WhatsApp inbox management is prepared but never falsely shown as connected",()=>{
+ const h=read("index.html"),js=read("app.js"),css=read("styles.css"),privacy=read("privacy.html");
+ for(const id of ["waRefresh","waConnectionStatus","waThreadList","waMessages","waComposer","waDraftAI","waCopyComposer","waSendApproved"]){
+  assert.ok(h.includes('id="'+id+'"'),"WhatsApp UI missing "+id);
+ }
+ assert.match(h,/id="waSendApproved" disabled/);
+ assert.match(h,/Tidak ada pesan yang dibaca atau dikirim sebelum integrasi aktif/);
+ assert.match(h,/Tidak ada pengiriman otomatis/);
+ assert.match(js,/waSendingEnabled=cfg.sending_enabled===true/);
+ assert.match(js,/client_nonce:crypto.randomUUID\(\)/);
+ assert.match(js,/owner_confirmed:true/);
+ assert.match(css,/\.wa-inbox-grid/);
+ assert.match(privacy,/WhatsApp Business/);
 });
