@@ -1,25 +1,19 @@
-// Self-origin public destination photo gateway. Strict slug and upstream allowlist, no guest data.
-const photoFiles=Object.freeze(Object.fromEntries([["kelingking","Kelingking_Beach.jpg","3a"],["broken-beach","Broken_Beach_Nusa_Penida.jpg","09"],["angels-billabong","Angel-billabong.jpg","55"],["crystal-bay","Crystal_Bay_Beach.jpg","76"],["diamond-beach","Diamond_Beach_in_Nusa_Penida,_Bali.jpg","49"],["atuh-beach","Atuh_Beach,_Nusa_Penida_Bali.jpg","59"],["tree-house","Amazing_Tree_House_at_Nusa_Penida.jpg","81"],["manta-bay","Snorkeling-with-manta-penida.jpg","9a"],["manta-point","19-Indonesia-Bali_Nusa-Penida_Manta-Point_14_(Manta_Ray)-APiazza.JPG","dc"],["gamat-bay","Penida-snorkeling.jpg","fd"]].map(([key,name,hash])=>{
- const enc=encodeURIComponent(name);
- const root="https://upload.wikimedia.org/wikipedia/commons/";
- return [key,{thumb:root+"thumb/"+hash[0]+"/"+hash+"/"+enc+"/640px-"+enc,original:root+hash[0]+"/"+hash+"/"+enc}];
-})));
-export const photoKeys=Object.freeze(Object.keys(photoFiles));
-export async function servePhoto(request,ctx){
- const url=new URL(request.url),slug=url.pathname.replace(/^\/photos\//,"");
- if(!Object.hasOwn(photoFiles,slug))return new Response("Foto tidak ditemukan",{status:404,headers:{"cache-control":"no-store"}});
- if(request.method!=="GET")return new Response("Method not allowed",{status:405});
- const cache=typeof caches!=="undefined"?caches.default:null;
- try{const cached=await cache?.match(request);if(cached)return cached;}catch(_){}
- for(const upstream of [photoFiles[slug].thumb,photoFiles[slug].original]){
-  try{
-   const r=await fetch(upstream,{redirect:"follow",signal:AbortSignal.timeout(9000),headers:{"Accept":"image/jpeg,image/*"}});
-   const type=r.headers.get("content-type")||"";
-   if(!r.ok||!/^image\/(jpeg|png|webp)/i.test(type)){try{r.body?.cancel?.();}catch(_){}continue;}
-   const result=new Response(r.body,{status:200,headers:{"content-type":type.split(";")[0],"cache-control":"public, max-age=86400, stale-while-revalidate=604800","x-content-type-options":"nosniff","x-photo-status":"upstream-ok"}});
-   if(cache&&ctx?.waitUntil)ctx.waitUntil(cache.put(request,result.clone()).catch(()=>{}));
-   return result;
-  }catch(_){}
- }
- return new Response("Foto belum tersedia, coba lagi nanti",{status:502,headers:{"cache-control":"no-store","x-photo-status":"upstream-unavailable"}});
+// Same-origin destination photos backed by verified optimized JPEG assets in public GitHub.
+export const photoKeys=Object.freeze(["kelingking","broken-beach","angels-billabong","crystal-bay","diamond-beach","atuh-beach","tree-house","manta-bay","manta-point","gamat-bay"]);
+const cdn="https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/";
+export async function servePhoto(req,ctx){
+ const slug=new URL(req.url).pathname.replace(/^\/photos\//,"");
+ if(!photoKeys.includes(slug))return new Response("Photo not found",{status:404});
+ if(req.method!=="GET")return new Response("Method not allowed",{status:405});
+ const cache=typeof caches==="undefined"?null:caches.default;
+ try{const hit=await cache?.match(req);if(hit)return hit;}catch(_){}
+ try{
+  const r=await fetch(cdn+slug+".jpg",{signal:AbortSignal.timeout(12000),headers:{"accept":"image/jpeg"}});
+  if(!r.ok||!(r.headers.get("content-type")||"").startsWith("image/"))throw Error("Photo upstream unavailable");
+  const bytes=new Uint8Array(await r.arrayBuffer());
+  if(bytes.length<10000||bytes.length>900000||bytes[0]!==255||bytes[1]!==216||bytes.at(-2)!==255||bytes.at(-1)!==217)throw Error("Image verification failed");
+  const out=new Response(bytes,{headers:{"content-type":"image/jpeg","cache-control":"public, max-age=3600, stale-while-revalidate=604800","x-content-type-options":"nosniff","x-photo-status":"upstream-ok"}});
+  if(cache&&ctx?.waitUntil)ctx.waitUntil(cache.put(req,out.clone()).catch(()=>{}));
+  return out;
+ }catch(_){return new Response("Photo gateway unavailable",{status:502,headers:{"cache-control":"no-store","x-photo-status":"upstream-unavailable"}});}
 }
