@@ -59,7 +59,7 @@ test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus
   const content=read(page);
   const srcs=[...content.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(x=>x[1]);
   assert.ok(srcs.length>0, "Expected destination photos on "+page);
-  for(const src of srcs)assert.match(src,/^\/photos\/[a-z-]+$/);
+  for(const src of srcs)assert.match(src,/^\/photos\/[a-z-]+(?:\?v=4)?$/);
  }
 });
 
