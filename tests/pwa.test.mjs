@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v14/);
+ assert.match(read("service-worker.js"),/public-v15/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -267,4 +267,12 @@ test("official WhatsApp inbox management is prepared but never falsely shown as 
  assert.match(js,/owner_confirmed:true/);
  assert.match(css,/\.wa-inbox-grid/);
  assert.match(privacy,/WhatsApp Business/);
+});
+
+test("owner WhatsApp dashboard links directly to the Indonesian setup guide",()=>{
+ const html=read("index.html");
+ assert.match(html,/id="waSetupGuideId"/);
+ assert.match(html,/Panduan Hubungkan WhatsApp \(Bahasa Indonesia\)/);
+ assert.match(html,/href="https:\/\/github.com\/rama160\/Marketing-turism\/blob\/main\/docs\/WHATSAPP_SETUP.md"/);
+ assert.match(html,/id="waSendApproved" disabled/);
 });
