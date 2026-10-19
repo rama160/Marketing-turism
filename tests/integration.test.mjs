@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -416,5 +416,71 @@ test("public photo price labels are owner-editable but never permit anonymous ed
  const stale=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Rp10.000/orang",expected_version:0,owner_confirmed:true});
  assert.equal(stale.httpStatus,409);
  assert.equal(sqlite.prepare("SELECT count(*) c FROM site_content_revisions").get().c,5);
+ sqlite.close();
+});
+
+test("WhatsApp Cloud API connection is disabled by default and inbox requires owner",async()=>{
+ const {request,sqlite,env,db}=fixture();
+ const info=await request("/api/admin/whatsapp");
+ assert.equal(info.httpStatus,200);
+ assert.equal(info.connection.webhook_ready,false);
+ assert.equal(info.connection.sending_enabled,false);
+ assert.deepEqual(info.threads,[]);
+ assert.equal((await request("/api/admin/whatsapp","GET",undefined,false)).httpStatus,401);
+ assert.equal((await request("/api/admin/whatsapp/thread?phone=628561752525","GET",undefined,false)).httpStatus,401);
+ assert.equal((await request("/api/admin/whatsapp/send","POST",{phone:"628561752525",message:"Hi",owner_confirmed:true},false)).httpStatus,401);
+ assert.equal((await request("/api/admin/whatsapp/send","POST",{phone:"628561752525",message:"Hi",owner_confirmed:true})).httpStatus,503);
+ const noCfg=await worker.fetch(new Request("https://agent.invalid/api/webhooks/whatsapp?hub.mode=subscribe&hub.challenge=123&hub.verify_token=foo"),env);
+ assert.equal(noCfg.status,503);
+ const noSig=await worker.fetch(new Request("https://agent.invalid/api/webhooks/whatsapp",{method:"POST",body:"{}"}),env);
+ assert.equal(noSig.status,503);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_inbox_messages").get().n,0);
+ sqlite.close();
+});
+test("WhatsApp Meta verification, HMAC signing, deduplication, review-only drafting and 24h restriction",async()=>{
+ const {request,sqlite,env,db}=fixture();
+ Object.assign(env,{
+  WA_WEBHOOK_ENABLED:"true",
+  WA_APP_SECRET:"unit-test-app-secret-very-long-only-local",
+  WA_VERIFY_TOKEN:"unit-test-verify-secret-very-long-only-local",
+  WA_PHONE_NUMBER_ID:"112233445566",
+  WA_SEND_ENABLED:"false"
+ });
+ const callback="https://agent.invalid/api/webhooks/whatsapp";
+ const bad=await worker.fetch(new Request(callback+"?hub.mode=subscribe&hub.verify_token=bad&hub.challenge=123"),env);
+ assert.equal(bad.status,403);
+ const ok=await worker.fetch(new Request(callback+"?hub.mode=subscribe&hub.verify_token="+env.WA_VERIFY_TOKEN+"&hub.challenge=54321"),env);
+ assert.equal(ok.status,200);assert.equal(await ok.text(),"54321");
+ const now=Math.floor(Date.now()/1000);
+ const payload=JSON.stringify({object:"whatsapp_business_account",entry:[{changes:[{field:"messages",value:{
+  metadata:{phone_number_id:env.WA_PHONE_NUMBER_ID},
+  contacts:[{wa_id:"6281212345678",profile:{name:"Test Guest"}}],
+  messages:[{id:"wamid.unit.test.message.001",from:"6281212345678",timestamp:String(now),type:"text",text:{body:"Hello! How much for snorkeling next week?"}}]
+ }}]}]});
+ const unsigned=await worker.fetch(new Request(callback,{method:"POST",body:payload}),env);
+ assert.equal(unsigned.status,403);
+ const signedBad=await worker.fetch(new Request(callback,{method:"POST",headers:{"x-hub-signature-256":"sha256="+"a".repeat(64)},body:payload}),env);
+ assert.equal(signedBad.status,403);
+ const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.WA_APP_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const sig=Array.from(new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(payload)))).map(v=>v.toString(16).padStart(2,"0")).join("");
+ async function sendWebhook(text){const res=await worker.fetch(new Request(callback,{method:"POST",headers:{"x-hub-signature-256":"sha256="+sig},body:text}),env);return {status:res.status,body:await res.json()};}
+ const good=await sendWebhook(payload);
+ assert.equal(good.status,200);assert.equal(good.body.stored,1);
+ const retry=await sendWebhook(payload);
+ assert.equal(retry.body.stored,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_inbox_messages").get().n,1);
+ assert.equal((await request("/api/admin/whatsapp")).threads[0].phone,"6281212345678");
+ const messages=await request("/api/admin/whatsapp/thread?phone=6281212345678");
+ assert.equal(messages.messages.length,1);
+ assert.equal(messages.messages[0].body,"Hello! How much for snorkeling next week?");
+ const draft=await request("/api/admin/whatsapp/draft","POST",{phone:"6281212345678",language:"en",use_ai:false});
+ assert.equal(draft.httpStatus,200);assert.equal(draft.status,"DRAFT_REVIEW");assert.equal(draft.automatic_send,false);
+ assert.match(draft.reply,/350,000/);
+ assert.equal((await request("/api/admin/whatsapp/send","POST",{phone:"6281212345678",message:"Test message",owner_confirmed:true,client_nonce:crypto.randomUUID()})).httpStatus,503);
+ env.WA_SEND_ENABLED="true";env.WA_ACCESS_TOKEN="unit-test-only-access-token-is-not-real-placeholder";
+ sqlite.prepare("UPDATE wa_inbox_messages SET received_at=?").run(now-48*3600);
+ const blocked=await request("/api/admin/whatsapp/send","POST",{phone:"6281212345678",message:"Test message",owner_confirmed:true,client_nonce:crypto.randomUUID()});
+ assert.equal(blocked.httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_outbox_requests").get().n,0);
  sqlite.close();
 });
