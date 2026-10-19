@@ -152,7 +152,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  const session=new Map();
  const OWNER="test-owner-token-not-used-in-production";
  const fakeFetch=async(url,opts={})=>{
-  const p=String(url).replace(/^\\/api\\//,"");
+  const address=String(url); const p=address.startsWith("/api/")?address.slice(5):address;
   const auth=(opts.headers?.authorization||"");
   if(p.startsWith("admin/")&&auth!=="Bearer "+OWNER)return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{"content-type":"application/json"}});
   let body;
