@@ -47,7 +47,7 @@ const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
 // v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
 const home=await get("/");
-if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
+if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
  throw Error("New logo/language/editor missing on live website");
 const langJS=await get("/language.js");
 if(!langJS.includes("navigator.languages")||!langJS.includes("npe-language")||!langJS.includes("site-content?lang="))throw Error("Guest locale selection not live");
