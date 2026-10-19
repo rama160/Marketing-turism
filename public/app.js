@@ -31,6 +31,7 @@ for(const [formId,selector] of [["#leadForm","#leadVariant"],["#quoteForm","#quo
 }
 const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.title||label||x.id)+'</option>').join("");
 function changeTab(name){
+  if(name==="whatsapp"&&token)loadWhatsAppInbox();
   if(name==="website")loadSiteEditor();
   if(name==="summary")loadQuickEditor();
  $$(".tabs button").forEach(b=>b.classList.toggle("current",b.dataset.tab===name));
@@ -46,6 +47,69 @@ $$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
   say("#waDraftFeedback","Balasan disalin. Periksa informasi sebelum mengirim ke guest.",true);
  }catch{say("#waDraftFeedback","Penyalinan otomatis tidak tersedia. Pilih dan salin teks balasan secara manual.");}
 }));
+
+// Owner-only official WhatsApp inbox. This does not use WhatsApp Web or automate phone UI.
+let waSelectedPhone="",waSendingEnabled=false;
+const waSetStatus=(msg,ok=false)=>say("#waInboxFeedback",msg,ok);
+function waRenderThread(phone,messages){
+ waSelectedPhone=phone;
+ $("#waThreadTitle").textContent="Guest: +"+phone;
+ $("#waMessages").innerHTML=messages.length?messages.map(m=>'<div class="wa-bubble '+(m.direction==="OUT"?"wa-sent":"wa-received")+'"><p>'+esc(m.body)+'</p><small>'+(m.direction==="OUT"?"Owner":"Guest")+' · '+new Date(m.received_at*1000).toLocaleString()+'</small></div>').join(""):'<p class="feedback">Belum ada pesan yang didukung.</p>';
+ $("#waSendApproved").disabled=!waSendingEnabled;
+}
+async function loadWhatsAppInbox(){
+ if(!token)return;
+ try{
+  const result=await api("admin/whatsapp");
+  const cfg=result.connection||{};
+  waSendingEnabled=cfg.sending_enabled===true;
+  $("#waConnectionStatus").textContent=cfg.webhook_ready
+   ?(waSendingEnabled?"Cloud API terhubung: pesan masuk tersedia; balasan hanya setelah persetujuan owner.":"Webhook siap tetapi pengiriman belum diaktifkan.")
+   :"Koneksi otomatis ke inbox WhatsApp belum aktif. Aktifkan WhatsApp Business Platform di Cloudflare setelah onboarding Meta.";
+  const threads=Array.isArray(result.threads)?result.threads:[];
+  $("#waThreadList").innerHTML=threads.length?threads.map(x=>'<button type="button" class="wa-thread-button" data-wa-phone="'+esc(x.phone)+'"><strong>+'+esc(x.phone)+'</strong><small>'+Number(x.message_count||0)+' pesan</small></button>').join(""):'<p class="feedback">Belum ada pesan terhubung. Guest tetap bisa menghubungi langsung melalui tombol WhatsApp publik.</p>';
+  waSetStatus(cfg.webhook_ready?"Inbox diperbarui dari sistem resmi Meta.":"Belum terhubung. Jangan memasukkan token Meta atau OTP di halaman publik.",cfg.webhook_ready);
+ }catch(err){waSetStatus(err.message);}
+}
+$("#waRefresh").onclick=loadWhatsAppInbox;
+$("#waThreadList").addEventListener("click",async e=>{
+ const btn=e.target.closest("[data-wa-phone]");if(!btn)return;
+ try{
+  const result=await api("admin/whatsapp/thread?phone="+encodeURIComponent(btn.dataset.waPhone));
+  waRenderThread(result.phone,result.messages||[]);
+  $("#waComposer").value="";
+  waSetStatus("Percakapan dimuat. Anda bisa membuat draf; jangan menjanjikan booking sebelum verifikasi.",true);
+ }catch(err){waSetStatus(err.message);}
+});
+$("#waDraftAI").onclick=async()=>{
+ if(!waSelectedPhone){waSetStatus("Pilih percakapan terlebih dahulu.");return;}
+ if(!confirm("Izinkan AI memproses pesan terbaru guest untuk membuat draf balasan? Draf tidak dikirim otomatis."))return;
+ try{
+  const result=await api("admin/whatsapp/draft","POST",{phone:waSelectedPhone,use_ai:true,language:"auto"});
+  $("#waComposer").value=result.reply||"";
+  waSetStatus("Draf "+(result.generator==="workers_ai"?"AI":"template")+" siap ditinjau. Tidak ada pengiriman otomatis.",true);
+ }catch(err){waSetStatus(err.message);}
+};
+$("#waCopyComposer").onclick=async()=>{
+ const message=$("#waComposer").value.trim();if(!message){waSetStatus("Tulis atau buat draf terlebih dahulu.");return;}
+ try{await navigator.clipboard.writeText(message);waSetStatus("Draf tersalin, silakan kirim dari WhatsApp Business jika akun belum terhubung.",true);}
+ catch{waSetStatus("Clipboard tidak tersedia. Salin teks draf secara manual.");}
+};
+$("#waSendApproved").onclick=async()=>{
+ if(!waSendingEnabled||!waSelectedPhone){waSetStatus("Integrasi WhatsApp resmi belum aktif atau percakapan belum dipilih.");return;}
+ const message=$("#waComposer").value.trim();
+ if(message.length<2||message.length>1200){waSetStatus("Balasan harus 2–1200 karakter.");return;}
+ if(!confirm("Kirim balasan ini SEKARANG ke +"+waSelectedPhone+" melalui WhatsApp Business Cloud API? Periksa isi, biaya pesan, dan persetujuan guest."))return;
+ $("#waSendApproved").disabled=true;
+ try{
+  const result=await api("admin/whatsapp/send","POST",{phone:waSelectedPhone,message,owner_confirmed:true,client_nonce:crypto.randomUUID()});
+  waSetStatus(result.status==="SUBMITTED_TO_META"?"Balasan dikirim ke Meta untuk diproses (belum tentu sudah terkirim ke HP guest).":"Permintaan diterima.",true);
+  $("#waComposer").value="";
+  const thread=await api("admin/whatsapp/thread?phone="+encodeURIComponent(waSelectedPhone));
+  waRenderThread(waSelectedPhone,thread.messages||[]);
+ }catch(err){waSetStatus(err.message);}
+ finally{$("#waSendApproved").disabled=!waSendingEnabled||!waSelectedPhone;}
+};
 
 $("#adminToggle").onclick=()=>{$("#adminArea").hidden=false;$("#adminArea").scrollIntoView({behavior:"smooth"});};
 $("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;say("#loginMessage","Sesi admin ditutup.",true)};
