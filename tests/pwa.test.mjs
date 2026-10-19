@@ -50,7 +50,7 @@ test("all Wikimedia gallery photos credit actual photographers",()=>{
  }
 });
 
-test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/>NP</);assert.doesNotMatch(home,/PENIVARA/)});
+test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/pari manta|manta/i);assert.match(icon,/cliff|tebing/i);assert.doesNotMatch(home,/PENIVARA/)});
 
 test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus local site assets",()=>{
  const policy=read("_headers");
@@ -84,4 +84,19 @@ test("brand icon appears in all guest pages and bilingual picker is included",()
  assert.match(app,/admin\/site-content/);
  assert.match(read("index.html"),/id="cmsValue"/);
  assert.doesNotMatch(read("service-worker.js"),/\/api\/public\/site-content/);
+});
+
+test("premium tourism visuals use real credited destination images and honest actions",()=>{
+ const home=read("index.html"),css=read("styles.css"),logo=read("icon.svg");
+ assert.match(home,/class="hero premiumHero"/);
+ assert.match(css,/\.premiumHero/);
+ assert.match(css,/\/photos\/kelingking/);
+ assert.match(home,/id="tour-regions"/);
+ for(const path of ["/west-tour.html","/east-tour.html","/snorkeling.html"])assert.ok(home.includes(path));
+ assert.match(home,/class="tour-showcase-grid"/);
+ assert.match(home,/Wikimedia Commons/);
+ assert.match(logo,/Siluet tebing Nusa Penida dan pari manta/);
+ assert.match(home,/id="quickSave"/);
+ assert.match(read("app.js"),/admin\/site-content/);
+ assert.match(home,/Penerimaan permintaan|Pengiriman lead akan tersedia/);
 });
