@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.2.2")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.3.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -16,7 +16,7 @@ const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeli
 const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
-if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||!island.includes("Rp700.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
+if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
 await get("/robots.txt");await get("/sitemap.xml");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
@@ -55,7 +55,17 @@ if(badBootLine)throw Error("Owner dashboard broken singleton selector remains");
 const home=await get("/");
 if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
  throw Error("New logo/language/editor missing on live website");
+// Visitor should see marketing prices, never the owner supplier-net breakdown.
+for(const key of ["price.snorkeling","price.island","price.west","price.east"]){
+ if(!home.includes('data-copy="'+key+'"'))throw Error("Photo selling price missing "+key);
+}
+if(!home.includes("Rp350.000/orang")||!home.includes("Rp800.000/mobil"))throw Error("Guest price badge amount or unit missing");
+if(!home.includes("penawaran mulai dan belum mengikat"))throw Error("Price disclaimer missing");
+for(const [page,path] of [[island,"island-tour"],[west,"west-tour"],[east,"east-tour"],[snorkeling,"snorkeling"]]){
+ if(/Rp600\\.000|Rp700\\.000|Hitung Sharing tanpa menebak|margin minimum|keuntungan minimum agen|Tarif net awal/i.test(page))throw Error("Supplier net/margin exposed on "+path);
+}
 const langJS=await get("/language.js");
+
 if(!langJS.includes("navigator.languages")||!langJS.includes("npe-language")||!langJS.includes("site-content?lang="))throw Error("Guest locale selection not live");
 const styles=await get("/styles.css");if(!styles.includes(".languagePicker")||!styles.includes(".brandLogo"))throw Error("New CSS missing");
 if(!styles.includes(".premiumHero")||!styles.includes(".tour-showcase-grid"))throw Error("Premium public design missing");
@@ -70,7 +80,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v11"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v12"))throw Error("PWA asset cache did not bump");
 const emblem=await get("/icon.svg");if(!emblem.includes("pari manta")||!emblem.includes("cliff"))throw Error("Manta cliff brand not live");
 for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
  const h=await get(subpage);
@@ -92,4 +102,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS v3.2.2 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
+console.log("SUCCESS v3.3.0 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
