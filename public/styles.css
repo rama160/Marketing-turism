@@ -176,3 +176,23 @@ body{background:#f3f7fa;color:#17374b}
 
 .wa-tour-links{display:flex;flex-wrap:wrap;gap:12px;margin:3px 0 18px}.wa-tour-links a{min-width:160px}
 @media(max-width:520px){.wa-tour-links>a{flex:1 1 100%}}
+
+
+/* Owner inbox UI: incoming WhatsApp remains OFF until official Meta onboarding. */
+.wa-inbox-heading{display:flex;align-items:start;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.wa-inbox-grid{display:grid;grid-template-columns:minmax(185px,.75fr) minmax(0,2fr);gap:14px;margin-top:16px}
+.wa-thread-list,.wa-conversation{min-width:0;background:#f6fafb;border:1px solid #dbe9ed;border-radius:13px;padding:15px}
+.wa-thread-list h4,.wa-conversation h4{color:#153b50;margin:0 0 12px}
+.wa-thread-items{max-height:500px;overflow:auto}
+.wa-thread-button{display:flex;flex-direction:column;gap:5px;width:100%;text-align:left;background:#fff;color:#184057;border:1px solid #dce9ef;border-radius:10px;margin-bottom:7px;padding:11px}
+.wa-thread-button:hover,.wa-thread-button:focus-visible{border-color:#14845b;background:#eaf8f2}
+.wa-thread-button small{color:#66818e}
+.wa-messages{max-height:400px;min-height:120px;overflow:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.wa-bubble{max-width:94%;min-width:130px;padding:11px 14px;border-radius:15px;line-height:1.6;overflow-wrap:anywhere;background:#fff;border:1px solid #d7e6ec}
+.wa-bubble.wa-sent{background:#ddf4e8;align-self:flex-end;border-color:#b6dac5}
+.wa-bubble.wa-received{align-self:flex-start}
+.wa-bubble p{font-size:13px;margin:0 0 6px;white-space:pre-wrap}
+.wa-bubble small{font-size:10px;color:#517082}
+.wa-conversation textarea{width:100%;min-height:85px;margin:8px 0}
+.wa-compose-actions{flex-wrap:wrap;gap:8px}
+@media(max-width:850px){.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-items{max-height:200px}.wa-compose-actions button{flex:1 1 135px}}
