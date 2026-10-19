@@ -1,9 +1,9 @@
-## 3.5.0 — Prepared official WhatsApp inbox and AI-assisted owner replies (2026-10-19)
+## 3.5.0 — Prepared official WhatsApp inbox and AI-assisted owner replies — DEPLOYED 2026-10-19
 - Added direct WhatsApp chat and catalog links to public contact, mobile floating CTA, and package detail pages, with localized prefilled chat enquiries.
 - Owner WhatsApp dashboard now includes an inbox shell for signed messages, conversation history, owner-triggered Workers AI reply suggestions, copy-to-clipboard, and explicit owner confirmation before any outbound message.
 - Implemented fail-closed signed Meta Cloud API webhook adapter with `X-Hub-Signature-256`, exact Phone Number ID check, D1 dedupe, token-protected thread APIs, and guarded outbound Graph API requests only in the WhatsApp 24-hour service window. No unsolicited sends or automatic AI replies.
 - Added isolated D1 migration `0010_whatsapp_inbox.sql` (messages and outbox idempotency), onboarding/privacy instructions in `docs/WHATSAPP_SETUP.md`, and security regression tests. New credentials are **not present**, so direct inbox access and Cloud API sending remain INACTIVE pending owner Meta onboarding, privacy approval and optional fees.
-- Updated public PWA static-only cache to v14. The existing `PUBLIC_LEADS_ENABLED=false` lead gate and admin tokens were not changed. No FinChat/Spenva resources touched.
+- Direct Cloudflare production deployment succeeded: tourism Worker version `396ed52a-9d76-401e-bb4c-2705dfe08a00` at 100% traffic. Remote D1 tables `wa_inbox_messages` and `wa_outbox_requests` verified. No `WA_` credentials configured, so inbox/send are correctly OFF.\n- Updated public PWA static-only cache to v14. The existing `PUBLIC_LEADS_ENABLED=false` lead gate and admin tokens were not changed. No FinChat/Spenva resources touched.
 
 ## 3.3.0 — Guest selling-price previews, no supplier cost disclosure — 2026-10-19
 - Removed the entire public island-tour `Hitung Sharing tanpa menebak kursi terjual` section, supplier vehicle net/cost per guest table, minimum agency margin and agency arithmetic. The associated guest copy on snorkeling/West/East pages was rewritten as ordinary travel information; operator expenses and minimum contribution remain in the authenticated admin pricing engine and quote workflow.
