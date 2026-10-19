@@ -37,8 +37,8 @@ function changeTab(name){
  $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
 }
 $$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
-$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
-$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
+$$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
  const key=button.dataset.waCopy,reply=$("#"+key)?.textContent?.trim();
  if(!reply){say("#waDraftFeedback","Balasan tidak tersedia.");return;}
  try{
