@@ -142,3 +142,9 @@ Guest contact buttons are shown on the public homepage, on the four activity det
 The owner-only **Dashboard Agen → WhatsApp** includes safe copied reply templates and a Cloudflare/Meta integration inbox panel for verified messages, owner-requested AI drafting and deliberate owner-approved sends. **The official WhatsApp Business Platform connection is NOT yet active.** Both webhook and sending features fail closed until Meta onboarding and required Worker variables/secrets are supplied by the owner. There is no WhatsApp login automation, OTP harvesting, auto-response, broadcast messaging or false claim of inbox access.
 
 Setup and privacy checklist: [docs/WHATSAPP_SETUP.md](docs/WHATSAPP_SETUP.md). The new D1 tables in `database/migrations/0010_whatsapp_inbox.sql` are additive and contain no connection credentials. Do not activate reception before updating and approving the final business privacy/retention policies. Meta messaging may have platform fees; existing booking/operator rules remain unchanged.
+
+### Production verification of WhatsApp release
+
+As of 2026-10-19, version **3.5.0** is deployed on `marketing-turism-agent` through the connected Cloudflare API, version ID `396ed52a-9d76-401e-bb4c-2705dfe08a00` at 100% traffic. The original seven binding names were strictly inherited; the remote tourism D1 contains both new WhatsApp tables, but **no WA secrets or Meta phone ID exist yet**. The inbox and Graph API sending remain disabled; guest click-to-chat and catalog links are live. WhatsApp does not change `PUBLIC_LEADS_ENABLED=false`.
+
+Before any future production activation of the webhook, the business owner must review the WhatsApp Business Platform data processing and retention notice, complete authorized Meta onboarding (ideally coexistence if eligible), then configure the private Worker secrets listed in [the guide](docs/WHATSAPP_SETUP.md). The server will reject all unconnected webhooks with 503.
