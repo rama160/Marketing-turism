@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.0.4")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.1.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -45,6 +45,24 @@ const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
+// v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
+const home=await get("/");
+if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"'))
+ throw Error("New logo/language/editor missing on live website");
+const langJS=await get("/language.js");
+if(!langJS.includes("navigator.languages")||!langJS.includes("npe-language")||!langJS.includes("site-content?lang="))throw Error("Guest locale selection not live");
+const styles=await get("/styles.css");if(!styles.includes(".languagePicker")||!styles.includes(".brandLogo"))throw Error("New CSS missing");
+for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
+ const h=await get(subpage);
+ if(!h.includes('src="/icon.svg"')||!h.includes('src="/language.js"'))throw Error("Bilingual brand header missing on "+subpage);
+}
+const localeResponse=JSON.parse(await get("/api/public/site-content?lang=en"));
+if(localeResponse.locale!=="en"||typeof localeResponse.items!=="object")throw Error("Localized CMS public API invalid");
+const idResponse=JSON.parse(await get("/api/public/site-content?lang=id"));
+if(idResponse.locale!=="id")throw Error("Indonesian CMS public API invalid");
+await get("/api/admin/site-content",401);
+const denied=await fetch(base+"/api/admin/site-content",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:"hero.title",locale:"en",value:"Unauthorized",expected_version:0,owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
+if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+denied.status);
 await get("/api/admin/summary",401);
 await get("/api/admin/finance",401);
 await get("/api/admin/business",401);
@@ -54,4 +72,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS: 10 same-origin real JPEGs verified; public HTML, app JS, D1 API, catalogue, admin auth and closed lead intake.");
+console.log("SUCCESS v3.1.0 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
