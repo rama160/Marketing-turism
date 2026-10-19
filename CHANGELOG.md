@@ -1,3 +1,10 @@
+## 3.2.2 — Restore owner dashboard interactions — 2026-10-19
+- Root cause: front-end dashboard boot crashed with `TypeError: $(...).forEach is not a function`, because single-element `querySelector` was incorrectly used when registering listeners on all admin tabs and dashboard shortcut tiles. This prevented the script from attaching the dashboard open and owner login handlers.
+- Fixed both `public/app.js` listener registrations to use the existing multi-element selector `$$` (`querySelectorAll`). No pricing, booking, API, database schema or authentication rule changes.
+- Added a DOM-like JavaScript execution regression test to `tests/pwa.test.mjs`: loads the full app source, confirms no bootstrap exception, opens the admin area, switches sidebar tabs and dashboard shortcuts, simulates a test-only authenticated admin session, loads real-summary-shaped backend data and logs out.
+- Bumped Worker health and package to 3.2.2; refreshed static-only PWA cache to v11 so Android browsers can update the old broken `/app.js`. No administrative API data or tokens enter offline cache.
+- Deployed directly to the isolated Cloudflare `marketing-turism-agent`, Worker version `0ff952b8-0100-47c8-9520-b99146e4e5cb` at 100% traffic, strictly inheriting all seven bindings. `ADMIN_TOKEN` remains a secret and `PUBLIC_LEADS_ENABLED=false`. FinChat/Spenva workers are untouched.
+
 ## 3.2.1 — Fix blank destination previews on Android/mobile — 2026-10-19
 - Replaced CSS variable backgrounds with six genuine `<img>` elements: hero, two package covers, and three large West/East/Snorkeling tour covers; thumbnails and photo credits remain unchanged.
 - Added object-fit, stable overlay, and dark fallback styles so missing or loading imagery cannot produce white-on-white headings. Existing multi-stage `photo-loader.js` fallback now applies to all large photo previews as well.
