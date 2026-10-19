@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.0.3 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 3.1.0 (MVP pilot; brand, bilingual homepage and owner CMS).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -93,3 +93,10 @@ All 10 Nusa Penida gallery photos are real Wikimedia Commons licensed JPEGs, dow
 
 ## 3.0.4 Reliable gallery
 The ten CC-licensed JPEGs are already committed at `public/photos/*.jpg`. Cloudflare Workers serves `/photos/{slug}` in this order: native static assets (once deployed by Wrangler); dedicated `PHOTO_KV` cached bytes; verified GitHub raw source on an initial cache miss. A first successful photo retrieval populates the persistent Tourism-only KV namespace `marketing-turism-photo-cache`; all future regions can reuse it even when the external image host is unavailable. The browser has another local JPG/static and GitHub fallback, then a labeled SVG (no silent blank photo). Album cache version and source query string refreshed to avoid old mobile caches. The Worker pilot still uses manual module deployment; the static asset path becomes available when Wrangler is authorized for the existing dedicated Tourism Worker. No guest data in the KV namespace.
+
+## Website content & guest language
+- Website uses the canonical Nusa Penida Experiences SVG brand in navigation and install icon.
+- Locale picker in the header: Auto (browser language, Indonesian if `id`, English otherwise), Bahasa Indonesia, English. Manual selection stays in the browser. This does not identify the guest's nationality.
+- Dashboard > Editor Website: choose a homepage section and ID/EN language, edit plain-text copy, preview, then publish. CMS values persist to dedicated D1 with revision/version history and cannot be edited without `ADMIN_TOKEN`. Collision between open admin tabs returns HTTP 409.
+- Execute `npx wrangler d1 migrations apply marketing-turism-db --remote` before `npx wrangler deploy` (dedicated Worker only). The migration is additive and leaves existing operator rates, quotes and bookings untouched.
+- Public copy is intended for marketing text, not legal notices or unconfirmed commercial claims. Operator quotes and margins remain controlled by canonical pricing rules; lead intake stays OFF until readiness approval.
