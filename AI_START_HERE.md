@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.0.1 | 2026-10-17 | Repository: rama160/Marketing-turism
+Version: 3.5.0 | 2026-10-19 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -119,3 +119,11 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Guest photo badges and CMS allowlisted text keys: `price.snorkeling`, `price.island`, `price.west`, `price.east`; admin owner must review changes under both `id` and `en`. Display-only marketing text must not override the mathematically safe final quotation.
 - Remove public internal fare arithmetic; don't remove admin quote preview, historical rate snapshots, audit/finance workflows or server price minimum guards. Snorkeling Private retail rate not public until verified. Extras and activity availability must be confirmed.
 - LIVE Tourism-only Worker v3.3.0 `06852dc8-6d4c-4a8a-8a3f-a2ea589d056b` at 100%; seven existing bindings preserved, public guest lead gate still OFF. PWA static cache v12; automatic GitHub Worker deployments remain separately opt-in.
+
+## WhatsApp guest acquisition & owner-only Cloud API workflow (v3.5.0)
+- Owner-approved business chat: `https://wa.me/628561752525`; owner-approved business catalog: `https://wa.me/c/628561752525`. They MUST remain distinct public links in homepage contact, detail pages, and mobile floating CTA. Locale switch modifies only optional prefilled chat text.
+- Dashboard WhatsApp tab has copied reply snippets plus a **disabled-until-connected** verified message inbox, Cloudflare Workers AI human-review drafts, and a send control requiring owner confirmation for each message. The lack of Meta access is not a software defect. Do not claim WhatsApp messages are already connected, read or sent.
+- Integration is **fail closed** unless `WA_WEBHOOK_ENABLED=true`, Meta App Secret, verify token and Phone Number ID are present. Incoming webhooks require HMAC-SHA256 `X-Hub-Signature-256`, must match the expected Meta Phone Number ID and insert deduplicated text messages only into dedicated tourism D1. Admin endpoints remain protected by existing `ADMIN_TOKEN`.
+- Outbound sending additionally requires `WA_SEND_ENABLED=true` and `WA_ACCESS_TOKEN` granted by the owner after lawful Meta onboarding. Only manually approved replies to recent inbound conversations in the ~24-hour customer-service window; no campaign blast, automated reply, or unsupervised guest quote. Server rate limits and outbox request dedupe are required.
+- Additive migration 0010_whatsapp_inbox.sql; do not replay historic ALTER migrations. Complete final privacy and data retention review before enabling message capture. See `docs/WHATSAPP_SETUP.md` for Meta coexistence steps and secret storage in the Tourism Worker (not ChatGPT or GitHub).
+- Official WhatsApp Cloud API can have fees. Preserve `PUBLIC_LEADS_ENABLED=false`, all operator/quote/payment gates and the separate FinChat/Spenva infrastructure.
