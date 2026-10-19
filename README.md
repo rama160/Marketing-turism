@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.5.0 (pilot; public WhatsApp chat/catalog, owner inbox foundation prepared but not connected, bilingual CMS; public lead intake OFF).
+Repository: rama160/Marketing-turism. Release 3.5.1 (pilot; Indonesian WhatsApp onboarding guide linked from dashboard, Meta inbox not yet connected, public lead intake OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -148,3 +148,7 @@ Setup and privacy checklist: [docs/WHATSAPP_SETUP.md](docs/WHATSAPP_SETUP.md). T
 As of 2026-10-19, version **3.5.0** is deployed on `marketing-turism-agent` through the connected Cloudflare API, version ID `396ed52a-9d76-401e-bb4c-2705dfe08a00` at 100% traffic. The original seven binding names were strictly inherited; the remote tourism D1 contains both new WhatsApp tables, but **no WA secrets or Meta phone ID exist yet**. The inbox and Graph API sending remain disabled; guest click-to-chat and catalog links are live. WhatsApp does not change `PUBLIC_LEADS_ENABLED=false`.
 
 Before any future production activation of the webhook, the business owner must review the WhatsApp Business Platform data processing and retention notice, complete authorized Meta onboarding (ideally coexistence if eligible), then configure the private Worker secrets listed in [the guide](docs/WHATSAPP_SETUP.md). The server will reject all unconnected webhooks with 503.
+
+### Panduan penyambungan WhatsApp berbahasa Indonesia — 20 Oktober 2026
+
+Panduan lama berbahasa Inggris telah **diganti pada file kanonis yang sama** dengan 14 bagian Bahasa Indonesia dari nol: pembuatan Meta Business Portfolio, keputusan menggunakan nomor aktif melalui Coexistence, pendaftaran Meta Developer, Phone Number ID dan akses sistem, variabel/secrets khusus Cloudflare Worker, verifikasi webhook, penerimaan pesan, pembuatan draf AI, persetujuan kirim, uji keamanan dan biaya. [Baca panduan lengkap](docs/WHATSAPP_SETUP.md). Dashboard Agen → WhatsApp menyediakan tautan **Panduan Hubungkan WhatsApp (Bahasa Indonesia)**. Perubahan link ini telah dipasang ke Worker publik v3.5.1; cache statis v15. Meta Cloud API tetap belum diotorisasi; jangan meminta atau mengirim OTP, App Secret, atau token lewat chat.
