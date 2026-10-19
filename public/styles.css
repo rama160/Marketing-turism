@@ -131,3 +131,21 @@ body{background:#f3f7fa;color:#17374b}
 .spot-overlay h3,.spot-overlay p{color:#fff;text-shadow:0 2px 9px rgba(0,16,29,.8)}
 .spot-overlay .spot-link{color:#07384c;text-shadow:none}
 @media(max-width:850px){.premiumHero .heroBackdrop{object-position:60% center}}
+
+
+/* v3.3 guest-friendly photo price ribbons. No supplier net or agency margin on public pages. */
+.packageArt .price-preview,.spot-cover>.price-preview{
+ position:absolute;z-index:3;display:inline-flex;align-items:center;justify-content:center;
+ top:18px;left:16px;bottom:auto;right:auto;max-width:calc(100% - 32px);
+ margin:0;padding:10px 16px;border-radius:999px;
+ background:linear-gradient(135deg,#f9d078,#eeb143);color:#082d40;
+ font-weight:800;font-size:13px;line-height:1.25;letter-spacing:0;
+ box-shadow:0 4px 16px rgba(0,23,40,.4);text-shadow:none;white-space:normal;
+}
+.spot-cover .spot-link{position:relative;z-index:4}
+.price-disclaimer{color:#466a78;font-size:13px;line-height:1.65;margin:14px 0 12px}
+@media(max-width:520px){
+ .packageArt .price-preview,.spot-cover>.price-preview{font-size:12px;padding:9px 13px;top:13px;left:12px;max-width:calc(100% - 24px)}
+ .spot-cover .spot-overlay{padding-top:70px}
+ .spot-cover .spot-link{margin-top:9px}
+}
