@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.2.1")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.2.2")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -45,6 +45,8 @@ const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
+if(!app.includes('$('+' ".tabs button" )')||!app.includes('$('+' "[data-go-tab]" )'))throw Error("Owner dashboard navigation listeners missing on live Worker");
+if(app.includes('$(".tabs button").forEach')||app.includes('$("[data-go-tab]").forEach'))throw Error("Owner dashboard broken singleton selector remains");
 // v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
 const home=await get("/");
 if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
@@ -86,4 +88,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS v3.2.1 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
+console.log("SUCCESS v3.2.2 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
