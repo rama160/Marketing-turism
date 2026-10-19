@@ -33,21 +33,22 @@ Object.assign(englishHome,{
   "islandPage.eyebrow": "ISLAND TOUR · SHARING & PRIVATE",
   "islandPage.title": "West & East Nusa Penida Island Tours",
   "islandPage.lead": "Two sides of the island, two unique journeys. Choose dramatic West cliffs or beautiful East beaches, then select Sharing or Private to suit your group and budget.",
-  "islandPage.description": "Sharing allows you to join other travelers. Until a verified supplier agreement confirms per-seat costs, the quotation covers the entire vehicle. Private provides an exclusive car for one to seven guests, subject to verified safe seating. Snorkeling and island tours are scheduled on different days.",
+  "islandPage.description": "Choose Sharing for the possibility of joining other travelers, or Private for a vehicle exclusively for your group—even solo guests. Up to seven passengers are possible when the vehicle is verified. Final prices and inclusions depend on your date and group size. Snorkeling and island tours are planned for separate days.",
   "westPage.eyebrow": "WEST NUSA PENIDA · SHARING & PRIVATE",
   "westPage.title": "West Nusa Penida Tour",
   "westPage.lead": "Discover iconic cliffs, natural rock arches and beaches that make Nusa Penida unforgettable.",
-  "westPage.description": "Explore West Nusa Penida with local operators. The sequence of stops may change due to roads, weather, visit times and guest preferences. Sharing and Private quotations both cover the full vehicle cost until other seats are confirmed.",
+  "westPage.description": "Discover West Nusa Penida with local operators. The order of stops may change according to road access, weather, available visiting time and your travel preferences. We confirm your route and inclusions before booking.",
   "eastPage.eyebrow": "EAST NUSA PENIDA · SHARING & PRIVATE",
   "eastPage.title": "East Nusa Penida Tour",
   "eastPage.lead": "Discover dramatic white cliffs, hidden bays and breathtaking landscapes on Nusa Penida's east coast.",
-  "eastPage.description": "Enjoy turquoise seas and limestone cliffs, with visits adjusted for safe access and travel conditions. Sharing may include other travelers, while Private reserves an exclusive vehicle for a single group—even one guest—when the full supplier costs are covered."
+  "eastPage.description": "Explore turquoise bays and dramatic limestone cliffs at a comfortable pace. Sharing may include other travelers, while Private reserves a vehicle for your group. Routes and access depend on safe travel conditions."
 });
 // Additional premium landing-page copy; CMS still overrides curated defaults.
 Object.assign(englishHome,{
  "sea.title":"Snorkeling 3 Spots",
  "sea.description":"Discover crystal-clear waters and thriving marine life, with the chance to see manta rays.",
 });
+Object.assign(englishHome,{"price.snorkeling":"Sharing Rp350,000/person","price.island":"From Rp800,000/car","price.west":"From Rp800,000/car","price.east":"From Rp800,000/car"});
 const idDefaults={
   "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
   "snorkelingPage.title": "Snorkeling Nusa Penida: Manta Bay, Manta Point & Spot Pilihan",
@@ -56,15 +57,15 @@ const idDefaults={
   "islandPage.eyebrow": "ISLAND TOUR · SHARING & PRIVATE",
   "islandPage.title": "Island Tour Barat dan Timur Nusa Penida",
   "islandPage.lead": "Dua sisi pulau, dua karakter perjalanan. Pilih pesona tebing Barat atau kecantikan pantai Timur, lalu tentukan Sharing atau Private sesuai kebutuhan dan budget Anda.",
-  "islandPage.description": "Dengan Sharing, tamu dapat bergabung bersama peserta lain. Agar agen tidak merugi, seluruh biaya mobil tetap dihitung sampai ada kontrak operator yang menjamin biaya per kursi. Private memberikan mobil eksklusif sejak 1 guest sampai maksimum 7 penumpang jika kapasitas kendaraan terverifikasi. Snorkeling dan island tour harus dilakukan pada hari yang berbeda.",
+  "islandPage.description": "Pilih Sharing untuk kemungkinan bergabung dengan tamu lain, atau Private untuk perjalanan dengan kendaraan khusus grup Anda, termasuk jika bepergian sendiri. Kapasitas maksimal tujuh orang mengikuti kendaraan yang telah diverifikasi. Harga dan fasilitas dikonfirmasi berdasarkan tanggal serta jumlah peserta. Snorkeling dan island tour dijadwalkan pada hari yang berbeda.",
   "westPage.eyebrow": "WEST NUSA PENIDA · SHARING & PRIVATE",
   "westPage.title": "Wisata Barat Nusa Penida",
   "westPage.lead": "Temukan tebing ikonik, lengkungan batu alami, dan pantai yang membuat Nusa Penida tak terlupakan.",
-  "westPage.description": "Jelajahi pesona barat bersama operator lokal. Urutan lokasi dapat berubah mengikuti kondisi jalan, cuaca, waktu kunjungan, dan pilihan guest. Sharing maupun Private memakai kalkulasi aman biaya kendaraan penuh saat kursi lain belum dikonfirmasi.",
+  "westPage.description": "Jelajahi Barat Nusa Penida bersama operator lokal. Urutan destinasi dapat berubah mengikuti akses jalan, cuaca, waktu kunjungan, dan pilihan tamu. Kami akan mengonfirmasi rute dan fasilitas sebelum pemesanan.",
   "eastPage.eyebrow": "EAST NUSA PENIDA · SHARING & PRIVATE",
   "eastPage.title": "Wisata Timur Nusa Penida",
   "eastPage.lead": "Sisi timur menawarkan lanskap tebing putih, teluk tersembunyi, dan panorama yang terasa seperti lukisan.",
-  "eastPage.description": "Rasakan kontras lautan turquoise dan tebing kapur, dengan waktu singgah menyesuaikan akses serta keselamatan. Sharing dapat dicampur guest lain, sedangkan Private untuk satu grup eksklusif—even satu tamu—jika biaya operator tertutup."
+  "eastPage.description": "Nikmati teluk biru dan tebing kapur yang memesona. Sharing dapat bergabung dengan wisatawan lain, sedangkan Private menyediakan kendaraan khusus untuk grup Anda. Rute dan akses disesuaikan dengan keselamatan perjalanan."
 };
 Object.assign(idDefaults,{
  "hero.eyebrow":"EXPLORE · SNORKEL · DISCOVER",
@@ -77,6 +78,7 @@ Object.assign(idDefaults,{
  "regions.title":"Setiap sudut pulau, cerita yang berbeda",
  "regions.description":"Temukan panorama ikonik di Barat, pesona pantai di Timur, atau keajaiban bawah laut Nusa Penida. Pilih pengalaman favorit Anda; detail rute dan fasilitas akan dikonfirmasi bersama operator."
 });
+Object.assign(idDefaults,{"price.snorkeling":"Sharing Rp350.000/orang","price.island":"Mulai Rp800.000/mobil","price.west":"Mulai Rp800.000/mobil","price.east":"Mulai Rp800.000/mobil"});
 const englishText = {
  "Paket":"Experiences","Hubungi":"Enquire","Dashboard agen":"Agent dashboard","Beranda":"Home",
  "Snorkeling 3 spot atau island tour dengan operator lokal. Pilih tanggal, jumlah peserta, dan sampaikan kebutuhan Anda. Tim kami akan mengonfirmasi fasilitas, ketersediaan, dan harga.":"Discover snorkeling or island tours with local operators. We confirm arrangements, availability and prices before booking.",
@@ -138,8 +140,6 @@ const englishText = {
  "Jadwal, ketersediaan, pilihan spot, keamanan, kapasitas, dan fasilitas harus dikonfirmasi sebelum pembayaran.":"Schedules, availability, spots, safety, capacity and inclusions must be verified before payment.",
  "Biaya tambahan dan keselamatan":"Extras and safety",
  "Ajukan permintaan perjalanan →":"Request a trip quote →",
- "Hitung Sharing tanpa menebak kursi terjual":"Sharing pricing without assuming unsold seats",
- "Guest terkonfirmasi":"Confirmed guests","Net mobil / guest":"Vehicle net per guest","Harga minimum per booking*":"Minimum per booking*",
  "Nusa Penida Experiences · Informasi wisata":"Nusa Penida Experiences · Travel information"
 };
 
@@ -191,20 +191,10 @@ Object.assign(englishText,{
  "Kembali": "Back",
  "Konfirmasi ketentuan sebelum pembayaran.": "Confirm all terms before payment.",
  "Nusa Penida Experiences (merek sementara)": "Nusa Penida Experiences (trade name)",
- "Tour Barat dan Timur tersedia terpisah. Setiap kendaraan dapat memuat maksimal 7 guest jika kursi aman sudah dikonfirmasi. Penawaran mencakup biaya kendaraan penuh agar tidak merugi, termasuk untuk Sharing dengan sedikit guest. Lunch dan fast boat tidak termasuk biaya mobil.": "West and East tours are offered separately. Vehicles carry up to seven guests only when safe seating is confirmed. All quotations cover the full vehicle cost even for smaller Sharing groups; lunch and fast boat tickets are not included in the vehicle price.",
  "Kapasitas maksimal tujuh guest sesuai kendaraan yang diverifikasi. Sharing tetap memperhitungkan biaya satu mobil penuh sampai seluruh peserta dan biaya terkunci. Tidak termasuk lunch dan transport fast boat. Titik foto/akses Rumah Pohon wajib dikonfirmasi agar tidak menjanjikan akses yang belum termasuk.": "Maximum capacity is seven guests on a verified vehicle. Sharing quotations cover the full vehicle cost until participants and costs are confirmed. Lunch and fast boat transport are extra. Tree House viewpoint access must be confirmed; unapproved access cannot be promised.",
- "Tarif net awal lunch Rp150.000/guest serta fast boat Rp150.000/guest sekali jalan, belum otomatis termasuk. Harga masuk objek untuk rute awal tidak dianggarkan, sedangkan parkir menurut informasi pemilik ditanggung pengemudi/pemilik kendaraan. Rute, kapasitas, kondisi jalan, cuaca dan operator wajib dikonfirmasi. Harga guest ditetapkan melalui penawaran resmi dan tidak dapat lebih rendah dari batas biaya + margin agen.": "Initial supplier net estimates for lunch (Rp150,000 per guest) and one-way fast boat (Rp150,000 per guest) are not included automatically. Initial stops have no budgeted entrance fee and parking is understood to be paid by the driver/vehicle owner. Routes, capacity, roads, weather and operators must be verified. Guest pricing requires a formal quotation that covers costs and the agency margin.",
  "Foto: hak cipta fotografer masing-masing melalui Wikimedia Commons.": "Photos: copyright belongs to the credited photographers via Wikimedia Commons.",
  "Dengan": "With",
- ", tamu dapat bergabung bersama peserta lain. Agar agen tidak merugi, seluruh biaya mobil tetap dihitung sampai ada kontrak operator yang menjamin biaya per kursi.": ", guests may join others. To avoid underfunded bookings, the full vehicle cost is included unless a verified operator agreement covers charges per seat.",
  "memberikan mobil eksklusif sejak 1 guest sampai maksimum 7 penumpang jika kapasitas kendaraan terverifikasi. Snorkeling dan island tour harus dilakukan pada hari yang berbeda.": "provides an exclusive car for one to seven guests, subject to verified safe capacity. Snorkeling and island tours take place on different days.",
- "Tarif net awal mobil adalah Rp600.000 per booking, berlaku untuk Barat atau Timur. Untuk satu booking Sharing, perhitungan konservatif menanggung": "The initial vehicle net is Rp600,000 per booking for West or East. For a Sharing booking, calculations conservatively cover",
- "satu mobil penuh": "one full vehicle",
- "dari jumlah guest yang benar-benar memesan. Angka di bawah": "based only on confirmed paying guests. These amounts are",
- "bukan harga jual final": "not final selling prices",
- "dan belum memasukkan biaya agen, transaksi, lunch, atau fast boat.": "and exclude agency costs, transaction fees, lunch and fast boat transport.",
- "* Rp600.000 biaya satu mobil + margin minimum Rp100.000 per booking,": "* Rp600,000 for a full vehicle plus the Rp100,000 minimum booking margin,",
- "biaya tambahan dan kewajiban operator. Tarif kursi tidak menjadi otomatis lebih murah jika guest lain belum membayar.": "excluding additional costs and supplier obligations. Per-seat charges do not automatically fall unless other guests have paid.",
  "SEA ADVENTURE · SHARING & PRIVATE": "SEA ADVENTURE · SHARING & PRIVATE",
  "· Ilustrasi snorkeling bersama manta di perairan Nusa Penida": "· Illustration of manta snorkeling in Nusa Penida waters",
  "· Dokumentasi manta dari wilayah Manta Point, bukan jaminan penampakan": "· Manta documentation from the Manta Point area; sightings are not guaranteed",
@@ -228,6 +218,13 @@ Object.assign(englishText,{
  "Mari wujudkan cerita liburan Anda":"Your island adventure starts here",
  "Sudah punya tanggal perjalanan? Ceritakan pengalaman yang Anda impikan; kami akan membantu menyiapkan informasi paket dan pilihan yang sesuai. Form ini merupakan permintaan informasi, bukan booking terkonfirmasi.":"Have a travel date in mind? Tell us what you're dreaming of and we'll help you explore suitable experiences. This is an enquiry, not a confirmed booking.",
  "Nusa Penida Experiences membantu Anda merencanakan perjalanan. Harga, fasilitas, dan slot operator dikonfirmasi sebelum pemesanan.":"Nusa Penida Experiences helps plan your escape. Prices, inclusions and availability are verified before booking."
+});
+Object.assign(englishText,{
+ "Harga yang ditampilkan merupakan penawaran mulai dan belum mengikat. Ketersediaan, jumlah peserta, fasilitas, cuaca, dan biaya tambahan dikonfirmasi sebelum pemesanan. Snorkeling Private: minta penawaran sesuai spot.": "Displayed prices are starting offers, not final quotations. Availability, group size, inclusions, weather, and extras must be confirmed before booking. For Private snorkeling, request a quote for your preferred spot.",
+ "Pilih Sharing untuk berkesempatan bergabung dengan wisatawan lain, atau Private untuk pengalaman eksklusif, termasuk perjalanan seorang diri.": "Choose Sharing to potentially join other travelers or Private for an exclusive escape, including solo journeys.",
+ "Wisata Barat dan Timur ditawarkan sebagai rute terpisah. Kapasitas kendaraan mengikuti tempat duduk aman yang diverifikasi, maksimal tujuh tamu. Harga yang ditampilkan di beranda adalah harga mulai per mobil; makan siang dan tiket fast boat belum otomatis termasuk.": "West and East are separate tour routes. Vehicle capacity is subject to verified safe seating, with up to seven guests. Homepage prices start per vehicle; lunch and fast boat tickets are additional.",
+ "Kapasitas kendaraan maksimal tujuh tamu jika telah dikonfirmasi aman. Harga mulai per mobil dapat dilihat pada kartu foto beranda; makan siang dan fast boat belum termasuk. Akses ke titik foto Rumah Pohon akan diperiksa bersama operator agar fasilitas yang ditawarkan sesuai kondisi di lapangan.": "Vehicles carry up to seven guests only with verified safe seating. Starting prices per vehicle appear on the homepage photo cards; lunch and fast boat tickets are extra. Tree House viewpoints and access are confirmed with the operator.",
+ "Harga promosi wisata darat ditampilkan pada kartu foto di beranda. Makan siang, tiket fast boat, biaya masuk destinasi bila berlaku, dan layanan tambahan belum otomatis termasuk. Kami akan memastikan rute, kapasitas kendaraan, fasilitas, cuaca, serta ketersediaan operator sebelum memberikan penawaran akhir.": "Island tour starting prices are displayed on homepage photo cards. Lunch, fast boat transfers, applicable entrance fees and other extras are not automatically included. Routes, safe capacity, weather, inclusions and operator availability are verified before we issue a final quotation."
 });
 const originalNodes=[];
 const originals={};
