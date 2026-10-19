@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.4 — 2026-10-19
+- Fix intermittent gallery failure caused by CDN dependency: dedicated Tourism-only Cloudflare KV now persists real source JPEGs, while bundled Cloudflare assets are preferred when available.
+- Add versioned mobile photo URLs, fallback chain local static > GitHub raw > labeled placeholder, and refresh PWA offline static-shell cache.
+- Add test coverage for KV persistence when external network fails and for local asset precedence; live smoke requires 10 valid same-origin JPEGs.
+- No changes to operator pricing, guest data, admin secrets or Spenva/FinChat applications.
+
+
 ## 3.0.3 — 2026-10-19
 - Fixed the recurring broken gallery problem: replaced unreliable Wikimedia photo redirects with ten licensed, downloaded, optimized, SHA-verified JPEG photo files in GitHub.
 - Switched Cloudflare same-origin `/photos/<slug>` gateway to serve those archived images; added direct GitHub Raw browser image fallback and an explicit unavailable-message SVG.

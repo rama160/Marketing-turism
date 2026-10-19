@@ -24,7 +24,7 @@ test("ten real destination photos have verified JPEG bytes and SHA-256",()=>{
 test("HTML uses same-origin photo gateway and exact Commons author credit",()=>{
  for(const name of ["island-tour.html","west-tour.html","east-tour.html","snorkeling.html"]){
   const html=read(name);
-  const matches=[...html.matchAll(/<img[^>]*src="\/photos\/([a-z-]+)"[^>]*>[\s\S]*?<figcaption>Foto: <a href="([^"]+)"[^>]*>([^<]+)<\/a>/g)];
+  const matches=[...html.matchAll(/<img[^>]*src="\/photos\/([a-z-]+)(?:\?v=4)?"[^>]*>[\s\S]*?<figcaption>Foto: <a href="([^"]+)"[^>]*>([^<]+)<\/a>/g)];
   assert.ok(matches.length>=2,"Missing photo credits on "+name);
   for(const [,id,url,credit] of matches){
    const p=manifest.photos.find(x=>x.slug===id);
@@ -36,9 +36,44 @@ test("HTML uses same-origin photo gateway and exact Commons author credit",()=>{
 });
 test("photo loader has direct static GitHub fallback, then truthful placeholder",()=>{
  const loader=read("photo-loader.js");
- assert.match(loader,/raw\.githubusercontent\.com/);
+ assert.match(loader,/raw\.githubusercontent\.com/);assert.match(loader,/photoFallbackStage="asset"/);
  assert.match(loader,/photo-unavailable\.svg/);
  assert.match(loader,/localPhotoFailed/);
  assert.match(read("_headers"),/raw\.githubusercontent\.com/);
- assert.match(read("service-worker.js"),/public-v6/);
+ assert.match(read("service-worker.js"),/public-v7/);
+});
+
+test("persistent KV photo copy works when both GitHub and Wikimedia are offline",async()=>{
+ const {servePhoto}=await import("../src/photos.mjs");
+ const input=imageBytes("kelingking");
+ const saved=globalThis.fetch;
+ const records=new Map(),kv={
+  async get(key){return records.get(key)||null;},
+  async put(key,value){records.set(key,value);}
+ };
+ try{
+  globalThis.fetch=async()=>new Response(input,{status:200,headers:{"content-type":"image/jpeg"}});
+  const request=new Request("https://tour.example/photos/kelingking");
+  const initial=await servePhoto(request,{PHOTO_KV:kv});
+  assert.equal(initial.status,200);
+  assert.equal(initial.headers.get("x-photo-status"),"upstream-ok");
+  assert.ok(records.has("v1/kelingking"));
+  globalThis.fetch=async()=>{throw new Error("External images blocked");};
+  const cached=await servePhoto(request,{PHOTO_KV:kv});
+  assert.equal(cached.status,200);
+  assert.equal(cached.headers.get("x-photo-status"),"kv-cache");
+  const jpeg=new Uint8Array(await cached.arrayBuffer());
+  assert.equal(jpeg.length,input.length);
+  assert.equal(jpeg[0],255);
+ }finally{globalThis.fetch=saved;}
+});
+test("Cloudflare bundled local photo takes precedence and does not consume KV",async()=>{
+ const {servePhoto}=await import("../src/photos.mjs");
+ const img=imageBytes("diamond-beach");let called=0;
+ const env={
+  ASSETS:{async fetch(req){called++;assert.match(req.url,/\/photos\/diamond-beach\.jpg$/);return new Response(img,{status:200,headers:{"content-type":"image/jpeg"}});}},
+  PHOTO_KV:{async get(){throw new Error("Should not fetch KV after asset succeeds");}}
+ };
+ const res=await servePhoto(new Request("https://tour.example/photos/diamond-beach"),env);
+ assert.equal(res.status,200);assert.equal(res.headers.get("x-photo-status"),"asset-local");assert.equal(called,1);
 });

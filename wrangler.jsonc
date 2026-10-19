@@ -28,5 +28,11 @@
     "crons": [
       "0 1 * * 1"
     ]
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "PHOTO_KV",
+      "id": "75b81d83ac954e57a2976c651470dc85"
+    }
+  ]
 }

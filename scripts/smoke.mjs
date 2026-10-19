@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.0.3")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.0.4")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -32,15 +32,13 @@ const imageChecks=["kelingking","broken-beach","angels-billabong","crystal-bay",
 for(const id of imageChecks){
  const response=await fetch(base+"/photos/"+id,{signal:AbortSignal.timeout(20000)});
  const type=response.headers.get("content-type")||"";
- const gatewayOK=response.status===200&&type.startsWith("image/")&&response.headers.get("x-photo-status")==="upstream-ok";
+ const status=response.headers.get("x-photo-status");
+ const gatewayOK=response.status===200&&type.startsWith("image/")&&["upstream-ok","kv-cache","asset-local"].includes(status);
  if(gatewayOK){
   const bytes=new Uint8Array(await response.arrayBuffer());
   if(bytes.length<10000||bytes[0]!==255||bytes[1]!==216)throw Error("Gateway returned invalid JPEG "+id);
  }else{
-  const backup=await fetch("https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+id+".jpg",{signal:AbortSignal.timeout(20000)});
-  const bytes=new Uint8Array(await backup.arrayBuffer());
-  if(!backup.ok||bytes.length<10000||bytes[0]!==255||bytes[1]!==216)throw Error("Both gallery sources unavailable: "+id+", "+response.status+" / "+backup.status);
-  console.warn("Gateway unavailable for "+id+"; verified browser image fallback works");
+  throw Error("Cloudflare same-origin photo unavailable: "+id+", HTTP "+response.status+", type="+type+", status="+status);
  }
 }
 const page=await get("/");
@@ -56,4 +54,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS: public HTML, app JS, D1 API, catalogue, admin auth and closed lead intake.");
+console.log("SUCCESS: 10 same-origin real JPEGs verified; public HTML, app JS, D1 API, catalogue, admin auth and closed lead intake.");
