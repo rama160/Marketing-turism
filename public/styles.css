@@ -149,3 +149,27 @@ body{background:#f3f7fa;color:#17374b}
  .spot-cover .spot-overlay{padding-top:70px}
  .spot-cover .spot-link{margin-top:9px}
 }
+
+
+/* v3.4 — first-class WhatsApp Business guest contact and safe owner assistance */
+.wa-contact-card{margin:20px 0 4px;padding:clamp(20px,3vw,30px);border-radius:20px;background:linear-gradient(145deg,#e2f7f3,#f8fcfb);border:1px solid #b9dfd7;box-shadow:0 12px 36px #075b4620}
+.wa-contact-card h3{color:#073c46;font-size:clamp(21px,2vw,27px);line-height:1.2;margin:9px 0 12px}
+.wa-contact-card p{color:#456472;font-size:14px;line-height:1.65}
+.wa-contact-actions{display:flex;flex-wrap:wrap;gap:11px;margin:20px 0 14px}
+.wa-contact-primary,.wa-contact-catalog{min-height:47px;display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:11px 17px;border-radius:30px;font-weight:800;font-size:13px}
+.wa-contact-primary{background:#16865b;color:#fff;box-shadow:0 8px 20px #075d3c29}
+.wa-contact-primary:hover{background:#086d48;color:#fff}
+.wa-contact-catalog{background:#fff;color:#0a574e;border:1.5px solid #75b8a0}
+.wa-contact-catalog:hover{background:#e2f7ee}
+.wa-contact-number{font-size:12px!important;margin-bottom:0}
+.wa-contact-number a{font-weight:800;text-decoration:underline}
+.wa-floating{position:fixed;z-index:60;right:18px;bottom:18px;min-height:52px;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:30px;padding:12px 18px;background:#128354;color:#fff;font-weight:800;font-size:13px;box-shadow:0 6px 20px #002d3290;border:2px solid white;max-width:calc(100vw - 32px)}
+.wa-floating:hover{background:#076d47;color:#fff;transform:translateY(-2px)}
+.wa-floating span:first-child{font-size:22px;line-height:1}
+.wa-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0}
+.wa-template{padding:16px;border:1px solid #d3e3e7;border-radius:14px;background:#f8fcfb}
+.wa-template b{font-size:14px;color:#0b4054}
+.wa-template p{line-height:1.65;color:#345b68;font-size:13px;white-space:pre-wrap}
+@media(max-width:850px){.wa-template-grid{grid-template-columns:1fr}.wa-floating{right:13px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}.wa-contact-actions>a{flex-grow:1}}
+@media(max-width:520px){.wa-floating{padding:11px 14px;min-height:50px}.wa-floating-text{font-size:12px}.wa-contact-card{margin-top:14px}.wa-contact-card h3{font-size:23px}}
+@media(prefers-reduced-motion:reduce){.wa-floating:hover{transform:none}}
