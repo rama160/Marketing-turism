@@ -221,3 +221,35 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  assert.equal(get("#unlockPanel").hidden,false);
  assert.equal(session.has("tourAdmin"),false);
 });
+
+test("official WhatsApp Business contact and catalog links are visible, separate and accessible to guests",()=>{
+ const home=read("index.html"),lang=read("language.js"),css=read("styles.css"),app=read("app.js");
+ const number="628561752525";
+ const link="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
+ assert.match(home,/id="whatsapp"/);
+ assert.match(home,/id="request"/);
+ assert.match(home,/class="wa-contact-card"/);
+ assert.match(home,/class="wa-floating"/);
+ assert.match(home,/data-whatsapp-chat/);
+ assert.match(home,/id="tab-whatsapp"/);
+ assert.match(home,/data-go-tab="whatsapp"/);
+ assert.match(home,/data-tab="whatsapp"/);
+ assert.ok(home.includes(link), "Direct chat link missing");
+ assert.ok(home.includes(catalog), "Official catalog link missing");
+ assert.equal((home.match(/data-whatsapp-chat/g)||[]).length,3);
+ for(const file of ["snorkeling.html","island-tour.html","west-tour.html","east-tour.html"]){
+  const page=read(file);
+  assert.ok(page.includes('data-whatsapp-chat'),file+" direct chat CTA missing");
+  assert.ok(page.includes(catalog),file+" catalog CTA missing");
+ }
+ assert.match(css,/\.wa-floating\{/);
+ assert.match(css,/\.wa-tour-links\{/);
+ assert.match(lang,/whatsapp\.heading/);
+ assert.match(lang,/\[data-whatsapp-chat\]/);
+ assert.match(lang,/encodeURIComponent\(message\)/);
+ assert.match(lang,/View WhatsApp Catalog/);
+ assert.match(app,/\[data-wa-copy\]/);
+ assert.match(home,/Koneksi otomatis ke inbox WhatsApp/);
+ assert.match(home,/Tidak ada pengiriman otomatis/);
+ assert.doesNotMatch(home,/WhatsApp API sudah terhubung|Balasan terkirim secara otomatis/);
+});
