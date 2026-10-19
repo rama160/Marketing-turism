@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.2.2 (pilot; working owner dashboard login/navigation, premium bilingual landing page, CMS and mobile photo previews).
+Repository: rama160/Marketing-turism. Release 3.3.0 (pilot; guest-friendly photo price labels, owner dashboard and bilingual CMS; public lead intake OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -124,3 +124,13 @@ Published live directly to the dedicated Tourism Cloudflare Worker, version `c1b
 The public **Dashboard agen** button, admin token sign-in, sidebar tabs and dashboard navigation tiles are functional again. Root cause was applying `.forEach` to the single DOM node returned by `querySelector` during script startup, which aborted subsequent event handler registrations. The fix correctly selects DOM node lists and is covered by an actual script-execution regression test using a safe mock browser DOM and mock-only admin token. Production `ADMIN_TOKEN` is preserved and cannot be read from source code. Guest intake remains OFF.
 
 Released directly via the connected Cloudflare API to dedicated Worker `marketing-turism-agent`, deployment `0ff952b8-0100-47c8-9520-b99146e4e5cb` at 100% traffic. Public-only offline cache updated to v11. If an Android device shows the old broken controls, close the browser tab and reload the site once to refresh the service worker (or clear website cache for this origin only). Do not enter the real admin token in public support chats or commit it to GitHub.
+
+## v3.3.0 — Public prices on travel photo previews
+
+The published [Nusa Penida Experiences website](https://marketing-turism-agent.finchat-ai-gateway.workers.dev/) now shows *starting retail offers* on the photo previews: **Snorkeling Sharing Rp350.000/person** and **Island Tour West/East from Rp800.000/car**. The island tour cost/seat table and supplier net, agency markup and internal cost model were removed from guest pages. Price labels and explanations are available in English and Indonesian. Snorkeling Private requires a separately confirmed quotation, rather than an invented retail rate.
+
+From **Dashboard agen → Editor Website**, the owner can edit `price.snorkeling`, `price.island`, `price.west`, and `price.east` separately in ID/EN; these CMS text labels do **not** change the actual admin quote calculator, operator rates, approval requirements or any confirmed sale. Ensure new advertised prices remain above verified cost and fees, and that displayed availability is confirmed before taking guest funds.
+
+Current public image/photo prices are **not final offers**; inclusions, fast-boat, lunch, weather, capacity and vendor availability require review. Real public enquiries remain OFF until launch approval.
+
+This is Cloudflare Worker v3.3.0, version `06852dc8-6d4c-4a8a-8a3f-a2ea589d056b`, at 100% live traffic. The old domain's private reservation/auth workflows were preserved.
