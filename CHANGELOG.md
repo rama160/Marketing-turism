@@ -1,3 +1,8 @@
+## Deployment note — 2026-10-19
+- Merged feature v3.1.0 onto `main`; isolated D1 content tables created and verified on Cloudflare.
+- CI passed. GitHub Actions Worker deployment cannot run until repository `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and opt-in variable `ENABLE_CLOUDFLARE_DEPLOY` are configured; a test run was stopped before Worker deployment. No false claim of successful live release.
+- Deployment workflow kept opt-in and changed to idempotent migration 0009 SQL so legacy ALTER TABLE migrations are not replayed.
+
 ## 3.1.0 — 2026-10-19
 - Display canonical Nusa Penida Experiences logo in all core public experience-page headers, favicon and PWA icon.
 - Automatic visitor language detection (Indonesian/English) with persisted manual selection; curated translations for guest pages without third-party translation API.
