@@ -1,0 +1,95 @@
+{
+  "photos": [
+    {
+      "slug": "kelingking",
+      "filename": "Kelingking Beach, Nusa Penida.jpg",
+      "author": "Shrigusti",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Kelingking_Beach%2C_Nusa_Penida.jpg",
+      "sha256": "1c7316f75a1808de7662250324fd673fd22761e52177a37e51d2bd1ae25ea0f6",
+      "bytes": 179041
+    },
+    {
+      "slug": "broken-beach",
+      "filename": "Broken Beach Nusa Penida.jpg",
+      "author": "I Ketut Arnaya",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Broken_Beach_Nusa_Penida.jpg",
+      "sha256": "154f6a68a4e15c67223b25cd689459970e0b42a51a009c5ad6857c95f9a23f8c",
+      "bytes": 242307
+    },
+    {
+      "slug": "angels-billabong",
+      "filename": "Angel Billabong, Nusa Penida.jpg",
+      "author": "Haryanti",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Angel_Billabong%2C_Nusa_Penida.jpg",
+      "sha256": "b3ce552028a9944905f5402f475fa384692e54b6e07495a921d755aa06f9b960",
+      "bytes": 174307
+    },
+    {
+      "slug": "crystal-bay",
+      "filename": "Crystal Bay, Nusa Penida 2017-08-20 (9).jpg",
+      "author": "Magul",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Crystal_Bay%2C_Nusa_Penida_2017-08-20_(9).jpg",
+      "sha256": "365d4a5522bd881d3adfb070186aac32222b5b13921aaf79f1137bf9368cbeac",
+      "bytes": 115031
+    },
+    {
+      "slug": "diamond-beach",
+      "filename": "Diamond Beach in Nusa Penida, Bali.jpg",
+      "author": "Stryn",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Diamond_Beach_in_Nusa_Penida%2C_Bali.jpg",
+      "sha256": "008a528857d2068de92bf54175c32b1f96e05a4300397918b389fd06f3816bf9",
+      "bytes": 168620
+    },
+    {
+      "slug": "atuh-beach",
+      "filename": "Atuh Beach, Nusa Penida Bali.jpg",
+      "author": "Hendrojkson",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Atuh_Beach%2C_Nusa_Penida_Bali.jpg",
+      "sha256": "bb75ae6a5f5462699c184959de6764c0c5d1263138dffdd92b6821a885067102",
+      "bytes": 178133
+    },
+    {
+      "slug": "tree-house",
+      "filename": "Amazing Tree House at Nusa Penida.jpg",
+      "author": "Dini Rosyadah Tridya",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Amazing_Tree_House_at_Nusa_Penida.jpg",
+      "sha256": "127b339c3fb173a5f3ae39eadf5717951a8fec54f5a1591d606eb305a57cbf5d",
+      "bytes": 221381
+    },
+    {
+      "slug": "manta-bay",
+      "filename": "Snorkeling-with-manta-penida.jpg",
+      "author": "Sasuke shinozawa",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Snorkeling-with-manta-penida.jpg",
+      "sha256": "ac198a44126ef8541ca989c1d84b5bbc24a120742b60614257e104c134d14272",
+      "bytes": 121287
+    },
+    {
+      "slug": "manta-point",
+      "filename": "19-Indonesia-Bali Nusa-Penida Manta-Point 14 (Manta Ray)-APiazza.JPG",
+      "author": "Andrepiazza",
+      "license": "CC BY-SA 3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:19-Indonesia-Bali_Nusa-Penida_Manta-Point_14_(Manta_Ray)-APiazza.JPG",
+      "sha256": "144582adea194cb92b824896ec5ddadc2cb3f5d293a74d32b99a89972ea8284a",
+      "bytes": 57353
+    },
+    {
+      "slug": "gamat-bay",
+      "filename": "Penida-snorkeling.jpg",
+      "author": "Sasuke shinozawa",
+      "license": "CC BY-SA 4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Penida-snorkeling.jpg",
+      "sha256": "4cbbb7b7ba5047c990f5cf4eef3c980d39c5cb647cced6f345bab799bc38eb5f",
+      "bytes": 180015
+    }
+  ],
+  "note": "Gallery files copied from Wikimedia Commons with attribution; not all photos show exactly the named location (Gamat Bay illustrative). Check source links and license before reuse."
+}
