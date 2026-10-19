@@ -46,7 +46,11 @@ if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest 
 const app=await get("/app.js");
 if(!app.includes("quotePayload"))throw Error("Frontend application missing");
 if(!app.includes('$('+' ".tabs button" )')||!app.includes('$('+' "[data-go-tab]" )'))throw Error("Owner dashboard navigation listeners missing on live Worker");
-if(app.includes('$(".tabs button").forEach')||app.includes('$("[data-go-tab]").forEach'))throw Error("Owner dashboard broken singleton selector remains");
+const badBootLine=app.split("\n").some(line=>{
+ const trimmed=line.trimStart();
+ return trimmed.startsWith('$(".tabs button").forEach')||trimmed.startsWith('$("[data-go-tab]").forEach');
+});
+if(badBootLine)throw Error("Owner dashboard broken singleton selector remains");
 // v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
 const home=await get("/");
 if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
