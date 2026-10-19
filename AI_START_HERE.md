@@ -73,3 +73,8 @@ For every deployment path (GitHub Wrangler assets AND manually uploaded `entry.m
 
 ## Gallery resilience v3.0.2
 Photo images MUST use same-origin `/photos/{slug}` served from canonical Wikimedia thumbnail URLs by `src/photos.mjs`, not `Special:FilePath?width=900`. Only known slugs are allowed; CDN retrieval is cached, falls back to original if thumbnail fails, and frontend displays a local honest placeholder if origin is unavailable. All galleries preserve Commons author/source attribution. Both manual Cloudflare multipart deployment entry router and Wrangler `run_worker_first` must route `/photos/*` through `src/worker.mjs`. Verify 200 image responses for at least Kelingking, Diamond Beach, Manta Point. Do not update Spenva/FinChat.
+
+## Gallery photo delivery 3.0.3 (DO NOT REGRESS)
+- Source of truth: public/photos/{slug}.jpg (10 genuine photos), with authors/licenses/hashes in `public/photos/manifest.json`. Scripts: `scripts/sync-photos.mjs`, `scripts/optimize-photos.py`, workflow `sync-photos.yml`. DO NOT replace with broken `Special:FilePath` redirects.
+- Production Worker deployment must import `photos.mjs` and route `/photos/*` to API Worker, return real JPEG bytes and cache them; browser `photo-loader.js` falls back to GitHub Raw direct JPG and finally labelled local SVG.
+- CSP for image source includes `raw.githubusercontent.com`; public pages have clickable Commons credits. Test `tests/photos.test.mjs` verifies SHA256/JPEG bytes/author attribution; `scripts/smoke.mjs` verifies all ten live photo endpoints. Preserve separation from Spenva/FinChat and maintain lead gate OFF until legal readiness.

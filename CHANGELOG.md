@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.3 — 2026-10-19
+- Fixed the recurring broken gallery problem: replaced unreliable Wikimedia photo redirects with ten licensed, downloaded, optimized, SHA-verified JPEG photo files in GitHub.
+- Switched Cloudflare same-origin `/photos/<slug>` gateway to serve those archived images; added direct GitHub Raw browser image fallback and an explicit unavailable-message SVG.
+- Updated original Commons credits on West, East, snorkeling and tour pages; added per-photo MIME/magic/hash tests and live verification of ALL TEN photo endpoints.
+- Refreshed public PWA cache and CSP for image-only GitHub fallback. No change to tariffs, guest data, admin secrets or Spenva/FinChat deployments.
+
+
 ## 3.0.2 — 2026-10-19
 - Fix guest photo failures with same-origin `/photos/{slug}` gateway, fixed canonical Wikimedia thumbnails, original fallback, and Cloudflare edge caching.
 - Every gallery retains photographer/source credits. Missing upstream displays clear local SVG placeholder instead of broken image icon.

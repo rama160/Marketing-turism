@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.0.0 (MVP pilot).
+Repository: rama160/Marketing-turism. Release 3.0.3 (MVP pilot).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -87,3 +87,6 @@ The tourism pages use Wikimedia Commons photo sources with author links and CC a
 
 ## Reliable destination photos v3.0.2
 Destination pages use `/photos/<slug>` on the tourism Worker instead of browser-side Wikimedia `Special:FilePath` hotlinks. `src/photos.mjs` restricts requests to vetted Commons paths, tries 640px thumbnails and originals, caches successes, returns HTTP 502 for upstream failures. `public/photo-loader.js` swaps unsuccessful photos for transparent honest SVG placeholder. Photographer/CC BY-SA links are displayed in captions. External origin availability is still a dependency on a cold cache: live verification checks the upstream at selected photo URLs. Image cache contains only freely licensed public photos, not user data.
+
+## Ten destination photos — fixed 2026-10-19
+All 10 Nusa Penida gallery photos are real Wikimedia Commons licensed JPEGs, downloaded through `scripts/sync-photos.mjs`, normalized by `scripts/optimize-photos.py`, and saved to `public/photos/*.jpg` with hashes/license/author records in `public/photos/manifest.json`. The production Worker `/photos/<slug>` serves those verified static images via GitHub Raw (same-origin proxy); browser `photo-loader.js` falls back to the corresponding public GitHub photo directly, then to the honest local unavailable SVG. Gallery links carry photographer credits and source pages. CI checks each JPEG byte signature, SHA256, and page credit. Live smoke checks ALL TEN photo endpoints actually return image bytes, plus CSP and safety.
