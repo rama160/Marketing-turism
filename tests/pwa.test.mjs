@@ -131,7 +131,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  function element(selector,dataset={}){
   const listeners=new Map();
   const classes=new Set();
-  return {selector,dataset,listeners,classes,
+  return {selector,id:selector.startsWith("#")?selector.slice(1):selector,dataset,listeners,classes,
    style:{},hidden:selector==="#adminArea"||selector==="#adminContent"||selector.startsWith("#tab-")&&selector!=="#tab-summary",
    value:"",textContent:"",innerHTML:"",checked:false,disabled:false,
    classList:{toggle(c,active){if(active)classes.add(c);else classes.delete(c)},contains(c){return classes.has(c)}},
