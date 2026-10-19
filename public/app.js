@@ -36,8 +36,8 @@ function changeTab(name){
  $$(".tabs button").forEach(b=>b.classList.toggle("current",b.dataset.tab===name));
  $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
 }
-$(".tabs button").forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
-$("[data-go-tab]").forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
+$$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
 $("#adminToggle").onclick=()=>{$("#adminArea").hidden=false;$("#adminArea").scrollIntoView({behavior:"smooth"});};
 $("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;say("#loginMessage","Sesi admin ditutup.",true)};
 $("#leadDate").min=new Date().toISOString().slice(0,10);$("#quoteDate").min=$("#leadDate").min;$("#marketDate").value=$("#leadDate").min;$("#marketDate").max=$("#leadDate").min;$("#leadForm [name=campaign_id]").value=(new URL(location.href).searchParams.get("campaign")||"").slice(0,100);
