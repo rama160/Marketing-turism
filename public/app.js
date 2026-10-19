@@ -37,7 +37,16 @@ function changeTab(name){
  $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
 }
 $$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
-$$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
+ const key=button.dataset.waCopy,reply=$("#"+key)?.textContent?.trim();
+ if(!reply){say("#waDraftFeedback","Balasan tidak tersedia.");return;}
+ try{
+  await navigator.clipboard.writeText(reply);
+  say("#waDraftFeedback","Balasan disalin. Periksa informasi sebelum mengirim ke guest.",true);
+ }catch{say("#waDraftFeedback","Penyalinan otomatis tidak tersedia. Pilih dan salin teks balasan secara manual.");}
+}));
+
 $("#adminToggle").onclick=()=>{$("#adminArea").hidden=false;$("#adminArea").scrollIntoView({behavior:"smooth"});};
 $("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;say("#loginMessage","Sesi admin ditutup.",true)};
 $("#leadDate").min=new Date().toISOString().slice(0,10);$("#quoteDate").min=$("#leadDate").min;$("#marketDate").value=$("#leadDate").min;$("#marketDate").max=$("#leadDate").min;$("#leadForm [name=campaign_id]").value=(new URL(location.href).searchParams.get("campaign")||"").slice(0,100);
