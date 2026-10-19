@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.2.1 (pilot; premium bilingual tourism landing page, owner CMS, and reliable mobile image previews).
+Repository: rama160/Marketing-turism. Release 3.2.2 (pilot; working owner dashboard login/navigation, premium bilingual landing page, CMS and mobile photo previews).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -118,3 +118,9 @@ Dashboard quick edit fields store `hero.title` and `hero.description` in both la
 ## v3.2.1 — Mobile image preview fix (2026-10-19)
 
 Published live directly to the dedicated Tourism Cloudflare Worker, version `c1b9d5cd-e712-41d1-baf5-475c2d6ff7c9` deployed to 100% of traffic. The real mobile bug was blank large photo previews despite loaded thumbnails. Homepage hero (1 image), package covers (2 images), and tour cards (3 images) now use genuine accessible `<img>` elements with `object-fit: cover`, layered dark gradients for legible labels, and a navy fallback if assets fail. All photography still passes through the preexisting same-origin `/photos/{slug}` gateway and `photo-loader.js` local/GitHub/placeholder fallback, keeping visible Wikimedia credits. Fragile `--spot-photo` and `--tour-photo` CSS-background variables are removed from the homepage. PWA public-only cache increased to v10; no cached private API, guest or admin data. Added CI and live regression assertions for all six image covers and existing safety controls. Operator pricing and lead intake status remain unchanged.
+
+## 3.2.2 — Owner dashboard usability fix (2026-10-19)
+
+The public **Dashboard agen** button, admin token sign-in, sidebar tabs and dashboard navigation tiles are functional again. Root cause was applying `.forEach` to the single DOM node returned by `querySelector` during script startup, which aborted subsequent event handler registrations. The fix correctly selects DOM node lists and is covered by an actual script-execution regression test using a safe mock browser DOM and mock-only admin token. Production `ADMIN_TOKEN` is preserved and cannot be read from source code. Guest intake remains OFF.
+
+Released directly via the connected Cloudflare API to dedicated Worker `marketing-turism-agent`, deployment `0ff952b8-0100-47c8-9520-b99146e4e5cb` at 100% traffic. Public-only offline cache updated to v11. If an Android device shows the old broken controls, close the browser tab and reload the site once to refresh the service worker (or clear website cache for this origin only). Do not enter the real admin token in public support chats or commit it to GitHub.
