@@ -1,28 +1,28 @@
 // Guest-facing ID/EN locale selection. Auto follows browser language (not geolocation or guest identity).
 // No external translation provider or visitor profiling; only the language preference is stored.
 const englishHome = {
- "hero.eyebrow":"NUSA PENIDA · LOCAL EXPERIENCES",
- "hero.title":"Explore the island.",
- "hero.subtitle":"Your journey, your way.",
- "hero.description":"Discover three-spot snorkeling or island tours with local operators. Select your date and group size, then share your plans. Our team will confirm inclusions, availability and your quotation.",
- "hero.cta":"Request a quote ↗",
+ "hero.eyebrow":"EXPLORE · SNORKEL · DISCOVER",
+ "hero.title":"Unforgettable adventures",
+ "hero.subtitle":"in Nusa Penida.",
+ "hero.description":"Picture turquoise seas, dramatic cliffs and the chance to encounter graceful manta rays in the wild. Discover Nusa Penida through an island escape made for the way you love to travel.",
+ "hero.cta":"Explore Experiences ↗",
  "packages.eyebrow":"CURATED EXPERIENCES",
- "packages.title":"Snorkeling and island tours: Sharing & Private",
- "packages.description":"Choose Sharing (join other guests) or Private (exclusive for your group, including solo travelers). Snorkeling and island tours are not combined on the same day.",
+ "packages.title":"Choose the adventure you've been dreaming of",
+ "packages.description":"Iconic cliffside views or vibrant underwater wonders? Choose from Sharing and Private options, with schedules and inclusions confirmed before booking.",
  "snorkeling.title":"Nusa Penida Snorkeling",
- "snorkeling.description":"Join other guests on a Sharing trip or choose an exclusive Private experience for one or more guests. Private rates require verified boat pricing.",
- "island.title":"Nusa Penida Island Tour",
- "island.description":"Sharing prices must cover the full vehicle until seats are confirmed. Private means one exclusive vehicle even for a solo guest. Lunch and boat tickets are extra and subject to confirmation.",
- "regions.eyebrow":"ISLAND SIGHTSEEING · TWO REGIONS",
- "regions.title":"Discover West & East Nusa Penida",
- "regions.description":"Choose your favorite route and select Sharing or Private. Each route features local scenery and destination details. Boat tickets, lunch and availability are confirmed separately.",
- "west.title":"West Nusa Penida",
- "west.description":"Kelingking, Broken Beach, Angel’s Billabong and Crystal Bay: dramatic cliffs, natural wonders and beautiful beaches.",
- "east.title":"East Nusa Penida",
- "east.description":"Diamond Beach, Atuh Beach and Tree House viewpoints: white cliffs, beautiful bays and extraordinary island scenery.",
+ "snorkeling.description":"Dive into Nusa Penida's magical underwater world: colorful reefs, tropical fish and the chance to spot manta rays when sea conditions allow.",
+ "island.title":"Nusa Penida Island Tours",
+ "island.description":"From breathtaking Kelingking cliffs to the beauty of Diamond Beach, pick the scenic island route that fits your perfect getaway.",
+ "regions.eyebrow":"MEMORIES WORTH MAKING",
+ "regions.title":"Every corner of the island tells a story",
+ "regions.description":"Discover the dramatic West, dreamy East beaches or the magical marine world of Nusa Penida. Choose your experience; our team will confirm routes, inclusions and availability with operators.",
+ "west.title":"Island Tour West",
+ "west.description":"Dramatic cliffs, turquoise horizons and unforgettable photo spots.",
+ "east.title":"Island Tour East",
+ "east.description":"White-sand beaches and enchanting coastal viewpoints.",
  "contact.eyebrow":"PLAN YOUR JOURNEY",
- "contact.title":"Tell us about your trip",
- "contact.description":"This form requests information. It is not a completed payment or confirmed reservation.",
+ "contact.title":"Your island adventure starts here",
+ "contact.description":"Have a travel date in mind? Tell us what you're dreaming of and we'll help you explore suitable experiences. This is an enquiry, not a confirmed booking.",
  "contact.notice":"Prices, operators and availability must be verified first. Online payment is not available."
 };
 Object.assign(englishHome,{
@@ -43,6 +43,11 @@ Object.assign(englishHome,{
   "eastPage.lead": "Discover dramatic white cliffs, hidden bays and breathtaking landscapes on Nusa Penida's east coast.",
   "eastPage.description": "Enjoy turquoise seas and limestone cliffs, with visits adjusted for safe access and travel conditions. Sharing may include other travelers, while Private reserves an exclusive vehicle for a single group—even one guest—when the full supplier costs are covered."
 });
+// Additional premium landing-page copy; CMS still overrides curated defaults.
+Object.assign(englishHome,{
+ "sea.title":"Snorkeling 3 Spots",
+ "sea.description":"Discover crystal-clear waters and thriving marine life, with the chance to see manta rays.",
+});
 const idDefaults={
   "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
   "snorkelingPage.title": "Snorkeling Nusa Penida: Manta Bay, Manta Point & Spot Pilihan",
@@ -61,6 +66,17 @@ const idDefaults={
   "eastPage.lead": "Sisi timur menawarkan lanskap tebing putih, teluk tersembunyi, dan panorama yang terasa seperti lukisan.",
   "eastPage.description": "Rasakan kontras lautan turquoise dan tebing kapur, dengan waktu singgah menyesuaikan akses serta keselamatan. Sharing dapat dicampur guest lain, sedangkan Private untuk satu grup eksklusif—even satu tamu—jika biaya operator tertutup."
 };
+Object.assign(idDefaults,{
+ "hero.eyebrow":"EXPLORE · SNORKEL · DISCOVER",
+ "hero.title":"Liburan tak terlupakan",
+ "hero.subtitle":"di Nusa Penida.",
+ "hero.description":"Bayangkan birunya laut, megahnya tebing, dan kesempatan bertemu pari manta di habitat alaminya. Jelajahi keindahan Nusa Penida dalam perjalanan yang dirancang sesuai gaya liburan Anda.",
+ "hero.cta":"Jelajahi Pengalaman ↗",
+ "packages.title":"Pilih petualangan yang paling Anda impikan",
+ "packages.description":"Berburu panorama tebing ikonik atau menjelajahi keindahan bawah laut? Nikmati opsi Sharing dan Private, dengan jadwal serta fasilitas yang dikonfirmasi sebelum pemesanan.",
+ "regions.title":"Setiap sudut pulau, cerita yang berbeda",
+ "regions.description":"Temukan panorama ikonik di Barat, pesona pantai di Timur, atau keajaiban bawah laut Nusa Penida. Pilih pengalaman favorit Anda; detail rute dan fasilitas akan dikonfirmasi bersama operator."
+});
 const englishText = {
  "Paket":"Experiences","Hubungi":"Enquire","Dashboard agen":"Agent dashboard","Beranda":"Home",
  "Snorkeling 3 spot atau island tour dengan operator lokal. Pilih tanggal, jumlah peserta, dan sampaikan kebutuhan Anda. Tim kami akan mengonfirmasi fasilitas, ketersediaan, dan harga.":"Discover snorkeling or island tours with local operators. We confirm arrangements, availability and prices before booking.",
@@ -195,6 +211,23 @@ Object.assign(englishText,{
  "· Foto pantai Crystal Bay, bukan kondisi terumbu hari ini": "· Crystal Bay beach photograph; not today's reef conditions",
  "· Foto ilustrasi terumbu Nusa Penida, bukan foto terverifikasi Gamat Bay": "· Illustrative Nusa Penida reef photo; not a verified photo of Gamat Bay",
  "Nusa Penida Experiences · Pilot": "Nusa Penida Experiences · Pilot"
+});
+Object.assign(englishText,{
+ "Beranda":"Home","Paket Wisata":"Island Tours","Destinasi":"Destinations","Tentang Kami":"About Us",
+ "Rencanakan Liburan ↗":"Plan Your Escape ↗","Rencanakan Liburan →":"Plan Your Escape →",
+ "Island Tour Barat & Timur":"West & East Island Tours","Snorkeling & Manta":"Snorkeling & Manta Rays",
+ "Jelajahi bersama operator lokal":"Explore with local operators",
+ "Temukan petualangan laut ↗":"Discover snorkeling ↗","Lihat wisata pulau ↗":"Explore island tours ↗",
+ "PENGALAMAN PILIHAN":"CURATED EXPERIENCES",
+ "Foto:":"Photo:","Aktivitas dan penampakan manta bergantung kondisi alam.":"Activities and manta encounters depend on nature and conditions.",
+ "Lihat tur ↗":"Explore Tour ↗","TEMPAT YANG SELALU INGIN DIKENANG":"MEMORIES WORTH MAKING",
+ "YOUR ISLAND, YOUR STORY":"YOUR ISLAND, YOUR STORY",
+ "Perjalanan yang terasa lebih personal":"A journey that's uniquely yours",
+ "Setiap perjalanan punya cerita. Jelajahi sisi terbaik Nusa Penida melalui pilihan wisata darat dan snorkeling yang dapat disesuaikan dengan kebutuhan Anda.":"Every trip tells a story. Discover the very best of Nusa Penida with island tours and snorkeling options shaped around your plans.",
+ "Kami mengutamakan informasi yang jelas: pilihan rute, kapasitas, keselamatan, dan penawaran baru dikonfirmasi setelah operator serta kondisi aktivitas diperiksa. Pertemuan dengan manta merupakan pengalaman alam yang tidak dapat dijamin.":"Your safety and clarity matter. Routes, capacity, activities and quotations are confirmed after checking with operators and local conditions. Manta sightings are a wild encounter and cannot be guaranteed.",
+ "Mari wujudkan cerita liburan Anda":"Your island adventure starts here",
+ "Sudah punya tanggal perjalanan? Ceritakan pengalaman yang Anda impikan; kami akan membantu menyiapkan informasi paket dan pilihan yang sesuai. Form ini merupakan permintaan informasi, bukan booking terkonfirmasi.":"Have a travel date in mind? Tell us what you're dreaming of and we'll help you explore suitable experiences. This is an enquiry, not a confirmed booking.",
+ "Nusa Penida Experiences membantu Anda merencanakan perjalanan. Harga, fasilitas, dan slot operator dikonfirmasi sebelum pemesanan.":"Nusa Penida Experiences helps plan your escape. Prices, inclusions and availability are verified before booking."
 });
 const originalNodes=[];
 const originals={};
