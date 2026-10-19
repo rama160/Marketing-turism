@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.0.2")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.0.3")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -24,15 +24,24 @@ const cat=JSON.parse(await get("/api/public/catalog"));
 if(!Array.isArray(cat.items)||cat.items.length<5||cat.modes?.length!==2||!cat.variants?.ISLAND_TOUR_CAR)throw Error("Public catalog missing items");
 const landingResp=await fetch(base+"/",{signal:AbortSignal.timeout(20000)});
 const photoPolicy=landingResp.headers.get("content-security-policy")||"";
+if(!photoPolicy.includes("https://raw.githubusercontent.com"))throw Error("Reliable gallery image backup host blocked by live CSP");
 for(const imageHost of ["https://commons.wikimedia.org","https://upload.wikimedia.org"]){
  if(!photoPolicy.includes(imageHost))throw Error("Photo loading blocked by CSP: "+imageHost);
 }
-const imageChecks=["kelingking","diamond-beach","manta-point"];
+const imageChecks=["kelingking","broken-beach","angels-billabong","crystal-bay","diamond-beach","atuh-beach","tree-house","manta-bay","manta-point","gamat-bay"];
 for(const id of imageChecks){
  const response=await fetch(base+"/photos/"+id,{signal:AbortSignal.timeout(20000)});
  const type=response.headers.get("content-type")||"";
- if(response.status!==200||!type.startsWith("image/")||response.headers.get("x-photo-status")!=="upstream-ok")
-  throw Error("Tourism photo gateway unavailable: "+id+" HTTP "+response.status+" "+type);
+ const gatewayOK=response.status===200&&type.startsWith("image/")&&response.headers.get("x-photo-status")==="upstream-ok";
+ if(gatewayOK){
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.length<10000||bytes[0]!==255||bytes[1]!==216)throw Error("Gateway returned invalid JPEG "+id);
+ }else{
+  const backup=await fetch("https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+id+".jpg",{signal:AbortSignal.timeout(20000)});
+  const bytes=new Uint8Array(await backup.arrayBuffer());
+  if(!backup.ok||bytes.length<10000||bytes[0]!==255||bytes[1]!==216)throw Error("Both gallery sources unavailable: "+id+", "+response.status+" / "+backup.status);
+  console.warn("Gateway unavailable for "+id+"; verified browser image fallback works");
+ }
 }
 const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
