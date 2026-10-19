@@ -1,3 +1,9 @@
+## 3.5.1 — Panduan WhatsApp lengkap Bahasa Indonesia dari nol (2026-10-20)
+- Mengganti isi **dokumen yang sama** `docs/WHATSAPP_SETUP.md` dari bahasa Inggris menjadi panduan Bahasa Indonesia terstruktur 14 tahap, khusus nomor +62 856-1752-525 dan Worker `marketing-turism-agent`.
+- Memisahkan jalur WhatsApp Business **Coexistence** (pertahankan aplikasi HP) dari nomor uji/baru sehingga tidak merekomendasikan penghapusan akun yang sedang aktif.
+- Menguraikan pendaftaran Meta Business/Developers, akses WABA/Phone Number ID, token sistem, konfigurasi secret Cloudflare, webhook, draf AI, pengiriman manual yang disetujui, uji masalah 401/403/409/503, dan pertimbangan biaya/privasi.
+- Menambahkan tautan **Panduan Hubungkan WhatsApp (Bahasa Indonesia)** pada dashboard WhatsApp pemilik dan merilis Worker v3.5.1 dengan cache PWA statis v15. Integrasi inbox dan pengiriman masih sengaja nonaktif sampai ada otorisasi Meta.
+
 ## 3.5.0 — Prepared official WhatsApp inbox and AI-assisted owner replies — DEPLOYED 2026-10-19
 - Added direct WhatsApp chat and catalog links to public contact, mobile floating CTA, and package detail pages, with localized prefilled chat enquiries.
 - Owner WhatsApp dashboard now includes an inbox shell for signed messages, conversation history, owner-triggered Workers AI reply suggestions, copy-to-clipboard, and explicit owner confirmation before any outbound message.
