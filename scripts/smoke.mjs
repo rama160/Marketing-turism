@@ -70,7 +70,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v10"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v11"))throw Error("PWA asset cache did not bump");
 const emblem=await get("/icon.svg");if(!emblem.includes("pari manta")||!emblem.includes("cliff"))throw Error("Manta cliff brand not live");
 for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
  const h=await get(subpage);
