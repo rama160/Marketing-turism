@@ -1,3 +1,12 @@
+## 3.2.0 — Premium tourism redesign, verified production — 2026-10-19
+- Replaced the legacy NP monogram with a responsive vector emblem combining an elegant manta-ray silhouette, Nusa Penida cliffs, turquoise ocean and warm-gold sunlight; logo remains available offline via PWA cache.
+- Redesigned the public landing page around live licensed destination photography, cinematic hero, West/East/three-spot snorkeling photo collections and prominent tour exploration calls-to-action, including photographer attribution. Preserved public enquiry and non-guaranteed manta disclosures and did not open public lead intake.
+- Rewrote Indonesian and English marketing copy to feel welcoming and experience-led while retaining confirmed-operator, weather and price safeguards. Existing owner-published CMS data always takes priority over design defaults.
+- Refreshed mobile styles and owner dashboard as a sidebar-and-cards workspace. Dashboard tiles open real modules; quick editing of EN/ID hero title and description uses existing owner-authenticated optimistic-version CMS endpoints and reports partial-save conflicts honestly. Displayed statistics remain actual backend data, never mocked reference image figures.
+- Refreshed public-only offline service worker cache to v9; no guest/admin API data or token may enter service worker storage.
+- Deployed directly to dedicated `marketing-turism-agent` Cloudflare Worker, version `858ca131-30f2-48cb-b0f1-253adf131a7a` receiving 100% of traffic. Existing seven Worker bindings were inherited without modification. This release does not change FinChat/Spenva deployments, operator net pricing or lead gate.
+- GitHub-initiated Cloudflare deployments are still explicitly gated by repository secrets and opt-in variable; this direct authorized Cloudflare deployment is already live.
+
 ## 3.1.0 production verified — 2026-10-19
 - Published v3.1.0 through the connected Cloudflare API to `marketing-turism-agent` without changing Spenva/FinChat Workers; all seven existing bindings inherited.
 - Confirmed deployment version `5fff37c2-bdf0-41f1-922b-b159a61a1dcb` serving 100% of traffic and dedicated Tourism D1 CMS tables available.
