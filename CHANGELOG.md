@@ -1,7 +1,8 @@
-## Deployment note — 2026-10-19
-- Merged feature v3.1.0 onto `main`; isolated D1 content tables created and verified on Cloudflare.
-- CI passed. GitHub Actions Worker deployment cannot run until repository `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and opt-in variable `ENABLE_CLOUDFLARE_DEPLOY` are configured; a test run was stopped before Worker deployment. No false claim of successful live release.
-- Deployment workflow kept opt-in and changed to idempotent migration 0009 SQL so legacy ALTER TABLE migrations are not replayed.
+## 3.1.0 production verified — 2026-10-19
+- Published v3.1.0 through the connected Cloudflare API to `marketing-turism-agent` without changing Spenva/FinChat Workers; all seven existing bindings inherited.
+- Confirmed deployment version `5fff37c2-bdf0-41f1-922b-b159a61a1dcb` serving 100% of traffic and dedicated Tourism D1 CMS tables available.
+- Live GitHub external smoke [#39210622766](https://github.com/rama160/Marketing-turism/actions/runs/39210622766) passed: logo, ID/EN selector, editable admin landing/tour pages, protected CMS HTTP 401, 10 JPEG galleries, stable catalog and guest intake OFF.
+- Separate automated deployment from GitHub remains opt-in and requires GitHub Actions Cloudflare credentials, not yet provided. Previous failed GitHub deployment was not a release failure; production was updated directly.
 
 ## 3.1.0 — 2026-10-19
 - Display canonical Nusa Penida Experiences logo in all core public experience-page headers, favicon and PWA icon.
