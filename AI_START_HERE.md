@@ -127,3 +127,8 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Outbound sending additionally requires `WA_SEND_ENABLED=true` and `WA_ACCESS_TOKEN` granted by the owner after lawful Meta onboarding. Only manually approved replies to recent inbound conversations in the ~24-hour customer-service window; no campaign blast, automated reply, or unsupervised guest quote. Server rate limits and outbox request dedupe are required.
 - Additive migration 0010_whatsapp_inbox.sql; do not replay historic ALTER migrations. Complete final privacy and data retention review before enabling message capture. See `docs/WHATSAPP_SETUP.md` for Meta coexistence steps and secret storage in the Tourism Worker (not ChatGPT or GitHub).
 - Official WhatsApp Cloud API can have fees. Preserve `PUBLIC_LEADS_ENABLED=false`, all operator/quote/payment gates and the separate FinChat/Spenva infrastructure.
+
+## v3.5.0 live Cloudflare release verification — 2026-10-19
+- Direct deployment ID `396ed52a-9d76-401e-bb4c-2705dfe08a00` serves 100% of traffic. Public WhatsApp chat + catalog, owner inbox UI, official signed webhook and safe manual send adapter are uploaded.
+- Applied and verified only additive D1 migration 0010 on the dedicated tourism DB. All seven pre-existing Workers bindings preserved; no WhatsApp API credentials are currently configured. Do NOT claim the new inbox is reading guest conversations yet. Public lead intake remains false.
+- Official Meta Cloud API onboarding must be done by the owner. Do not collect OTPs or passwords, auto-send, or migrate the existing mobile app number blindly.
