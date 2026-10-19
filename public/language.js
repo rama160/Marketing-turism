@@ -1,14 +1,5 @@
 // Guest-facing ID/EN locale selection. Auto follows browser language (not geolocation or guest identity).
 // No external translation provider or visitor profiling; only the language preference is stored.
-const fields = [
- ["hero.eyebrow","Hero label"],["hero.title","Hero title"],["hero.subtitle","Hero subtitle"],["hero.description","Hero introduction"],["hero.cta","Hero action"],
- ["packages.eyebrow","Experiences label"],["packages.title","Experiences heading"],["packages.description","Experiences introduction"],
- ["snorkeling.title","Snorkeling title"],["snorkeling.description","Snorkeling description"],
- ["island.title","Island tour title"],["island.description","Island tour description"],
- ["regions.eyebrow","Destinations label"],["regions.title","Destinations heading"],["regions.description","Destinations introduction"],
- ["west.title","West title"],["west.description","West description"],["east.title","East title"],["east.description","East description"],
- ["contact.eyebrow","Enquiry label"],["contact.title","Enquiry heading"],["contact.description","Enquiry introduction"],["contact.notice","Enquiry notice"]
-];
 const englishHome = {
  "hero.eyebrow":"NUSA PENIDA · LOCAL EXPERIENCES",
  "hero.title":"Explore the island.",
@@ -33,6 +24,42 @@ const englishHome = {
  "contact.title":"Tell us about your trip",
  "contact.description":"This form requests information. It is not a completed payment or confirmed reservation.",
  "contact.notice":"Prices, operators and availability must be verified first. Online payment is not available."
+};
+Object.assign(englishHome,{
+  "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
+  "snorkelingPage.title": "Snorkeling Nusa Penida: Manta Bay, Manta Point & More",
+  "snorkelingPage.lead": "Discover Nusa Penida's crystal-blue waters, coral reefs and the chance to see manta rays on guided snorkeling adventures.",
+  "snorkelingPage.description": "Sharing three-spot trips have a maximum of 20 guests, subject to confirmed boat capacity. Private three-spot options visit either Manta Bay or Manta Point with different exclusive rates. The other two spots depend on the operator, sea conditions and safety. Manta sightings are never guaranteed.",
+  "islandPage.eyebrow": "ISLAND TOUR · SHARING & PRIVATE",
+  "islandPage.title": "West & East Nusa Penida Island Tours",
+  "islandPage.lead": "Two sides of the island, two unique journeys. Choose dramatic West cliffs or beautiful East beaches, then select Sharing or Private to suit your group and budget.",
+  "islandPage.description": "Sharing allows you to join other travelers. Until a verified supplier agreement confirms per-seat costs, the quotation covers the entire vehicle. Private provides an exclusive car for one to seven guests, subject to verified safe seating. Snorkeling and island tours are scheduled on different days.",
+  "westPage.eyebrow": "WEST NUSA PENIDA · SHARING & PRIVATE",
+  "westPage.title": "West Nusa Penida Tour",
+  "westPage.lead": "Discover iconic cliffs, natural rock arches and beaches that make Nusa Penida unforgettable.",
+  "westPage.description": "Explore West Nusa Penida with local operators. The sequence of stops may change due to roads, weather, visit times and guest preferences. Sharing and Private quotations both cover the full vehicle cost until other seats are confirmed.",
+  "eastPage.eyebrow": "EAST NUSA PENIDA · SHARING & PRIVATE",
+  "eastPage.title": "East Nusa Penida Tour",
+  "eastPage.lead": "Discover dramatic white cliffs, hidden bays and breathtaking landscapes on Nusa Penida's east coast.",
+  "eastPage.description": "Enjoy turquoise seas and limestone cliffs, with visits adjusted for safe access and travel conditions. Sharing may include other travelers, while Private reserves an exclusive vehicle for a single group—even one guest—when the full supplier costs are covered."
+});
+const idDefaults={
+  "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
+  "snorkelingPage.title": "Snorkeling Nusa Penida: Manta Bay, Manta Point & Spot Pilihan",
+  "snorkelingPage.lead": "Jelajahi warna biru laut Nusa Penida, terumbu karang, dan peluang melihat pari manta dalam pengalaman snorkeling berpemandu.",
+  "snorkelingPage.description": "Sharing 3 spot memiliki batas grup maksimal 20 guest dan mengikuti kapasitas kapal operator nyata. Private 3 spot tersedia dengan pilihan Manta Bay atau Manta Point, masing-masing berharga paket eksklusif yang berbeda. Lokasi 2 spot lainnya ditentukan bersama operator sesuai keselamatan, cuaca dan kondisi laut; manta tidak dijamin muncul.",
+  "islandPage.eyebrow": "ISLAND TOUR · SHARING & PRIVATE",
+  "islandPage.title": "Island Tour Barat dan Timur Nusa Penida",
+  "islandPage.lead": "Dua sisi pulau, dua karakter perjalanan. Pilih pesona tebing Barat atau kecantikan pantai Timur, lalu tentukan Sharing atau Private sesuai kebutuhan dan budget Anda.",
+  "islandPage.description": "Dengan Sharing, tamu dapat bergabung bersama peserta lain. Agar agen tidak merugi, seluruh biaya mobil tetap dihitung sampai ada kontrak operator yang menjamin biaya per kursi. Private memberikan mobil eksklusif sejak 1 guest sampai maksimum 7 penumpang jika kapasitas kendaraan terverifikasi. Snorkeling dan island tour harus dilakukan pada hari yang berbeda.",
+  "westPage.eyebrow": "WEST NUSA PENIDA · SHARING & PRIVATE",
+  "westPage.title": "Wisata Barat Nusa Penida",
+  "westPage.lead": "Temukan tebing ikonik, lengkungan batu alami, dan pantai yang membuat Nusa Penida tak terlupakan.",
+  "westPage.description": "Jelajahi pesona barat bersama operator lokal. Urutan lokasi dapat berubah mengikuti kondisi jalan, cuaca, waktu kunjungan, dan pilihan guest. Sharing maupun Private memakai kalkulasi aman biaya kendaraan penuh saat kursi lain belum dikonfirmasi.",
+  "eastPage.eyebrow": "EAST NUSA PENIDA · SHARING & PRIVATE",
+  "eastPage.title": "Wisata Timur Nusa Penida",
+  "eastPage.lead": "Sisi timur menawarkan lanskap tebing putih, teluk tersembunyi, dan panorama yang terasa seperti lukisan.",
+  "eastPage.description": "Rasakan kontras lautan turquoise dan tebing kapur, dengan waktu singgah menyesuaikan akses serta keselamatan. Sharing dapat dicampur guest lain, sedangkan Private untuk satu grup eksklusif—even satu tamu—jika biaya operator tertutup."
 };
 const englishText = {
  "Paket":"Experiences","Hubungi":"Enquire","Dashboard agen":"Agent dashboard","Beranda":"Home",
@@ -221,5 +248,5 @@ async function apply(){
  window.dispatchEvent(new CustomEvent("npe:language",{detail:{language:lang,mode}}));
 }
 if(select)select.onchange=()=>{mode=select.value;localStorage.setItem("npe-language",mode);apply();};
-window.NusaLanguage={get language(){return current;},get mode(){return mode;},fields,defaults:(lang)=>lang==="en"?englishHome:originals,resetCache:()=>saved.clear(),apply};
+window.NusaLanguage={get language(){return current;},get mode(){return mode;},defaults:(lang)=>lang==="en"?englishHome:{...idDefaults,...originals},resetCache:()=>saved.clear(),apply};
 await apply();
