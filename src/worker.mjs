@@ -3,6 +3,7 @@ import {payablesForLines,validateChange,allowedChangeTransition,OperationsError}
 import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
+import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -48,9 +49,10 @@ async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(path.startsWith("/photos/"))return servePhoto(req,env,ctx);
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.0.4",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.1.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
+ if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
  if(path==="/api/public/catalog"&&method==="GET"){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
   return json({items:rows.results,variants:experienceVariants,modes:[{id:"SHARING",description:"Bisa digabung dengan guest lain; operator menjamin tarif per peserta tanpa minimal kuota yang dibebankan ke agen."},{id:"PRIVATE",description:"Perjalanan eksklusif mulai satu guest, selama biaya tetap, tambahan dan margin aman terpenuhi."}],note:"Snorkeling dan island tour tidak dilaksanakan pada hari yang sama. Harga dan jadwal final harus dikonfirmasi."});
@@ -94,6 +96,16 @@ async function route(req,env,ctx){
  if(!path.startsWith("/api/admin/"))return bad("Endpoint tidak ditemukan",404);
  if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<24)return bad("Set ADMIN_TOKEN secret terlebih dahulu",503);
  if(!(await owner(req,env)))return bad("Akses owner diperlukan",401);
+ if(path==="/api/admin/site-content"){
+  if(method==="GET")return json(await adminSiteContent(db));
+  if(method==="POST"){
+   const b=await parse(req),published=await publishSiteContent(db,b);
+   if(published.conflict)return bad("Konten berubah di tab lain. Muat ulang sebelum menyimpan.",409);
+   await audit(db,"site_content",published.key+":"+published.locale,"PUBLISHED",{version:published.version});
+   return json(published);
+  }
+  return bad("Metode tidak diizinkan",405);
+ }
  if(path==="/api/admin/business"){
   if(method==="GET"){
    const info=await db.prepare("SELECT * FROM business_profile WHERE id=1").first();
