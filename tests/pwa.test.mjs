@@ -45,7 +45,7 @@ test("tour guide distinguishes west/east, uses one full vehicle rather than expe
 });
 test("all Wikimedia gallery photos credit actual photographers",()=>{
  for(const path of ["snorkeling.html","west-tour.html","east-tour.html"]){const html=read(path);
-  const imageCount=(html.match(/<img [^>]*src="\\/photos\\//g)||[]).length,credits=(html.match(/Wikimedia Commons/g)||[]).length;
+  const imageCount=html.split('src="/photos/').length-1,credits=(html.match(/Wikimedia Commons/g)||[]).length;
   assert.ok(imageCount>=3, path+" missing image gallery");assert.ok(credits>=imageCount,path+" attribution missing");
  }
 });
