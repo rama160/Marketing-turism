@@ -4,6 +4,7 @@ import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
+import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -48,8 +49,10 @@ async function makePrice(db,b){
 async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
  if(path.startsWith("/photos/"))return servePhoto(req,env,ctx);
+ if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
+ if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.4.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.5.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -96,6 +99,17 @@ async function route(req,env,ctx){
  if(!path.startsWith("/api/admin/"))return bad("Endpoint tidak ditemukan",404);
  if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<24)return bad("Set ADMIN_TOKEN secret terlebih dahulu",503);
  if(!(await owner(req,env)))return bad("Akses owner diperlukan",401);
+ if(path==="/api/admin/whatsapp"){
+  if(method==="GET")return waAdminInbox(db,env);
+  return bad("Metode tidak diizinkan",405);
+ }
+ if(path==="/api/admin/whatsapp/thread"&&method==="GET")return waAdminThread(db,u.searchParams.get("phone"));
+ if(path==="/api/admin/whatsapp/draft"&&method==="POST")return waAdminDraft(db,env,await parse(req));
+ if(path==="/api/admin/whatsapp/send"&&method==="POST"){
+  const b=await parse(req),result=await waAdminSend(db,env,b);
+  if(result.ok)await audit(db,"whatsapp",String(b.client_nonce||""),"OWNER_SUBMITTED_REPLY",{via:"official_cloud_api"});
+  return result;
+ }
  if(path==="/api/admin/site-content"){
   if(method==="GET")return json(await adminSiteContent(db));
   if(method==="POST"){
