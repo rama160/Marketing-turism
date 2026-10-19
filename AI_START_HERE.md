@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.5.0 | 2026-10-19 | Repository: rama160/Marketing-turism
+Version: 3.5.1 | 2026-10-20 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -132,3 +132,9 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Direct deployment ID `396ed52a-9d76-401e-bb4c-2705dfe08a00` serves 100% of traffic. Public WhatsApp chat + catalog, owner inbox UI, official signed webhook and safe manual send adapter are uploaded.
 - Applied and verified only additive D1 migration 0010 on the dedicated tourism DB. All seven pre-existing Workers bindings preserved; no WhatsApp API credentials are currently configured. Do NOT claim the new inbox is reading guest conversations yet. Public lead intake remains false.
 - Official Meta Cloud API onboarding must be done by the owner. Do not collect OTPs or passwords, auto-send, or migrate the existing mobile app number blindly.
+
+## Panduan Meta WhatsApp berbahasa Indonesia dan tombol di dashboard — v3.5.1
+- Panduan tunggal `docs/WHATSAPP_SETUP.md` sudah diterjemahkan dan diperluas menjadi langkah dari nol dalam Bahasa Indonesia. **Jangan buat dokumen serupa/duplikat.** Dashboard → WhatsApp menyediakan tautan langsung ke dokumen ini.
+- Selalu gunakan jalur resmi **Coexistence** jika memungkinkan agar WhatsApp Business App + nomor 628561752525 tetap berjalan; **jangan menyuruh pemilik menghapus akun untuk jalur API standar**.
+- Rute webhook `/api/webhooks/whatsapp`; ketujuh binding lama dan `PUBLIC_LEADS_ENABLED=false` dipertahankan. Koneksi Meta masih belum aktif tanpa konfigurasi rahasia yang dikendalikan pemilik.
+- Publikasi Worker langsung v3.5.1, cache statis v15. Perubahan UI/panduan tidak berarti pesan masuk, balasan atau penjualan telah terotomasi.
