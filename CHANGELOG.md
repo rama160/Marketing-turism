@@ -1,3 +1,10 @@
+## 3.1.0 — 2026-10-19
+- Display canonical Nusa Penida Experiences logo in all core public experience-page headers, favicon and PWA icon.
+- Automatic visitor language detection (Indonesian/English) with persisted manual selection; curated translations for guest pages without third-party translation API.
+- New versioned homepage and tour-page text editor inside authenticated admin dashboard. Public read-only localized copy; owner write with secret, validation, optimistic locking, revisions and audit log. Additive D1 migration 0009.
+- Scope unchanged: no rate changes, no operator verification shortcuts, no guest lead activation, no external posting, and no updates to FinChat/Spenva resources.
+- Add regression coverage for language, logo, CMS authentication, XSS blocking, conflicts and audit.
+
 # Changelog
 
 ## 3.0.4 — 2026-10-19

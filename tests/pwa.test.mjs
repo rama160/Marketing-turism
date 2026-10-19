@@ -45,7 +45,7 @@ test("tour guide distinguishes west/east, uses one full vehicle rather than expe
 });
 test("all Wikimedia gallery photos credit actual photographers",()=>{
  for(const path of ["snorkeling.html","west-tour.html","east-tour.html"]){const html=read(path);
-  const imageCount=(html.match(/<img /g)||[]).length,credits=(html.match(/Wikimedia Commons/g)||[]).length;
+  const imageCount=html.split('src="/photos/').length-1,credits=(html.match(/Wikimedia Commons/g)||[]).length;
   assert.ok(imageCount>=3, path+" missing image gallery");assert.ok(credits>=imageCount,path+" attribution missing");
  }
 });
@@ -59,7 +59,7 @@ test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus
   const content=read(page);
   const srcs=[...content.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(x=>x[1]);
   assert.ok(srcs.length>0, "Expected destination photos on "+page);
-  for(const src of srcs)assert.match(src,/^\/photos\/[a-z-]+(?:\?v=4)?$/);
+  for(const src of srcs)assert.ok(src==="/icon.svg"||/^\/photos\/[a-z-]+(?:\?v=4)?$/.test(src),"Unexpected external/unlicensed image "+src);
  }
 });
 
@@ -69,4 +69,19 @@ test("photo galleries use same-origin image gateway, recover locally and retain 
  for(const page of ["index.html","island-tour.html","west-tour.html","east-tour.html","snorkeling.html"]){const h=read(page);
   assert.match(h,/src="\/photos\//);assert.match(h,/photo-loader.js/);assert.doesNotMatch(h,/src="https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//);
  }
+});
+
+test("brand icon appears in all guest pages and bilingual picker is included",()=>{
+ const mainPages=["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"];
+ for(const file of mainPages){
+  const html=read(file);
+  assert.match(html, /class="brandLogo"[^>]*src="\/icon\.svg"/);
+  assert.match(html, /src="\/language\.js"/);
+ }
+ const i18n=read("language.js"),app=read("app.js");
+ assert.match(i18n,/navigator\.languages/);assert.match(i18n,/localStorage/);
+ assert.match(i18n,/api\/public\/site-content/);
+ assert.match(app,/admin\/site-content/);
+ assert.match(read("index.html"),/id="cmsValue"/);
+ assert.doesNotMatch(read("service-worker.js"),/\/api\/public\/site-content/);
 });

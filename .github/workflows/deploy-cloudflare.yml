@@ -1,6 +1,8 @@
 name: Deploy Tourism Cloudflare (manual)
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 permissions:
   contents: read
 jobs:

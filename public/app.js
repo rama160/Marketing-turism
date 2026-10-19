@@ -31,6 +31,7 @@ for(const [formId,selector] of [["#leadForm","#leadVariant"],["#quoteForm","#quo
 }
 const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.title||label||x.id)+'</option>').join("");
 function changeTab(name){
+  if(name==="website")loadSiteEditor();
  $$(".tabs button").forEach(b=>b.classList.toggle("current",b.dataset.tab===name));
  $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
 }
@@ -258,7 +259,65 @@ $("#generateContent").onclick=async()=>{
  try{const draft=await api("admin/marketing/draft","POST",{activity_id:$("#marketingProduct").value,use_ai:$("#marketingAI").checked});lastMarketing=draft.title+"\n\n"+draft.caption+"\n\n"+draft.cta||"";$("#marketingOutput").textContent=lastMarketing+"\n\n[DRAFT - menunggu persetujuan pemilik; generator: "+draft.generator+"]"}catch(err){$("#marketingOutput").textContent=err.message}
 };
 $("#copyMarketing").onclick=async()=>{if(!lastMarketing)return;try{await navigator.clipboard.writeText(lastMarketing);say("#adminFeedback","Teks draf tersalin.",true)}catch(err){say("#adminFeedback","Tidak dapat menyalin otomatis pada browser ini.")}};
-if(token){$("#adminArea").hidden=false;$("#unlockPanel").hidden=true;$("#adminContent").hidden=false;refresh()}
+
+// Versioned website content editor. All reading and publishing is authenticated on the Worker.
+let cmsRecords=new Map(),cmsFields=[];
+const cmsId=(key,locale)=>locale+":"+key;
+function cmsSelection(){
+ const key=$("#cmsKey").value,locale=$("#cmsLocale").value;
+ const existing=cmsRecords.get(cmsId(key,locale));
+ const fallback=window.NusaLanguage?.defaults(locale)||{};
+ return {key,locale,existing,value:existing?.value??fallback[key]??""};
+}
+function syncCms(){
+ const state=cmsSelection();
+ $("#cmsValue").value=state.value;
+ $("#cmsPreviewText").textContent=state.value||"Konten belum tersedia.";
+ $("#cmsVersion").textContent=state.existing?"Versi terbit "+state.existing.version+" · "+state.existing.updated_at:"Belum ada revisi: menggunakan konten bawaan website.";
+ say("#cmsFeedback","");
+}
+async function loadSiteEditor(){
+ try{
+  const response=await api("admin/site-content");
+  cmsRecords=new Map((response.items||[]).map(x=>[cmsId(x.key,x.locale),x]));
+  cmsFields=response.fields||[];
+  const keyInput=$("#cmsKey"),previous=keyInput.value;
+  keyInput.innerHTML=cmsFields.map(([key,label])=>'<option value="'+esc(key)+'">'+esc(label)+'</option>').join("");
+  if(cmsFields.some(([key])=>key===previous))keyInput.value=previous;
+  syncCms();
+ }catch(err){say("#cmsFeedback",err.message);}
+}
+$("#cmsLocale").onchange=syncCms;
+$("#cmsKey").onchange=syncCms;
+$("#cmsValue").oninput=()=>{$("#cmsPreviewText").textContent=$("#cmsValue").value||"Konten kosong."};
+$("#cmsPreview").onclick=()=>{ $("#cmsPreviewText").textContent=$("#cmsValue").value; say("#cmsFeedback","Pratinjau lokal. Konten belum diterbitkan.",true); };
+$("#cmsPublish").onclick=async()=>{
+ const state=cmsSelection(),value=$("#cmsValue").value.trim();
+ if(value.length<2||value.length>1200){say("#cmsFeedback","Konten harus 2 sampai 1200 karakter.");return;}
+ const button=$("#cmsPublish");button.disabled=true;
+ try{
+  const result=await api("admin/site-content","POST",{key:state.key,locale:state.locale,value,expected_version:state.existing?.version||0,owner_confirmed:true});
+  cmsRecords.set(cmsId(result.key,result.locale),{...result,updated_at:new Date().toISOString()});
+  window.NusaLanguage?.resetCache();
+  await window.NusaLanguage?.apply();
+  $("#cmsVersion").textContent="Versi terbit "+result.version+" (tersimpan ke D1).";
+  say("#cmsFeedback","Konten diterbitkan. Pengunjung melihat versi terbaru saat memuat website.",true);
+ }catch(err){say("#cmsFeedback",err.message);}
+ finally{button.disabled=false;}
+};
+
+if(token){
+ $("#adminArea").hidden=false;
+ api("admin/summary").then(()=>{
+  $("#unlockPanel").hidden=true;
+  $("#adminContent").hidden=false;
+  return refresh();
+ }).catch(()=>{
+  token="";sessionStorage.removeItem("tourAdmin");
+  $("#unlockPanel").hidden=false;$("#adminContent").hidden=true;
+  say("#loginMessage","Sesi berakhir; masukkan token admin lagi.");
+ });
+}
 
 // Offline static shell only; no API, guest data or credentials are cached.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
