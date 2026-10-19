@@ -32,10 +32,12 @@ for(const [formId,selector] of [["#leadForm","#leadVariant"],["#quoteForm","#quo
 const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.title||label||x.id)+'</option>').join("");
 function changeTab(name){
   if(name==="website")loadSiteEditor();
+  if(name==="summary")loadQuickEditor();
  $$(".tabs button").forEach(b=>b.classList.toggle("current",b.dataset.tab===name));
  $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
 }
-$$(".tabs button").forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
+$(".tabs button").forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
+$("[data-go-tab]").forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
 $("#adminToggle").onclick=()=>{$("#adminArea").hidden=false;$("#adminArea").scrollIntoView({behavior:"smooth"});};
 $("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;say("#loginMessage","Sesi admin ditutup.",true)};
 $("#leadDate").min=new Date().toISOString().slice(0,10);$("#quoteDate").min=$("#leadDate").min;$("#marketDate").value=$("#leadDate").min;$("#marketDate").max=$("#leadDate").min;$("#leadForm [name=campaign_id]").value=(new URL(location.href).searchParams.get("campaign")||"").slice(0,100);
@@ -68,6 +70,7 @@ async function refresh(){
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
   renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarket();renderBusiness(business.business);
+  if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
 }
@@ -259,6 +262,49 @@ $("#generateContent").onclick=async()=>{
  try{const draft=await api("admin/marketing/draft","POST",{activity_id:$("#marketingProduct").value,use_ai:$("#marketingAI").checked});lastMarketing=draft.title+"\n\n"+draft.caption+"\n\n"+draft.cta||"";$("#marketingOutput").textContent=lastMarketing+"\n\n[DRAFT - menunggu persetujuan pemilik; generator: "+draft.generator+"]"}catch(err){$("#marketingOutput").textContent=err.message}
 };
 $("#copyMarketing").onclick=async()=>{if(!lastMarketing)return;try{await navigator.clipboard.writeText(lastMarketing);say("#adminFeedback","Teks draf tersalin.",true)}catch(err){say("#adminFeedback","Tidak dapat menyalin otomatis pada browser ini.")}};
+
+// Genuine owner-only two-language quick editor, sharing canonical CMS endpoint and version checks.
+const QUICK_FIELDS=[["en","hero.title","quickTitleEn"],["en","hero.description","quickDescEn"],["id","hero.title","quickTitleId"],["id","hero.description","quickDescId"]];
+let quickRecords=new Map(),quickLoaded=false;
+const quickFallback={
+ "en:hero.title":"Unforgettable adventures",
+ "en:hero.description":"Discover breathtaking cliffs, sun-kissed beaches and the chance to encounter majestic manta rays. Your unforgettable Nusa Penida escape begins here.",
+ "id:hero.title":"Liburan tak terlupakan",
+ "id:hero.description":"Bayangkan birunya laut, megahnya tebing, dan kesempatan bertemu pari manta di habitat alaminya. Jelajahi keindahan Nusa Penida dalam perjalanan yang dirancang sesuai gaya liburan Anda."
+};
+async function loadQuickEditor(){
+ if(!token)return;
+ try{
+  const result=await api("admin/site-content");
+  quickRecords=new Map((result.items||[]).map(item=>[item.locale+":"+item.key,item]));
+  for(const [locale,key,id] of QUICK_FIELDS){
+   const idKey=locale+":"+key,original=window.NusaLanguage?.defaults(locale)?.[key];
+   $("#"+id).value=quickRecords.get(idKey)?.value??original??quickFallback[idKey]??"";
+  }
+  quickLoaded=true;say("#quickFeedback","Judul dan deskripsi siap diedit.",true);
+ }catch(err){quickLoaded=false;say("#quickFeedback",err.message)}
+}
+$("#quickSave").onclick=async()=>{
+ const btn=$("#quickSave");if(!quickLoaded){say("#quickFeedback","Muat data admin sebelum mengubah konten.");return}
+ btn.disabled=true;
+ let updated=0;
+ try{
+  for(const [locale,key,id] of QUICK_FIELDS){
+   const itemKey=locale+":"+key;
+   const value=$("#"+id).value.trim();
+   if(value.length<2||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten "+locale+" harus berupa teks biasa 2–1200 karakter tanpa HTML.");
+   const previous=quickRecords.get(itemKey);
+   const fallback=window.NusaLanguage?.defaults(locale)?.[key]??quickFallback[itemKey]??"";
+   if(value===(previous?.value??fallback))continue;
+   const result=await api("admin/site-content","POST",{key,locale,value,expected_version:previous?.version||0,owner_confirmed:true});
+   quickRecords.set(itemKey,result);updated++;
+  }
+  window.NusaLanguage?.resetCache();
+  await window.NusaLanguage?.apply();
+  say("#quickFeedback",updated?updated+" bagian diterbitkan. Muat ulang website publik untuk melihat perubahan.":"Tidak ada perubahan baru.",true);
+ }catch(err){say("#quickFeedback","Sebagian perubahan mungkin sudah tersimpan ("+updated+" dari 4). "+err.message+" Muat ulang editor untuk mengambil versi terbaru.");quickLoaded=false;}
+ finally{btn.disabled=false;}
+};
 
 // Versioned website content editor. All reading and publishing is authenticated on the Worker.
 let cmsRecords=new Map(),cmsFields=[];
