@@ -1,3 +1,10 @@
+## 3.5.2 — Perbaikan verifikasi Webhook Meta (20 Oktober 2026)
+- Mengatasi kegagalan verifikasi URL callback Meta dengan memisahkan persyaratan tantangan awal HTTP GET dari penerimaan pesan bertanda tangan HTTP POST.
+- Verifikasi GET sekarang cukup menggunakan WA_WEBHOOK_ENABLED=true dan WA_VERIFY_TOKEN yang valid (minimal 24 karakter). WA_APP_SECRET dan WA_PHONE_NUMBER_ID tetap wajib untuk POST agar pesan masuk tidak pernah diproses tanpa verifikasi tanda tangan HMAC dan identitas nomor.
+- Menambahkan tes regresi dengan token cocok, salah, token pendek, serta POST tanpa secret. Tidak mengubah otorisasi admin, harga, booking, tabel D1 atau pengiriman WhatsApp.
+- Worker pariwisata v3.5.2 berhasil dipasang dengan 12 binding (termasuk lima konfigurasi WA) yang dipertahankan. WA_SEND_ENABLED tetap false.
+- Verifikasi live: token percobaan salah sebelumnya memperoleh HTTP 503, sekarang mendapatkan HTTP 403 sesuai rancangan. GitHub Actions pilot rerun 39449347646 sukses. Untuk menyelesaikan setup Meta, pemilik harus memasukkan WA_VERIFY_TOKEN yang sama persis pada halaman "Verifikasi token", lalu "Verifikasi dan simpan". Tidak ada kredensial Meta yang dibuka/diubah oleh agen.
+
 ## 3.5.1 — Panduan WhatsApp lengkap Bahasa Indonesia dari nol (2026-10-20)
 - Mengganti isi **dokumen yang sama** `docs/WHATSAPP_SETUP.md` dari bahasa Inggris menjadi panduan Bahasa Indonesia terstruktur 14 tahap, khusus nomor +62 856-1752-525 dan Worker `marketing-turism-agent`.
 - Memisahkan jalur WhatsApp Business **Coexistence** (pertahankan aplikasi HP) dari nomor uji/baru sehingga tidak merekomendasikan penghapusan akun yang sedang aktif.
