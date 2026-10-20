@@ -437,6 +437,26 @@ test("WhatsApp Cloud API connection is disabled by default and inbox requires ow
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_inbox_messages").get().n,0);
  sqlite.close();
 });
+test("Meta GET webhook challenge needs only verify token, while signed POST remains disabled without App Secret",async()=>{
+ const {sqlite,env}=fixture();
+ env.WA_WEBHOOK_ENABLED="true";
+ env.WA_VERIFY_TOKEN="a-long-distinct-test-only-verification-token";
+ delete env.WA_APP_SECRET;
+ delete env.WA_PHONE_NUMBER_ID;
+ const base="https://agent.invalid/api/webhooks/whatsapp";
+ const wrong=await worker.fetch(new Request(base+"?hub.mode=subscribe&hub.verify_token=incorrect&hub.challenge=98765"),env);
+ assert.equal(wrong.status,403);
+ const good=await worker.fetch(new Request(base+"?hub.mode=subscribe&hub.verify_token="+encodeURIComponent(env.WA_VERIFY_TOKEN)+"&hub.challenge=98765"),env);
+ assert.equal(good.status,200);
+ assert.equal(await good.text(),"98765");
+ const incoming=await worker.fetch(new Request(base,{method:"POST",body:"{}"}),env);
+ assert.equal(incoming.status,503,"inbound POST stays fail-closed without signing secret and verified phone ID");
+ env.WA_VERIFY_TOKEN="short";
+ const tooShort=await worker.fetch(new Request(base+"?hub.mode=subscribe&hub.verify_token=short&hub.challenge=99"),env);
+ assert.equal(tooShort.status,503);
+ assert.match(await tooShort.text(),/minimal 24 karakter/);
+ sqlite.close();
+});
 test("WhatsApp Meta verification, HMAC signing, deduplication, review-only drafting and 24h restriction",async()=>{
  const {request,sqlite,env,db}=fixture();
  Object.assign(env,{
