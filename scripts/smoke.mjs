@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.5.1")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.5.2")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -96,7 +96,10 @@ if(!styles.includes('.wa-floating')||!styles.includes('.wa-contact-card'))throw 
 // Safe webhook diagnostic: fake token cannot verify; 403 = enabled, 503 = not ready.
 const webhookProbe=await fetch(base+"/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=invalid-test-probe&hub.challenge=12345",{signal:AbortSignal.timeout(20000)});
 if(![403,503].includes(webhookProbe.status))throw Error("Webhook challenge guard unexpected response: "+webhookProbe.status);
-console.log("PUBLIC_WA_WEBHOOK_PROBE_STATUS="+webhookProbe.status+(webhookProbe.status===403?" (configured; test token correctly rejected)":" (not yet enabled according to Worker)"));
+if(webhookProbe.status===503){
+ const body=await webhookProbe.text();
+ console.log("PUBLIC_WA_WEBHOOK_PROBE_STATUS=503 (safe error reason): "+body.slice(0,240));
+}else console.log("PUBLIC_WA_WEBHOOK_PROBE_STATUS=403 (GET configured, invalid test token correctly rejected)");
 await get("/api/admin/whatsapp",401);
 const waSendWithoutOwner=await fetch(base+"/api/admin/whatsapp/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({phone:"628561752525",message:"unauthorized",owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
 if(waSendWithoutOwner.status!==401)throw Error("Guest could call WhatsApp sending route: "+waSendWithoutOwner.status);
@@ -123,4 +126,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==503)throw Error("Public lead gate should remain closed for pilot, got "+req.status);
-console.log("SUCCESS v3.5.1 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
+console.log("SUCCESS v3.5.2 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF.");
