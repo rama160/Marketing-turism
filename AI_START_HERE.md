@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.5.1 | 2026-10-20 | Repository: rama160/Marketing-turism
+Version: 3.5.2 | 2026-10-20 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -138,3 +138,8 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Selalu gunakan jalur resmi **Coexistence** jika memungkinkan agar WhatsApp Business App + nomor 628561752525 tetap berjalan; **jangan menyuruh pemilik menghapus akun untuk jalur API standar**.
 - Rute webhook `/api/webhooks/whatsapp`; ketujuh binding lama dan `PUBLIC_LEADS_ENABLED=false` dipertahankan. Koneksi Meta masih belum aktif tanpa konfigurasi rahasia yang dikendalikan pemilik.
 - Publikasi Worker langsung v3.5.1, cache statis v15. Perubahan UI/panduan tidak berarti pesan masuk, balasan atau penjualan telah terotomasi.
+
+## WhatsApp webhook Meta verification hotfix v3.5.2 — 20 Oktober 2026
+- Meta HTTP GET challenge validation must **not** depend on WA_APP_SECRET or WA_PHONE_NUMBER_ID; those belong to the signed POST processing gate and may never be skipped there. GET still strictly requires WA_WEBHOOK_ENABLED=true, a WA_VERIFY_TOKEN of at least 24 characters, correct hub.mode, constant-time token comparison and a numeric hub.challenge.
+- Deployed directly to isolated tourism Worker with all existing twelve bindings strictly inherited, WA_SEND_ENABLED=false. Public CI smoke probe changed from HTTP 503 to HTTP 403 with deliberately incorrect test token, expected and safe, and all live checks passed: https://github.com/rama160/Marketing-turism/actions/runs/39449347646.
+- Remaining manual owner step: enter exact Secret value into Meta callback Verify Token field; don't share secret or delete WhatsApp phone. Publish/production webhook subscriptions and live inbox onboarding are separate concerns.
