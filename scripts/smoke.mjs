@@ -93,7 +93,10 @@ for(const page of [snorkeling,island,west,east]){
 }
 if(!styles.includes('.wa-floating')||!styles.includes('.wa-contact-card'))throw Error("Mobile WhatsApp CSS missing");
 // WhatsApp integration stays disconnected and guarded until Meta business onboarding.
-await get("/api/webhooks/whatsapp",503);
+// Safe webhook diagnostic: fake token cannot verify; 403 = enabled, 503 = not ready.
+const webhookProbe=await fetch(base+"/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=invalid-test-probe&hub.challenge=12345",{signal:AbortSignal.timeout(20000)});
+if(![403,503].includes(webhookProbe.status))throw Error("Webhook challenge guard unexpected response: "+webhookProbe.status);
+console.log("PUBLIC_WA_WEBHOOK_PROBE_STATUS="+webhookProbe.status+(webhookProbe.status===403?" (configured; test token correctly rejected)":" (not yet enabled according to Worker)"));
 await get("/api/admin/whatsapp",401);
 const waSendWithoutOwner=await fetch(base+"/api/admin/whatsapp/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({phone:"628561752525",message:"unauthorized",owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
 if(waSendWithoutOwner.status!==401)throw Error("Guest could call WhatsApp sending route: "+waSendWithoutOwner.status);
