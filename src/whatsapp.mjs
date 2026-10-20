@@ -10,7 +10,11 @@ const sendOn=env=>receiveOn(env)&&env.WA_SEND_ENABLED==="true"&&typeof env.WA_AC
 export const waStatus=env=>({number:"628561752525",catalog_url:"https://wa.me/c/628561752525",chat_url:"https://wa.me/628561752525",webhook_ready:receiveOn(env),sending_enabled:sendOn(env),automatic_replies:false,meta_onboarding_required:!receiveOn(env),pricing_notice:"Pesan melalui Meta Cloud API dapat dikenai biaya sesuai kategori dan negara penerima.",send_policy:"Owner approval; replies within WhatsApp 24h customer-service window only."});
 const constantTime=(a,b)=>{if(a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];return diff===0;};
 export async function waChallenge(req,env){
- if(!receiveOn(env))return fail("WhatsApp webhook belum diaktifkan",503);
+ // Meta's GET verification needs only the opt-in flag and the challenge token.
+ // WA_APP_SECRET and WA_PHONE_NUMBER_ID are required for SIGNED POST events, not this GET.
+ // Do not expose any secret values, even on configuration errors.
+ if(env.WA_WEBHOOK_ENABLED!=="true")return fail("WA_WEBHOOK_ENABLED harus diaktifkan sebagai true",503);
+ if(typeof env.WA_VERIFY_TOKEN!=="string"||env.WA_VERIFY_TOKEN.length<24)return fail("WA_VERIFY_TOKEN belum memenuhi ketentuan minimal 24 karakter",503);
  const u=new URL(req.url);
  if(u.searchParams.get("hub.mode")!=="subscribe")return fail("Mode tidak valid",403);
  const token=u.searchParams.get("hub.verify_token")||"";
