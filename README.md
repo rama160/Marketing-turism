@@ -1,6 +1,8 @@
+> **VERIFIKASI PRODUKSI TERBARU (21 Okt 2026):** Nusa Penida Experiences **v3.8.0 LIVE** pada Worker khusus `marketing-turism-agent`, versi Cloudflare **43** (`a2def26d-848f-49fa-abb9-be5b49be301a`), deploy **100%**. D1 migrasi 0011 dan 0012 sukses; Cron `0 1 * * 1` dan `0 2 * * *` aktif. [Live smoke lulus](https://github.com/rama160/Marketing-turism/actions/runs/39552409086). Post Meta Graph langsung masih OFF karena izin/token belum tersedia, tidak boleh dibuat otomatis. Dokumentasi lama di bawah mencatat kondisi historis.
+
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.8.0 (GitHub CI; autonomous marketing performance learning + owner dashboard implemented, Cloudflare deployment pending; guest leads and payments OFF).
+Repository: rama160/Marketing-turism. Release 3.8.0 (LIVE Cloudflare Worker v43; AI campaign planning and metrics-learning dashboard; Meta Graph outbound OFF; guest leads/payment OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -169,13 +171,13 @@ Website tetap online dan tombol WhatsApp langsung dapat dipakai. Untuk sementara
 ### Autopilot kalender pemasaran GitHub berhasil diuji (21 Oktober 2026)
 Workflow mingguan [Organic marketing calendar](https://github.com/rama160/Marketing-turism/actions/runs/39522690636) terbukti sukses membuat artefak `nusa-penida-organic-week` berisi 7 draf multibahasa. Ini berjalan tanpa Cloudflare dan kredensial media sosial; penjadwalan Github tidak sama dengan posting otomatis di Instagram/Facebook. Penggunaan sosial masih membutuhkan koneksi/izin pemilik dan media berlisensi.
 
-**Catatan operasional:** Kode dashboard marketing v3.6.0 di GitHub lulus tes, tetapi belum diterapkan ke Worker publik karena API Cloudflare dari integrasi gagal merespons pada sesi ini; workflow deployment GitHub juga masih berstatus skipped. Jangan menandai deployment selesai atau melepas batasan pembayaran/lead. Sebelum pemakaian fitur baru di website, lakukan deployment Worker yang aman dengan binding-inheritance dan jalankan pemeriksaan smoke publik.
+**Pembaruan 21 Oktober:** Worker v3.8.0 telah aktif melalui Cloudflare API langsung, D1 migrasi 0011/0012 telah diterapkan, dan GitHub external live smoke sukses. Dokumentasi tahap persiapan versi terdahulu di bawah bersifat historis. Jangan melepas pembatasan pembayaran/lead.
 
 ## Pembelajaran AI Marketing v3.7.0 — kode & aktivasi yang dipisahkan
 
 Mesin pemasaran kini dapat **memperingkat kanal, tema, dan jam posting dari statistik nyata**, dengan penanganan sampel kecil, histori keputusan, validasi input dan pemeriksaan owner-only. Modul `src/marketing-intelligence.mjs` dan D1 migration `0011_marketing_learning.sql` mendukung rencana mingguan dari `src/sales.mjs`; dashboard menyediakan form pencatatan performa riil serta ringkasan alasan prioritas.
 
-**Status aktual:** kode dan test berada di GitHub; versi **3.7.0 belum deployed live** karena konektor Cloudflare sedang mengalami kesalahan internal dan deployment GitHub belum memiliki secret/token produksi yang diperlukan. D1 migration 0011 harus dipasang secara aditif pada database tourism sebelum dashboard pembelajaran digunakan. Lihat [Arsitektur AI Marketing Mandiri](docs/AUTONOMOUS_MARKETING.md).
+**Status aktual 21 Oktober:** versi 3.8.0 LIVE di Worker tourism Cloudflare versi 43, dan migrasi D1 0011/0012 telah diterapkan tanpa menghapus data lama. Jadwal Senin dan harian sudah aktif; Meta Graph outbound sengaja OFF sampai izin Page/Instagram spesifik diberikan. GitHub deploy otomatis masih membutuhkan secrets/opt-in terpisah. Lihat [Arsitektur AI Marketing Mandiri](docs/AUTONOMOUS_MARKETING.md).
 
 **Keterbatasan kemandirian:** akun Facebook dan Instagram sudah diotorisasi dalam Metricool, dan posting Kelingking 23 Oktober 2026 pukul 10 WITA telah dijadwalkan lewat Metricool. Tetapi akses API HTTP Metricool tidak tersedia di paket Free; API resmi memerlukan Advanced/Custom. Agar **Cloudflare sendiri** bisa membaca Insights dan menerbitkan posting tanpa ChatGPT/Metricool berbayar, harus disiapkan izin dan token **Meta Graph API** yang spesifik untuk Facebook Pages/Instagram di Worker. Belum ada token tersebut dalam Worker; jangan mengarang status koneksi. Optimasi otomatis berbasis data membutuhkan statistik riil masuk D1, yang sementara ini dapat diinput oleh pemilik.
 
