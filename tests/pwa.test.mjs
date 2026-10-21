@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v15/);
+ assert.match(read("service-worker.js"),/public-v16/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -275,4 +275,14 @@ test("owner WhatsApp dashboard links directly to the Indonesian setup guide",()=
  assert.match(html,/Panduan Hubungkan WhatsApp \(Bahasa Indonesia\)/);
  assert.match(html,/href="https:\/\/github.com\/rama160\/Marketing-turism\/blob\/main\/docs\/WHATSAPP_SETUP.md"/);
  assert.match(html,/id="waSendApproved" disabled/);
+});
+
+test("owner marketing organic autopilot is transparent and gated",()=>{
+ const html=read("index.html"),app=read("app.js");
+ assert.match(html,/id="prepareMarketingWeek"/);
+ assert.match(html,/id="marketingWeekFeedback"/);
+ assert.match(html,/Hubungkan Instagram & Facebook/);
+ assert.match(html,/publikasi otomatis belum aktif/);
+ assert.match(app,/admin\/marketing\/prepare-week/);
+ assert.match(app,/owner_confirmed:true/);
 });
