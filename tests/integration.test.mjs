@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -181,6 +181,53 @@ test("invalid calendar dates are rejected, cannot create non-existent February d
  await rate(request,op,"ISLAND_TOUR_CAR",600000,"car",6);
  const q=await request("/api/admin/quotes","POST",{operator_id:op,activity_id:"ISLAND_TOUR_CAR",guests:2,requested_date:"2027-02-30",selling_price:750000});
  assert.equal(q.httpStatus,400);
+ sqlite.close();
+});
+
+test("marketing intelligence records only verified numeric metrics and learns transparent hour/platform ranking",async()=>{
+ const {request,sqlite}=fixture();
+ const noAuth=await request("/api/admin/marketing/intelligence","GET",undefined,false);
+ assert.equal(noAuth.httpStatus,401);
+ const cold=await request("/api/admin/marketing/intelligence");
+ assert.equal(cold.httpStatus,200);
+ assert.equal(cold.observation_count,0);
+ assert.equal(cold.best_hours.Instagram.source,"INSUFFICIENT_DATA");
+ assert.equal(cold.production.automatic_platform_publishing,false);
+ assert.equal(cold.production.guest_leads,false);
+ const today=new Date().toISOString().slice(0,10);
+ const invalid=await request("/api/admin/marketing/observations","POST",
+  {owner_verified:true,platform:"Facebook",activity_id:"ISLAND_TOUR_CAR",observed_on:today,impressions:-1});
+ assert.equal(invalid.httpStatus,422);
+ const noApproval=await request("/api/admin/marketing/observations","POST",
+  {platform:"Instagram",activity_id:"SNORKELING_3_SPOTS",observed_on:today,impressions:1000});
+ assert.equal(noApproval.httpStatus,403);
+ const futureDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
+ const future=await request("/api/admin/marketing/observations","POST",{owner_verified:true,platform:"Instagram",activity_id:"SNORKELING_3_SPOTS",observed_on:futureDate,impressions:1000});
+ assert.equal(future.httpStatus,422);
+ for(let i=0;i<2;i++){
+  const r=await request("/api/admin/marketing/observations","POST",{
+   owner_verified:true,platform:"Instagram",activity_id:"SNORKELING_3_SPOTS",observed_on:today,
+   published_hour:10,impressions:1500,reach:1100,reactions:150,comments:30,shares:20,saves:10,link_clicks:90,
+   source:"UNTRUSTED",source_url:"https://example.org/post"
+  });
+  assert.equal(r.httpStatus,201);
+  assert.equal(r.source,"OWNER_VERIFIED");
+ }
+ const intelligence=await request("/api/admin/marketing/intelligence");
+ assert.equal(intelligence.observation_count,2);
+ assert.equal(intelligence.best_hours.Instagram.hour,10);
+ assert.equal(intelligence.best_hours.Instagram.source,"MEASURED");
+ const winner=intelligence.strategies.find(s=>s.platform==="Instagram"&&s.activity_id==="SNORKELING_3_SPOTS");
+ const untouched=intelligence.strategies.find(s=>s.platform==="Facebook"&&s.activity_id==="SNORKELING_3_SPOTS");
+ assert.ok(winner.score>untouched.score);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_observations").get().n,2);
+ const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+ assert.equal(made.httpStatus,200);
+ assert.equal(made.observations_used,2);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
+ const decision=JSON.parse(sqlite.prepare("SELECT ranked_json FROM marketing_decisions").get().ranked_json);
+ assert.ok(decision.some(x=>x.platform==="Instagram"&&x.recommended_hour===10));
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='PUBLISHED'").get().n,0);
  sqlite.close();
 });
 
