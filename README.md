@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.5.1 (pilot; Indonesian WhatsApp onboarding guide linked from dashboard, Meta inbox not yet connected, public lead intake OFF).
+Repository: rama160/Marketing-turism. Release 3.6.0 (pilot; seven organic marketing drafts per week, owner campaign dashboard, external social scheduling awaiting account connection; public leads and payment OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -157,3 +157,11 @@ Panduan lama berbahasa Inggris telah **diganti pada file kanonis yang sama** den
 Webhook Meta sebelumnya menolak proses GET karena kode salah mensyaratkan WA_APP_SECRET serta WA_PHONE_NUMBER_ID pada tahap verifikasi challenge. Dua nilai tersebut hanya diperlukan untuk pesan masuk POST yang ditandatangani. Perbaikan kini aktif di Worker pariwisata: probe GET dengan token salah mengembalikan **403** (menolak token palsu), bukan 503. Pengujian publik ulang **berhasil**: [GitHub Actions 39449347646](https://github.com/rama160/Marketing-turism/actions/runs/39449347646).
 
 **Tindakan owner di Meta:** masukkan URL `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/api/webhooks/whatsapp`, isi kolom Verify Token menggunakan nilai yang sama persis dengan Secret `WA_VERIFY_TOKEN` milik Worker (minimal 24 karakter), lalu pilih "Verifikasi dan simpan". Jika token tersimpan di Cloudflare tetapi Anda tidak lagi punya salinannya, buat token acak baru dan perbarui kedua tempat. Saat ini WA_SEND_ENABLED tetap false; jangan menambah nomor WhatsApp Business utama melalui migrasi standar sebelum Coexistence diverifikasi.
+
+## Aktivasi pemasaran organik — 21 Oktober 2026
+
+Nusa Penida Experiences memilih memvalidasi minat calon wisatawan lebih dahulu, sebelum mendirikan PT dan sebelum mulai menerima pembayaran sendiri. Sistem menyiapkan **7 draf kampanye baru setiap Senin pukul 09.00 WITA** melalui Cloudflare Cron yang sudah didefinisikan; pemilik juga dapat membuka **Dashboard Agen → Kampanye → Siapkan 7 draf minggu ini** untuk menyiapkannya langsung. Setiap draf memerlukan tinjauan pemilik serta media/foto yang memiliki izin penggunaan sebelum dipublikasikan.
+
+**Publikasi Instagram/Facebook otomatis belum aktif.** Brand akun Metricool sudah ditemukan tetapi tidak memiliki jaringan sosial yang terkoneksi. Hubungkan akun milik pemilik di [Pengaturan koneksi Metricool](https://app.metricool.com/brands/connections?blogId=7483251) agar kita dapat menjadwalkan posting nyata setelah izin diberikan. Jangan menyimpan token Meta di GitHub. Perhatikan keterbatasan paket layanan penjadwal; tidak ada janji gratis tanpa batas.
+
+Website tetap online dan tombol WhatsApp langsung dapat dipakai. Untuk sementara AI tidak membaca/mengirim chat melalui Meta karena WABA sedang dibatasi; draf balasan WhatsApp dapat disalin manual. **Tidak ada pencarian prospek dengan scraping, spam, iklan berbayar, auto-DM, pembayaran, atau konfirmasi booking otomatis.** Halaman informasional masih noindex sampai kesiapan identitas bisnis, informasi hukum dan kebijakan final. Baca [Panduan Pemasaran Organik](docs/MARKETING_LAUNCH_KIT.md).
