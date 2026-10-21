@@ -1,6 +1,8 @@
+> **UPDATE PRODUKSI 21 OKT 2026:** Worker `marketing-turism-agent` versi 43 (`a2def26d-848f-49fa-abb9-be5b49be301a`) telah terpasang ke 100% trafik. D1 0011 dan 0012 lulus, dua Cron aktif, dan [smoke publik v3.8.0 lulus](https://github.com/rama160/Marketing-turism/actions/runs/39552409086). Meta Graph tidak memiliki credentials, sehingga publisher independen tetap OFF. Empat posting terjadwal melalui Metricool tetap berlaku. Teks historis di bawah tentang penundaan deployment tidak lagi berlaku.
+
 # AI Marketing Agent Mandiri — Nusa Penida Experiences
 
-**Versi implementasi: 3.8.0 | 21 Oktober 2026 | Status: generator belajar dan adapter publikasi langsung telah diuji di GitHub; Cloudflare Worker dan izin Meta Graph independen belum aktif.**
+**Versi implementasi: 3.8.0 | 21 Oktober 2026 | Status: generator belajar dan adapter publikasi langsung telah diuji di GitHub; Cloudflare Worker v3.8.0 live; Meta Graph independent outbound still disabled pending official permissions.**
 
 ## Hasil yang ingin dicapai
 
@@ -12,8 +14,8 @@ Mengurangi ketergantungan operasional harian pada percakapan ChatGPT. AI Agent m
 | --- | --- |
 | GitHub Actions 7 caption organik multibahasa per Senin 09.00 WITA | Berjalan dan berhasil menghasilkan artefak |
 | Facebook dan Instagram akun Nusa Penida Experiences terhubung ke Metricool | Terverifikasi melalui konektor, posting Kelingking 23 Okt 10 WITA sudah dijadwalkan dengan autoPublish |
-| Cloudflare Worker Cron 7 draf per Senin dan tombol menyiapkan draf di dashboard | Kode ada, menunggu publikasi versi baru |
-| Mesin statistik D1, peringkat konten, rekomendasi jam, alasan pemilihan, histori keputusan | Dibangun pada v3.7.0, menunggu deploy dan migrasi 0011 |
+| Cloudflare Worker Cron 7 draf per Senin dan tombol menyiapkan draf di dashboard | **LIVE**, D1 0011/0012 telah terpasang |
+| Mesin statistik D1, peringkat konten, rekomendasi jam, alasan pemilihan, histori keputusan | **LIVE**; belum mempunyai metrik nyata sampai data sumber resmi dimasukkan |
 | Metricool API untuk Cloudflare Worker | **Belum terhubung**; API HTTP resmi Metricool memerlukan Advanced/Custom berbayar, MCP dalam ChatGPT berbeda |
 | Alternatif Graph API Meta langsung dari Cloudflare | **Belum dikonfigurasi**; membutuhkan izin penerbitan + analitik, Page/IG ID dan token rahasia resmi |
 | AI mengubah kode sendiri | **Dilarang** demi keamanan: perubahan kode hanya melalui review dan tes |
@@ -62,7 +64,7 @@ Sumber:
 - [x] Facebook/Instagram resmi terhubung ke Metricool
 - [x] Satu unggahan Kelingking disetujui pemilik dan terjadwal 23 Oktober 2026
 - [x] Kode pembelajaran statistik dan peringkat strategi dibuat serta ditest di GitHub
-- [ ] Cloudflare v3.7.0 deployed live dan D1 migration 0011 terverifikasi
+- [x] Cloudflare v3.8.0 deployed live dan D1 migrations 0011/0012 terverifikasi
 - [ ] Metrik nyata mulai masuk ke D1, bukan data uji
 - [ ] Token dan izin Meta Graph Pages+IG / konektor publikasi terverifikasi untuk operasional independen
 - [ ] Adapter publikasi Graph aman, mempunyai idempotensi, batas frekuensi, audit dan verifikasi hasil
