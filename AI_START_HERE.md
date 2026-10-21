@@ -1,3 +1,10 @@
+## PRODUCTION TRUTH — 2026-10-21 (highest priority)
+- v3.8.0 LIVE Cloudflare Worker `marketing-turism-agent` version 43 / ID `a2def26d-848f-49fa-abb9-be5b49be301a` (100% traffic); previous rollback version `a829cf8b-22d2-448c-8577-f24038d6288c`.
+- Isolated D1 `marketing-turism-db` tables `marketing_observations`, `marketing_decisions`, `marketing_publications` created successfully from additive migrations 0011/0012. Never migrate other D1s.
+- Cron active: Monday 09 WITA prepares 7 drafts and 3 gated slots; daily 10 WITA checks queue. META_GRAPH_* bindings NOT SET, so zero Meta API posting by Cloudflare. Metricool autopublish remains the current posting path.
+- 12 old secrets/bindings retained, `PUBLIC_LEADS_ENABLED=false`, `WA_SEND_ENABLED=false`; verified in Cloudflare version API and [passing live smoke](https://github.com/rama160/Marketing-turism/actions/runs/39552409086). GitHub Actions auto-deploy separate and still intentionally skipped.
+- Active feature is autonomous planning and learning *from entered verified metrics*. Auto-ingestion of Meta Insights and independent Graph publication remain unfinished without owner authorization.
+
 # AI START HERE — Marketing Turism Agent
 Version: 3.8.0 | 2026-10-21 | Repository: rama160/Marketing-turism
 
@@ -154,7 +161,7 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 
 ## Fallback pemasaran otomatis tanpa sosial/Cloudflare
 - Workflow GitHub `.github/workflows/organic-marketing.yml` menjadwalkan ekspor 7 draf kampanye setiap Senin 09 WITA dan menyediakan artefak `nusa-penida-organic-week`. Ekspor harus memakai `src/sales.mjs` satu-satunya sumber draf; jangan duplikasi modul ini.
-- Run sukses: https://github.com/rama160/Marketing-turism/actions/runs/39522690636. Pembuatan konten mingguan di GitHub terbukti aktif, namun **bukan autoposting** dan **bukan pemasangan Cloudflare Worker v3.6.0**. Cloudflare connector gagal secara internal sehingga versi live belum terbarui, dan GitHub deploy yang dijaga environment variable belum dijalankan. Jangan klaim website admin telah diperbarui sampai live smoke sukses.
+- Run sukses: https://github.com/rama160/Marketing-turism/actions/runs/39522690636. Pembuatan konten mingguan di GitHub terbukti aktif, namun **bukan autoposting** dan **bukan pemasangan Cloudflare Worker v3.6.0**. Hambatan konektor Cloudflare telah selesai pada 2026-10-21; versi 3.8.0 sekarang live dan live smoke sudah lulus. GitHub auto-deploy terpisah masih digate oleh GitHub Actions secrets.
 - Pemilik harus menghubungkan akun sosialnya ke Metricool brand 7483251 untuk memposting terjadwal; promosi tidak memerlukan pengaktifan pembayaran maupun pengumpulan data guest yang belum siap secara legal.
 
 ## v3.7.0 — AI marketing independent learning (user-approved 2026-10-21)
@@ -172,4 +179,4 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Daily Cron `0 2 * * *` (10 WITA) may publish at most one of the three scheduled days/week ONLY with `META_GRAPH_PUBLISH_ENABLED=true`, `META_GRAPH_OWNER_APPROVED=true`, valid start date and official separate Graph Page/IG credentials. Zero retries for partial API success. The weekly draft Cron remains `0 1 * * 1`.
 - **NO** production Graph credentials or additional paid Metricool API access exist as of 21 October 2026. All direct publishing is disabled. Existing Metricool posts on Oct 23, 26, 28, 30 must not be duplicated; Graph start no earlier than Nov 2 and after owner's authorization.
 - No Meta Insights automatic import implemented. Official Meta v26 deprecates legacy impressions: never silently rename views/impressions or claim the learner has real automatic performance data unless it does.
-- GitHub deploy job skips unless `ENABLE_CLOUDFLARE_DEPLOY` set and valid isolated Cloudflare Actions secrets present. Cloudflare app connector currently fails; code v3.8 cannot be called live until deployment+two migrations+smoke validation. Full details in `docs/AUTONOMOUS_MARKETING.md`.
+- GitHub deploy job skips unless `ENABLE_CLOUDFLARE_DEPLOY` set and valid isolated Cloudflare Actions secrets present. Cloudflare connector recovered, v3.8.0 uploaded/deployed to dedicated Worker version 43, and migrations 0011/0012 + live smoke confirmed successful. Full details in `docs/AUTONOMOUS_MARKETING.md`.
