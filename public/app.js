@@ -236,6 +236,19 @@ function renderCampaigns(){
 function renderMarket(){
  $("#marketList").innerHTML=data.market.map(m=>'<div class="item"><div class="meta"><b>'+esc(m.platform)+' · '+esc(m.activity_id)+'</b><span class="pill">'+esc(m.verified?"Diperiksa":"Belum diverifikasi")+'</span></div><div>'+money(m.price)+' / '+esc(m.unit)+(m.group_size?" ('+m.group_size+' orang)":"")+'</div><small>Diamati '+esc(m.observed_on)+' · '+esc(m.inclusions)+'</small><small>'+esc(m.source_url)+'</small></div>').join("")||"<p>Belum ada referensi harga.</p>";
 }
+$("#prepareMarketingWeek").onclick=async()=>{
+ if(!confirm("Buat 7 draf konten pemasaran mingguan (Instagram, Facebook, TikTok) untuk diperiksa? Belum ada publikasi otomatis."))return;
+ const b=$("#prepareMarketingWeek");
+ b.disabled=true;
+ try{
+  const result=await api("admin/marketing/prepare-week","POST",{owner_confirmed:true});
+  $("#marketingWeekFeedback").textContent=result.generated>0
+   ?"Berhasil menyiapkan "+result.generated+" draf untuk pekan "+result.week_start+". Periksa daftar kampanye. Akun sosial belum terhubung, jadi belum ada konten yang ditayangkan."
+   :"Draf untuk pekan "+result.week_start+" sudah pernah dibuat. Tidak ada duplikasi.";
+  await refresh();
+ }catch(err){$("#marketingWeekFeedback").textContent="Gagal membuat draf: "+err.message;}
+ finally{b.disabled=false;}
+};
 $("#reuseDraft").onclick=()=>{if(lastMarketing)$("#campaignForm [name=caption]").value=lastMarketing;};
 $("#campaignForm").onsubmit=async e=>{
  e.preventDefault();try{await api("admin/campaigns","POST",formValues(e.target));e.target.reset();await refresh();say("#adminFeedback","Kampanye disimpan sebagai draf.",true);}catch(err){say("#adminFeedback",err.message)}
