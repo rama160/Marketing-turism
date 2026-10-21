@@ -2,6 +2,7 @@
   "name": "marketing-turism-agent",
   "main": "src/worker.mjs",
   "compatibility_date": "2026-10-01",
+  "keep_vars": true,
   "d1_databases": [
     {
       "binding": "DB",

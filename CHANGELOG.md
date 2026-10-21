@@ -1,3 +1,8 @@
+## 3.8.0 deployment safety hotfix — 21 October 2026
+- Set `keep_vars: true` in `wrangler.jsonc`, and guard it in `scripts/preflight.mjs`, to preserve production Dashboard-managed plaintext bindings during Wrangler deployment. Secrets remain protected and preserved per Cloudflare documentation.
+- No changes to cron, D1 schema, existing worker target, enabled social publication gates, guest lead gate or WhatsApp sending.
+- GitHub Actions deploy still needs operator-owned secret configuration and a successful production run; no new social posting authorization is implied.
+
 ## 3.8.0 hotfix — Cloudflare Meta binding alignment (21 Oktober 2026)
 - Audit Worker menemukan semua kredensial inti terikat, tetapi modul publisher memakai nama `META_GRAPH_*` yang berbeda. `metaPublicationConfig` sekarang membaca `META_PAGE_ID`, `META_IG_USER_ID`, `META_PAGE_ACCESS_TOKEN` sebagai nama utama dan mendukung nama lama untuk kompatibilitas.
 - Menambah status konfigurasi tanpa kebocoran token, ditambah pemeriksaan read-only `GET /api/admin/marketing/meta/status?probe=true` untuk owner dengan Bearer `ADMIN_TOKEN`; pengujian identitas bukan konfirmasi izin penerbitan/insight.

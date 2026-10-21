@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 const config=JSON.parse(readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8"));
 assert.equal(config.name,"marketing-turism-agent","Deployment Worker target changed: refusing");
 assert.equal(config.main,"src/worker.mjs","Worker entry has changed unexpectedly");
+assert.equal(config.keep_vars,true,"Preserve existing dashboard Meta, WhatsApp and other production variables on Wrangler deploy");
 assert.equal(config.d1_databases?.length,1,"Expected dedicated tourism D1 only");
 assert.equal(config.d1_databases[0].binding,"DB","Database binding mismatched");
 assert.equal(config.d1_databases[0].database_name,"marketing-turism-db","Database target changed: refusing");
