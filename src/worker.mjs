@@ -1,6 +1,6 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
-import {leadScore,salesDraft,weeklyDrafts} from "./sales.mjs";
+import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
@@ -28,6 +28,17 @@ async function owner(req,env){
 async function audit(db,kind,key,action,detail={}){
  await db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),kind,key,action,JSON.stringify(detail)).run();
 }
+// Creates a full review-only bilingual week in dedicated tourism D1; no social publishing.
+async function prepareMarketingWeek(db,dateString,source){
+ const monday=marketingWeekStart(dateString),runId="campaign-week-"+monday;
+ if(await db.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first())return {week_start:monday,generated:0,status:"ALREADY_PREPARED"};
+ const drafts=weeklyDrafts(monday);
+ const statements=[db.prepare("INSERT INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS")];
+ for(const item of drafts)statements.push(db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)").bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
+ statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,automatically_published:false})));
+ await db.batch(statements);
+ return {week_start:monday,generated:drafts.length,status:"DRAFT_REVIEW"};
+}
 async function activeRate(db,operator,item,bookingMode="LEGACY",variantId="DEFAULT"){
  return db.prepare("SELECT r.* FROM rates r JOIN operators o ON o.id=r.operator_id WHERE r.operator_id=? AND r.item_id=? AND r.booking_mode=? AND r.variant_id=? AND r.active=1 AND r.verified=1 AND o.status='VERIFIED' ORDER BY r.version DESC LIMIT 1").bind(operator,item,bookingMode,variantId).first();
 }
@@ -52,7 +63,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.5.2",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.6.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -407,6 +418,12 @@ async function route(req,env,ctx){
   const [l,q,b,c]=await Promise.all(["leads","quotes","bookings","campaign_drafts"].map(t=>db.prepare("SELECT status,COUNT(*) n FROM "+t+" GROUP BY status").all()));
   return json({leads:l.results,quotes:q.results,bookings:b.results,campaigns:c.results,note:"Jumlah views/klik marketplace belum tersedia dan tidak dipalsukan"});
  }
+ if(path==="/api/admin/marketing/prepare-week"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib untuk menyiapkan kampanye",403);
+  const day=new Date().toISOString().slice(0,10);
+  return json({...await prepareMarketingWeek(db,day,"OWNER_DASHBOARD"),publication:"NONE",social_networks_connected:false});
+ }
  if(path==="/api/admin/marketing/draft"&&method==="POST"){
   const b=await parse(req),activity=str(b.activity_id,80);
   if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity))return bad("Aktivitas tidak valid");
@@ -424,13 +441,6 @@ export default {
  async scheduled(event,env){
   // Only creates reviewable content drafts. No external posting, guest messaging, or advertising spend.
   if(event.cron!=="0 1 * * 1"||!env.DB)return;
-  const day=new Date().toISOString().slice(0,10),runId="campaign-week-"+day;
-  const existing=await env.DB.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first();
-  if(existing)return;
-  const drafts=weeklyDrafts(day);
-  const statements=[env.DB.prepare("INSERT INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS")];
-  for(const item of drafts)statements.push(env.DB.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)").bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
-  statements.push(env.DB.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length})));
-  await env.DB.batch(statements);
+  await prepareMarketingWeek(env.DB,new Date().toISOString().slice(0,10),"WEEKLY_CRON");
  }
 };
