@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v17/);
+ assert.match(read("service-worker.js"),/public-v18/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -296,4 +296,12 @@ test("autonomous marketing learning is owner-only and rejects fabricated analyti
  assert.match(app,/admin\/marketing\/intelligence/);
  assert.match(app,/admin\/marketing\/observations/);
  assert.match(app,/owner_verified=true/);
+});
+
+test("marketing independent Meta Graph queue does not pretend to be connected",()=>{
+ const home=read("index.html"),app=read("app.js");
+ assert.match(home,/id="refreshMetaQueue"/);
+ assert.match(home,/id="marketingPublicationQueue"/);
+ assert.match(app,/admin\/marketing\/publications/);
+ assert.match(home,/belum aktif|belum diaktifkan/);
 });
