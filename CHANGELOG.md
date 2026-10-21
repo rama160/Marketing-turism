@@ -1,3 +1,10 @@
+## 3.8.0 security maintenance — Internal Meta connectivity checks (21 October 2026)
+- Reuse the existing publisher adapter for Graph GET-only Page/IG identity checks, requiring exact expected IDs even on HTTP 200.
+- The existing daily Cron (10.00 WITA) saves sanitized, daily read status in additive D1 migration `0013_meta_diagnostics.sql` with 30-day retention. No credentials, response bodies, personally identifying guest data, insights or posts are stored.
+- Admin dashboard Marketing tab shows last check and history and supports manual identity testing with a five-minute cooldown. Protected GET `/api/admin/marketing/meta/status` reads history; POST `/api/admin/marketing/meta/diagnostics` performs a safe probe.
+- `READ_OK` verifies identity read only, never publication authorization/metrics. All existing social-post, WhatsApp and public lead gates remain unchanged.
+- Deployment stays scoped to the existing tourism Worker, D1 and Cron schedule, preserving dashboard variables.
+
 ## 3.8.0 Cloudflare GitHub token metadata diagnostics — 21 October 2026
 - GitHub deployment now checks HTTP status codes (no response body or tokens) for scoped Cloudflare API metadata endpoints before migrating the dedicated tourism D1. The first two deployment attempts passed 101 tests and D1 migrations but failed at Wrangler metadata read with "Unable to fetch bindings, routes, or services metadata from the dashboard". Production Worker remained unchanged.
 - This diagnostic is read-only and does not change any permissions, secrets, Worker bindings, schedules or database records.
