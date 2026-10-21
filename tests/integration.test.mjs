@@ -609,3 +609,23 @@ test("WhatsApp Meta verification, HMAC signing, deduplication, review-only draft
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_outbox_requests").get().n,0);
  sqlite.close();
 });
+
+test("Meta diagnostic endpoint is owner-only and does not mistake stored secrets for a live Graph connection",async()=>{
+ const {request,env,sqlite}=fixture();
+ Object.assign(env,{META_PAGE_ID:"1375913638943340",META_IG_USER_ID:"17841473759990847",
+  META_PAGE_ACCESS_TOKEN:"test-only-meta-token-over-24-characters"});
+ const denied=await request("/api/admin/marketing/meta/status","GET",undefined,false);
+ assert.equal(denied.httpStatus,401);
+ const status=await request("/api/admin/marketing/meta/status");
+ assert.equal(status.httpStatus,200);
+ assert.equal(status.ids_valid,true);
+ assert.equal(status.tokens_present,true);
+ assert.equal(status.publishing_enabled,false);
+ assert.equal(status.graph_api_verified,false);
+ assert.equal(JSON.stringify(status).includes(env.META_PAGE_ACCESS_TOKEN),false);
+ const existing=await request("/api/admin/marketing/publications");
+ assert.equal(existing.independent_meta_publishing_enabled,false);
+ const intel=await request("/api/admin/marketing/intelligence");
+ assert.equal(intel.production.meta_graph,"CREDENTIALS_PRESENT_NOT_VERIFIED");
+ sqlite.close();
+});

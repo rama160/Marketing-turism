@@ -2,7 +2,7 @@ import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
-import {metaPublicationConfig,publishMetaTourism} from "./meta-publisher.mjs";
+import {metaPublicationConfig,metaConnectionStatus,checkMetaReadAccess,publishMetaTourism} from "./meta-publisher.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
@@ -448,6 +448,18 @@ async function route(req,env,ctx){
   const [l,q,b,c]=await Promise.all(["leads","quotes","bookings","campaign_drafts"].map(t=>db.prepare("SELECT status,COUNT(*) n FROM "+t+" GROUP BY status").all()));
   return json({leads:l.results,quotes:q.results,bookings:b.results,campaigns:c.results,note:"Jumlah views/klik marketplace belum tersedia dan tidak dipalsukan"});
  }
+ if(path==="/api/admin/marketing/meta/status"&&method==="GET"){
+  const day=new Date().toISOString().slice(0,10);
+  const status=metaConnectionStatus(env,day);
+  // Optional, owner-authenticated Graph read probes. No Graph write, no raw
+  // token/error body returned and no public unauthenticated diagnostics.
+  if(u.searchParams.get("probe")==="true"){
+   const read=await checkMetaReadAccess(env);
+   return json({...status,graph_api_verified:read.page.ok===true&&read.instagram.ok===true,
+    read_access:read});
+  }
+  return json(status);
+ }
  if(path==="/api/admin/marketing/publications"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
   const rows=await db.prepare("SELECT id,week_start,intended_date,idea_index,status,facebook_post_id,instagram_post_id,error_reason,attempted_at,updated_at FROM marketing_publications ORDER BY intended_date DESC LIMIT 80").all();
@@ -462,7 +474,7 @@ async function route(req,env,ctx){
   const decisions=(await db.prepare("SELECT week_start,strategy_version,input_observations,ranked_json,assumptions,created_at FROM marketing_decisions ORDER BY created_at DESC LIMIT 8").all()).results;
   return json({...analysis,decisions:decisions.map(x=>({...x,ranked:JSON.parse(x.ranked_json||"[]"),ranked_json:undefined})),
    production:{weekly_cron:"Senin 09.00 WITA",review_only:true,automatic_platform_publishing:false,
-    metricool_api:"EXTERNAL_API_NOT_CONNECTED",meta_graph:"NEEDS_OWNER_APP_PERMISSIONS",
+    metricool_api:"EXTERNAL_API_NOT_CONNECTED",meta_graph:metaConnectionStatus(env,day).ids_valid&&metaConnectionStatus(env,day).tokens_present?"CREDENTIALS_PRESENT_NOT_VERIFIED":"CREDENTIALS_INCOMPLETE",
     payment_collection:false,guest_leads:env.PUBLIC_LEADS_ENABLED==="true"}});
  }
  if(path==="/api/admin/marketing/observations"&&method==="POST"){

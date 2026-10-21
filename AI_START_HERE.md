@@ -1,3 +1,10 @@
+## META CLOUDFLARE FIX — 21 OKTOBER 2026 (review status)
+- Cloudflare saat audit memiliki `META_PAGE_ID=1375913638943340`, `META_IG_USER_ID=17841473759990847`, `META_PAGE_ACCESS_TOKEN`, `META_APP_SECRET`, dan `META_APP_ACCESS_TOKEN`. Hanya ID yang boleh ditulis pada dokumentasi; token dan secret tidak boleh dibaca atau dikirim ke chat.
+- `src/meta-publisher.mjs` sekarang membaca `META_PAGE_ID`, `META_IG_USER_ID`, dan `META_PAGE_ACCESS_TOKEN` yang telah ada; nama `META_GRAPH_*` lama hanya fallback. **Menyimpan credential tidak berarti izin platform lengkap atau publikasi aktif.**
+- `GET /api/admin/marketing/meta/status` untuk status konfigurasi dan `?probe=true` untuk pengujian baca Page/IG. Hanya pemilik dengan `ADMIN_TOKEN`; jangan masukkan token ke URL atau screenshot. Tidak ada Graph POST pada endpoint ini.
+- Direct Meta posting tetap **OFF** tanpa tiga opt-in independen `META_GRAPH_PUBLISH_ENABLED=true`, `META_GRAPH_OWNER_APPROVED=true`, dan `META_GRAPH_PUBLISH_START=YYYY-MM-DD`. Jangan aktifkan sebelum uji izin `pages_manage_posts`, uji hak Instagram, review konten, dan kesiapan operasional. Meta Insights otomatis dan Metricool HTTP API masih belum terhubung.
+- Pekerjaan ini dibatasi pada repositori `rama160/Marketing-turism`; ketika PR belum dideploy, kode live masih versi sebelumnya. Verifikasi tiap deployment dengan GitHub CI + live smoke, jangan klaim produksi sudah berubah sampai dibuktikan.
+
 ## PRODUCTION TRUTH — 2026-10-21 (highest priority)
 - v3.8.0 LIVE Cloudflare Worker `marketing-turism-agent` version 43 / ID `a2def26d-848f-49fa-abb9-be5b49be301a` (100% traffic); previous rollback version `a829cf8b-22d2-448c-8577-f24038d6288c`.
 - Isolated D1 `marketing-turism-db` tables `marketing_observations`, `marketing_decisions`, `marketing_publications` created successfully from additive migrations 0011/0012. Never migrate other D1s.

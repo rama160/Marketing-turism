@@ -1,3 +1,5 @@
+> **CATATAN PERBAIKAN META (21 Okt 2026):** Source terbaru mengakui Secret Cloudflare `META_PAGE_ID`, `META_IG_USER_ID`, `META_PAGE_ACCESS_TOKEN` dan menyediakan diagnostik admin GET `/api/admin/marketing/meta/status?probe=true`. Pengujian API baca adalah verifikasi dasar, **bukan** aktivasi autoposting. `META_APP_SECRET` dan `META_APP_ACCESS_TOKEN` tidak menggantikan token Page. Penerbitan Graph tetap OFF sampai opt-in terpisah yang eksplisit dan izin platform benar-benar diverifikasi. Status source PR dan status Worker live wajib dibedakan.
+
 > **VERIFIKASI PRODUKSI TERBARU (21 Okt 2026):** Nusa Penida Experiences **v3.8.0 LIVE** pada Worker khusus `marketing-turism-agent`, versi Cloudflare **43** (`a2def26d-848f-49fa-abb9-be5b49be301a`), deploy **100%**. D1 migrasi 0011 dan 0012 sukses; Cron `0 1 * * 1` dan `0 2 * * *` aktif. [Live smoke lulus](https://github.com/rama160/Marketing-turism/actions/runs/39552409086). Post Meta Graph langsung masih OFF karena izin/token belum tersedia, tidak boleh dibuat otomatis. Dokumentasi lama di bawah mencatat kondisi historis.
 
 # Marketing Turism — AI Tourism Marketing & Booking Agent
