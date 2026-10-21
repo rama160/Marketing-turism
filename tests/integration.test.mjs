@@ -284,7 +284,10 @@ test("independent Meta cron marks an ambiguous partial publish for review and ne
   META_GRAPH_PAGE_TOKEN:"local-testing-meta-token-contains-no-real-secrets"});
  let attempts=0;
  const originalFetch=globalThis.fetch;
- globalThis.fetch=async()=>{
+ globalThis.fetch=async(url,options)=>{
+  // Daily read-only connectivity checks are separate from outbound post attempts.
+  if(options.method==="GET")
+   return new Response(JSON.stringify({id:url.includes(env.META_GRAPH_PAGE_ID)?env.META_GRAPH_PAGE_ID:env.META_GRAPH_IG_USER_ID}),{status:200});
   attempts++;
   return new Response(JSON.stringify(attempts===1?{id:"12345678901234"}:{error:{message:"Meta error"}}),{
    status:attempts===1?200:403,headers:{"content-type":"application/json"}});
