@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.6.0 (pilot; seven organic marketing drafts per week, owner campaign dashboard, external social scheduling awaiting account connection; public leads and payment OFF).
+Repository: rama160/Marketing-turism. Release 3.7.0 (GitHub CI; autonomous marketing performance learning + owner dashboard implemented, Cloudflare deployment pending; guest leads and payments OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -170,3 +170,13 @@ Website tetap online dan tombol WhatsApp langsung dapat dipakai. Untuk sementara
 Workflow mingguan [Organic marketing calendar](https://github.com/rama160/Marketing-turism/actions/runs/39522690636) terbukti sukses membuat artefak `nusa-penida-organic-week` berisi 7 draf multibahasa. Ini berjalan tanpa Cloudflare dan kredensial media sosial; penjadwalan Github tidak sama dengan posting otomatis di Instagram/Facebook. Penggunaan sosial masih membutuhkan koneksi/izin pemilik dan media berlisensi.
 
 **Catatan operasional:** Kode dashboard marketing v3.6.0 di GitHub lulus tes, tetapi belum diterapkan ke Worker publik karena API Cloudflare dari integrasi gagal merespons pada sesi ini; workflow deployment GitHub juga masih berstatus skipped. Jangan menandai deployment selesai atau melepas batasan pembayaran/lead. Sebelum pemakaian fitur baru di website, lakukan deployment Worker yang aman dengan binding-inheritance dan jalankan pemeriksaan smoke publik.
+
+## Pembelajaran AI Marketing v3.7.0 — kode & aktivasi yang dipisahkan
+
+Mesin pemasaran kini dapat **memperingkat kanal, tema, dan jam posting dari statistik nyata**, dengan penanganan sampel kecil, histori keputusan, validasi input dan pemeriksaan owner-only. Modul `src/marketing-intelligence.mjs` dan D1 migration `0011_marketing_learning.sql` mendukung rencana mingguan dari `src/sales.mjs`; dashboard menyediakan form pencatatan performa riil serta ringkasan alasan prioritas.
+
+**Status aktual:** kode dan test berada di GitHub; versi **3.7.0 belum deployed live** karena konektor Cloudflare sedang mengalami kesalahan internal dan deployment GitHub belum memiliki secret/token produksi yang diperlukan. D1 migration 0011 harus dipasang secara aditif pada database tourism sebelum dashboard pembelajaran digunakan. Lihat [Arsitektur AI Marketing Mandiri](docs/AUTONOMOUS_MARKETING.md).
+
+**Keterbatasan kemandirian:** akun Facebook dan Instagram sudah diotorisasi dalam Metricool, dan posting Kelingking 23 Oktober 2026 pukul 10 WITA telah dijadwalkan lewat Metricool. Tetapi akses API HTTP Metricool tidak tersedia di paket Free; API resmi memerlukan Advanced/Custom. Agar **Cloudflare sendiri** bisa membaca Insights dan menerbitkan posting tanpa ChatGPT/Metricool berbayar, harus disiapkan izin dan token **Meta Graph API** yang spesifik untuk Facebook Pages/Instagram di Worker. Belum ada token tersebut dalam Worker; jangan mengarang status koneksi. Optimasi otomatis berbasis data membutuhkan statistik riil masuk D1, yang sementara ini dapat diinput oleh pemilik.
+
+**Tidak pernah otomatis:** perubahan source code/deploy, biaya iklan, pembelian, harga final, pengumpulan data pelanggan belum siap, auto-DM/spam dan penawaran booking terkonfirmasi.
