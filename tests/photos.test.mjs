@@ -40,7 +40,7 @@ test("photo loader has direct static GitHub fallback, then truthful placeholder"
  assert.match(loader,/photo-unavailable\.svg/);
  assert.match(loader,/localPhotoFailed/);
  assert.match(read("_headers"),/raw\.githubusercontent\.com/);
- assert.match(read("service-worker.js"),/public-v15/);
+ assert.match(read("service-worker.js"),/public-v16/);
 });
 
 test("persistent KV photo copy works when both GitHub and Wikimedia are offline",async()=>{
