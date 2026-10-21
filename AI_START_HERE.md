@@ -1,3 +1,9 @@
+## META INTERNAL DIAGNOSTICS — 21 October 2026
+- Canonical `src/meta-publisher.mjs` uses GET-only Graph identity probes with Cloudflare Secrets, checks returned ID equality and never logs token or response bodies.
+- Daily existing Cron `0 2 * * *` (10 WITA) saves anonymized status via additive D1 migration `0013_meta_diagnostics.sql` with 30-day retention. No duplicate Cron trigger.
+- Owner dashboard Marketing has status/history and a manual check button. Owner-only GET `/api/admin/marketing/meta/status` reads results; owner-only POST `/api/admin/marketing/meta/diagnostics` triggers a test with five-minute cooldown. No Admin Token in ChatGPT.
+- `READ_OK` is not publishing or insights permission. `META_GRAPH_PUBLISH_ENABLED`, `META_GRAPH_OWNER_APPROVED`, leads and WhatsApp gates remain unchanged. Keep `keep_vars:true`, do not touch other Workers.
+
 ## CRITICAL WORKER DEPLOYMENT SAFETY — 21 October 2026
 - `wrangler.jsonc` uses `keep_vars: true`; retain it for every deployment to `marketing-turism-agent`. Production uses Dashboard-managed plain text `META_PAGE_ID`, `META_IG_USER_ID`, `WA_PHONE_NUMBER_ID`, `WA_SEND_ENABLED`, and `WA_WEBHOOK_ENABLED` in addition to repo-defined `PUBLIC_LEADS_ENABLED=false`. Without this flag, `wrangler deploy` can remove remote dashboard vars not in config and interrupt Meta/WhatsApp connectivity.
 - Do NOT broaden deployment beyond this Worker, touch FinChat/Spenva Workers, or enable Meta publishing without explicit owner approval and verified permissions.

@@ -42,16 +42,20 @@ export async function checkMetaReadAccess(env,request=fetch){
  if(!metaConnectionStatus(env,new Date().toISOString().slice(0,10)).ids_valid||
     typeof c.pageToken!=="string"||c.pageToken.length<24)
   return {configured:false,page:{ok:false},instagram:{ok:false}};
- async function probe(path){
+ async function probe(path,expectedId,token){
   try{
    const res=await request("https://graph.facebook.com/v26.0"+path,{
-    method:"GET",headers:{authorization:"Bearer "+c.pageToken},signal:AbortSignal.timeout(10000)});
-   return {ok:res.ok,status:res.status};
+    method:"GET",headers:{authorization:"Bearer "+token},signal:AbortSignal.timeout(10000)});
+   // Do not parse unauthorized/error bodies: Meta may include diagnostic detail.
+   if(!res.ok)return {ok:false,status:res.status};
+   // An HTTP 200 for the wrong resource is not successful authorization.
+   const data=await res.json();
+   return {ok:String(data?.id||"")===expectedId,status:res.status};
   }catch{return {ok:false,status:null};}
  }
  const [page,instagram]=await Promise.all([
-  probe("/"+c.pageId+"?fields=id,name"),
-  probe("/"+c.igId+"?fields=id,username")
+  probe("/"+c.pageId+"?fields=id,name",c.pageId,c.pageToken),
+  probe("/"+c.igId+"?fields=id,username",c.igId,c.igToken)
  ]);
  return {configured:true,page,instagram};
 }

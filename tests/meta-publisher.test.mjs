@@ -77,7 +77,7 @@ test("owner Meta read probes are GET-only and never reveal credentials or API re
  const seen=[];
  const mock=async(url,options)=>{
   seen.push({url,method:options.method,authorization:options.headers.authorization});
-  return new Response(JSON.stringify({id:"1",access_token:"THIS_MUST_NOT_ESCAPE"}),{status:seen.length===1?200:403});
+  return new Response(JSON.stringify({id:prod.META_PAGE_ID,access_token:"THIS_MUST_NOT_ESCAPE"}),{status:seen.length===1?200:403});
  };
  const output=await checkMetaReadAccess(prod,mock);
  assert.deepEqual(output,{configured:true,page:{ok:true,status:200},instagram:{ok:false,status:403}});
@@ -88,4 +88,29 @@ test("owner Meta read probes are GET-only and never reveal credentials or API re
  assert.ok(!JSON.stringify(output).includes("THIS_MUST_NOT_ESCAPE"));
  const skipped=await checkMetaReadAccess({},()=>{throw Error("must not call");});
  assert.equal(skipped.configured,false);
+});
+
+test("Meta read identity rejects wrong ID and malformed success response",async()=>{
+ const env={META_PAGE_ID:"1375913638943340",META_IG_USER_ID:"17841473759990847",
+  META_PAGE_ACCESS_TOKEN:"fake-graph-read-token-for-tests-1234"};
+ let i=0;
+ const result=await checkMetaReadAccess(env,async()=>{
+  i++;
+  return new Response(i===1?JSON.stringify({id:"wrong-id"}):"not-json",
+   {status:200,headers:{"content-type":"application/json"}});
+ });
+ assert.deepEqual(result,{configured:true,page:{ok:false,status:200},instagram:{ok:false,status:null}});
+});
+test("Meta read checks accept a separately provisioned Instagram token",async()=>{
+ const env={META_PAGE_ID:"1375913638943340",META_IG_USER_ID:"17841473759990847",
+  META_PAGE_ACCESS_TOKEN:"fake-graph-page-token-for-tests-1234",
+  META_IG_ACCESS_TOKEN:"fake-graph-instagram-token-for-tests-1234"};
+ const auth=[];
+ const result=await checkMetaReadAccess(env,async(url,options)=>{
+  auth.push(options.headers.authorization);
+  return new Response(JSON.stringify({id:url.includes(env.META_PAGE_ID)?env.META_PAGE_ID:env.META_IG_USER_ID}),
+   {status:200,headers:{"content-type":"application/json"}});
+ });
+ assert.ok(result.page.ok&&result.instagram.ok);
+ assert.deepEqual(auth,["Bearer "+env.META_PAGE_ACCESS_TOKEN,"Bearer "+env.META_IG_ACCESS_TOKEN]);
 });

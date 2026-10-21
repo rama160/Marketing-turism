@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -284,7 +284,10 @@ test("independent Meta cron marks an ambiguous partial publish for review and ne
   META_GRAPH_PAGE_TOKEN:"local-testing-meta-token-contains-no-real-secrets"});
  let attempts=0;
  const originalFetch=globalThis.fetch;
- globalThis.fetch=async()=>{
+ globalThis.fetch=async(url,options)=>{
+  // Daily read-only connectivity checks are separate from outbound post attempts.
+  if(options.method==="GET")
+   return new Response(JSON.stringify({id:url.includes(env.META_GRAPH_PAGE_ID)?env.META_GRAPH_PAGE_ID:env.META_GRAPH_IG_USER_ID}),{status:200});
   attempts++;
   return new Response(JSON.stringify(attempts===1?{id:"12345678901234"}:{error:{message:"Meta error"}}),{
    status:attempts===1?200:403,headers:{"content-type":"application/json"}});
@@ -628,4 +631,64 @@ test("Meta diagnostic endpoint is owner-only and does not mistake stored secrets
  const intel=await request("/api/admin/marketing/intelligence");
  assert.equal(intel.production.meta_graph,"CREDENTIALS_PRESENT_NOT_VERIFIED");
  sqlite.close();
+});
+
+test("scheduled Meta diagnostics record real read status without exposing credentials",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_PAGE_ID="1375913638943340";
+ env.META_IG_USER_ID="17841473759990847";
+ env.META_PAGE_ACCESS_TOKEN="local-placeholder-page-access-token-12345";
+ const secret=env.META_PAGE_ACCESS_TOKEN;
+ const originalFetch=globalThis.fetch,seen=[];
+ try{
+  globalThis.fetch=async(url,options)=>{
+   seen.push({url,method:options.method,auth:options.headers.authorization});
+   return new Response(JSON.stringify({id:url.includes(env.META_PAGE_ID)?env.META_PAGE_ID:env.META_IG_USER_ID,
+    access_token:"MUST_NOT_LEAK"}),{status:200,headers:{"content-type":"application/json"}});
+  };
+  assert.equal((await request("/api/admin/marketing/meta/status","GET",undefined,false)).httpStatus,401);
+  assert.equal((await request("/api/admin/marketing/meta/diagnostics","POST",{},false)).httpStatus,401);
+  assert.equal((await request("/api/admin/marketing/meta/status")).latest,null);
+  await worker.scheduled({cron:"0 2 * * *"},env,{});
+  assert.equal(seen.length,2);
+  assert.ok(seen.every(x=>x.method==="GET"&&x.auth==="Bearer "+secret&&!x.url.includes(secret)));
+  const result=await request("/api/admin/marketing/meta/status");
+  assert.equal(result.graph_api_verified,true);
+  assert.equal(result.latest.result,"READ_OK");
+  assert.equal(result.latest.source,"DAILY_CRON");
+  assert.equal(result.latest.page.status,200);
+  assert.equal(result.history.length,1);
+  assert.ok(!JSON.stringify(result).includes(secret));
+  assert.ok(!JSON.stringify(result).includes("MUST_NOT_LEAK"));
+  const repeated=await request("/api/admin/marketing/meta/diagnostics","POST",{});
+  assert.equal(repeated.status,"RECENT_RESULT");
+  assert.equal(seen.length,2);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM meta_connection_checks").get().n,1);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='POSTED'").get().n,0);
+  sqlite.prepare("UPDATE meta_connection_checks SET checked_at='2000-01-01 00:00:00'").run();
+  globalThis.fetch=async(url,options)=>{
+   seen.push({url,method:options.method});
+   return new Response(JSON.stringify({error:{message:"UNTRUSTED_SECRET"}}),{status:403});
+  };
+  const failed=await request("/api/admin/marketing/meta/diagnostics","POST",{});
+  assert.equal(failed.status,"CHECKED");
+  assert.equal(failed.latest.result,"READ_FAILED");
+  assert.equal(failed.latest.page.status,403);
+  assert.equal(seen.length,4);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM meta_connection_checks").get().n,1);
+  assert.ok(!JSON.stringify(failed).includes("UNTRUSTED_SECRET"));
+ }finally{globalThis.fetch=originalFetch;sqlite.close();}
+});
+test("unconfigured internal diagnostics do not call Meta or enable publishing",async()=>{
+ const {request,sqlite,env}=fixture();
+ const originalFetch=globalThis.fetch;
+ try{
+  globalThis.fetch=()=>{throw Error("No Graph calls expected");};
+  await worker.scheduled({cron:"0 2 * * *"},env,{});
+  const report=await request("/api/admin/marketing/meta/status");
+  assert.equal(report.latest.result,"INCOMPLETE");
+  assert.equal(report.latest.page.status,null);
+  assert.equal(report.graph_api_verified,false);
+  assert.equal(report.publishing_enabled,false);
+ }finally{globalThis.fetch=originalFetch;sqlite.close();}
 });

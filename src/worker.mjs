@@ -36,6 +36,44 @@ async function marketingEvidence(db,day){
  const results=await db.prepare("SELECT * FROM marketing_observations WHERE observed_on>=? AND observed_on<=? ORDER BY observed_on DESC LIMIT 500").bind(cutoff.toISOString().slice(0,10),day).all();
  return results.results;
 }
+// Internal Meta diagnostic: GET-only Graph requests, sanitized D1 snapshots.
+// One row per UTC day; the owner may refresh at most once every five minutes.
+function safeMetaCheck(row){
+ if(!row)return null;
+ return {day:row.day,checked_at:row.checked_at.replace(" ","T")+"Z",source:row.source,
+  configured:row.configured===1,page:{ok:row.page_ok===1,status:row.page_http_status},
+  instagram:{ok:row.instagram_ok===1,status:row.instagram_http_status},result:row.result};
+}
+async function recentMetaChecks(db){
+ const rows=await db.prepare("SELECT day,checked_at,source,configured,page_ok,instagram_ok,page_http_status,instagram_http_status,result FROM meta_connection_checks ORDER BY day DESC LIMIT 14").all();
+ return rows.results.map(safeMetaCheck);
+}
+async function runMetaDiagnostic(db,env,source){
+ const day=new Date().toISOString().slice(0,10);
+ if(source==="OWNER_BUTTON"){
+  const existing=await db.prepare("SELECT checked_at FROM meta_connection_checks WHERE day=?").bind(day).first();
+  const checkedAt=existing?.checked_at?Date.parse(existing.checked_at.replace(" ","T")+"Z"):0;
+  if(checkedAt&&Date.now()-checkedAt<5*60*1000)
+   return {status:"RECENT_RESULT",history:await recentMetaChecks(db)};
+ }
+ const config=metaConnectionStatus(env,day);
+ const read=await checkMetaReadAccess(env);
+ const configured=config.ids_valid&&config.tokens_present&&read.configured;
+ const result=!configured?"INCOMPLETE":
+  read.page.ok&&read.instagram.ok?"READ_OK":
+  read.page.ok||read.instagram.ok?"READ_PARTIAL":"READ_FAILED";
+ await db.prepare(
+  "INSERT INTO meta_connection_checks(day,checked_at,source,configured,page_ok,instagram_ok,page_http_status,instagram_http_status,result) "+
+  "VALUES(?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?) ON CONFLICT(day) DO UPDATE SET "+
+  "checked_at=CURRENT_TIMESTAMP,source=excluded.source,configured=excluded.configured,"+
+  "page_ok=excluded.page_ok,instagram_ok=excluded.instagram_ok,page_http_status=excluded.page_http_status,"+
+  "instagram_http_status=excluded.instagram_http_status,result=excluded.result"
+ ).bind(day,source,Number(configured),Number(read.page.ok),Number(read.instagram.ok),
+  read.page.status??null,read.instagram.status??null,result).run();
+ // Retain only a small diagnostic window; no historical tokens or response bodies.
+ await db.prepare("DELETE FROM meta_connection_checks WHERE day < date('now','-30 days')").run();
+ return {status:"CHECKED",history:await recentMetaChecks(db)};
+}
 async function prepareMarketingWeek(db,dateString,source){
  const monday=marketingWeekStart(dateString),runId="campaign-week-"+monday;
  if(await db.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first())return {week_start:monday,generated:0,status:"ALREADY_PREPARED"};
@@ -451,14 +489,18 @@ async function route(req,env,ctx){
  if(path==="/api/admin/marketing/meta/status"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
   const status=metaConnectionStatus(env,day);
-  // Optional, owner-authenticated Graph read probes. No Graph write, no raw
-  // token/error body returned and no public unauthenticated diagnostics.
-  if(u.searchParams.get("probe")==="true"){
-   const read=await checkMetaReadAccess(env);
-   return json({...status,graph_api_verified:read.page.ok===true&&read.instagram.ok===true,
-    read_access:read});
-  }
-  return json(status);
+  const history=await recentMetaChecks(db),latest=history[0]||null;
+  const checkedAt=latest?Date.parse(latest.checked_at):0;
+  const fresh=Number.isFinite(checkedAt)&&Date.now()-checkedAt<36*60*60*1000&&Date.now()>=checkedAt;
+  return json({...status,graph_api_verified:!!(fresh&&latest?.result==="READ_OK"),
+   latest,history,check_fresh:!!(latest&&fresh),automatic_diagnostics:"DAILY_CRON_10_WITA",
+   note:"GET-only ID checks. These do not verify publishing permissions, metrics access, or posting success."});
+ }
+ if(path==="/api/admin/marketing/meta/diagnostics"&&method==="POST"){
+  const outcome=await runMetaDiagnostic(db,env,"OWNER_BUTTON");
+  const latest=outcome.history[0]||null;
+  return json({...outcome,latest,graph_api_verified:latest?.result==="READ_OK",
+   note:"Read-only identity verification only; no permission-to-publish test or post."});
  }
  if(path==="/api/admin/marketing/publications"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
@@ -545,7 +587,13 @@ export default {
   if(!env.DB)return;
   const day=new Date().toISOString().slice(0,10);
   if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,day,"WEEKLY_CRON");return;}
-  // Daily independent organic publishing, explicitly opt-in only.
-  if(event.cron==="0 2 * * *")await runIndependentMetaPublication(env.DB,env,day);
+  // Existing daily trigger: check Meta read connectivity automatically without
+  // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
+  // separate explicitly approved publishing path.
+  if(event.cron==="0 2 * * *"){
+   try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
+   catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
+   await runIndependentMetaPublication(env.DB,env,day);
+  }
  }
 };
