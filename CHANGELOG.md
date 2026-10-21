@@ -1,3 +1,10 @@
+## 3.6.0 — Pemasaran organik semi-otomatis (2026-10-21)
+- Memperluas `weeklyDrafts()` menjadi tujuh draf pemasaran dengan topik West/East Nusa Penida, snorkeling, manta wildlife, dan pilihan itinerary. Bahasa Indonesia/Inggris serta kanal Instagram/Facebook/TikTok bervariasi, dengan tautan website yang benar dan tanpa janji ketersediaan.
+- Cloudflare Cron khusus tourism tetap Senin 09:00 WITA (0 1 * * 1 UTC), tanpa mengubah trigger FinChat/Spenva. Menyimpan 7 draf DRAFT per pekan yang idempoten; tidak auto-publish.
+- Menambah endpoint owner-only `POST /api/admin/marketing/prepare-week` dengan persetujuan eksplisit untuk menyiapkan pekan berjalan dan mencegah draf ganda. Menambah tombol ke Dashboard Agen → Kampanye.
+- Menambahkan pintasan koneksi akun Facebook/Instagram melalui brand Metricool yang tersedia. **Belum ada koneksi akun sosial pada Metricool**, sehingga auto-posting eksternal belum bisa beroperasi. Pemasaran konten otomatis/draf bukan berarti publikasi otomatis.
+- Mempertahankan `PUBLIC_LEADS_ENABLED=false`, `WA_SEND_ENABLED=false`, pembayaran serta konfirmasi booking tetap terkunci. Tidak membuat klaim bisnis berizin. PWA cache v16, pengujian regresi, panduan promosi di `docs/MARKETING_LAUNCH_KIT.md`.
+
 ## 3.5.2 — Perbaikan verifikasi Webhook Meta (20 Oktober 2026)
 - Mengatasi kegagalan verifikasi URL callback Meta dengan memisahkan persyaratan tantangan awal HTTP GET dari penerimaan pesan bertanda tangan HTTP POST.
 - Verifikasi GET sekarang cukup menggunakan WA_WEBHOOK_ENABLED=true dan WA_VERIFY_TOKEN yang valid (minimal 24 karakter). WA_APP_SECRET dan WA_PHONE_NUMBER_ID tetap wajib untuk POST agar pesan masuk tidak pernah diproses tanpa verifikasi tanda tangan HMAC dan identitas nomor.
