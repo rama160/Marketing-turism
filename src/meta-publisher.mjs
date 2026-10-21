@@ -5,16 +5,55 @@ import {weeklyDrafts} from "./sales.mjs";
 
 const idPattern=/^[0-9]{6,30}$/;
 const isoDay=/^\d{4}-\d{2}-\d{2}$/;
-export function metaPublicationConfig(env,day){
- if(env.META_GRAPH_PUBLISH_ENABLED!=="true"||env.META_GRAPH_OWNER_APPROVED!=="true")return null;
+// Cloudflare production bindings are META_PAGE_ID, META_IG_USER_ID and
+// META_PAGE_ACCESS_TOKEN. Read deprecated META_GRAPH_* names only as a
+// compatibility fallback. Never copy or expose secrets in an API response.
+function metaCredentials(env){
+ const pageId=env.META_PAGE_ID||env.META_GRAPH_PAGE_ID;
+ const igId=env.META_IG_USER_ID||env.META_GRAPH_IG_USER_ID;
+ const pageToken=env.META_PAGE_ACCESS_TOKEN||env.META_GRAPH_PAGE_TOKEN;
+ const igToken=env.META_IG_ACCESS_TOKEN||env.META_GRAPH_IG_TOKEN||pageToken;
+ return {pageId,igId,pageToken,igToken};
+}
+export function metaConnectionStatus(env,day){
+ const c=metaCredentials(env);
+ const ids_valid=idPattern.test(c.pageId||"")&&idPattern.test(c.igId||"");
+ const tokens_present=typeof c.pageToken==="string"&&c.pageToken.length>=24&&
+  typeof c.igToken==="string"&&c.igToken.length>=24;
+ const owner_opted_in=env.META_GRAPH_PUBLISH_ENABLED==="true"&&env.META_GRAPH_OWNER_APPROVED==="true";
  const start=env.META_GRAPH_PUBLISH_START;
- if(!isoDay.test(start||"")||day<start)return null;
- if(!idPattern.test(env.META_GRAPH_PAGE_ID||"")||!idPattern.test(env.META_GRAPH_IG_USER_ID||""))return null;
- if(typeof env.META_GRAPH_PAGE_TOKEN!=="string"||env.META_GRAPH_PAGE_TOKEN.length<24)return null;
- const token=env.META_GRAPH_IG_TOKEN||env.META_GRAPH_PAGE_TOKEN;
- if(typeof token!=="string"||token.length<24)return null;
- return {pageId:env.META_GRAPH_PAGE_ID,igId:env.META_GRAPH_IG_USER_ID,
-  pageToken:env.META_GRAPH_PAGE_TOKEN,igToken:token,start};
+ const start_valid=isoDay.test(start||"")&&!Number.isNaN(Date.parse(start+"T00:00:00Z"))&&
+  new Date(start+"T00:00:00Z").toISOString().slice(0,10)===start;
+ return {ids_valid,tokens_present,owner_opted_in,start_valid,
+  publishing_enabled:ids_valid&&tokens_present&&owner_opted_in&&start_valid&&day>=start,
+  // Credentials may exist without being valid at Meta. Do not claim that API calls worked.
+  graph_api_verified:false};
+}
+export function metaPublicationConfig(env,day){
+ if(!metaConnectionStatus(env,day).publishing_enabled)return null;
+ const c=metaCredentials(env);
+ return {pageId:c.pageId,igId:c.igId,pageToken:c.pageToken,igToken:c.igToken,
+  start:env.META_GRAPH_PUBLISH_START};
+}
+// Read-only identity probes: do not send tokens as query parameters or return
+// Meta error bodies (which may contain sensitive diagnostic details).
+export async function checkMetaReadAccess(env,request=fetch){
+ const c=metaCredentials(env);
+ if(!metaConnectionStatus(env,new Date().toISOString().slice(0,10)).ids_valid||
+    typeof c.pageToken!=="string"||c.pageToken.length<24)
+  return {configured:false,page:{ok:false},instagram:{ok:false}};
+ async function probe(path){
+  try{
+   const res=await request("https://graph.facebook.com/v26.0"+path,{
+    method:"GET",headers:{authorization:"Bearer "+c.pageToken},signal:AbortSignal.timeout(10000)});
+   return {ok:res.ok,status:res.status};
+  }catch{return {ok:false,status:null};}
+ }
+ const [page,instagram]=await Promise.all([
+  probe("/"+c.pageId+"?fields=id,name"),
+  probe("/"+c.igId+"?fields=id,username")
+ ]);
+ return {configured:true,page,instagram};
 }
 function campaignForIdea(week,index){
  const idea=weeklyDrafts(week)[index],photo=marketingMediaForIdea(index);
