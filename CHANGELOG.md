@@ -1,3 +1,13 @@
+## 3.7.0 — AI Marketing learning engine and audit trail (2026-10-21)
+- Menambah modul khusus `src/marketing-intelligence.mjs` untuk memvalidasi performa organik dari sumber nyata, mempelajari rasio interaksi dan klik dengan smoothing untuk sampel kecil, menentukan prioritas platform/aktivitas, serta memilih jam publikasi hanya ketika bukti cukup.
+- Menambah migrasi aditif `0011_marketing_learning.sql` untuk riwayat `marketing_observations` dan keputusan strategis `marketing_decisions`. Tidak mengubah migrasi historis dan tidak menyimpan nomor/identitas guest.
+- Worker Cron, `POST /api/admin/marketing/prepare-week` dan endpoint admin `GET /api/admin/marketing/intelligence` kini menggunakan rangking terukur dan menyimpan ringkasan keputusan mingguan. `POST /api/admin/marketing/observations` menerima angka yang pemilik verifikasi secara eksplisit.
+- Dashboard pemilik menunjukkan skor dan jam berdasarkan bukti, serta formulir metrik asli. Nilai tidak dimanipulasi sebagai hasil media sosial jika sumber belum tersedia.
+- GitHub Actions kalender konten mandiri tetap aktif. Facebook/Instagram Metricool sudah terhubung; posting Kelingking 23 Okt 10 WITA telah diubah `draft=false`, `autoPublish=true` sesuai persetujuan user. Status Meta terakhir `PENDING`, belum dibuktikan tayang.
+- Kode dan tes v3.7.0 sudah di GitHub. Deploy Worker publik tertunda karena Cloudflare connector internal error dan GitHub deploy tetap skipped tanpa secrets. Jangan klaim kode baru sudah live atau publikasikan melalui Cloudflare.
+- Tidak mengaktifkan iklan berbayar, WhatsApp auto-send, pembayaran, publikasi langsung via Graph API, penulisan kode otomatis atau penerimaan lead publik.
+- Dokumen `docs/AUTONOMOUS_MARKETING.md` memisahkan arsitektur nyata, izin Meta yang diperlukan, dan keterbatasan paket Metricool.
+
 ### 3.6.0 — Kalender organik GitHub Actions berjalan
 - Menambahkan `scripts/organic-week.mjs` sebagai ekspor Markdown 7 draf dari modul kanonis `src/sales.mjs`, tanpa menyalin logika caption.
 - Menambahkan workflow `organic-marketing.yml` yang berjalan terjadwal tiap Senin 09:00 WITA, `workflow_dispatch`, dan uji push. Terbukti sukses pada [run #39522690636](https://github.com/rama160/Marketing-turism/actions/runs/39522690636) dengan artefak `nusa-penida-organic-week`.
