@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.6.0 | 2026-10-21 | Repository: rama160/Marketing-turism
+Version: 3.7.0 | 2026-10-21 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -156,3 +156,12 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Workflow GitHub `.github/workflows/organic-marketing.yml` menjadwalkan ekspor 7 draf kampanye setiap Senin 09 WITA dan menyediakan artefak `nusa-penida-organic-week`. Ekspor harus memakai `src/sales.mjs` satu-satunya sumber draf; jangan duplikasi modul ini.
 - Run sukses: https://github.com/rama160/Marketing-turism/actions/runs/39522690636. Pembuatan konten mingguan di GitHub terbukti aktif, namun **bukan autoposting** dan **bukan pemasangan Cloudflare Worker v3.6.0**. Cloudflare connector gagal secara internal sehingga versi live belum terbarui, dan GitHub deploy yang dijaga environment variable belum dijalankan. Jangan klaim website admin telah diperbarui sampai live smoke sukses.
 - Pemilik harus menghubungkan akun sosialnya ke Metricool brand 7483251 untuk memposting terjadwal; promosi tidak memerlukan pengaktifan pembayaran maupun pengumpulan data guest yang belum siap secara legal.
+
+## v3.7.0 — AI marketing independent learning (user-approved 2026-10-21)
+- User wants tourism marketing planning, AI campaign drafting, analytics, optimization and continuous **strategy learning** independent of manually prompting ChatGPT. This is **not** authorisation to autonomously modify code, buy ads, spam customers, collect payment, or change admin approvals. Require reproducible algorithm, test, rollback and owner kill switch when implementing external posting.
+- New dedicated pure module `src/marketing-intelligence.mjs` implements evidence scoring, 90-day window, conservative 500-impressions smoothing, weakly explored segment ranking and hourly recommendations only if minimum evidence exists. Caption generator stays canonical `src/sales.mjs`.
+- New additive migration `database/migrations/0011_marketing_learning.sql`: marketing_observations (aggregated verified numeric only, no guest identities), marketing_decisions (auditable weekly strategy ranking). Always use migration 0011 in tourism DB only.
+- Admin GET /api/admin/marketing/intelligence; POST /api/admin/marketing/observations with owner attestation; POST /api/admin/marketing/prepare-week. Worker Monday Cron compares real observations and logs decisions. Does NOT automatically publish Meta or Metricool without the external connector.
+- GitHub Actions already generates organic weekly file without ChatGPT. Metricool connected social brands confirmed Facebook+Instagram; one public post Kelingking approved for automatic publication at Oct 23 10:00 WITA (PENDING as of creation). No duplicate or unsupervised posts beyond approved routine.
+- Critical capability distinction: Metricool MCP can operate within ChatGPT Free, Metricool **HTTP API Advanced/Custom only**. Independent Meta Graph API integration with token, app review and publishing permissions must be implemented/configured before Worker can autonomously post and pull metrics; not currently active. Do not assume WHATSAPP Meta app secret confers Page publishing permission.
+- Maintain all previously approved safety gates. Cloudflare tool temporarily unavailable, v3.7.0 GitHub CI != live Worker. Don't claim live until D1 0011 verified, Worker uploaded and smoke successful. Follow docs/AUTONOMOUS_MARKETING.md.
