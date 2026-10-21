@@ -1,6 +1,6 @@
 # Marketing Turism — AI Tourism Marketing & Booking Agent
 
-Repository: rama160/Marketing-turism. Release 3.7.0 (GitHub CI; autonomous marketing performance learning + owner dashboard implemented, Cloudflare deployment pending; guest leads and payments OFF).
+Repository: rama160/Marketing-turism. Release 3.8.0 (GitHub CI; autonomous marketing performance learning + owner dashboard implemented, Cloudflare deployment pending; guest leads and payments OFF).
 
 Responsive customer PWA + Cloudflare Workers/D1 backend for independent Nusa Penida tourism sales agent. Tourism only. Guest pays agency; local operators deliver activities.
 
@@ -180,3 +180,10 @@ Mesin pemasaran kini dapat **memperingkat kanal, tema, dan jam posting dari stat
 **Keterbatasan kemandirian:** akun Facebook dan Instagram sudah diotorisasi dalam Metricool, dan posting Kelingking 23 Oktober 2026 pukul 10 WITA telah dijadwalkan lewat Metricool. Tetapi akses API HTTP Metricool tidak tersedia di paket Free; API resmi memerlukan Advanced/Custom. Agar **Cloudflare sendiri** bisa membaca Insights dan menerbitkan posting tanpa ChatGPT/Metricool berbayar, harus disiapkan izin dan token **Meta Graph API** yang spesifik untuk Facebook Pages/Instagram di Worker. Belum ada token tersebut dalam Worker; jangan mengarang status koneksi. Optimasi otomatis berbasis data membutuhkan statistik riil masuk D1, yang sementara ini dapat diinput oleh pemilik.
 
 **Tidak pernah otomatis:** perubahan source code/deploy, biaya iklan, pembelian, harga final, pengumpulan data pelanggan belum siap, auto-DM/spam dan penawaran booking terkonfirmasi.
+
+## Independent organic marketing / learner v3.8.0 (21 October 2026)
+- GitHub Actions weekly: `scripts/organic-week.mjs` now ranks 3 candidate posts + 7 alternatives from canonical marketing captions, allowed gallery images and verified `data/marketing/observations.json`. Produces `dist/organic-week.md` and `dist/organic-week.json`; **no automatic Meta publishing by GitHub**. With no observations, the model explicitly reports insufficient evidence, never fabricates audience analytics.
+- D1 `0011_marketing_learning.sql` keeps learning/audit history and owner-verified aggregate observations; `0012_meta_autopilot.sql` adds the at-most-once Meta publishing ledger for 3 weekly slots. Access to the queue is owner-only via `GET /api/admin/marketing/publications`.
+- Cron Workers: Monday `0 1 * * 1` proposes/queues drafts; daily `0 2 * * *` **only posts if two owner opt-in flags, start date, Page/IG IDs, proper Graph credentials and migrations are present**. Secrets never enter source. Partial failure => `REVIEW_REQUIRED`, no automatic retry, and no bulk messaging/ads/payments/booking.
+- Facebook + Instagram remain connected to Metricool (Free MCP). Four destination posts on 23/26/28/30 October 2026 are scheduled `autoPublish=true`; future public success is not yet verified. No duplicate independent Graph publishing while Metricool still schedules posts.
+- Source code/tests are in GitHub, but **public Cloudflare Worker deployment and Meta Graph independent posting are NOT active yet**. Cloudflare connector internal errors and GitHub deploy gate remain unresolved. Guide: [Independent Marketing](docs/AUTONOMOUS_MARKETING.md).
