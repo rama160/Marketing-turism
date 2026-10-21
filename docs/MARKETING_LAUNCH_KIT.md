@@ -69,3 +69,8 @@ Snorkeling: SHARING (join other guests, subject to guaranteed operator per-perso
 - Tentukan apakah TikTok akan dihubungkan; publikasi ke TikTok tidak boleh diasumsikan aktif tanpa konektor.
 - Tinjau isi 7 draf, media pendamping, atribusi foto, tanggal, izin publikasi dan CTA.
 - Pilih jadwal dan persetujuan publikasi; periksa langsung halaman Facebook/Instagram untuk memastikan konten benar-benar terbit.
+
+### Otomatisasi GitHub Actions yang telah dibuktikan berjalan
+
+Sebagai jalur yang tidak membutuhkan kredensial Cloudflare atau koneksi media sosial, workflow `.github/workflows/organic-marketing.yml` aktif dan berhasil menjalankan `scripts/organic-week.mjs` pada 21 Oktober 2026. Hasilnya berupa artefak GitHub **nusa-penida-organic-week** berisi `organic-week.md` dengan 7 caption siap review. Workflow dijadwalkan setiap Senin pukul 09:00 WITA dan bisa dijalankan manual dari GitHub Actions. [Hasil eksekusi dan unduh draf](https://github.com/rama160/Marketing-turism/actions/runs/39522690636). Pemilik tetap harus memasang media, memeriksa hak penggunaan, dan menyetujui publikasi.
+**Deployment Cloudflare v3.6.0 ke website masih tertunda;** pengujian CI kode berhasil tetapi live smoke tidak lulus karena Worker publik masih versi sebelumnya. Jangan menganggap tombol dashboard v3.6.0 sudah terlihat di website sampai verifikasi live berhasil.
