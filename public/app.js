@@ -142,7 +142,7 @@ async function refresh(){
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
-  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);
+  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
   if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
@@ -248,6 +248,36 @@ function renderMarketingIntelligence(){
   '<h4>Waktu terbaik berdasarkan data</h4>'+timeLines+
   '<h4>Prioritas eksperimen konten berikutnya</h4>'+recommendations;
 }
+async function loadMetaDiagnostic(){
+ const target=$("#metaDiagnosticResults");
+ if(!target||!token)return;
+ try{
+  const status=await api("admin/marketing/meta/status"),latest=status.latest;
+  if(!latest){target.textContent="Belum ada hasil tersimpan. Pemeriksaan otomatis pertama berjalan pada Cron harian 10.00 WITA. Anda dapat menekan Uji koneksi sekarang.";return;}
+  const txt=latest.result==="READ_OK"?"Page dan Instagram dapat dibaca":
+   latest.result==="READ_PARTIAL"?"Sebagian koneksi gagal":
+   latest.result==="INCOMPLETE"?"Konfigurasi belum lengkap":"Keduanya belum dapat dibaca";
+  target.innerHTML='<p class="feedback"><strong>'+esc(txt)+'</strong> · '+esc(latest.checked_at)+
+   ' · '+esc(latest.source==="DAILY_CRON"?"Cron otomatis":"Uji pemilik")+
+   ' · '+esc(status.check_fresh?"Data pemeriksaan terbaru":"Hasil lama, perlu pemeriksaan baru")+'</p>'+
+   '<div class="item">Facebook Page: '+esc(latest.page.ok?"Berhasil":"Gagal / belum diuji")+
+   ' (HTTP '+esc(latest.page.status??"—")+') · Instagram: '+esc(latest.instagram.ok?"Berhasil":"Gagal / belum diuji")+
+   ' (HTTP '+esc(latest.instagram.status??"—")+')</div>'+
+   '<p class="feedback">Riwayat '+esc(status.history.length)+' hari. Hasil akses baca tidak membuktikan izin posting maupun statistik insight.</p>'+
+   (status.history||[]).slice(0,7).map(h=>'<small class="item">'+esc(h.day)+' · '+esc(h.result)+
+    ' · FB '+esc(h.page.status??"—")+' / IG '+esc(h.instagram.status??"—")+'</small>').join('');
+ }catch(e){target.textContent="Diagnostik belum bisa dimuat: "+e.message;}
+}
+$("#runMetaDiagnostic").onclick=async()=>{
+ const b=$("#runMetaDiagnostic"),target=$("#metaDiagnosticResults");
+ b.disabled=true;target.textContent="Menguji akses baca Facebook/Instagram (tidak melakukan posting)...";
+ try{
+  const r=await api("admin/marketing/meta/diagnostics","POST",{});
+  await loadMetaDiagnostic();
+  if(r.status==="RECENT_RESULT")target.prepend(document.createTextNode("Hasil dalam 5 menit terakhir digunakan kembali. "));
+ }catch(e){target.textContent="Uji diagnostik gagal: "+e.message;}
+ finally{b.disabled=false;}
+};
 function renderMarket(){
  $("#marketList").innerHTML=data.market.map(m=>'<div class="item"><div class="meta"><b>'+esc(m.platform)+' · '+esc(m.activity_id)+'</b><span class="pill">'+esc(m.verified?"Diperiksa":"Belum diverifikasi")+'</span></div><div>'+money(m.price)+' / '+esc(m.unit)+(m.group_size?" ('+m.group_size+' orang)":"")+'</div><small>Diamati '+esc(m.observed_on)+' · '+esc(m.inclusions)+'</small><small>'+esc(m.source_url)+'</small></div>').join("")||"<p>Belum ada referensi harga.</p>";
 }
