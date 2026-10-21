@@ -267,6 +267,22 @@ $("#marketingMetricsForm").onsubmit=async e=>{
   await refresh();
  }catch(err){$("#marketingMetricsFeedback").textContent="Tidak dapat menyimpan metrik: "+err.message;}
 };
+$("#refreshMetaQueue").onclick=async()=>{
+ const target=$("#marketingPublicationQueue"),button=$("#refreshMetaQueue");
+ button.disabled=true;target.textContent="Memeriksa status publikasi...";
+ try{
+  const data=await api("admin/marketing/publications");
+  const current=data.independent_meta_publishing_enabled===true
+   ?"Kredensial API Graph telah diatur. Periksa hasil dan izin Meta sebelum menyimpulkan posting berhasil."
+   :"Publikasi langsung Cloudflare belum diaktifkan atau belum memenuhi gerbang izin. Kampanye Metricool yang sudah terjadwal tetap independen.";
+  target.textContent=current+" Antrean: "+data.posts.length+" post.";
+  const items=document.createElement("div");
+  items.className="scroll";
+  items.innerHTML=data.posts.slice(0,12).map(x=>'<div class="item"><b>'+esc(x.intended_date)+' · Ide '+esc(x.idea_index)+'</b> <span class="pill">'+esc(x.status)+'</span><small>Facebook: '+esc(x.facebook_post_id||"—")+' · Instagram: '+esc(x.instagram_post_id||"—")+'</small></div>').join("");
+  target.append(items);
+ }catch(e){target.textContent="Belum dapat memeriksa antrean publikasi: "+e.message;}
+ finally{button.disabled=false;}
+};
 $("#prepareMarketingWeek").onclick=async()=>{
  if(!confirm("Buat 7 draf konten pemasaran mingguan (Instagram, Facebook, TikTok) untuk diperiksa? Belum ada publikasi otomatis."))return;
  const b=$("#prepareMarketingWeek");
