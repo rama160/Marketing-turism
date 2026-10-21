@@ -1,3 +1,7 @@
+## CRITICAL WORKER DEPLOYMENT SAFETY — 21 October 2026
+- `wrangler.jsonc` uses `keep_vars: true`; retain it for every deployment to `marketing-turism-agent`. Production uses Dashboard-managed plain text `META_PAGE_ID`, `META_IG_USER_ID`, `WA_PHONE_NUMBER_ID`, `WA_SEND_ENABLED`, and `WA_WEBHOOK_ENABLED` in addition to repo-defined `PUBLIC_LEADS_ENABLED=false`. Without this flag, `wrangler deploy` can remove remote dashboard vars not in config and interrupt Meta/WhatsApp connectivity.
+- Do NOT broaden deployment beyond this Worker, touch FinChat/Spenva Workers, or enable Meta publishing without explicit owner approval and verified permissions.
+
 ## META CLOUDFLARE FIX — 21 OKTOBER 2026 (review status)
 - Cloudflare saat audit memiliki `META_PAGE_ID=1375913638943340`, `META_IG_USER_ID=17841473759990847`, `META_PAGE_ACCESS_TOKEN`, `META_APP_SECRET`, dan `META_APP_ACCESS_TOKEN`. Hanya ID yang boleh ditulis pada dokumentasi; token dan secret tidak boleh dibaca atau dikirim ke chat.
 - `src/meta-publisher.mjs` sekarang membaca `META_PAGE_ID`, `META_IG_USER_ID`, dan `META_PAGE_ACCESS_TOKEN` yang telah ada; nama `META_GRAPH_*` lama hanya fallback. **Menyimpan credential tidak berarti izin platform lengkap atau publikasi aktif.**
