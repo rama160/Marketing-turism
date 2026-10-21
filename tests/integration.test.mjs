@@ -259,6 +259,48 @@ test("weekly cron prepares seven multilingual channel-specific drafts once and n
 });
 
 
+test("independent Meta cron is disabled until owner supplies specific publishing authorization",async()=>{
+ const {request,sqlite,env}=fixture();
+ const today=new Date().toISOString().slice(0,10);
+ const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+ assert.equal(made.httpStatus,200);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,3);
+ const previous=sqlite.prepare("SELECT status FROM marketing_publications").all();
+ assert.ok(previous.every(p=>p.status==="READY"));
+ await worker.scheduled({cron:"0 2 * * *"},env,{});
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='ATTEMPTED'").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='POSTED'").get().n,0);
+ sqlite.close();
+});
+
+test("independent Meta cron marks an ambiguous partial publish for review and never repeats it",async()=>{
+ const {db,sqlite,env}=fixture();
+ const today=new Date().toISOString().slice(0,10);
+ const monday=new Date(today+"T00:00:00Z");monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ sqlite.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)")
+  .run("partial-publish-test",monday.toISOString().slice(0,10),today,0,"READY");
+ Object.assign(env,{META_GRAPH_PUBLISH_ENABLED:"true",META_GRAPH_OWNER_APPROVED:"true",META_GRAPH_PUBLISH_START:"2026-01-01",
+  META_GRAPH_PAGE_ID:"1375913638943340",META_GRAPH_IG_USER_ID:"17841490000123456",
+  META_GRAPH_PAGE_TOKEN:"local-testing-meta-token-contains-no-real-secrets"});
+ let attempts=0;
+ const originalFetch=globalThis.fetch;
+ globalThis.fetch=async()=>{
+  attempts++;
+  return new Response(JSON.stringify(attempts===1?{id:"12345678901234"}:{error:{message:"Meta error"}}),{
+   status:attempts===1?200:403,headers:{"content-type":"application/json"}});
+ };
+ try{
+  await worker.scheduled({cron:"0 2 * * *"},env,{});
+  assert.equal(attempts,2);
+  const status=sqlite.prepare("SELECT status,facebook_post_id,instagram_post_id FROM marketing_publications WHERE id=?").get("partial-publish-test");
+  assert.equal(status.status,"REVIEW_REQUIRED");
+  assert.equal(status.facebook_post_id,"12345678901234");
+  assert.equal(status.instagram_post_id,null);
+  await worker.scheduled({cron:"0 2 * * *"},env,{});
+  assert.equal(attempts,2,"never retry a partially completed post");
+ }finally{globalThis.fetch=originalFetch;sqlite.close();}
+});
+
 test("public readiness is fail-closed and business profile edits require owner token",async()=>{
  const {request,sqlite}=fixture();
  const before=await request("/api/public/readiness","GET",undefined,false);
