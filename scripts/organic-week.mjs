@@ -3,6 +3,7 @@
 import {mkdirSync,readFileSync,writeFileSync} from "node:fs";
 import {weeklyDrafts,marketingWeekStart} from "../src/sales.mjs";
 import {marketingIntelligence,validateMarketingObservation} from "../src/marketing-intelligence.mjs";
+import {marketingMediaForIdea} from "../src/marketing-media.mjs";
 
 const today=process.env.CAMPAIGN_DAY||new Date().toISOString().slice(0,10);
 const week=marketingWeekStart(today),items=weeklyDrafts(week);
@@ -11,14 +12,10 @@ const source=JSON.parse(readFileSync(new URL("../data/marketing/observations.jso
 if(source.schema_version!==1||!Array.isArray(source.observations)||source.observations.length>1000)throw Error("Observation source invalid");
 const observations=source.observations.map(o=>validateMarketingObservation(o,today));
 const learning=marketingIntelligence(observations,items,today);
-const photoManifest=JSON.parse(readFileSync(new URL("../public/photos/manifest.json",import.meta.url),"utf8"));
-const photoMap=new Map(photoManifest.photos.map(p=>[p.slug,p]));
-const mediaByIndex=["kelingking","manta-bay","diamond-beach","broken-beach","manta-point","crystal-bay","gamat-bay"];
 const candidates=learning.recommendations.map(r=>{
- const idea=items[r.index],photo=photoMap.get(mediaByIndex[r.index]);
- if(!photo||!/^CC BY-SA [0-9.]+$/.test(photo.license)||!photo.source.startsWith("https://commons.wikimedia.org/"))throw Error("Unverified licensed media");
+ const idea=items[r.index],photo=marketingMediaForIdea(r.index);
  return {...r,lang:idea.lang,caption:idea.caption.replace(/^\[REVIEW [^\]]+\] /,""),
-  photo:{slug:mediaByIndex[r.index],url:"https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+mediaByIndex[r.index]+".jpg",credit:photo.author,license:photo.license,source:photo.source}};
+  photo:photo};
 });
 const weekNo=Math.floor(Date.parse(week+"T00:00:00Z")/604800000);
 // Weighted priority with deterministic rotation so no-data weeks still explore different photos.
