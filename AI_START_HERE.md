@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.7.0 | 2026-10-21 | Repository: rama160/Marketing-turism
+Version: 3.8.0 | 2026-10-21 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -165,3 +165,11 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - GitHub Actions already generates organic weekly file without ChatGPT. Metricool connected social brands confirmed Facebook+Instagram; one public post Kelingking approved for automatic publication at Oct 23 10:00 WITA (PENDING as of creation). No duplicate or unsupervised posts beyond approved routine.
 - Critical capability distinction: Metricool MCP can operate within ChatGPT Free, Metricool **HTTP API Advanced/Custom only**. Independent Meta Graph API integration with token, app review and publishing permissions must be implemented/configured before Worker can autonomously post and pull metrics; not currently active. Do not assume WHATSAPP Meta app secret confers Page publishing permission.
 - Maintain all previously approved safety gates. Cloudflare tool temporarily unavailable, v3.7.0 GitHub CI != live Worker. Don't claim live until D1 0011 verified, Worker uploaded and smoke successful. Follow docs/AUTONOMOUS_MARKETING.md.
+
+## v3.8.0 independent marketing development rules
+- Canonical planning: `src/sales.mjs` and `src/marketing-intelligence.mjs`. The GitHub planner `scripts/organic-week.mjs` reads `data/marketing/observations.json` and `src/marketing-media.mjs` which reads the one canonical `public/photos/manifest.json`. It exports 3 priority ideas + 7 alternatives as Markdown/JSON; never edits code or publishes via GitHub.
+- New additive isolated D1 migration `0012_meta_autopilot.sql`, scheduled status `READY/ATTEMPTED/POSTED/REVIEW_REQUIRED`, and protected `GET /api/admin/marketing/publications`. Migrate ONLY dedicated tourism D1. Never touch FinChat or Spenva.
+- Daily Cron `0 2 * * *` (10 WITA) may publish at most one of the three scheduled days/week ONLY with `META_GRAPH_PUBLISH_ENABLED=true`, `META_GRAPH_OWNER_APPROVED=true`, valid start date and official separate Graph Page/IG credentials. Zero retries for partial API success. The weekly draft Cron remains `0 1 * * 1`.
+- **NO** production Graph credentials or additional paid Metricool API access exist as of 21 October 2026. All direct publishing is disabled. Existing Metricool posts on Oct 23, 26, 28, 30 must not be duplicated; Graph start no earlier than Nov 2 and after owner's authorization.
+- No Meta Insights automatic import implemented. Official Meta v26 deprecates legacy impressions: never silently rename views/impressions or claim the learner has real automatic performance data unless it does.
+- GitHub deploy job skips unless `ENABLE_CLOUDFLARE_DEPLOY` set and valid isolated Cloudflare Actions secrets present. Cloudflare app connector currently fails; code v3.8 cannot be called live until deployment+two migrations+smoke validation. Full details in `docs/AUTONOMOUS_MARKETING.md`.
