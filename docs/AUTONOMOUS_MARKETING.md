@@ -1,6 +1,6 @@
 # AI Marketing Agent Mandiri — Nusa Penida Experiences
 
-**Versi implementasi: 3.7.0 | 21 Oktober 2026 | Status: mesin belajar dan dashboard diuji di GitHub; deployment Worker publik dan Meta API langsung belum aktif.**
+**Versi implementasi: 3.8.0 | 21 Oktober 2026 | Status: generator belajar dan adapter publikasi langsung telah diuji di GitHub; Cloudflare Worker dan izin Meta Graph independen belum aktif.**
 
 ## Hasil yang ingin dicapai
 
@@ -69,3 +69,43 @@ Sumber:
 - [ ] Jadwal belajar berulang dan penilaian campaign nyata lulus pemeriksaan produksi
 
 Status yang masih kosong di atas adalah *pekerjaan lanjutan yang nyata*, bukan otomatis selesai karena fitur draf sudah tersedia.
+
+## v3.8.0 — Mesin kampanye independen, penerbitan aman, dan antrean terlacak
+
+### Yang sudah dibangun
+
+- `scripts/organic-week.mjs` menghasilkan `dist/organic-week.md` dan `dist/organic-week.json` setiap Senin di GitHub Actions. Mesin membaca `data/marketing/observations.json` sebagai **bukti agregat terverifikasi**, memeringkat tujuh opsi, lalu menyarankan tiga prioritas. Bila tidak ada data nyata, laporan menyatakan demikian dan jam sekadar asumsi editorial awal.
+- `src/marketing-media.mjs` menggunakan manifest asli `public/photos/manifest.json` dan hanya mengizinkan foto CC BY-SA yang sudah diverifikasi. Publikasi harus menyertakan sumber, nama pencipta, dan lisensi; tidak boleh menghilangkan kredit.
+- `database/migrations/0012_meta_autopilot.sql` menambahkan antrean tiga posting per pekan: Senin, Rabu, Jumat. Sistem menghindari duplikasi dengan kunci `week_start+intended_date`; aksi Meta direkam langkah demi langkah, sehingga kegagalan setelah Facebook berhasil tidak akan mengirim ulang Facebook otomatis.
+- `src/meta-publisher.mjs` memakai **Meta Graph v26.0** dengan foto Page Facebook dan Instagram Professional. Token diberikan lewat header Authorization dan disimpan sebagai secret, bukan kode. **Default: MATI**.
+- Cron Cloudflare yang diusulkan: `0 1 * * 1` (Senin 09.00 WITA, buat strategi dan antrean), `0 2 * * *` (harian 10.00 WITA, mengecek apakah antrean hari itu boleh terbit). Trigger kedua tidak aktif di situs sampai versi baru berhasil di-deploy.
+- Dashboard pemilik menyediakan `GET /api/admin/marketing/publications` untuk memeriksa jadwal, status, ID unggahan yang diterima Graph, dan kesalahan yang memerlukan review. **Status API POSTED belum membuktikan unggahan terlihat secara publik di semua akun**, cek permalink jika ada.
+
+### Cara mengaktifkan Graph Meta mandiri (tugas pemilik, bukan lewat chat)
+
+1. Akun FB Page dan IG Professional harus benar-benar punya izin Graph. Izin WhatsApp Business sebelumnya **tidak berlaku untuk Page dan IG Content Publishing**. Gunakan produk Meta yang sesuai; Meta dapat meminta konfigurasi OAuth, verifikasi atau review aplikasi untuk jenis akses yang dipakai.
+2. Setelah benar-benar memiliki izin, konfigurasi Cloudflare Worker khusus `marketing-turism-agent` dengan secret berikut; jangan pernah menyalin nilai token ke ChatGPT, screenshot, atau GitHub:
+   - `META_GRAPH_PAGE_ID`: ID Halaman Facebook resmi (bukan WABA atau nomor WhatsApp).
+   - `META_GRAPH_IG_USER_ID`: Instagram Professional User ID dari Graph API (bukan username).
+   - `META_GRAPH_PAGE_TOKEN`: token Page resmi dengan hak `pages_manage_posts`, `pages_read_engagement`, `pages_show_list` sesuai konfigurasi.
+   - `META_GRAPH_IG_TOKEN` (opsional jika Page token resmi juga punya hak Instagram yang diperlukan): token autentikasi dengan izin `instagram_basic` dan `instagram_content_publish`.
+   - `META_GRAPH_PUBLISH_START`: tanggal YYYY-MM-DD; pilih tanggal **setelah** semua posting Metricool yang telah dijadwalkan, minimal **2026-11-02** untuk kalender saat ini. Jangan aktifkan dua penjadwal untuk tanggal/konten yang sama.
+   - `META_GRAPH_OWNER_APPROVED=true` dan `META_GRAPH_PUBLISH_ENABLED=true` **hanya setelah** dokumen hak publikasi, akun, media, tanggal migrasi, dan uji nyata pertama diperiksa; menyimpan dua nilai ini sebagai secret menjaga fail-closed.
+3. Lakukan deployment Cloudflare Worker v3.8.0 berikut migrasi `0011_marketing_learning.sql` dan `0012_meta_autopilot.sql` secara aditif pada D1 **khusus tourism**. Jangan deploy FinChat/Spenva. Repo GitHub memiliki workflow `Deploy Tourism Cloudflare (manual)`, tetapi job masih `skipped` jika variable `ENABLE_CLOUDFLARE_DEPLOY` tidak diaktifkan dan GitHub Actions tidak memiliki `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` yang sah.
+4. Sebelum mengaktifkan `META_GRAPH_PUBLISH_ENABLED`, jalankan satu posting uji yang secara khusus disetujui pemilik, periksa hasil di Facebook dan Instagram dan status serta hak lisensi media. Pastikan Metricool tidak menjadwalkan konten sama. Sistem tidak akan mencoba ulang posting yang telah diawali jika salah satu API gagal; cek manual entri `REVIEW_REQUIRED`.
+5. Setelah live, pemeriksaan otomatis hanya dapat memublikasikan tiga konten per minggu ketika jalur Meta benar-benar tersedia. Data performa belum disinkronkan otomatis dari Graph; hingga itu diimplementasikan dan divalidasi terhadap metrik Graph v26, pembelajaran memakai angka riil yang disetujui pemilik atau ekspor sah. Jangan menyamakan `views` dari Meta v26 dengan `impressions` lama.
+
+### Posting Metricool sudah dijadwalkan (diperiksa di akun)
+
+- 2026-10-23 10:00 WITA: Kelingking Beach (FB + IG).
+- 2026-10-26 10:00 WITA: Diamond Beach (FB + IG).
+- 2026-10-28 12:00 WITA: Snorkeling Nusa Penida (FB + IG).
+- 2026-10-30 10:00 WITA: Broken Beach (FB + IG).
+
+Semua posting ini `autoPublish=true`, `draft=false`, namun masih `PENDING` sampai masing-masing tanggal. Jangan menyebutnya telah tayang tanpa pengecekan.
+
+### Batas operasi penting
+
+Dilarang membeli iklan, membayar operator, menerima uang, mengonfirmasi booking, mengubah layanan/biaya, membuat review palsu, mengirim spam, atau memodifikasi source code otomatis. Pemasaran hingga legalitas usaha lengkap hanya bersifat konten informasi dan minat awal. Aktivasi izin Meta Cloud API dan migrasi produksi adalah langkah yang **belum bisa diselesaikan otomatis** tanpa persetujuan serta kredensial resmi pemilik.
+
+Sumber: [Meta Instagram API](https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api), [Meta Pages API](https://developers.facebook.com/docs/pages-api/), [Metricool plan requirements](https://help.metricool.com/mcp-limits-and-plan-requirements-h72jg).
