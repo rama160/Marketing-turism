@@ -1,3 +1,10 @@
+## 3.8.0 production activation — 21 Oktober 2026
+- Recovered connected Cloudflare access. Migrated isolated `marketing-turism-db` with additive 0011 and 0012; verified three required marketing tables.
+- Uploaded protected Worker version 43 (`a2def26d-848f-49fa-abb9-be5b49be301a`) using inherited 12 existing bindings and restored full public PWA routing; deployed to 100% traffic. Previous rollback version: `a829cf8b-22d2-448c-8577-f24038d6288c`.
+- Activated `0 1 * * 1` Monday drafts and `0 2 * * *` daily gated publication check on the dedicated tourism Worker only. Meta Graph publish credentials and owner opt-in flags are NOT configured, so outgoing publisher remains OFF.
+- [GitHub external smoke rerun succeeded](https://github.com/rama160/Marketing-turism/actions/runs/39552409086): `SUCCESS v3.8.0 LIVE: 10 JPGs, public logo, ID/EN, editor, CMS D1 API and 401 auth, original booking APIs, lead gate OFF`. Invalid WA verify token correctly returns HTTP 403. No FinChat/Spenva changes.
+- Automatic social Insights ingestion and independent Meta Graph publishing still need permitted official Meta access; Metricool is currently the verified scheduled-post provider.
+
 ## 3.8.0 — Independent bounded marketing planner and opt-in Meta publishing (2026-10-21)
 - GitHub independent weekly strategist `scripts/organic-week.mjs` learns ranking from truthful, aggregate `data/marketing/observations.json` using `marketingIntelligence()`, selects three priority posting ideas, and generates licensed media/attribution from canonical `public/photos/manifest.json`. Output includes both Markdown + machine-readable JSON; no fabricated impressions.
 - Verified four Meta posts scheduled through Metricool (Kelingking Oct 23, Diamond Oct 26, snorkeling Oct 28, Broken Beach Oct 30) with `autoPublish=true` and original image credits. Publication remains pending until the dates.
