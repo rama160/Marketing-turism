@@ -1,5 +1,5 @@
 # AI START HERE — Marketing Turism Agent
-Version: 3.5.2 | 2026-10-20 | Repository: rama160/Marketing-turism
+Version: 3.6.0 | 2026-10-21 | Repository: rama160/Marketing-turism
 
 ## Immutable user-approved business rules
 - Tourism experiences only: snorkeling, island tours and added activities by verified local operators. Agent owns guest acquisition, price presentation and payment collection; operator delivers activity.
@@ -143,3 +143,11 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Meta HTTP GET challenge validation must **not** depend on WA_APP_SECRET or WA_PHONE_NUMBER_ID; those belong to the signed POST processing gate and may never be skipped there. GET still strictly requires WA_WEBHOOK_ENABLED=true, a WA_VERIFY_TOKEN of at least 24 characters, correct hub.mode, constant-time token comparison and a numeric hub.challenge.
 - Deployed directly to isolated tourism Worker with all existing twelve bindings strictly inherited, WA_SEND_ENABLED=false. Public CI smoke probe changed from HTTP 503 to HTTP 403 with deliberately incorrect test token, expected and safe, and all live checks passed: https://github.com/rama160/Marketing-turism/actions/runs/39449347646.
 - Remaining manual owner step: enter exact Secret value into Meta callback Verify Token field; don't share secret or delete WhatsApp phone. Publish/production webhook subscriptions and live inbox onboarding are separate concerns.
+
+## Oktober 2026 — owner prioritizes marketing validation before company incorporation
+- Owner approves prioritizing organic marketing and validating inbound guest interest before incurring PT/CV company formation costs. This does not waive the need for NIB/appropriate tourism permits before the agent independently conducts regulated commercial transactions. Initially refer interested guests to licensed operators; no unverified booking/payment.
+- Existing Cloudflare Cron `0 1 * * 1` generates 7 bilingual drafts weekly for Instagram/Facebook/TikTok. The owner-only `POST /api/admin/marketing/prepare-week` prepares the current week, idempotently. Draft status is always DRAFT and NEVER auto-publish in Worker.
+- Metricool brand `7483251` currently has NO social networks connected; owner needs to authorize FB/IG before any real scheduled publication. Don't imply automatic posting is working, even if campaign drafts exist.
+- Maintain `PUBLIC_LEADS_ENABLED=false`, `WA_SEND_ENABLED=false` and all operator/payment safety gates. WABA restrictions are independent of Facebook Page linking. No auto-DM or mass messaging, no ads spend, no scraped leads, no fabricated analytics.
+- Current website remains noindex until final business policies/identity ready; do not present organic search discovery as activated yet.
+- Prefer adding future automation to canonical `src/sales.mjs`/Worker, not duplicate modules. Preserve existing Cron value due preflight isolation guard.
