@@ -448,6 +448,13 @@ async function route(req,env,ctx){
   const [l,q,b,c]=await Promise.all(["leads","quotes","bookings","campaign_drafts"].map(t=>db.prepare("SELECT status,COUNT(*) n FROM "+t+" GROUP BY status").all()));
   return json({leads:l.results,quotes:q.results,bookings:b.results,campaigns:c.results,note:"Jumlah views/klik marketplace belum tersedia dan tidak dipalsukan"});
  }
+ if(path==="/api/admin/marketing/publications"&&method==="GET"){
+  const day=new Date().toISOString().slice(0,10);
+  const rows=await db.prepare("SELECT id,week_start,intended_date,idea_index,status,facebook_post_id,instagram_post_id,error_reason,attempted_at,updated_at FROM marketing_publications ORDER BY intended_date DESC LIMIT 80").all();
+  return json({independent_meta_publishing_enabled:metaPublicationConfig(env,day)!==null,
+   operator_confirmation_required:true,posts:rows.results,
+   note:"Indikator ENABLED hanya berarti konfigurasi memenuhi gerbang lokal; belum membuktikan izin Graph Meta valid atau konten berhasil terbit."});
+ }
  if(path==="/api/admin/marketing/intelligence"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
   const observations=await marketingEvidence(db,day),weekly=weeklyDrafts(marketingWeekStart(day));
