@@ -8,6 +8,9 @@ on:
     branches: [main]
     paths:
       - "src/sales.mjs"
+      - "src/marketing-intelligence.mjs"
+      - "data/marketing/observations.json"
+      - "public/photos/manifest.json"
       - "scripts/organic-week.mjs"
       - ".github/workflows/organic-marketing.yml"
 permissions:
@@ -24,13 +27,15 @@ jobs:
         with:
           node-version: '22'
       - name: Verify organic marketing generator
-        run: node --check src/sales.mjs && node --check scripts/organic-week.mjs
-      - name: Generate seven Indonesian and English social drafts
+        run: node --check src/sales.mjs && node --check src/marketing-intelligence.mjs && node --check scripts/organic-week.mjs
+      - name: Rank three strategies using real metrics and draft seven campaign alternatives
         run: node scripts/organic-week.mjs
       - name: Upload owner-review marketing plan (no publication)
         uses: actions/upload-artifact@v4
         with:
           name: nusa-penida-organic-week
-          path: dist/organic-week.md
+          path: |
+            dist/organic-week.md
+            dist/organic-week.json
           if-no-files-found: error
           retention-days: 30
