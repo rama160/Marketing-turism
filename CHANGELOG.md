@@ -1,3 +1,11 @@
+## 3.8.0 — Independent bounded marketing planner and opt-in Meta publishing (2026-10-21)
+- GitHub independent weekly strategist `scripts/organic-week.mjs` learns ranking from truthful, aggregate `data/marketing/observations.json` using `marketingIntelligence()`, selects three priority posting ideas, and generates licensed media/attribution from canonical `public/photos/manifest.json`. Output includes both Markdown + machine-readable JSON; no fabricated impressions.
+- Verified four Meta posts scheduled through Metricool (Kelingking Oct 23, Diamond Oct 26, snorkeling Oct 28, Broken Beach Oct 30) with `autoPublish=true` and original image credits. Publication remains pending until the dates.
+- Added `src/marketing-media.mjs`, `src/meta-publisher.mjs`, and additive `database/migrations/0012_meta_autopilot.sql`. Full Graph publisher uses owner-only secrets, step-by-step Facebook/IG response recording, disabled by default, and no replay of uncertain partial posts.
+- Dedicated Marketing Tourism Cron extended to daily 10.00 WITA behind explicit owner Graph flags; public lead/payment/WhatsApp send gates unchanged. Owner-only API and dashboard expose safe queue/status without tokens.
+- GitHub test/CI updated for opt-in, audit/at-most-once, failure and licensing. Cloudflare deploy remains NOT DONE due disconnected/unavailable Cloudflare connector and skipped GitHub deploy configuration; cannot claim a production autonomous Graph agent. Independent Meta analytics ingestion likewise still needs proper app permissions.
+- No business registration, no real consumer payment acceptance, no ads, no spam, no self-modifying production source code.
+
 ## 3.7.0 — AI Marketing learning engine and audit trail (2026-10-21)
 - Menambah modul khusus `src/marketing-intelligence.mjs` untuk memvalidasi performa organik dari sumber nyata, mempelajari rasio interaksi dan klik dengan smoothing untuk sampel kecil, menentukan prioritas platform/aktivitas, serta memilih jam publikasi hanya ketika bukti cukup.
 - Menambah migrasi aditif `0011_marketing_learning.sql` untuk riwayat `marketing_observations` dan keputusan strategis `marketing_decisions`. Tidak mengubah migrasi historis dan tidak menyimpan nomor/identitas guest.
