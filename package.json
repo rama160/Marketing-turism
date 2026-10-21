@@ -1,11 +1,11 @@
 {
   "name": "marketing-turism-agent",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "type": "module",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "check": "node scripts/preflight.mjs && node --check src/worker.mjs && node --check src/pricing.mjs && node --check src/operations.mjs && node --check src/sales.mjs && node --check public/app.js && node --check public/service-worker.js && node --check src/cancellation.mjs && node --check src/photos.mjs && node --check public/photo-loader.js && node --check src/site-content.mjs && node --check public/language.js",
+    "check": "node scripts/preflight.mjs && node --check src/worker.mjs && node --check src/pricing.mjs && node --check src/operations.mjs && node --check src/sales.mjs && node --check src/marketing-media.mjs && node --check src/meta-publisher.mjs && node --check scripts/organic-week.mjs && node --check public/app.js && node --check public/service-worker.js && node --check src/cancellation.mjs && node --check src/photos.mjs && node --check public/photo-loader.js && node --check src/site-content.mjs && node --check public/language.js",
     "build": "node scripts/build.mjs",
     "ci": "npm run check && npm test && npm run build"
   }
