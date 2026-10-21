@@ -40,7 +40,7 @@ async function marketingEvidence(db,day){
 // One row per UTC day; the owner may refresh at most once every five minutes.
 function safeMetaCheck(row){
  if(!row)return null;
- return {day:row.day,checked_at:row.checked_at+"Z",source:row.source,
+ return {day:row.day,checked_at:row.checked_at.replace(" ","T")+"Z",source:row.source,
   configured:row.configured===1,page:{ok:row.page_ok===1,status:row.page_http_status},
   instagram:{ok:row.instagram_ok===1,status:row.instagram_http_status},result:row.result};
 }
