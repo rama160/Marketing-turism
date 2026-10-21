@@ -2,6 +2,7 @@ import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
+import {metaPublicationConfig,publishMetaTourism} from "./meta-publisher.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
@@ -50,6 +51,18 @@ async function prepareMarketingWeek(db,dateString,source){
  ];
  for(const item of drafts)statements.push(db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
   .bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
+ // Prepare a bounded 3-post opt-in queue; Graph publication is still DISABLED by default.
+ const eligible=ranked.filter(x=>x.platform==="Instagram"||x.platform==="Facebook"),chosen=[],covered=new Set();
+ for(const item of eligible){
+  if(chosen.length===3)break;
+  if(chosen.length===1&&covered.has(item.activity_id)&&eligible.some(c=>!covered.has(c.activity_id)&&!chosen.some(y=>y.index===c.index)))continue;
+  chosen.push(item);covered.add(item.activity_id);
+ }
+ for(const [n,item] of chosen.entries()){
+  const date=new Date(monday+"T00:00:00Z");date.setUTCDate(date.getUTCDate()+[0,2,4][n]);
+  statements.push(db.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)")
+   .bind(uuid(),monday,date.toISOString().slice(0,10),item.index,"READY"));
+ }
  statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
   .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,observations:learned.observation_count,automatically_published:false})));
  await db.batch(statements);
@@ -80,7 +93,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.7.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.8.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -482,11 +495,38 @@ async function route(req,env,ctx){
  }
  return bad("Endpoint tidak ditemukan",404);
 }
+async function runIndependentMetaPublication(db,env,day){
+ // No credential means zero external requests or DB status change.
+ if(!metaPublicationConfig(env,day))return {status:"DISABLED"};
+ const slot=await db.prepare("SELECT id,week_start,idea_index FROM marketing_publications WHERE intended_date=? AND status='READY' LIMIT 1").bind(day).first();
+ if(!slot)return {status:"NO_ELIGIBLE_POST"};
+ const claimed=await db.prepare("UPDATE marketing_publications SET status='ATTEMPTED',attempted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='READY'").bind(slot.id).run();
+ if(claimed?.meta?.changes!==1)return {status:"CLAIMED_ELSEWHERE"};
+ try{
+  const record=async(channel,id)=>{
+   const fields={facebook:"facebook_post_id",container:"instagram_container_id",instagram:"instagram_post_id"};
+   const column=fields[channel];
+   if(!column)throw Error("Unknown publishing step");
+   await db.prepare("UPDATE marketing_publications SET "+column+"=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='ATTEMPTED'").bind(id,slot.id).run();
+  };
+  await publishMetaTourism(slot.week_start,slot.idea_index,env,record);
+  await db.prepare("UPDATE marketing_publications SET status='POSTED',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='ATTEMPTED'").bind(slot.id).run();
+  await audit(db,"marketing_publication",slot.id,"META_PUBLISHED",{week:slot.week_start,day});
+  return {status:"POSTED"};
+ }catch(_){
+  // Facebook may have succeeded before Instagram failed; never retry automatically.
+  await db.prepare("UPDATE marketing_publications SET status='REVIEW_REQUIRED',error_reason='Graph publish did not finish: inspect platform before any retry',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(slot.id).run();
+  await audit(db,"marketing_publication",slot.id,"MANUAL_REVIEW_REQUIRED",{week:slot.week_start,day});
+  return {status:"REVIEW_REQUIRED"};
+ }
+}
 export default {
  async fetch(req,env,ctx){try{return await route(req,env,ctx)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
  async scheduled(event,env){
-  // Only creates reviewable content drafts. No external posting, guest messaging, or advertising spend.
-  if(event.cron!=="0 1 * * 1"||!env.DB)return;
-  await prepareMarketingWeek(env.DB,new Date().toISOString().slice(0,10),"WEEKLY_CRON");
+  if(!env.DB)return;
+  const day=new Date().toISOString().slice(0,10);
+  if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,day,"WEEKLY_CRON");return;}
+  // Daily independent organic publishing, explicitly opt-in only.
+  if(event.cron==="0 2 * * *")await runIndependentMetaPublication(env.DB,env,day);
  }
 };
