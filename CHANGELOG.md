@@ -1,3 +1,7 @@
+## 3.8.0 Cloudflare GitHub token metadata diagnostics — 21 October 2026
+- GitHub deployment now checks HTTP status codes (no response body or tokens) for scoped Cloudflare API metadata endpoints before migrating the dedicated tourism D1. The first two deployment attempts passed 101 tests and D1 migrations but failed at Wrangler metadata read with "Unable to fetch bindings, routes, or services metadata from the dashboard". Production Worker remained unchanged.
+- This diagnostic is read-only and does not change any permissions, secrets, Worker bindings, schedules or database records.
+
 ## 3.8.0 deployment safety hotfix — 21 October 2026
 - Set `keep_vars: true` in `wrangler.jsonc`, and guard it in `scripts/preflight.mjs`, to preserve production Dashboard-managed plaintext bindings during Wrangler deployment. Secrets remain protected and preserved per Cloudflare documentation.
 - No changes to cron, D1 schema, existing worker target, enabled social publication gates, guest lead gate or WhatsApp sending.
