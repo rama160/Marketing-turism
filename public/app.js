@@ -136,13 +136,13 @@ $("#unlock").onclick=async()=>{
 };
 async function refresh(){
  try{
-  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business]=await Promise.all([
-   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business")]);
-  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items};
+  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel]=await Promise.all([
+   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence")]);
+  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel};
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
-  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarket();renderBusiness(business.business);
+  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);
   if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
@@ -233,9 +233,40 @@ $("#businessForm").onsubmit=async e=>{
 function renderCampaigns(){
  $("#campaignList").innerHTML=data.campaigns.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div><small>'+esc(c.caption.slice(0,230))+'</small><div class="actions">'+(c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+(c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+(c.status==="PUBLISHED"?'<button class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+'</div><small>ID tracking: '+esc(c.id)+'</small></div>').join("")||"<p>Belum ada kampanye.</p>";
 }
+function renderMarketingIntelligence(){
+ const root=$("#marketingInsights"),info=data.marketingIntel;
+ if(!root||!info)return;
+ const num=Number(info.observation_count)||0;
+ const hours=Object.entries(info.best_hours||{}).filter(([name])=>["Instagram","Facebook","TikTok"].includes(name));
+ const timeLines=hours.map(([name,v])=>
+  '<div class="item"><b>'+esc(name)+'</b> · '+(v.source==="MEASURED"?esc(String(v.hour).padStart(2,"0")+":00 WITA dari "+v.observations+" observasi"):"Belum cukup statistik asli untuk menyimpulkan jam terbaik")+'</div>').join("");
+ const recommendations=(info.recommendations||[]).slice(0,3).map((v,i)=>
+  '<div class="item">'+(i+1)+'. <b>'+esc(v.platform)+'</b> · '+esc(v.activity_id==="ISLAND_TOUR_CAR"?"Island Tour":"Snorkeling")+
+  ' · skor strategi '+esc(v.strategy_score)+'/100 · '+esc(v.basis==="BELUM_ADA_DATA"?"uji variasi karena belum ada data":v.basis==="DATA_TERBATAS"?"data masih terbatas":"didasarkan pada metrik")+'</div>').join("");
+ root.innerHTML='<p class="feedback">Observasi terverifikasi: <strong>'+num+'</strong> · Strategi v'+esc(info.strategy_version)+
+  ' · Perencanaan mingguan aktif. <strong>Publikasi mandiri langsung dari Cloudflare belum terhubung ke Meta.</strong></p>'+
+  '<h4>Waktu terbaik berdasarkan data</h4>'+timeLines+
+  '<h4>Prioritas eksperimen konten berikutnya</h4>'+recommendations;
+}
 function renderMarket(){
  $("#marketList").innerHTML=data.market.map(m=>'<div class="item"><div class="meta"><b>'+esc(m.platform)+' · '+esc(m.activity_id)+'</b><span class="pill">'+esc(m.verified?"Diperiksa":"Belum diverifikasi")+'</span></div><div>'+money(m.price)+' / '+esc(m.unit)+(m.group_size?" ('+m.group_size+' orang)":"")+'</div><small>Diamati '+esc(m.observed_on)+' · '+esc(m.inclusions)+'</small><small>'+esc(m.source_url)+'</small></div>').join("")||"<p>Belum ada referensi harga.</p>";
 }
+$("#marketingObservedOn").value=new Date().toISOString().slice(0,10);
+$("#marketingMetricsForm").onsubmit=async e=>{
+ e.preventDefault();
+ const form=e.target,b=formValues(form);
+ if(!form.querySelector('[name="owner_verified"]').checked)return;
+ if(!confirm("Simpan statistik asli ini sebagai dasar pembelajaran AI? Periksa dulu impressions, engagement, dan klik."))return;
+ for(const key of ["impressions","reach","reactions","comments","shares","saves","link_clicks"])b[key]=Number(b[key]);
+ b.published_hour=b.published_hour.trim()?Number(b.published_hour):null;
+ b.owner_verified=true;
+ try{
+  const res=await api("admin/marketing/observations","POST",b);
+  $("#marketingMetricsFeedback").textContent="Statistik tercatat ("+res.id+"). Strategi dihitung ulang dari data asli.";
+  form.reset();$("#marketingObservedOn").value=new Date().toISOString().slice(0,10);
+  await refresh();
+ }catch(err){$("#marketingMetricsFeedback").textContent="Tidak dapat menyimpan metrik: "+err.message;}
+};
 $("#prepareMarketingWeek").onclick=async()=>{
  if(!confirm("Buat 7 draf konten pemasaran mingguan (Instagram, Facebook, TikTok) untuk diperiksa? Belum ada publikasi otomatis."))return;
  const b=$("#prepareMarketingWeek");
@@ -243,7 +274,7 @@ $("#prepareMarketingWeek").onclick=async()=>{
  try{
   const result=await api("admin/marketing/prepare-week","POST",{owner_confirmed:true});
   $("#marketingWeekFeedback").textContent=result.generated>0
-   ?"Berhasil menyiapkan "+result.generated+" draf untuk pekan "+result.week_start+". Periksa daftar kampanye. Akun sosial belum terhubung, jadi belum ada konten yang ditayangkan."
+   ?"Berhasil menyiapkan "+result.generated+" draf untuk pekan "+result.week_start+". Periksa daftar kampanye. Facebook/Instagram tersambung ke Metricool; Cloudflare tidak otomatis menerbitkan draf tanpa API yang diotorisasi."
    :"Draf untuk pekan "+result.week_start+" sudah pernah dibuat. Tidak ada duplikasi.";
   await refresh();
  }catch(err){$("#marketingWeekFeedback").textContent="Gagal membuat draf: "+err.message;}
