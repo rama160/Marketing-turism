@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v16/);
+ assert.match(read("service-worker.js"),/public-v17/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -285,4 +285,15 @@ test("owner marketing organic autopilot is transparent and gated",()=>{
  assert.match(html,/publikasi otomatis belum aktif/);
  assert.match(app,/admin\/marketing\/prepare-week/);
  assert.match(app,/owner_confirmed:true/);
+});
+
+test("autonomous marketing learning is owner-only and rejects fabricated analytics UI",()=>{
+ const html=read("index.html"),app=read("app.js");
+ assert.match(html,/id="marketingMetricsForm"/);
+ assert.match(html,/id="marketingInsights"/);
+ assert.match(html,/id="marketingObservedOn"/);
+ assert.match(html,/statistik akun/);
+ assert.match(app,/admin\/marketing\/intelligence/);
+ assert.match(app,/admin\/marketing\/observations/);
+ assert.match(app,/owner_verified=true/);
 });
