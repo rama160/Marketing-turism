@@ -1,0 +1,36 @@
+name: Organic marketing calendar (owner review)
+on:
+  schedule:
+    # Monday 09:00 Bali (WITA) = Monday 01:00 UTC.
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/sales.mjs"
+      - "scripts/organic-week.mjs"
+      - ".github/workflows/organic-marketing.yml"
+permissions:
+  contents: read
+jobs:
+  marketing-drafts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout tourism repository
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify organic marketing generator
+        run: node --check src/sales.mjs && node --check scripts/organic-week.mjs
+      - name: Generate seven Indonesian and English social drafts
+        run: node scripts/organic-week.mjs
+      - name: Upload owner-review marketing plan (no publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nusa-penida-organic-week
+          path: dist/organic-week.md
+          if-no-files-found: error
+          retention-days: 30
