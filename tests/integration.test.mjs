@@ -184,17 +184,33 @@ test("invalid calendar dates are rejected, cannot create non-existent February d
  sqlite.close();
 });
 
-test("weekly scheduled run creates only two drafts, once, with no automatic publication",async()=>{
- const {db,sqlite,env}=fixture();
+test("weekly cron prepares seven multilingual channel-specific drafts once and never auto-publishes",async()=>{
+ const {request,sqlite,env}=fixture();
+ const unauth=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true},false);
+ assert.equal(unauth.httpStatus,401);
+ const denied=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:false});
+ assert.equal(denied.httpStatus,403);
+ const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+ assert.equal(made.httpStatus,200);
+ assert.equal(made.generated,7);
+ assert.equal(made.status,"DRAFT_REVIEW");
+ assert.equal(made.publication,"NONE");
+ assert.equal(made.social_networks_connected,false);
+ const drafts=sqlite.prepare("SELECT status,platform,caption FROM campaign_drafts").all();
+ assert.equal(drafts.length,7);
+ assert.ok(drafts.every(x=>x.status==="DRAFT"&&x.caption.startsWith("[REVIEW ")));
+ assert.deepEqual([...new Set(drafts.map(x=>x.platform))].sort(),["Facebook","Instagram","TikTok"]);
+ assert.ok(drafts.some(x=>x.caption.includes("· EN]"))&&drafts.some(x=>x.caption.includes("· ID]")));
+ assert.ok(drafts.some(x=>x.caption.includes("Manta"))&&!drafts.some(x=>x.caption.includes("guaranteed manta")));
+ const repeated=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+ assert.equal(repeated.generated,0);
  await worker.scheduled({cron:"0 1 * * 1"},env,{});
- let drafts=sqlite.prepare("SELECT status,platform,caption FROM campaign_drafts ORDER BY activity_id").all();
- assert.equal(drafts.length,2);
- assert.ok(drafts.every(x=>x.status==="DRAFT"&&x.platform==="Website"&&x.caption.startsWith("[AUTO ")));
- await worker.scheduled({cron:"0 1 * * 1"},env,{});
- assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM campaign_drafts").get().n,2);
- assert.equal(sqlite.prepare("SELECT COUNT(*) as n FROM scheduled_runs").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='PUBLISHED'").get().n,0);
  sqlite.close();
 });
+
 
 test("public readiness is fail-closed and business profile edits require owner token",async()=>{
  const {request,sqlite}=fixture();
