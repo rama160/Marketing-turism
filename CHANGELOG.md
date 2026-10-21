@@ -1,3 +1,8 @@
+### 3.6.0 — Kalender organik GitHub Actions berjalan
+- Menambahkan `scripts/organic-week.mjs` sebagai ekspor Markdown 7 draf dari modul kanonis `src/sales.mjs`, tanpa menyalin logika caption.
+- Menambahkan workflow `organic-marketing.yml` yang berjalan terjadwal tiap Senin 09:00 WITA, `workflow_dispatch`, dan uji push. Terbukti sukses pada [run #39522690636](https://github.com/rama160/Marketing-turism/actions/runs/39522690636) dengan artefak `nusa-penida-organic-week`.
+- Penerbitan ke media sosial tetap OFF sebelum otorisasi Facebook/Instagram, dan Worker Cloudflare v3.6.0 belum live: konektor Cloudflare sedang tidak merespons pada sesi ini. CI GitHub berhasil, tetapi smoke live pada kode baru gagal sampai deployment berhasil.
+
 ## 3.6.0 — Pemasaran organik semi-otomatis (2026-10-21)
 - Memperluas `weeklyDrafts()` menjadi tujuh draf pemasaran dengan topik West/East Nusa Penida, snorkeling, manta wildlife, dan pilihan itinerary. Bahasa Indonesia/Inggris serta kanal Instagram/Facebook/TikTok bervariasi, dengan tautan website yang benar dan tanpa janji ketersediaan.
 - Cloudflare Cron khusus tourism tetap Senin 09:00 WITA (0 1 * * 1 UTC), tanpa mengubah trigger FinChat/Spenva. Menyimpan 7 draf DRAFT per pekan yang idempoten; tidak auto-publish.
