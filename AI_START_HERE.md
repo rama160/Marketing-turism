@@ -151,3 +151,8 @@ Ten photo JPG files at `public/photos/*.jpg` are already verified. The Worker `/
 - Maintain `PUBLIC_LEADS_ENABLED=false`, `WA_SEND_ENABLED=false` and all operator/payment safety gates. WABA restrictions are independent of Facebook Page linking. No auto-DM or mass messaging, no ads spend, no scraped leads, no fabricated analytics.
 - Current website remains noindex until final business policies/identity ready; do not present organic search discovery as activated yet.
 - Prefer adding future automation to canonical `src/sales.mjs`/Worker, not duplicate modules. Preserve existing Cron value due preflight isolation guard.
+
+## Fallback pemasaran otomatis tanpa sosial/Cloudflare
+- Workflow GitHub `.github/workflows/organic-marketing.yml` menjadwalkan ekspor 7 draf kampanye setiap Senin 09 WITA dan menyediakan artefak `nusa-penida-organic-week`. Ekspor harus memakai `src/sales.mjs` satu-satunya sumber draf; jangan duplikasi modul ini.
+- Run sukses: https://github.com/rama160/Marketing-turism/actions/runs/39522690636. Pembuatan konten mingguan di GitHub terbukti aktif, namun **bukan autoposting** dan **bukan pemasangan Cloudflare Worker v3.6.0**. Cloudflare connector gagal secara internal sehingga versi live belum terbarui, dan GitHub deploy yang dijaga environment variable belum dijalankan. Jangan klaim website admin telah diperbarui sampai live smoke sukses.
+- Pemilik harus menghubungkan akun sosialnya ke Metricool brand 7483251 untuk memposting terjadwal; promosi tidak memerlukan pengaktifan pembayaran maupun pengumpulan data guest yang belum siap secara legal.
