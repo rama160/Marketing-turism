@@ -38,7 +38,7 @@ jobs:
             echo "Cloudflare GET $endpoint : HTTP $status"
           done
       - name: Apply D1 migrations
-        run: npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0009_site_content.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0010_whatsapp_inbox.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0011_marketing_learning.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0012_meta_autopilot.sql
+        run: npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0009_site_content.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0010_whatsapp_inbox.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0011_marketing_learning.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0012_meta_autopilot.sql && npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0013_meta_diagnostics.sql
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
