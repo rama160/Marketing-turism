@@ -1,3 +1,9 @@
+## 3.8.0 hotfix — Cloudflare Meta binding alignment (21 Oktober 2026)
+- Audit Worker menemukan semua kredensial inti terikat, tetapi modul publisher memakai nama `META_GRAPH_*` yang berbeda. `metaPublicationConfig` sekarang membaca `META_PAGE_ID`, `META_IG_USER_ID`, `META_PAGE_ACCESS_TOKEN` sebagai nama utama dan mendukung nama lama untuk kompatibilitas.
+- Menambah status konfigurasi tanpa kebocoran token, ditambah pemeriksaan read-only `GET /api/admin/marketing/meta/status?probe=true` untuk owner dengan Bearer `ADMIN_TOKEN`; pengujian identitas bukan konfirmasi izin penerbitan/insight.
+- Menjaga publisher OFF sampai sakelar owner, tanggal mulai, izin platform, dan pengujian selesai. Tidak mengubah schedule, database, lead gate, WhatsApp atau website; tes unit/regresi ditambah.
+- Data D1 dari audit: 1 scheduled_run historis, 2 draft, belum ada pengukuran, keputusan strategi atau publikasi otomatis. Pengumpulan Insights otomatis masih perlu implementasi; tidak dinyatakan sudah bekerja.
+
 ## 3.8.0 production activation — 21 Oktober 2026
 - Recovered connected Cloudflare access. Migrated isolated `marketing-turism-db` with additive 0011 and 0012; verified three required marketing tables.
 - Uploaded protected Worker version 43 (`a2def26d-848f-49fa-abb9-be5b49be301a`) using inherited 12 existing bindings and restored full public PWA routing; deployed to 100% traffic. Previous rollback version: `a829cf8b-22d2-448c-8577-f24038d6288c`.
