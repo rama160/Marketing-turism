@@ -241,7 +241,7 @@ function renderCampaigns(){
   const photo=c.preview_photo||{},slug=String(photo.slug||"");
   const image=slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
   const title=c.activity_id==="SNORKELING_3_SPOTS"?"Snorkeling Nusa Penida":"Island Tour Nusa Penida";
-  const planned=/^\\[REVIEW (\\d{4}-\\d{2}-\\d{2})/.exec(c.caption||"");
+  const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
   const label=planned?"Ide editorial "+planned[1]:"Dibuat "+String(c.created_at||"").slice(0,10);
   const page=c.activity_id==="SNORKELING_3_SPOTS"?"/snorkeling.html":/diamond|atuh|east|timur/i.test(c.caption)?"/east-tour.html":"/west-tour.html";
   const credit=photo.source?.startsWith("https://commons.wikimedia.org/wiki/File:")?
