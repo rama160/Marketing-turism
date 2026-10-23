@@ -1,3 +1,8 @@
+## AUDIT 23 OCT 2026 — DRAFTS AND GRAPH 401
+- Cloudflare D1 showed only two Website drafts from 18 Oct; current week 19 Oct seven-draft run absent. Daily Cron now idempotently calls canonical `prepareMarketingWeek` to recover missed Monday runs. When recovered after Monday, the 7 review dates start at recovery day and move forward; **no Meta publication slots are created on recovery**, protecting against accidental duplicate scheduled Metricool posts. Legacy drafts remain in collapsed owner history (not deleted). Date in legacy `[AUTO 2026-10-18]` caption is creation date, not scheduled publication.
+- Both Facebook Page and IG Graph read diagnostics returned HTTP 401 using Cloudflare `META_PAGE_ACCESS_TOKEN` binding, likely invalid/expired/wrong type. Page/Instagram ID vars are correct; secret values are never visible or exposed. Replace only the Cloudflare Page token with a verified Page Access Token after official Meta Graph Explorer permissions checks; retest owner diagnostics. App tokens are not substitutes.
+- Keep all outbound publish gate vars unconfigured; keep `PUBLIC_LEADS_ENABLED=false` and `WA_SEND_ENABLED=false`; do not change Metricool schedule or other Workers. Website updates must bump PWA cache and smoke version check.
+
 ## META INTERNAL DIAGNOSTICS — 21 October 2026
 - Canonical `src/meta-publisher.mjs` uses GET-only Graph identity probes with Cloudflare Secrets, checks returned ID equality and never logs token or response bodies.
 - Daily existing Cron `0 2 * * *` (10 WITA) saves anonymized status via additive D1 migration `0013_meta_diagnostics.sql` with 30-day retention. No duplicate Cron trigger.
