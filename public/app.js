@@ -238,7 +238,7 @@ function renderCampaigns(){
  const older=c=>c.status==="DRAFT"&&String(c.created_at||"").slice(0,10)<monday;
  const recent=data.campaigns.filter(c=>!older(c)),historic=data.campaigns.filter(older);
  function item(c,history=false){
-  const planned=/^\\[REVIEW (\\d{4}-\\d{2}-\\d{2})/.exec(c.caption||"");
+  const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
   const created=String(c.created_at||"").slice(0,10);
   const when=planned?"Rencana editorial: "+planned[1]:"Dibuat: "+created+" (bukan tanggal publikasi)";
   return '<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div>'+
