@@ -231,7 +231,30 @@ $("#businessForm").onsubmit=async e=>{
  catch(e){say("#adminFeedback",e.message)}
 };
 function renderCampaigns(){
- $("#campaignList").innerHTML=data.campaigns.map(c=>'<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div><small>'+esc(c.caption.slice(0,230))+'</small><div class="actions">'+(c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+(c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+(c.status==="PUBLISHED"?'<button class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+'</div><small>ID tracking: '+esc(c.id)+'</small></div>').join("")||"<p>Belum ada kampanye.</p>";
+ const now=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+ const day=new Date(now+"T00:00:00Z");
+ day.setUTCDate(day.getUTCDate()-(day.getUTCDay()+6)%7);
+ const monday=day.toISOString().slice(0,10);
+ const older=c=>c.status==="DRAFT"&&String(c.created_at||"").slice(0,10)<monday;
+ const recent=data.campaigns.filter(c=>!older(c)),historic=data.campaigns.filter(older);
+ function item(c,history=false){
+  const planned=/^\\[REVIEW (\\d{4}-\\d{2}-\\d{2})/.exec(c.caption||"");
+  const created=String(c.created_at||"").slice(0,10);
+  const when=planned?"Rencana editorial: "+planned[1]:"Dibuat: "+created+" (bukan tanggal publikasi)";
+  return '<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div>'+
+   '<small>'+esc(when)+(history?" · Arsip draf lama, perlu diperbarui":"")+'</small>'+
+   '<small>'+esc(c.caption.slice(0,330))+'</small><div class="actions">'+
+   (!history&&c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+
+   (c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+
+   (c.status==="PUBLISHED"?'<button class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+
+   '</div><small>ID tracking: '+esc(c.id)+'</small></div>';
+ }
+ $("#campaignList").innerHTML=
+  '<p class="feedback">Daftar terbaru: '+recent.length+' kampanye. Tanggal pada caption REVIEW adalah tanggal ide editorial, bukan bukti posting terjadwal di Meta/Metricool.</p>'+
+  (recent.map(c=>item(c)).join("")||'<p>Belum ada draf minggu ini. Draf otomatis dibuat Senin pukul 09.00 WITA; jika terlewat, Cron harian memulihkannya. Tombol "Siapkan 7 draf minggu ini" juga tersedia.</p>')+
+  (historic.length?'<details class="item"><summary>Riwayat draf lama ('+historic.length+') — tidak dihapus</summary>'+
+   '<p class="feedback">Draf minggu sebelumnya tetap disimpan sebagai arsip. Buat draf baru sebelum menyetujui materi lama.</p>'+
+   historic.map(c=>item(c,true)).join("")+'</details>':"");
 }
 function renderMarketingIntelligence(){
  const root=$("#marketingInsights"),info=data.marketingIntel;
@@ -257,9 +280,12 @@ async function loadMetaDiagnostic(){
   const txt=latest.result==="READ_OK"?"Page dan Instagram dapat dibaca":
    latest.result==="READ_PARTIAL"?"Sebagian koneksi gagal":
    latest.result==="INCOMPLETE"?"Konfigurasi belum lengkap":"Keduanya belum dapat dibaca";
-  target.innerHTML='<p class="feedback"><strong>'+esc(txt)+'</strong> · '+esc(latest.checked_at)+
+  const localTime=new Date(latest.checked_at).toLocaleString("id-ID",{timeZone:"Asia/Makassar",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false})+" WITA";
+  const unauthorized=[latest.page.status,latest.instagram.status].includes(401);
+  const action=unauthorized?'<p class="feedback"><strong>Perlu tindakan:</strong> Meta menolak akses (HTTP 401). Periksa apakah <code>META_PAGE_ACCESS_TOKEN</code> berisi Page Access Token yang masih valid, bukan App Access Token. Perbarui hanya Secret tersebut di Cloudflare Workers, lalu tekan Uji koneksi sekarang. Jangan tempel token di website atau chat. Pemeriksaan ini tidak menghapus jadwal Metricool.</p>':"";
+  target.innerHTML='<p class="feedback"><strong>'+esc(txt)+'</strong> · '+esc(localTime)+
    ' · '+esc(latest.source==="DAILY_CRON"?"Cron otomatis":"Uji pemilik")+
-   ' · '+esc(status.check_fresh?"Data pemeriksaan terbaru":"Hasil lama, perlu pemeriksaan baru")+'</p>'+
+   ' · '+esc(status.check_fresh?"Data pemeriksaan terbaru":"Hasil lama, perlu pemeriksaan baru")+'</p>'+action+
    '<div class="item">Facebook Page: '+esc(latest.page.ok?"Berhasil":"Gagal / belum diuji")+
    ' (HTTP '+esc(latest.page.status??"—")+') · Instagram: '+esc(latest.instagram.ok?"Berhasil":"Gagal / belum diuji")+
    ' (HTTP '+esc(latest.instagram.status??"—")+')</div>'+
