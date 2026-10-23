@@ -21,10 +21,10 @@ const campaignSlugs=Object.freeze({
 export function campaignPhotoBySlug(slug){
  const photo=gallery.get(slug);
  if(!photo||!Object.values(campaignSlugs).some(slugs=>slugs.includes(slug))||
-  !/^CC BY-SA (3\\.0|4\\.0)$/.test(photo.license)||!photo.author||
+  !/^CC BY-SA (3\.0|4\.0)$/.test(photo.license)||!photo.author||
   !photo.source.startsWith("https://commons.wikimedia.org/wiki/File:"))throw Error("Invalid licensed campaign image");
  return {slug,url:"/photos/"+slug,credit:photo.author,license:photo.license,
-  source:photo.source,alt:photo.filename.replace(/\\.jpg$/i,""),is_illustrative:slug==="gamat-bay"};
+  source:photo.source,alt:photo.filename.replace(/\.jpg$/i,""),is_illustrative:slug==="gamat-bay"};
 }
 // Reuse canonical vetted gallery assets; a rejected revision always changes image.
 export function campaignPhotoForDraft(activity,caption,previousSlug=null,round=0){
