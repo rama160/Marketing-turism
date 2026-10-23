@@ -54,3 +54,34 @@ export function weeklyDrafts(dateString){
    caption:"[REVIEW "+date.toISOString().slice(0,10)+" · "+idea.lang.toUpperCase()+"] "+idea.caption};
  });
 }
+
+const reviewAlternatives={
+ SNORKELING_3_SPOTS:[
+  ["Pernah membayangkan snorkeling sambil melihat ikan tropis di perairan Nusa Penida? 🐠 Jelajahi pilihan sharing dan private, lalu konsultasikan kondisi laut dan operator sesuai tanggal perjalanan.","Ready for a sea adventure around Nusa Penida? 🌊 Compare sharing and private snorkeling routes with our local partners. Sea conditions and wildlife sightings are never guaranteed."],
+  ["Rencanakan liburan laut yang lebih personal di Nusa Penida. ✨ Tanyakan opsi snorkeling private maupun sharing, fasilitas, dan titik keberangkatan sebelum memutuskan.","Looking for a snorkeling escape with friends? 🐢 Discover Nusa Penida's underwater beauty and ask about suitable boat options, dates and local conditions."],
+  ["Manta adalah satwa liar yang hidup bebas. 💙 Ayo kenali snorkeling yang menghargai kehidupan laut, sebelum meminta info rute dan operator Nusa Penida.","Go beyond the beach: explore Nusa Penida's marine life with responsible local operators. Ask us about route options; manta sightings cannot be promised."],
+  ["Pilihan perjalanan laut tidak harus sama untuk semua orang. 🐠 Sharing atau private snorkeling? Ceritakan tanggal dan jumlah peserta agar kami dapat mengecek opsi bersama operator.","Which snorkeling experience suits your trip: sharing or private? 🌊 Tell us your dates and group size, and we can check operator options."],
+  ["Sedang menyusun itinerary liburan Bali? 🌴 Masukkan snorkeling Nusa Penida sebagai inspirasi dan cek kondisi laut serta ketersediaan sebelum memesan.","Planning a Bali island adventure? Nusa Penida offers an inspiring underwater world. Discover snorkeling options while respecting marine conditions and local guidance."]
+ ],
+ ISLAND_TOUR_CAR:[
+  ["Tebing Kelingking dan panorama laut biru Nusa Penida Barat bisa menjadi inspirasi liburan berikutnya. 🏝️ Kenali pilihan rute dan konsultasikan jadwal dengan operator lokal.","Picture yourself exploring the cliffs of West Nusa Penida. ✨ Discover scenic routes and ask us about available local transport for your travel dates."],
+  ["Diamond Beach dan Atuh Beach menawarkan suasana pesisir Nusa Penida Timur yang memikat. 🌊 Jelajahi inspirasi itinerary sebelum menentukan transportasi dan waktu perjalanan.","East Nusa Penida has dramatic cliffs and captivating coastal viewpoints. 🏖️ Explore Diamond Beach and Atuh Beach, then check suitable travel arrangements."],
+  ["Dari Broken Beach hingga Crystal Bay, setiap sudut Nusa Penida Barat punya cerita. 📸 Temukan rute yang cocok dengan tempo perjalanan Anda dan konfirmasi detail bersama operator.","A slower island day can be just as memorable. 💚 Explore the West Nusa Penida highlights and talk to our team about feasible routes."],
+  ["Lebih suka pantai Nusa Penida Timur atau tebing di bagian Barat? 🌴 Bandingkan dua inspirasi rute wisata sebelum memilih perjalanan yang sesuai dengan rombongan.","West or East Nusa Penida? 🏝️ Compare famous cliff views and beautiful beaches, then ask about a route that suits your group."],
+  ["Jelajahi Nusa Penida bersama teman atau keluarga. 🚙 Inspirasi island tour bisa dimulai dari spot foto yang paling Anda sukai. Rute, kendaraan dan ketersediaan dikonfirmasi dulu.","Discover Nusa Penida at your own pace. 📷 Choose favorite viewpoints and ask us about appropriate local transport and available dates."]
+ ]
+};
+// No unverified prices, operator promises or generated images. Return a new editorial
+// alternative immediately, with a stable disclosure label for human owner review.
+export function replacementCampaignCaption({activity_id,platform,revision,reason="",date}){
+ const texts=reviewAlternatives[activity_id];
+ if(!texts||!Number.isInteger(revision)||revision<1||revision>100||
+  !/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error("Invalid campaign regeneration input");
+ const style=/(foto|gambar|image|visual)/i.test(reason)?"Fokus visual dan suasana destinasi. ":
+  /(caption|teks|kata|bahasa)/i.test(reason)?"Bahasa dibuat lebih ringkas dan mengundang respons. ":"";
+ const index=(revision-1)%texts.length;
+ const language=revision%2===0?"en":"id";
+ const wording=texts[index][language==="en"?1:0];
+ const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+(activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":index%2?"east-tour.html":"west-tour.html");
+ return "[REVIEW "+date+" · "+language.toUpperCase()+" · V"+revision+"] "+style+wording+" 🌐 "+link+" #NusaPenida #"+(activity_id==="SNORKELING_3_SPOTS"?"SnorkelingNusaPenida":"IslandTour");
+}
