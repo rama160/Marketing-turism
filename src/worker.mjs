@@ -1,6 +1,7 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
-import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
+import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
+import {campaignPhotoForDraft,campaignPhotoBySlug} from "./marketing-media.mjs";
 import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
 import {metaPublicationConfig,metaConnectionStatus,checkMetaReadAccess,publishMetaTourism} from "./meta-publisher.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
@@ -455,7 +456,15 @@ async function route(req,env,ctx){
   }
  }
  if(path==="/api/admin/campaigns"){
-  if(method==="GET")return json({items:(await db.prepare("SELECT * FROM campaign_drafts ORDER BY created_at DESC LIMIT 200").all()).results});
+  if(method==="GET"){
+   const rows=await db.prepare("SELECT c.*,r.media_slug,r.revision,r.rejected_at,r.rejection_reason,r.replacement_id "+
+    "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id "+
+    "ORDER BY c.created_at DESC,c.rowid DESC LIMIT 200").all();
+   return json({items:rows.results.map(x=>{
+    const preview=x.media_slug?campaignPhotoBySlug(x.media_slug):campaignPhotoForDraft(x.activity_id,x.caption);
+    return {...x,status:x.rejected_at?"REJECTED":x.status,preview_photo:preview};
+   })});
+  }
   if(method==="POST"){
    const b=await parse(req),activity=str(b.activity_id,80),platform=str(b.platform,50),caption=str(b.caption,2500);
    if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["Instagram","Facebook","TikTok","Website","WhatsApp Status","WhatsApp Business","Google Business Profile","YouTube Shorts","Telegram","Tripadvisor","GetYourGuide (mitra)","Klook (mitra)"].includes(platform)||caption.length<20)return bad("Konten kampanye tidak lengkap");
@@ -463,16 +472,55 @@ async function route(req,env,ctx){
    await audit(db,"campaign",id,"DRAFT_CREATED",{platform,activity});return json({id,status:"DRAFT"},201);
   }
  }
- const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
+ const cm=path.match(/^\\/api\\/admin\\/campaigns\\/([^/]+)\\/status$/);
  if(cm&&method==="PATCH"){
-  const b=await parse(req),status=str(b.status,16),old=await db.prepare("SELECT status FROM campaign_drafts WHERE id=?").bind(cm[1]).first();
+  const b=await parse(req),status=str(b.status,16),old=await db.prepare(
+   "SELECT c.*,r.rejected_at,r.media_slug,r.revision,r.replacement_id "+
+   "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id WHERE c.id=?").bind(cm[1]).first();
   if(!old)return bad("Kampanye tidak ditemukan",404);
-  if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
-  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib");
+  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib",403);
+  if(old.rejected_at)return bad("Draf telah ditolak. Tinjau draf pengganti.",409);
+  if(status==="REJECTED"){
+   if(old.status!=="DRAFT")return bad("Hanya draf yang belum disetujui dapat ditolak",409);
+   const reason=str(b.reason,180);
+   if(reason.length<3)return bad("Tuliskan alasan penolakan minimal 3 karakter",422);
+   const revision=Number(old.revision||0)+1;
+   if(revision>100)return bad("Batas revisi tercapai; buat draf manual",422);
+   const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+   const caption=replacementCampaignCaption({activity_id:old.activity_id,platform:old.platform,reason,revision,date:day});
+   const originalSlug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
+   const newPhoto=campaignPhotoForDraft(old.activity_id,caption,originalSlug,revision);
+   const replacementId=uuid();
+   // Transactional write: no duplicate replacement on repeat rejection or owner double-click.
+   try{
+    await db.batch([
+     db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
+      .bind(replacementId,old.activity_id,old.platform,caption,"DRAFT"),
+     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?)")
+      .bind(replacementId,newPhoto.slug,revision),
+     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision,rejected_at,rejection_reason,replacement_id) "+
+      "VALUES(?,?,?,CURRENT_TIMESTAMP,?,?) ON CONFLICT(campaign_id) DO UPDATE SET "+
+      "rejected_at=CURRENT_TIMESTAMP,rejection_reason=excluded.rejection_reason,replacement_id=excluded.replacement_id "+
+      "WHERE campaign_review_records.rejected_at IS NULL")
+      .bind(cm[1],originalSlug,Number(old.revision||0),reason,replacementId),
+     db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
+      .bind(uuid(),"campaign",cm[1],"REJECTED_REGENERATED",JSON.stringify({reason,revision,replacement_id:replacementId,media_slug:newPhoto.slug}))
+    ]);
+   }catch(_){return bad("Gagal membuat pengganti atau draf sudah diproses. Muat ulang status.",409);}
+   return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto});
+  }
+  if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid",409);
   const posted=str(b.public_url,500);
-  if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL unggahan nyata dibutuhkan. Aplikasi tidak posting otomatis");
-  await db.prepare("UPDATE campaign_drafts SET status=?,public_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,status==="PUBLISHED"?posted:null,cm[1]).run();
-  await audit(db,"campaign",cm[1],status,{url:posted||null});return json({id:cm[1],status});
+  if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL HTTPS posting nyata dibutuhkan. Dashboard tidak menerbitkan konten");
+  if(status==="APPROVED"){
+   const slug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
+   await db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) "+
+    "ON CONFLICT(campaign_id) DO NOTHING").bind(cm[1],slug,Number(old.revision||0)).run();
+  }
+  await db.prepare("UPDATE campaign_drafts SET status=?,public_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+   .bind(status,status==="PUBLISHED"?posted:null,cm[1]).run();
+  await audit(db,"campaign",cm[1],status,{url:posted||null});
+  return json({id:cm[1],status});
  }
  const sm=path.match(/^\/api\/admin\/leads\/([^/]+)\/assistant$/);
  if(sm&&method==="POST"){
