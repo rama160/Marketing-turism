@@ -528,7 +528,7 @@ async function route(req,env,ctx){
    }catch(_){return bad("Gagal membuat pengganti atau draf sudah diproses. Muat ulang status.",409);}
    return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto,generator});
   }
-  if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid",409);
+  if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
   const posted=str(b.public_url,500);
   if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL HTTPS posting nyata dibutuhkan. Dashboard tidak menerbitkan konten");
   if(status==="APPROVED"){
