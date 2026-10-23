@@ -231,30 +231,45 @@ $("#businessForm").onsubmit=async e=>{
  catch(e){say("#adminFeedback",e.message)}
 };
 function renderCampaigns(){
- const now=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
- const day=new Date(now+"T00:00:00Z");
- day.setUTCDate(day.getUTCDate()-(day.getUTCDay()+6)%7);
- const monday=day.toISOString().slice(0,10);
- const older=c=>c.status==="DRAFT"&&String(c.created_at||"").slice(0,10)<monday;
- const recent=data.campaigns.filter(c=>!older(c)),historic=data.campaigns.filter(older);
- function item(c,history=false){
+ const localDay=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+ const monday=new Date(localDay+"T00:00:00Z");
+ monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ const week=monday.toISOString().slice(0,10);
+ const history=c=>c.status==="REJECTED"||(c.status==="DRAFT"&&String(c.created_at||"").slice(0,10)<week&&!(c.caption||"").startsWith("[REVIEW "+localDay));
+ const current=data.campaigns.filter(c=>!history(c)),archived=data.campaigns.filter(history);
+ function card(c,old=false){
+  const photo=c.preview_photo||{},slug=String(photo.slug||"");
+  const image=slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
+  const title=c.activity_id==="SNORKELING_3_SPOTS"?"Snorkeling Nusa Penida":"Island Tour Nusa Penida";
   const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
-  const created=String(c.created_at||"").slice(0,10);
-  const when=planned?"Rencana editorial: "+planned[1]:"Dibuat: "+created+" (bukan tanggal publikasi)";
-  return '<div class="item"><div class="meta"><b>'+esc(c.platform)+' · '+esc(c.activity_id)+'</b><span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div>'+
-   '<small>'+esc(when)+(history?" · Arsip draf lama, perlu diperbarui":"")+'</small>'+
-   '<small>'+esc(c.caption.slice(0,330))+'</small><div class="actions">'+
-   (!history&&c.status==="DRAFT"?'<button class="outline" data-action="approveCampaign" data-id="'+esc(c.id)+'">Setujui</button>':"")+
-   (c.status==="APPROVED"?'<button class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Tandai sudah diposting</button>':"")+
-   (c.status==="PUBLISHED"?'<button class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+
-   '</div><small>ID tracking: '+esc(c.id)+'</small></div>';
+  const label=planned?"Ide editorial "+planned[1]:"Dibuat "+String(c.created_at||"").slice(0,10);
+  const page=c.activity_id==="SNORKELING_3_SPOTS"?"/snorkeling.html":/diamond|atuh|east|timur/i.test(c.caption)?"/east-tour.html":"/west-tour.html";
+  const credit=photo.source?.startsWith("https://commons.wikimedia.org/wiki/File:")?
+   '<a href="'+esc(photo.source)+'" target="_blank" rel="noopener noreferrer">'+esc(photo.credit)+' / '+esc(photo.license)+'</a>':"Foto referensi katalog";
+  const actions=c.status==="DRAFT"&&!old?
+   '<button class="primary" type="button" data-action="approveCampaign" data-id="'+esc(c.id)+'">✓ Setujui draf</button>'+
+   '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak &amp; Buat Ulang</button>':"";
+  const after=c.status==="REJECTED"?
+   '<small>Alasan: '+esc(c.rejection_reason||"Revisi diminta")+' · ID pengganti: '+esc(c.replacement_id||"—")+'</small>':"";
+  return '<article class="campaignPreviewCard">'+
+   '<div class="campaignVisual"><img src="'+esc(image)+'" alt="'+esc(photo.alt||title)+'" loading="lazy" decoding="async" data-photo-slug="'+esc(slug)+'">'+
+   '<small>Foto destinasi untuk review, bukan bukti posting</small></div>'+
+   '<div class="campaignPreviewText"><div class="meta"><strong>'+esc(title)+' · '+esc(c.platform)+'</strong> <span class="pill '+(c.status==="PUBLISHED"?"good":"")+'">'+esc(c.status)+'</span></div>'+
+   '<small>'+esc(label)+' · Revisi '+esc(c.revision||0)+'</small>'+
+   '<div class="campaignCaption" aria-label="Pratinjau caption utuh">'+esc(c.caption)+'</div>'+
+   '<small class="campaignCredit">Kredit foto: '+credit+'</small>'+
+   (photo.is_illustrative?'<small>Ilustrasi lokasi; bukan dokumentasi spot spesifik.</small>':"")+
+   '<a class="textLink" href="'+esc(page)+'" target="_blank" rel="noopener noreferrer">Lihat halaman paket wisata ↗</a>'+
+   '<div class="actions campaignReviewActions">'+actions+
+   (c.status==="APPROVED"?'<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
+   (c.status==="PUBLISHED"?'<button type="button" class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+
+   '</div>'+after+'<small>ID tracking: '+esc(c.id)+'</small></div></article>';
  }
- $("#campaignList").innerHTML=
-  '<p class="feedback">Daftar terbaru: '+recent.length+' kampanye. Tanggal pada caption REVIEW adalah tanggal ide editorial, bukan bukti posting terjadwal di Meta/Metricool.</p>'+
-  (recent.map(c=>item(c)).join("")||'<p>Belum ada draf minggu ini. Draf otomatis dibuat Senin pukul 09.00 WITA; jika terlewat, Cron harian memulihkannya. Tombol "Siapkan 7 draf minggu ini" juga tersedia.</p>')+
-  (historic.length?'<details class="item"><summary>Riwayat draf lama ('+historic.length+') — tidak dihapus</summary>'+
-   '<p class="feedback">Draf minggu sebelumnya tetap disimpan sebagai arsip. Buat draf baru sebelum menyetujui materi lama.</p>'+
-   historic.map(c=>item(c,true)).join("")+'</details>':"");
+ $("#campaignList").innerHTML='<p class="feedback">Tinjau <strong>foto, caption lengkap, dan kanal</strong> sebelum memutuskan. Menyetujui draf tidak langsung memposting. Menolak akan menyimpan alasan dan segera membuat alternatif baru untuk ditinjau.</p>'+
+  (current.map(x=>card(x)).join("")||'<p>Belum ada draf baru. Klik Siapkan 7 draf minggu ini untuk membuat rencana editorial.</p>')+
+  (archived.length?'<details class="item"><summary>Riwayat draf lama / ditolak ('+archived.length+')</summary>'+
+   '<p class="feedback">Buat draf baru sebelum menyetujui materi lama. Draf yang ditolak tidak dapat disetujui lagi.</p>'+
+   archived.map(x=>card(x,true)).join("")+'</details>':"");
 }
 function renderMarketingIntelligence(){
  const root=$("#marketingInsights"),info=data.marketingIntel;
@@ -369,6 +384,20 @@ document.addEventListener("click",async e=>{
    lastSales=res.reply;$("#salesOutput").textContent="Skor lead "+res.score+"/100 ("+res.stage+"), generator "+res.generator+"\n\n"+res.reply+"\n\nDraf untuk diperiksa sebelum menghubungi guest.";changeTab("leads");
   }
   if(a==="copyCampaignLink"){const url=location.origin+"/?campaign="+encodeURIComponent(id);await navigator.clipboard.writeText(url);say("#adminFeedback","Tautan kampanye tersalin, publikasi dilakukan manual.",true)}
+  if(a==="rejectCampaign"){
+   const reason=prompt("Mengapa draf ini ditolak? Contoh: gambar kurang cocok / caption terlalu formal / ganti sudut destinasi:");
+   if(reason===null)return;
+   if(reason.trim().length<3){say("#adminFeedback","Tuliskan alasan penolakan minimal 3 karakter.");return;}
+   if(!confirm("Tolak draf ini dan langsung buat alternatif caption + gambar? Draf sebelumnya tetap tersimpan di riwayat."))return;
+   button.disabled=true;
+   try{
+    const result=await api("admin/campaigns/"+encodeURIComponent(id)+"/status","PATCH",
+     {status:"REJECTED",owner_confirmed:true,reason:reason.trim()});
+    await refresh();
+    say("#adminFeedback","Draf ditolak. Alternatif baru sudah dibuat (ID: "+result.replacement_id+"). Silakan periksa preview foto dan caption.",true);
+   }finally{button.disabled=false;}
+   return;
+  }
   if(a==="approveCampaign"||a==="publishCampaign"){
    const status=a==="approveCampaign"?"APPROVED":"PUBLISHED",payload={status,owner_confirmed:true};
    if(status==="PUBLISHED"){

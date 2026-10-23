@@ -1,6 +1,7 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
-import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
+import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
+import {campaignPhotoForDraft,campaignPhotoBySlug} from "./marketing-media.mjs";
 import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
 import {metaPublicationConfig,metaConnectionStatus,checkMetaReadAccess,publishMetaTourism} from "./meta-publisher.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
@@ -455,7 +456,15 @@ async function route(req,env,ctx){
   }
  }
  if(path==="/api/admin/campaigns"){
-  if(method==="GET")return json({items:(await db.prepare("SELECT * FROM campaign_drafts ORDER BY created_at DESC LIMIT 200").all()).results});
+  if(method==="GET"){
+   const rows=await db.prepare("SELECT c.*,r.media_slug,r.revision,r.rejected_at,r.rejection_reason,r.replacement_id "+
+    "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id "+
+    "ORDER BY c.created_at DESC,c.rowid DESC LIMIT 200").all();
+   return json({items:rows.results.map(x=>{
+    const preview=x.media_slug?campaignPhotoBySlug(x.media_slug):campaignPhotoForDraft(x.activity_id,x.caption);
+    return {...x,status:x.rejected_at?"REJECTED":x.status,preview_photo:preview};
+   })});
+  }
   if(method==="POST"){
    const b=await parse(req),activity=str(b.activity_id,80),platform=str(b.platform,50),caption=str(b.caption,2500);
    if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity)||!["Instagram","Facebook","TikTok","Website","WhatsApp Status","WhatsApp Business","Google Business Profile","YouTube Shorts","Telegram","Tripadvisor","GetYourGuide (mitra)","Klook (mitra)"].includes(platform)||caption.length<20)return bad("Konten kampanye tidak lengkap");
@@ -465,14 +474,72 @@ async function route(req,env,ctx){
  }
  const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
  if(cm&&method==="PATCH"){
-  const b=await parse(req),status=str(b.status,16),old=await db.prepare("SELECT status FROM campaign_drafts WHERE id=?").bind(cm[1]).first();
+  const b=await parse(req),status=str(b.status,16),old=await db.prepare(
+   "SELECT c.*,r.rejected_at,r.media_slug,r.revision,r.replacement_id "+
+   "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id WHERE c.id=?").bind(cm[1]).first();
   if(!old)return bad("Kampanye tidak ditemukan",404);
+  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib",403);
+  if(old.rejected_at)return bad("Draf telah ditolak. Tinjau draf pengganti.",409);
+  if(status==="REJECTED"){
+   if(old.status!=="DRAFT")return bad("Hanya draf yang belum disetujui dapat ditolak",409);
+   const reason=str(b.reason,180);
+   if(reason.length<3)return bad("Tuliskan alasan penolakan minimal 3 karakter",422);
+   const revision=Number(old.revision||0)+1;
+   if(revision>100)return bad("Batas revisi tercapai; buat draf manual",422);
+   const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+   let caption=replacementCampaignCaption({activity_id:old.activity_id,platform:old.platform,reason,revision,date:day});
+   let generator="SAFE_EDITORIAL_FALLBACK";
+   // Workers AI is optional: owner gets a draft immediately even when AI is unavailable.
+   // No guests, tokens, rates or payment data is sent to the model.
+   if(env.AI){
+    try{
+     const output=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
+      {role:"system",content:"You are an Indonesian tourism editorial assistant. Produce ONE ORIGINAL social media caption in the same language as the previous caption, 90-850 characters. Do not invent prices, discounts, safety guarantees, wildlife sightings, live availability, legal authorizations, testimonials, or specific unverified inclusions. Do not use markdown or quotes. This is an OWNER REVIEW DRAFT and must never be published without approval. Avoid repeating the previous wording. End with an inviting question and hashtags."},
+      {role:"user",content:"Brand Nusa Penida Experiences; platform "+old.platform+"; product "+old.activity_id+". Owner rejected prior draft with feedback: "+reason+". Prior copy: "+old.caption.slice(0,700)+". Write a different persuasive caption."}
+     ]});
+     const suggestion=str(output?.response||"",1150);
+     const forbidden=/\b(rp\s?\d|guaranteed|100%|pasti melihat manta|gratis|free trip|discount|diskon|terjamin|insurance included)\b/i;
+     if(suggestion.length>=90&&suggestion.length<=850&&!forbidden.test(suggestion)){
+      const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+
+       (old.activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":"island-tour.html");
+      caption="[REVIEW "+day+" · AI · V"+revision+"] "+suggestion+" "+link;
+      generator="WORKERS_AI";
+     }
+    }catch(_){/* Fall back to curated safe alternatives; never block owner. */}
+   }
+   const originalSlug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
+   const newPhoto=campaignPhotoForDraft(old.activity_id,caption,originalSlug,revision);
+   const replacementId=uuid();
+   // Transactional write: no duplicate replacement on repeat rejection or owner double-click.
+   try{
+    await db.batch([
+     db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
+      .bind(replacementId,old.activity_id,old.platform,caption,"DRAFT"),
+     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?)")
+      .bind(replacementId,newPhoto.slug,revision),
+     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision,rejected_at,rejection_reason,replacement_id) "+
+      "VALUES(?,?,?,CURRENT_TIMESTAMP,?,?) ON CONFLICT(campaign_id) DO UPDATE SET "+
+      "rejected_at=CURRENT_TIMESTAMP,rejection_reason=excluded.rejection_reason,replacement_id=excluded.replacement_id "+
+      "WHERE campaign_review_records.rejected_at IS NULL")
+      .bind(cm[1],originalSlug,Number(old.revision||0),reason,replacementId),
+     db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
+      .bind(uuid(),"campaign",cm[1],"REJECTED_REGENERATED",JSON.stringify({reason,revision,replacement_id:replacementId,media_slug:newPhoto.slug,generator}))
+    ]);
+   }catch(_){return bad("Gagal membuat pengganti atau draf sudah diproses. Muat ulang status.",409);}
+   return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto,generator});
+  }
   if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
-  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib");
   const posted=str(b.public_url,500);
-  if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL unggahan nyata dibutuhkan. Aplikasi tidak posting otomatis");
-  await db.prepare("UPDATE campaign_drafts SET status=?,public_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,status==="PUBLISHED"?posted:null,cm[1]).run();
-  await audit(db,"campaign",cm[1],status,{url:posted||null});return json({id:cm[1],status});
+  if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL HTTPS posting nyata dibutuhkan. Dashboard tidak menerbitkan konten");
+  if(status==="APPROVED"){
+   const slug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
+   await db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) "+
+    "ON CONFLICT(campaign_id) DO NOTHING").bind(cm[1],slug,Number(old.revision||0)).run();
+  }
+  await db.prepare("UPDATE campaign_drafts SET status=?,public_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+   .bind(status,status==="PUBLISHED"?posted:null,cm[1]).run();
+  await audit(db,"campaign",cm[1],status,{url:posted||null});
+  return json({id:cm[1],status});
  }
  const sm=path.match(/^\/api\/admin\/leads\/([^/]+)\/assistant$/);
  if(sm&&method==="POST"){

@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -719,5 +719,85 @@ test("daily Cron recovers a missing week, keeps outdated content in history and 
  await worker.scheduled({cron:"0 2 * * *"},env,{});
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE id!='historic-test'").get().n,7,"daily recovery is idempotent");
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,1);
+ sqlite.close();
+});
+
+test("owner can see vetted campaign photo and full preview, reject, and immediately review a different replacement",async()=>{
+ const {request,sqlite,env}=fixture();
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"SNORKELING_3_SPOTS",platform:"Instagram",
+  caption:"Temukan aktivitas snorkeling Nusa Penida dan tanya operator tentang kondisi laut serta rute. #NusaPenida"});
+ assert.equal(created.httpStatus,201);
+ assert.equal((await request("/api/admin/campaigns","GET",undefined,false)).httpStatus,401);
+ const before=await request("/api/admin/campaigns");
+ const original=before.items.find(x=>x.id===created.id);
+ assert.equal(original.status,"DRAFT");
+ assert.match(original.preview_photo.url,/^\/photos\//);
+ assert.match(original.preview_photo.source,/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+ assert.match(original.preview_photo.license,/^CC BY-SA /);
+ assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"},false)).httpStatus,401);
+ assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"REJECTED",owner_confirmed:true,reason:"  "})).httpStatus,422);
+ const reject=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"});
+ assert.equal(reject.status,"REJECTED");
+ assert.equal(reject.replacement_status,"DRAFT");
+ assert.ok(reject.replacement_id);
+ assert.notEqual(reject.preview_photo.slug,original.preview_photo.slug);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,2);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM audit_log WHERE action='REJECTED_REGENERATED'").get().count,1);
+ const after=await request("/api/admin/campaigns");
+ const previous=after.items.find(x=>x.id===created.id);
+ const replacement=after.items.find(x=>x.id===reject.replacement_id);
+ assert.equal(previous.status,"REJECTED");
+ assert.equal(previous.rejection_reason,"Foto kurang menarik");
+ assert.equal(previous.replacement_id,reject.replacement_id);
+ assert.equal(replacement.status,"DRAFT");
+ assert.equal(replacement.revision,1);
+ assert.notEqual(replacement.caption,original.caption);
+ assert.notEqual(replacement.preview_photo.slug,original.preview_photo.slug);
+ assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"REJECTED",owner_confirmed:true,reason:"Sekali lagi"})).httpStatus,409);
+ assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"APPROVED",owner_confirmed:true})).httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,2);
+ const approved=await request("/api/admin/campaigns/"+replacement.id+"/status","PATCH",
+  {status:"APPROVED",owner_confirmed:true});
+ assert.equal(approved.status,"APPROVED");
+ const checked=(await request("/api/admin/campaigns")).items.find(x=>x.id===replacement.id);
+ assert.equal(checked.status,"APPROVED");
+ assert.equal(checked.preview_photo.slug,replacement.preview_photo.slug);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM marketing_publications WHERE status='POSTED'").get().count,0);
+ sqlite.close();
+});
+test("owner can reject successive replacements while preserving both originals and feedback",async()=>{
+ const {request,sqlite,env}=fixture();
+ const first=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Facebook",
+  caption:"Jelajahi West Nusa Penida bersama operator lokal dan rencanakan perjalanan berdasarkan tanggal Anda."});
+ const r1=await request("/api/admin/campaigns/"+first.id+"/status","PATCH",
+  {status:"REJECTED",reason:"Ganti gambar",owner_confirmed:true});
+ const r2=await request("/api/admin/campaigns/"+r1.replacement_id+"/status","PATCH",
+  {status:"REJECTED",reason:"Ganti gaya caption",owner_confirmed:true});
+ assert.equal(r2.status,"REJECTED");
+ assert.notEqual(r2.replacement_id,r1.replacement_id);
+ const items=(await request("/api/admin/campaigns")).items;
+ assert.equal(items.filter(x=>x.status==="REJECTED").length,2);
+ assert.equal(items.filter(x=>x.status==="DRAFT").length,1);
+ assert.equal(items.find(x=>x.id===r2.replacement_id).revision,2);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,3);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM audit_log WHERE action='REJECTED_REGENERATED'").get().count,2);
+ sqlite.close();
+});
+test("failed Workers AI regeneration falls back to safe editorial draft without auto posting",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.AI={run:async()=>{throw Error("AI quota exhausted")}};
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Instagram",
+  caption:"Jelajahi pesona Nusa Penida Barat serta pemandangan laut yang memikat. Tanyakan pilihan rute."});
+ const r=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"REJECTED",owner_confirmed:true,reason:"Buat lebih estetik"});
+ assert.equal(r.status,"REJECTED");
+ assert.equal(r.generator,"SAFE_EDITORIAL_FALLBACK");
+ assert.equal((await request("/api/admin/campaigns")).items.find(x=>x.id===r.replacement_id).status,"DRAFT");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM marketing_publications WHERE status='POSTED'").get().count,0);
  sqlite.close();
 });

@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v19/);
+ assert.match(read("service-worker.js"),/public-v20/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -313,5 +313,22 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v19/);
+ assert.match(sw,/marketing-turism-public-v20/);
+});
+
+test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
+ const app=read("app.js"),style=read("styles.css");
+ assert.match(app,/campaignPreviewCard/);
+ assert.match(app,/campaignVisual/);
+ assert.match(app,/campaignCaption/);
+ assert.match(app,/preview_photo/);
+ assert.match(app,/data-action="rejectCampaign"/);
+ assert.match(app,/Tolak &amp; Buat Ulang/);
+ assert.match(app,/status:"REJECTED"/);
+ assert.match(app,/owner_confirmed:true/);
+ assert.match(app,/replacement_id/);
+ assert.match(app,/Data diperbarui|Data diperbarui/);
+ assert.match(style,/\.campaignVisual img/);
+ assert.match(style,/\.campaignReviewActions/);
+ assert.match(read("service-worker.js"),/public-v20/);
 });
