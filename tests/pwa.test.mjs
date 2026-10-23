@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v18/);
+ assert.match(read("service-worker.js"),/public-v19/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
