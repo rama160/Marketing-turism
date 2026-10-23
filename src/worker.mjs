@@ -83,7 +83,7 @@ async function prepareMarketingWeek(db,dateString,source){
   if(!late)return item;
   const d=new Date(dateString+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+i);
   const planned_date=d.toISOString().slice(0,10);
-  return {...item,planned_date,caption:item.caption.replace(/^\\[REVIEW [^\\]]+\\]/,
+  return {...item,planned_date,caption:item.caption.replace(/^\[REVIEW [^\]]+\]/,
    "[REVIEW "+planned_date+" · "+item.lang.toUpperCase()+"]")};
  });
  const learned=marketingIntelligence(await marketingEvidence(db,dateString),drafts,dateString);
