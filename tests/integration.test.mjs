@@ -264,7 +264,6 @@ test("independent Meta cron is disabled until owner supplies specific publishing
  const today=new Date().toISOString().slice(0,10);
  const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
  assert.equal(made.httpStatus,200);
- const today=new Date().toISOString().slice(0,10);
  const monday=new Date(today+"T00:00:00Z");monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
  const expected=today===monday.toISOString().slice(0,10)?3:0;
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,expected);
