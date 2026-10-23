@@ -1,3 +1,10 @@
+## 3.8.0 — 23 October 2026: owner visual campaign review & rejection regeneration
+- Marketing dashboard now shows a preview photo from licensed local gallery, full caption, language/date label, relevant public tour link and photo credit before approval.
+- Every unreviewed DRAFT presents **Setujui draf** and **Tolak & Buat Ulang**. Reject requires a brief reason and explicit owner confirmation. It immediately creates a new DRAFT for the same product/channel with a different photo and revised copy. Workers AI attempts an original caption when available; a curated safe fallback guarantees an immediate replacement without service dependency. Human review remains required.
+- All rejection reasons, versions and predecessor→replacement links are saved in additive D1 `0014_campaign_reviews.sql` and audited, with repeat/parallel rejection protected. A rejected draft cannot be approved, while older campaigns and existing records remain untouched.
+- Existing Meta direct posting flags, Metricool scheduled posts, public guest leads and WhatsApp send setting unchanged. Approval **does not publish**; publishing manually requires a real URL. No new Cron schedules.
+- Bumped offline PWA cache to v20, extended regression tests and deployment migration.
+
 ## 3.8.0 — 23 October 2026: Meta 401 guidance and overdue campaign draft recovery
 - Audit live D1: Page and Instagram Graph read checks return HTTP 401 with the Cloudflare Page token. Credentials are configured but rejected by Meta; manual replacement of the **correct Page Access Token** in the existing Cloudflare Secret `META_PAGE_ACCESS_TOKEN` is required. Do not place credentials in GitHub, website forms, or chat.
 - Daily 10.00 WITA Cron now idempotently restores the current week's missed `WEEKLY_MARKETING_DRAFTS`, even if Monday 09.00 WITA Cron did not execute. Late recovery generates seven review-only drafts with future editorial dates, logs a strategy decision, and **does not enqueue Meta publication slots for late-start weeks**.
