@@ -77,7 +77,15 @@ async function runMetaDiagnostic(db,env,source){
 async function prepareMarketingWeek(db,dateString,source){
  const monday=marketingWeekStart(dateString),runId="campaign-week-"+monday;
  if(await db.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first())return {week_start:monday,generated:0,status:"ALREADY_PREPARED"};
- const drafts=weeklyDrafts(monday);
+ // Daily recovery creates new future-dated review drafts, not expired editorial suggestions.
+ const late=dateString>monday;
+ const drafts=weeklyDrafts(monday).map((item,i)=>{
+  if(!late)return item;
+  const d=new Date(dateString+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+i);
+  const planned_date=d.toISOString().slice(0,10);
+  return {...item,planned_date,caption:item.caption.replace(/^\[REVIEW [^\]]+\]/,
+   "[REVIEW "+planned_date+" · "+item.lang.toUpperCase()+"]")};
+ });
  const learned=marketingIntelligence(await marketingEvidence(db,dateString),drafts,dateString);
  const ranked=learned.recommendations.map(x=>({...x,recommended_hour:learned.best_hours[x.platform]?.hour??null}));
  const statements=[
@@ -96,13 +104,13 @@ async function prepareMarketingWeek(db,dateString,source){
   if(chosen.length===1&&covered.has(item.activity_id)&&eligible.some(c=>!covered.has(c.activity_id)&&!chosen.some(y=>y.index===c.index)))continue;
   chosen.push(item);covered.add(item.activity_id);
  }
- for(const [n,item] of chosen.entries()){
+ if(!late)for(const [n,item] of chosen.entries()){
   const date=new Date(monday+"T00:00:00Z");date.setUTCDate(date.getUTCDate()+[0,2,4][n]);
   statements.push(db.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)")
    .bind(uuid(),monday,date.toISOString().slice(0,10),item.index,"READY"));
  }
  statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-  .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,observations:learned.observation_count,automatically_published:false})));
+  .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,late_recovery:late,publication_slots:late?0:chosen.length,observations:learned.observation_count,automatically_published:false})));
  await db.batch(statements);
  return {week_start:monday,generated:drafts.length,status:"DRAFT_REVIEW",observations_used:learned.observation_count,
   best_hours:learned.best_hours,ranked:ranked.slice(0,3),publication:"NONE"};
@@ -591,6 +599,9 @@ export default {
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
+   // Recover missed Monday work without enqueuing any past-dated Meta post.
+   try{await prepareMarketingWeek(env.DB,day,"DAILY_RECOVERY");}
+   catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
    await runIndependentMetaPublication(env.DB,env,day);

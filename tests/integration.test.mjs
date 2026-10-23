@@ -264,7 +264,9 @@ test("independent Meta cron is disabled until owner supplies specific publishing
  const today=new Date().toISOString().slice(0,10);
  const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
  assert.equal(made.httpStatus,200);
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,3);
+ const monday=new Date(today+"T00:00:00Z");monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ const expected=today===monday.toISOString().slice(0,10)?3:0;
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,expected);
  const previous=sqlite.prepare("SELECT status FROM marketing_publications").all();
  assert.ok(previous.every(p=>p.status==="READY"));
  await worker.scheduled({cron:"0 2 * * *"},env,{});
@@ -691,4 +693,31 @@ test("unconfigured internal diagnostics do not call Meta or enable publishing",a
   assert.equal(report.graph_api_verified,false);
   assert.equal(report.publishing_enabled,false);
  }finally{globalThis.fetch=originalFetch;sqlite.close();}
+});
+
+test("daily Cron recovers a missing week, keeps outdated content in history and never queues past dates",async()=>{
+ const {request,sqlite,env}=fixture();
+ const today=new Date().toISOString().slice(0,10);
+ const monday=new Date(today+"T00:00:00Z");
+ monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ const week=monday.toISOString().slice(0,10);
+ // Historical draf remains present, but it does not replace current weekly review.
+ sqlite.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status,created_at) VALUES(?,?,?,?,?,?)").run(
+  "historic-test","SNORKELING_3_SPOTS","Website","[AUTO 2026-10-18] Previously created historical draft text, do not erase it","DRAFT","2026-10-18 01:00:00");
+ await worker.scheduled({cron:"0 2 * * *"},env,{});
+ const ledger=sqlite.prepare("SELECT id FROM scheduled_runs WHERE id=?").get("campaign-week-"+week);
+ assert.ok(ledger,"missed weekly schedule recovered by existing daily Cron");
+ const drafts=sqlite.prepare("SELECT caption,status FROM campaign_drafts WHERE id!='historic-test'").all();
+ assert.equal(drafts.length,7);
+ assert.ok(drafts.every(x=>x.status==="DRAFT"));
+ const dates=drafts.map(x=>/\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(x.caption)?.[1]);
+ assert.ok(dates.every(Boolean));
+ assert.ok(dates.every(x=>x>=today),"never show past review dates during recovery");
+ const queue=sqlite.prepare("SELECT intended_date FROM marketing_publications").all();
+ if(today!==week)assert.equal(queue.length,0,"late recovery does not schedule stale direct social posts");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
+ await worker.scheduled({cron:"0 2 * * *"},env,{});
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE id!='historic-test'").get().n,7,"daily recovery is idempotent");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,1);
+ sqlite.close();
 });

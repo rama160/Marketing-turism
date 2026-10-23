@@ -1,3 +1,9 @@
+## 3.8.0 — 23 October 2026: Meta 401 guidance and overdue campaign draft recovery
+- Audit live D1: Page and Instagram Graph read checks return HTTP 401 with the Cloudflare Page token. Credentials are configured but rejected by Meta; manual replacement of the **correct Page Access Token** in the existing Cloudflare Secret `META_PAGE_ACCESS_TOKEN` is required. Do not place credentials in GitHub, website forms, or chat.
+- Daily 10.00 WITA Cron now idempotently restores the current week's missed `WEEKLY_MARKETING_DRAFTS`, even if Monday 09.00 WITA Cron did not execute. Late recovery generates seven review-only drafts with future editorial dates, logs a strategy decision, and **does not enqueue Meta publication slots for late-start weeks**.
+- Owner dashboard separates historic DRAFTs in a collapsible history while retaining D1 records/audit, labels creation dates distinctly from real publication dates, explains Graph HTTP 401 and converts diagnostic timestamps to WITA.
+- Bump PWA cache to v19; all existing Cloudflare, Spenva, WhatsApp, checkout, and publication gates unchanged. No Graph POST/publication or alteration to existing Metricool scheduled posts.
+
 ## 3.8.0 security maintenance — Internal Meta connectivity checks (21 October 2026)
 - Reuse the existing publisher adapter for Graph GET-only Page/IG identity checks, requiring exact expected IDs even on HTTP 200.
 - The existing daily Cron (10.00 WITA) saves sanitized, daily read status in additive D1 migration `0013_meta_diagnostics.sql` with 30-day retention. No credentials, response bodies, personally identifying guest data, insights or posts are stored.

@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v18/);
+ assert.match(read("service-worker.js"),/public-v19/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -304,4 +304,14 @@ test("marketing independent Meta Graph queue does not pretend to be connected",(
  assert.match(home,/id="marketingPublicationQueue"/);
  assert.match(app,/admin\/marketing\/publications/);
  assert.match(home,/belum aktif|belum diaktifkan/);
+});
+
+test("campaign dashboard separates historic drafts and flags invalid Meta credentials clearly",()=>{
+ const app=read("app.js"),sw=read("service-worker.js");
+ assert.match(app,/Riwayat draf lama/);
+ assert.match(app,/Buat draf baru sebelum menyetujui materi lama/);
+ assert.match(app,/META_PAGE_ACCESS_TOKEN/);
+ assert.match(app,/\b401\b/);
+ assert.match(app,/Asia\/Makassar/);
+ assert.match(sw,/marketing-turism-public-v19/);
 });
