@@ -305,3 +305,13 @@ test("marketing independent Meta Graph queue does not pretend to be connected",(
  assert.match(app,/admin\/marketing\/publications/);
  assert.match(home,/belum aktif|belum diaktifkan/);
 });
+
+test("campaign dashboard separates historic drafts and flags invalid Meta credentials clearly",()=>{
+ const app=read("app.js"),sw=read("service-worker.js");
+ assert.match(app,/Riwayat draf lama/);
+ assert.match(app,/Buat draf baru sebelum menyetujui materi lama/);
+ assert.match(app,/META_PAGE_ACCESS_TOKEN/);
+ assert.match(app,/\b401\b/);
+ assert.match(app,/Asia\/Makassar/);
+ assert.match(sw,/marketing-turism-public-v19/);
+});
