@@ -268,6 +268,7 @@ function renderCampaigns(){
  $("#campaignList").innerHTML='<p class="feedback">Tinjau <strong>foto, caption lengkap, dan kanal</strong> sebelum memutuskan. Menyetujui draf tidak langsung memposting. Menolak akan menyimpan alasan dan segera membuat alternatif baru untuk ditinjau.</p>'+
   (current.map(x=>card(x)).join("")||'<p>Belum ada draf baru. Klik Siapkan 7 draf minggu ini untuk membuat rencana editorial.</p>')+
   (archived.length?'<details class="item"><summary>Riwayat draf lama / ditolak ('+archived.length+')</summary>'+
+   '<p class="feedback">Buat draf baru sebelum menyetujui materi lama. Draf yang ditolak tidak dapat disetujui lagi.</p>'+
    archived.map(x=>card(x,true)).join("")+'</details>':"");
 }
 function renderMarketingIntelligence(){
