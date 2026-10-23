@@ -731,8 +731,8 @@ test("owner can see vetted campaign photo and full preview, reject, and immediat
  const before=await request("/api/admin/campaigns");
  const original=before.items.find(x=>x.id===created.id);
  assert.equal(original.status,"DRAFT");
- assert.match(original.preview_photo.url,/^\\/photos\\//);
- assert.match(original.preview_photo.source,/^https:\\/\\/commons\\.wikimedia\\.org\\/wiki\\/File:/);
+ assert.match(original.preview_photo.url,/^\/photos\//);
+ assert.match(original.preview_photo.source,/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
  assert.match(original.preview_photo.license,/^CC BY-SA /);
  assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
   {status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"},false)).httpStatus,401);
