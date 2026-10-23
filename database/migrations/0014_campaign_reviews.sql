@@ -11,3 +11,6 @@ CREATE TABLE IF NOT EXISTS campaign_review_records (
  CHECK (rejected_at IS NULL OR replacement_id IS NOT NULL)
 );
 CREATE INDEX IF NOT EXISTS idx_campaign_review_replacement ON campaign_review_records(replacement_id);
+
+-- Rejecting the same draft twice must fail atomically, even for concurrent requests.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_reject_once ON audit_log(entity,entity_id) WHERE action='REJECTED_REGENERATED';
