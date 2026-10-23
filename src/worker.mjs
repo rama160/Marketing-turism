@@ -472,7 +472,7 @@ async function route(req,env,ctx){
    await audit(db,"campaign",id,"DRAFT_CREATED",{platform,activity});return json({id,status:"DRAFT"},201);
   }
  }
- const cm=path.match(/^\\/api\\/admin\\/campaigns\\/([^/]+)\\/status$/);
+ const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
  if(cm&&method==="PATCH"){
   const b=await parse(req),status=str(b.status,16),old=await db.prepare(
    "SELECT c.*,r.rejected_at,r.media_slug,r.revision,r.replacement_id "+
