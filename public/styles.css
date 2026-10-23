@@ -196,3 +196,19 @@ body{background:#f3f7fa;color:#17374b}
 .wa-conversation textarea{width:100%;min-height:85px;margin:8px 0}
 .wa-compose-actions{flex-wrap:wrap;gap:8px}
 @media(max-width:850px){.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-items{max-height:200px}.wa-compose-actions button{flex:1 1 135px}}
+
+
+/* Owner editorial previews: real vetted photo, full copy, review decisions on mobile. */
+.campaignPreviewCard{display:grid;grid-template-columns:minmax(0,1fr);border:1px solid #d1e2e5;border-radius:18px;overflow:hidden;background:#fff;margin:16px 0;box-shadow:0 7px 24px #173d480a;min-width:0}
+.campaignVisual{position:relative;background:#e8f1f2;min-height:190px;overflow:hidden}
+.campaignVisual img{display:block;width:100%;height:clamp(190px,26vw,300px);object-fit:cover}
+.campaignVisual>small{position:absolute;bottom:9px;left:9px;right:9px;background:#113c46d9;color:#fff;border-radius:9px;padding:6px 10px;font-size:11px}
+.campaignPreviewText{padding:17px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.campaignPreviewText .meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.campaignCaption{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:14px;color:#234552;width:100%;padding:13px;border-radius:12px;background:#f3f8f9;border:1px solid #e2edef}
+.campaignCredit{overflow-wrap:anywhere;font-size:11px;color:#52707b}
+.campaignCredit a{color:#0b7263}
+.campaignReviewActions{display:flex;gap:9px;flex-wrap:wrap;width:100%}
+.campaignReviewActions button{flex:1 1 160px;white-space:normal;min-height:44px}
+@media(min-width:1050px){.campaignPreviewCard{grid-template-columns:minmax(180px,.95fr) minmax(0,1.3fr)}.campaignVisual img{height:100%;min-height:250px}}
+@media(max-width:560px){.campaignPreviewText{padding:13px}.campaignReviewActions button{flex:1 1 100%}.campaignVisual img{height:220px}}
