@@ -487,7 +487,26 @@ async function route(req,env,ctx){
    const revision=Number(old.revision||0)+1;
    if(revision>100)return bad("Batas revisi tercapai; buat draf manual",422);
    const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-   const caption=replacementCampaignCaption({activity_id:old.activity_id,platform:old.platform,reason,revision,date:day});
+   let caption=replacementCampaignCaption({activity_id:old.activity_id,platform:old.platform,reason,revision,date:day});
+   let generator="SAFE_EDITORIAL_FALLBACK";
+   // Workers AI is optional: owner gets a draft immediately even when AI is unavailable.
+   // No guests, tokens, rates or payment data is sent to the model.
+   if(env.AI){
+    try{
+     const output=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
+      {role:"system",content:"You are an Indonesian tourism editorial assistant. Produce ONE ORIGINAL social media caption in the same language as the previous caption, 90-850 characters. Do not invent prices, discounts, safety guarantees, wildlife sightings, live availability, legal authorizations, testimonials, or specific unverified inclusions. Do not use markdown or quotes. This is an OWNER REVIEW DRAFT and must never be published without approval. Avoid repeating the previous wording. End with an inviting question and hashtags."},
+      {role:"user",content:"Brand Nusa Penida Experiences; platform "+old.platform+"; product "+old.activity_id+". Owner rejected prior draft with feedback: "+reason+". Prior copy: "+old.caption.slice(0,700)+". Write a different persuasive caption."}
+     ]});
+     const suggestion=str(output?.response||"",1150);
+     const forbidden=/\\b(rp\\s?\\d|guaranteed|100%|pasti melihat manta|gratis|free trip|discount|diskon|terjamin|insurance included)\\b/i;
+     if(suggestion.length>=90&&suggestion.length<=850&&!forbidden.test(suggestion)){
+      const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+
+       (old.activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":"island-tour.html");
+      caption="[REVIEW "+day+" · AI · V"+revision+"] "+suggestion+" "+link;
+      generator="WORKERS_AI";
+     }
+    }catch(_){/* Fall back to curated safe alternatives; never block owner. */}
+   }
    const originalSlug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
    const newPhoto=campaignPhotoForDraft(old.activity_id,caption,originalSlug,revision);
    const replacementId=uuid();
@@ -504,10 +523,10 @@ async function route(req,env,ctx){
       "WHERE campaign_review_records.rejected_at IS NULL")
       .bind(cm[1],originalSlug,Number(old.revision||0),reason,replacementId),
      db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-      .bind(uuid(),"campaign",cm[1],"REJECTED_REGENERATED",JSON.stringify({reason,revision,replacement_id:replacementId,media_slug:newPhoto.slug}))
+      .bind(uuid(),"campaign",cm[1],"REJECTED_REGENERATED",JSON.stringify({reason,revision,replacement_id:replacementId,media_slug:newPhoto.slug,generator}))
     ]);
    }catch(_){return bad("Gagal membuat pengganti atau draf sudah diproses. Muat ulang status.",409);}
-   return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto});
+   return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto,generator});
   }
   if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid",409);
   const posted=str(b.public_url,500);
