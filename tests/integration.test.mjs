@@ -710,7 +710,7 @@ test("daily Cron recovers a missing week, keeps outdated content in history and 
  const drafts=sqlite.prepare("SELECT caption,status FROM campaign_drafts WHERE id!='historic-test'").all();
  assert.equal(drafts.length,7);
  assert.ok(drafts.every(x=>x.status==="DRAFT"));
- const dates=drafts.map(x=>/\\[REVIEW (\\d{4}-\\d{2}-\\d{2})/.exec(x.caption)?.[1]);
+ const dates=drafts.map(x=>/\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(x.caption)?.[1]);
  assert.ok(dates.every(Boolean));
  assert.ok(dates.every(x=>x>=today),"never show past review dates during recovery");
  const queue=sqlite.prepare("SELECT intended_date FROM marketing_publications").all();
