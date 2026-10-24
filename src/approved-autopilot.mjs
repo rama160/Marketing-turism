@@ -5,6 +5,7 @@ import {postGraph,checkMetaReadAccess} from "./meta-publisher.mjs";
 import {marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
 import {weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
 import {campaignPhotoBySlug,campaignPhotoForDraft} from "./marketing-media.mjs";
+import {resolveCampaignPhoto} from "./photo-library.mjs";
 const uid=()=>crypto.randomUUID();
 const pageHost="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
 const gBase="https://graph.facebook.com/v26.0";
@@ -21,11 +22,14 @@ function cleanCaption(text){
  if(/\[(?:AUTO|REVIEW)\s+\d{4}-/.test(content))throw Error("Caption berisi metadata editorial yang tidak valid");
  return content;
 }
-function mediaInfo(slug){
- const photo=campaignPhotoBySlug(slug);
+async function mediaInfo(db,slug){
+ const photo=await resolveCampaignPhoto(db,slug);
  if(photo.is_illustrative)throw Error("Foto ilustrasi belum boleh diposting otomatis");
- const rawUrl="https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+slug+".jpg";
- const captionCredit="Photo: "+photo.credit+" / "+photo.license+". Source: "+photo.source;
+ const rawUrl=photo.owner_supplied?
+  "https://marketing-turism-agent.finchat-ai-gateway.workers.dev"+photo.url:
+  "https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+slug+".jpg";
+ const captionCredit=photo.owner_supplied?"Photo: Nusa Penida Experiences (owner-supplied image).":
+  "Photo: "+photo.credit+" / "+photo.license+". Source: "+photo.source;
  return {photo,image_url:rawUrl,captionCredit};
 }
 export function approvedAutopilotEnabled(env){return env.META_APPROVED_AUTOPOST_ENABLED==="true";}
@@ -56,7 +60,9 @@ export async function queueApprovedCampaign(db,env,old,platforms,evidence=[],opt
   throw Error("Hanya draf aktif yang disetujui pemilik dan belum diposting dapat dijadwalkan");
  const existing=await db.prepare("SELECT id FROM approved_social_queue WHERE campaign_id=? LIMIT 1").bind(old.id).first();
  if(existing)throw Error("Draf sudah memiliki jadwal posting; tidak boleh dijadwalkan ulang tanpa pemeriksaan");
- const photo=mediaInfo(old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug);
+ const photo=await mediaInfo(db,old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug);
+ if(photo.photo.owner_supplied&&photo.photo.activity_id!==old.activity_id)
+  throw Error("Foto pribadi tidak sesuai kegiatan wisata pada draf");
  const caption=cleanCaption(old.caption)+"\n\n"+photo.captionCredit;
  if(caption.length>2200)throw Error("Caption termasuk atribusi melampaui batas Instagram");
  const slots=[];
