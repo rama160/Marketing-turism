@@ -332,3 +332,12 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(style,/\.campaignReviewActions/);
  assert.match(read("service-worker.js"),/public-v22/);
 });
+
+test("owner can deliberately schedule an old approved post without silently posting it",()=>{
+ const app=read("app.js");
+ assert.match(app,/data-action="scheduleApproved"/);
+ assert.match(app,/Jadwalkan otomatis/);
+ assert.match(app,/a==="scheduleApproved"/);
+ assert.match(app,/\/schedule"/);
+ assert.match(app,/Batalkan jadwal/);
+});
