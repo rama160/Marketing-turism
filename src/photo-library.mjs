@@ -1,6 +1,7 @@
 // Owner photo uploads: no new paid storage, preserve existing PHOTO_KV and public JPEG archive.
 // Binary JPEG only, owner auth is enforced by src/worker.mjs before upload/list/assign.
 import {campaignPhotoBySlug} from "./marketing-media.mjs";
+import {isResearchSlug,resolveResearchPhoto} from "./photo-research.mjs";
 const idRE=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i;
 const photoKey=id=>"owner-photo/v1/"+id;
 const uploadedPrefix="owner-";
@@ -16,6 +17,7 @@ function result(row){
   owner_supplied:true,created_at:row.created_at};
 }
 export async function resolveCampaignPhoto(db,slug){
+ if(isResearchSlug(slug))return resolveResearchPhoto(db,slug.slice(9));
  if(!isOwnerPhotoSlug(slug))return campaignPhotoBySlug(slug);
  const row=await db.prepare("SELECT id,title,activity_id,created_at FROM owner_photo_library WHERE id=?")
   .bind(ownerID(slug)).first();
