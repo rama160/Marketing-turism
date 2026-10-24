@@ -46,3 +46,6 @@ CREATE TABLE IF NOT EXISTS approved_social_learning (
  source_views INTEGER NOT NULL,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Last-resort concurrency guard: only one owner auto-scheduling decision per campaign.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_owner_autoapproval_once ON audit_log(entity,entity_id) WHERE action='APPROVED_SCHEDULED';
