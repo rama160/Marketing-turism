@@ -979,3 +979,90 @@ test("old APPROVED campaigns already recorded as published or rejected cannot be
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0);
  sqlite.close();
 });
+
+test("owner Add Foto uploads compressed JPEG to existing PHOTO_KV and makes a safe public URL",async()=>{
+ const {request,db,sqlite,env}=fixture();
+ const storage=new Map();
+ env.PHOTO_KV={
+  async put(k,v){storage.set(k,v instanceof ArrayBuffer?v.slice(0):v)},
+  async get(k){return storage.get(k)||null},
+  async delete(k){storage.delete(k)}
+ };
+ const bytes=new Uint8Array(16000);bytes[0]=255;bytes[1]=216;bytes[2]=255;bytes[3]=224;bytes[15998]=255;bytes[15999]=217;
+ const upload=async(authorised=true,title="Kelingking dari HP",rights=true)=>{
+  const form=new FormData();
+  form.append("file",new Blob([bytes],{type:"image/jpeg"}),"photo.jpg");
+  form.append("title",title);
+  form.append("activity_id","ISLAND_TOUR_CAR");
+  if(rights)form.append("rights_confirmed","true");
+  const req=new Request("https://agent.invalid/api/admin/photos",{method:"POST",
+   headers:authorised?{authorization:"Bearer "+TOKEN}:{},body:form});
+  const response=await worker.fetch(req,env);
+  return {status:response.status,body:await response.json()};
+ };
+ const noOwner=await upload(false);assert.equal(noOwner.status,401);
+ assert.equal(storage.size,0);
+ const noRights=await upload(true,"Kelingking",false);assert.equal(noRights.status,403);
+ assert.equal(storage.size,0);
+ const created=await upload();assert.equal(created.status,201,JSON.stringify(created.body));
+ assert.equal(created.body.status,"STORED");
+ assert.match(created.body.photo.url,/^\/photos\/owner\/[0-9a-f-]+$/);
+ assert.equal(storage.size,1);
+ const duplicate=await upload();assert.equal(duplicate.status,409);
+ assert.equal(storage.size,1);
+ const denied=await request("/api/admin/photos","GET",undefined,false);assert.equal(denied.httpStatus,401);
+ const list=await request("/api/admin/photos");
+ assert.equal(list.items.length,1);
+ assert.equal(list.items[0].title,"Kelingking dari HP");
+ const publicRequest=new Request("https://agent.invalid"+created.body.photo.url);
+ const picture=await worker.fetch(publicRequest,env);
+ assert.equal(picture.status,200);
+ assert.equal(picture.headers.get("content-type"),"image/jpeg");
+ assert.equal((await picture.arrayBuffer()).byteLength,16000);
+ const missing=await worker.fetch(new Request("https://agent.invalid/photos/owner/f0000000-aaaa-bbbb-cccc-111111111111"),env);
+ assert.equal(missing.status,404);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM owner_photo_library").get().n,1);
+ sqlite.close();
+});
+test("user-picked photo is frozen into approved Meta queue; mismatched/rejected/approved changes are refused",async()=>{
+ const {request,db,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ const storage=new Map();
+ env.PHOTO_KV={
+  put:async(k,v)=>{storage.set(k,v)},
+  get:async(k)=>storage.get(k)||null,
+  delete:async(k)=>storage.delete(k)
+ };
+ const bytes=new Uint8Array(16000);bytes.set([255,216,255,224],0);bytes.set([255,217],15998);
+ const form=new FormData();form.append("file",new Blob([bytes],{type:"image/jpeg"}),"owner.jpg");
+ form.append("title","Original East Nusa Penida");form.append("activity_id","ISLAND_TOUR_CAR");
+ form.append("rights_confirmed","true");
+ const r=await worker.fetch(new Request("https://agent.invalid/api/admin/photos",
+  {method:"POST",headers:{authorization:"Bearer "+TOKEN},body:form}),env);
+ const photo=(await r.json()).photo;assert.equal(r.status,201);
+ const camp=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Instagram",
+  caption:"Explore Diamond Beach and the seaside cliffs of Nusa Penida with the help of local guides."});
+ const invalid=await request("/api/admin/campaigns/"+camp.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true},false);
+ assert.equal(invalid.httpStatus,401);
+ const selected=await request("/api/admin/campaigns/"+camp.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true});
+ assert.equal(selected.httpStatus,200,JSON.stringify(selected));
+ const preview=(await request("/api/admin/campaigns")).items.find(x=>x.id===camp.id);
+ assert.equal(preview.preview_photo.owner_supplied,true);
+ assert.equal(preview.preview_photo.url,photo.url);
+ const approval=await request("/api/admin/campaigns/"+camp.id+"/status","PATCH",
+  {status:"APPROVED",owner_confirmed:true,auto_publish:true,platforms:["Instagram","Facebook"]});
+ assert.equal(approval.httpStatus,200,JSON.stringify(approval));
+ const queued=sqlite.prepare("SELECT * FROM approved_social_queue WHERE campaign_id=?").all(camp.id);
+ assert.equal(queued.length,2);
+ assert.equal(queued[0].photo_slug,"owner-"+photo.photo_id);
+ assert.equal(queued[0].image_url,"https://marketing-turism-agent.finchat-ai-gateway.workers.dev"+photo.url);
+ assert.match(queued[0].caption_snapshot,/owner-supplied image/);
+ const changed=await request("/api/admin/campaigns/"+camp.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true});
+ assert.equal(changed.httpStatus,422);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM approved_social_queue WHERE campaign_id=?").get(camp.id).n,2);
+ const other=await request("/api/admin/campaigns","POST",{activity_id:"SNORKELING_3_SPOTS",platform:"Facebook",
+  caption:"See the underwater world of Nusa Penida, where manta rays can sometimes be spotted."});
+ const categoryError=await request("/api/admin/campaigns/"+other.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true});
+ assert.equal(categoryError.httpStatus,422);
+ sqlite.close();
+});
