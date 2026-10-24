@@ -473,6 +473,22 @@ async function route(req,env,ctx){
    await audit(db,"campaign",id,"DRAFT_CREATED",{platform,activity});return json({id,status:"DRAFT"},201);
   }
  }
+ const oldApprovedRoute=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/schedule$/);
+ if(oldApprovedRoute&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true||b.auto_publish!==true)return bad("Konfirmasi pemilik untuk penjadwalan otomatis diperlukan",403);
+  const existing=await db.prepare("SELECT c.*,r.rejected_at,r.media_slug,r.revision "+
+   "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON c.id=r.campaign_id WHERE c.id=?")
+   .bind(oldApprovedRoute[1]).first();
+  if(!existing)return bad("Draf tidak ditemukan",404);
+  if(existing.status!=="APPROVED"||existing.rejected_at||existing.public_url)
+   return bad("Hanya draf yang sudah disetujui, belum diposting, dan belum dibatalkan dapat dijadwalkan",409);
+  try{
+   const date=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+   const queued=await queueApprovedCampaign(db,env,existing,b.platforms,await marketingEvidence(db,date),{fromApproved:true});
+   return json({id:existing.id,...queued});
+  }catch(e){return bad(String(e.message||"Penjadwalan gagal"),409);}
+ }
  const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
  if(cm&&method==="PATCH"){
   const b=await parse(req),status=str(b.status,16),old=await db.prepare(
