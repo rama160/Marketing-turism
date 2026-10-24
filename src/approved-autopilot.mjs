@@ -6,6 +6,7 @@ import {marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-inte
 import {weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
 import {campaignPhotoBySlug,campaignPhotoForDraft} from "./marketing-media.mjs";
 import {resolveCampaignPhoto} from "./photo-library.mjs";
+import {choosePhotoForReview} from "./photo-research.mjs";
 const uid=()=>crypto.randomUUID();
 const pageHost="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
 const gBase="https://graph.facebook.com/v26.0";
@@ -25,11 +26,12 @@ function cleanCaption(text){
 async function mediaInfo(db,slug){
  const photo=await resolveCampaignPhoto(db,slug);
  if(photo.is_illustrative)throw Error("Foto ilustrasi belum boleh diposting otomatis");
- const rawUrl=photo.owner_supplied?
+ const rawUrl=(photo.owner_supplied||photo.research_discovered)?
   "https://marketing-turism-agent.finchat-ai-gateway.workers.dev"+photo.url:
   "https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+slug+".jpg";
  const captionCredit=photo.owner_supplied?"Photo: Nusa Penida Experiences (owner-supplied image).":
-  "Photo: "+photo.credit+" / "+photo.license+". Source: "+photo.source;
+  "Photo: "+photo.credit+" / "+photo.license+". Source: "+photo.source+
+  (photo.license_url?" License: "+photo.license_url:"");
  return {photo,image_url:rawUrl,captionCredit};
 }
 export function approvedAutopilotEnabled(env){return env.META_APPROVED_AUTOPOST_ENABLED==="true";}
@@ -233,18 +235,26 @@ async function newLearningDraft(db,env,row,stats,sourceEvidence){
   }catch(_){}
  }
  const id=uid();
+ // The next draft researches licensed imagery when the owner has not supplied an unused photo.
+ // Photo choice remains editable until approval. Offline/invalid Commons falls back to the gallery.
+ let discovered={slug:null,origin:"FALLBACK_VETTED_GALLERY"};
+ try{discovered=await choosePhotoForReview(db,env,preferredActivity,caption,{discover:true})}catch(_){}
+ const draftSlug=discovered.slug||campaignPhotoForDraft(preferredActivity,caption).slug;
  const strategyRows=strategy.recommendations.slice(0,5).map(x=>({platform:x.platform,activity_id:x.activity_id,score:x.strategy_score,basis:x.basis,samples:x.samples}));
  try{
   await db.batch([
    db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,'DRAFT')")
     .bind(id,preferredActivity,preferredPlatform,caption),
+   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?)")
+    .bind(id,draftSlug,0),
    db.prepare("INSERT INTO approved_social_learning(queue_id,new_campaign_id,strategy_version,source_views) VALUES(?,?,?,?)")
     .bind(row.id,id,MARKETING_STRATEGY_VERSION,stats.views),
    db.prepare("INSERT INTO marketing_decisions(id,week_start,strategy_version,input_observations,ranked_json,assumptions) VALUES(?,?,?,?,?,?)")
     .bind(uid(),marketingWeekStart(day),MARKETING_STRATEGY_VERSION,strategy.observation_count,JSON.stringify(strategyRows),
      "Draf baru dari pengamatan Meta asli; "+stats.views+" views, data lainnya nullable; pemilik wajib menyetujui."),
    db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-    .bind(uid(),"campaign",id,"STRATEGY_FEEDBACK_DRAFT",JSON.stringify({source_queue_id:row.id,views:stats.views,generator,owner_review_required:true}))
+    .bind(uid(),"campaign",id,"STRATEGY_FEEDBACK_DRAFT",JSON.stringify({source_queue_id:row.id,views:stats.views,generator,owner_review_required:true,
+       photo_origin:discovered.origin,photo_slug:draftSlug}))
   ]);
   return "NEW_DRAFT_CREATED";
  }catch(_){return "ALREADY_PROCESSED";}
