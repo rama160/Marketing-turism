@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],market:[]},lastMarketing="",lastSales="";
+let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,market:[]},lastMarketing="",lastSales="";
 const say=(id,msg,success=false)=>{const el=$(id);if(el){el.textContent=msg;el.style.color=success?"#167058":"#a24836"}};
 async function api(path,method="GET",payload,admin=true){
  const headers={"accept":"application/json"};if(payload!==undefined)headers["content-type"]="application/json";
@@ -136,9 +136,9 @@ $("#unlock").onclick=async()=>{
 };
 async function refresh(){
  try{
-  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel]=await Promise.all([
-   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence")]);
-  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel};
+  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel,autoQueue]=await Promise.all([
+   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence"),api("admin/marketing/approved-queue")]);
+  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel,approvedQueue:autoQueue.posts,autopilotEnabled:autoQueue.enabled};
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
@@ -244,6 +244,17 @@ function renderCampaigns(){
   const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
   const label=planned?"Ide editorial "+planned[1]:"Dibuat "+String(c.created_at||"").slice(0,10);
   const page=c.activity_id==="SNORKELING_3_SPOTS"?"/snorkeling.html":/diamond|atuh|east|timur/i.test(c.caption)?"/east-tour.html":"/west-tour.html";
+  const queue=(data.approvedQueue||[]).filter(q=>q.campaign_id===c.id);
+  const statusLabel={QUEUED:"Terjadwal",CREATING_MEDIA:"Mengirim",AWAITING_CONTAINER:"Menunggu Instagram siap",
+   PUBLISHING:"Menerbitkan",POSTED:"Terbit",REVIEW_REQUIRED:"Perlu pemeriksaan manual",CANCELLED:"Dibatalkan"};
+  const queues=queue.map(q=>'<div class="item"><b>'+esc(q.platform)+' · '+esc(statusLabel[q.status]||q.status)+'</b>'+
+    '<small>Jadwal '+esc(q.scheduled_wita)+'</small>'+
+    (q.meta_post_id?'<small>ID posting Meta: '+esc(q.meta_post_id)+'</small>':"")+
+    (q.last_metrics?'<small>Statistik Meta: '+(q.last_metrics.views===null?"Views belum tersedia":esc(q.last_metrics.views)+" views terukur")+
+     ' · '+esc(q.last_metrics.data_status)+'</small>':"")+
+    (q.status==="QUEUED"?'<button class="outline" type="button" data-action="cancelAutoPost" data-id="'+esc(q.id)+'">Batalkan jadwal</button>':"")+
+    (q.status==="REVIEW_REQUIRED"?'<small>Posting tidak diulang otomatis. Periksa akun Meta sebelum menjadwalkan ulang secara manual.</small>':"")+
+    '</div>').join("");
   const credit=photo.source?.startsWith("https://commons.wikimedia.org/wiki/File:")?
    '<a href="'+esc(photo.source)+'" target="_blank" rel="noopener noreferrer">'+esc(photo.credit)+' / '+esc(photo.license)+'</a>':"Foto referensi katalog";
   const actions=c.status==="DRAFT"&&!old?
@@ -261,11 +272,11 @@ function renderCampaigns(){
    (photo.is_illustrative?'<small>Ilustrasi lokasi; bukan dokumentasi spot spesifik.</small>':"")+
    '<a class="textLink" href="'+esc(page)+'" target="_blank" rel="noopener noreferrer">Lihat halaman paket wisata ↗</a>'+
    '<div class="actions campaignReviewActions">'+actions+
-   (c.status==="APPROVED"?'<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
+   (c.status==="APPROVED"&&!queue.length?'<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
    (c.status==="PUBLISHED"?'<button type="button" class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+
-   '</div>'+after+'<small>ID tracking: '+esc(c.id)+'</small></div></article>';
+   '</div>'+queues+after+'<small>ID tracking: '+esc(c.id)+'</small></div></article>';
  }
- $("#campaignList").innerHTML='<p class="feedback">Tinjau <strong>foto, caption lengkap, dan kanal</strong> sebelum memutuskan. Menyetujui draf tidak langsung memposting. Menolak akan menyimpan alasan dan segera membuat alternatif baru untuk ditinjau.</p>'+
+ $("#campaignList").innerHTML='<p class="feedback">Tinjau <strong>foto, caption lengkap, dan kanal</strong> sebelum memutuskan. Jika Anda menyetujui dan memilih kanal, AI akan menjadwalkan publikasi otomatis. Penolakan membuat alternatif baru. Jadwal Metricool lama tetap terpisah.</p>'+
   (current.map(x=>card(x)).join("")||'<p>Belum ada draf baru. Klik Siapkan 7 draf minggu ini untuk membuat rencana editorial.</p>')+
   (archived.length?'<details class="item"><summary>Riwayat draf lama / ditolak ('+archived.length+')</summary>'+
    '<p class="feedback">Buat draf baru sebelum menyetujui materi lama. Draf yang ditolak tidak dapat disetujui lagi.</p>'+
@@ -282,7 +293,7 @@ function renderMarketingIntelligence(){
   '<div class="item">'+(i+1)+'. <b>'+esc(v.platform)+'</b> · '+esc(v.activity_id==="ISLAND_TOUR_CAR"?"Island Tour":"Snorkeling")+
   ' · skor strategi '+esc(v.strategy_score)+'/100 · '+esc(v.basis==="BELUM_ADA_DATA"?"uji variasi karena belum ada data":v.basis==="DATA_TERBATAS"?"data masih terbatas":"didasarkan pada metrik")+'</div>').join("");
  root.innerHTML='<p class="feedback">Observasi terverifikasi: <strong>'+num+'</strong> · Strategi v'+esc(info.strategy_version)+
-  ' · Perencanaan mingguan aktif. <strong>Publikasi mandiri langsung dari Cloudflare belum terhubung ke Meta.</strong></p>'+
+  ' · Perencanaan mingguan aktif. <strong>'+esc(data.autopilotEnabled?"Draf yang disetujui masuk antrean publikasi terjadwal.":"Penjadwalan otomatis sedang dinonaktifkan.")+'</strong> Statistik dan revisi hanya berdasarkan hasil Meta yang benar-benar tersedia.</p>'+
   '<h4>Waktu terbaik berdasarkan data</h4>'+timeLines+
   '<h4>Prioritas eksperimen konten berikutnya</h4>'+recommendations;
 }
@@ -400,12 +411,28 @@ document.addEventListener("click",async e=>{
   }
   if(a==="approveCampaign"||a==="publishCampaign"){
    const status=a==="approveCampaign"?"APPROVED":"PUBLISHED",payload={status,owner_confirmed:true};
-   if(status==="PUBLISHED"){
+   if(status==="APPROVED"){
+    const draft=data.campaigns.find(v=>v.id===id);
+    const suggested=["Instagram","Facebook"].includes(draft?.platform)?draft.platform:"Instagram,Facebook";
+    const answer=prompt("Jadwalkan publikasi otomatis ke kanal mana? Isi: Instagram, Facebook, atau Instagram,Facebook",suggested);
+    if(answer===null)return;
+    const chosen=answer.split(",").map(x=>x.trim()).filter(Boolean);
+    if(!chosen.length||chosen.length>2||chosen.some(x=>!["Instagram","Facebook"].includes(x))||
+      new Set(chosen).size!==chosen.length){say("#adminFeedback","Pilih hanya Instagram, Facebook, atau keduanya.");return;}
+    payload.auto_publish=true;payload.platforms=chosen;
+    if(!confirm("Konfirmasi: foto dan caption ini sudah layak terbit. Agen akan menentukan jadwal dan otomatis memposting ke "+chosen.join(" & ")+". Periksa agar tidak ganda dengan Metricool. Lanjutkan?"))return;
+   }else{
     const url=prompt("URL HTTPS posting yang SUDAH diterbitkan secara manual:");
     if(!url)return;payload.public_url=url;
+    if(!confirm("Catat sebagai posting manual yang sudah terbit?"))return;
    }
-   if(!confirm("Konfirmasi status kampanye "+status+"?"))return;
-   await api("admin/campaigns/"+encodeURIComponent(id)+"/status","PATCH",payload);
+   const r=await api("admin/campaigns/"+encodeURIComponent(id)+"/status","PATCH",payload);
+   if(r.post_mode==="SCHEDULED_AUTO")say("#adminFeedback","Persetujuan tersimpan. Jadwal "+r.queue.map(v=>v.platform+": "+v.scheduled_wita+" WITA").join("; "),true);
+  }
+  if(a==="cancelAutoPost"){
+   if(!confirm("Batalkan jadwal publikasi ini? Hanya antrean yang belum diproses dapat dibatalkan."))return;
+   await api("admin/marketing/approved-queue/"+encodeURIComponent(id)+"/cancel","POST",{owner_confirmed:true});
+   say("#adminFeedback","Jadwal dibatalkan. Draf dan riwayat tetap tersimpan.",true);
   }
   if(a==="verifyOperator"){if(!confirm("Operator dan syarat kerja sama sudah diverifikasi?"))return;await api("admin/operators/"+encodeURIComponent(id)+"/status","PATCH",{status:"VERIFIED"})}
   if(a==="disableOperator"){if(!confirm("Nonaktifkan operator ini?"))return;await api("admin/operators/"+encodeURIComponent(id)+"/status","PATCH",{status:"INACTIVE"})}

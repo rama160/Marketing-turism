@@ -23,12 +23,15 @@
     ]
   },
   "vars": {
-    "PUBLIC_LEADS_ENABLED": "false"
+    "PUBLIC_LEADS_ENABLED": "false",
+    "META_APPROVED_AUTOPOST_ENABLED": "true",
+    "META_EXTERNAL_POST_DATES": "2026-10-26,2026-10-28,2026-10-30"
   },
   "triggers": {
     "crons": [
       "0 1 * * 1",
-      "0 2 * * *"
+      "0 2 * * *",
+      "0 * * * *"
     ]
   },
   "kv_namespaces": [

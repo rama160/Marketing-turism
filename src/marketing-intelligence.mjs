@@ -27,13 +27,15 @@ const keyOf=v=>v.platform+":"+v.activity_id;
 // A conservative score: engagement & clicks normalised by impressions,
 // with a fixed prior to prevent overfitting to one viral or tiny post.
 function evidenceScore(rows){
- const impressions=rows.reduce((s,r)=>s+(r.impressions||0),0);
+ const impressions=rows.reduce((s,r)=>s+(Number.isSafeInteger(r.impressions)?r.impressions:(r.views||0)),0);
  const engagement=rows.reduce((s,r)=>s+(r.reactions||0)+(r.comments||0)+(r.shares||0)+(r.saves||0),0);
  const clicks=rows.reduce((s,r)=>s+(r.link_clicks||0),0);
+ const hasClickEvidence=rows.some(r=>Number.isSafeInteger(r.link_clicks));
  const engagementRate=impressions?Math.min(0.25,engagement/impressions):0;
  const clickRate=impressions?Math.min(0.12,clicks/impressions):0;
- const raw=Math.min(100,60*Math.min(1,engagementRate/0.08)+40*Math.min(1,clickRate/0.04));
- const weight=impressions/(impressions+500);
+ const raw=hasClickEvidence?Math.min(100,60*Math.min(1,engagementRate/0.08)+40*Math.min(1,clickRate/0.04)):
+  Math.min(100,100*Math.min(1,engagementRate/0.08));
+ const weight=impressions/(impressions+500); // Meta 'views' are exposure, not labeled impressions in D1
  return {score:Math.round(50*(1-weight)+raw*weight),impressions,
   engagement_rate:Number(engagementRate.toFixed(4)),click_rate:Number(clickRate.toFixed(4)),samples:rows.length};
 }
@@ -44,7 +46,8 @@ export function marketingIntelligence(observations,weekIdeas,today=new Date().to
  const start=earliest.toISOString().slice(0,10);
  const eligible=(Array.isArray(observations)?observations:[]).filter(x=>
   MARKETING_PLATFORMS.includes(x.platform)&&MARKETING_ACTIVITIES.includes(x.activity_id)&&
-  dayOK(x.observed_on)&&x.observed_on>=start&&x.observed_on<=today&&finiteInt(x.impressions));
+  dayOK(x.observed_on)&&x.observed_on>=start&&x.observed_on<=today&&
+  (finiteInt(x.impressions)||finiteInt(x.views)));
  const strategies=MARKETING_PLATFORMS.flatMap(platform=>MARKETING_ACTIVITIES.map(activity_id=>{
   const group=eligible.filter(o=>o.platform===platform&&o.activity_id===activity_id);
   const e=evidenceScore(group);
