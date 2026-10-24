@@ -1150,3 +1150,42 @@ test("research source outages keep draft workflow functional and never fabricate
  assert.equal(outcome.outcome,"EXTERNAL_UNAVAILABLE");
  sqlite.close();
 });
+
+test("weekly automatic topic research creates owner-review DRAFT with sourced media and no unapproved posts",async()=>{
+ const {db,sqlite,env,request}=fixture();
+ env.PHOTO_KV={value:new Map(),get(k){return this.value.get(k)||null},
+  put(k,v){this.value.set(k,v);return Promise.resolve()},delete(k){this.value.delete(k);return Promise.resolve()}};
+ const jpeg=new Uint8Array(22000);jpeg.set([255,216,255,224],0);jpeg.set([255,217],21998);
+ const sourceFetch=async url=>{
+  if(String(url).includes("/w/api.php")){
+   const search=new URL(url).searchParams.get("gsrsearch");
+   const name=/manta/i.test(search)?"Manta Nusa Penida snorkeling":
+    /snorkeling/i.test(search)?"Snorkeling Nusa Penida":
+    /diamond/i.test(search)?"Diamond Beach Nusa Penida":"Kelingking Beach Nusa Penida";
+   const page={title:"File:"+name+".jpg",imageinfo:[{mime:"image/jpeg",
+    thumburl:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/automatic.jpg",
+    extmetadata:{Artist:{value:"Penida photo author"},LicenseShortName:{value:"CC BY 4.0"},
+     LicenseUrl:{value:"https://creativecommons.org/licenses/by/4.0/"}}}]};
+   return new Response(JSON.stringify({query:{pages:[page]}}),{status:200,headers:{"content-type":"application/json"}});
+  }
+  return new Response(jpeg,{status:200,headers:{"content-type":"image/jpeg"}});
+ };
+ const oldFetch=globalThis.fetch;globalThis.fetch=sourceFetch;
+ try{
+  const result=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+  assert.equal(result.httpStatus,200,JSON.stringify(result));
+  assert.equal(result.generated,7);
+  const drafts=sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='DRAFT'").get().n;
+  assert.equal(drafts,7);
+  const sourced=sqlite.prepare("SELECT COUNT(*) n FROM campaign_review_records WHERE media_slug LIKE 'research-%'").get().n;
+  assert.ok(sourced>=1,"weekly prep must attach Commons media to at least one draft before approval");
+  const onlyDraft=sqlite.prepare("SELECT status FROM campaign_drafts").all().every(x=>x.status==="DRAFT");
+  assert.equal(onlyDraft,true);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0,"not posted/queued until owner approval");
+  const source=sqlite.prepare("SELECT source_url,license,author FROM researched_photo_library LIMIT 1").get();
+  assert.match(source.source_url,/commons\.wikimedia\.org/);assert.equal(source.license,"CC BY 4.0");
+  const repeated=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+  assert.equal(repeated.generated,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
+ }finally{globalThis.fetch=oldFetch;sqlite.close();}
+});
