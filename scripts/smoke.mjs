@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.9.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.10.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==false)throw Error("Pilot must remain closed until launch approval");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
@@ -80,7 +80,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v22"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v23"))throw Error("PWA asset cache did not bump");
 // Guest contact: primary click-to-chat must not be confused with public catalog.
 const number="628561752525";
 const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;

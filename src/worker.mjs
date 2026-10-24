@@ -8,6 +8,7 @@ import {approvedAutopilotEnabled,chooseApprovedSchedule,queueApprovedCampaign,ap
  cancelApprovedQueue,dispatchApprovedQueue,collectApprovedInsights,feedbackEvidence} from "./approved-autopilot.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
+import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
@@ -137,11 +138,15 @@ async function makePrice(db,b){
 }
 async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
+ if(path.startsWith("/photos/owner/")){
+  if(!db)return bad("D1 database belum aktif",503);
+  return serveOwnerPhoto(req,env,db);
+ }
  if(path.startsWith("/photos/"))return servePhoto(req,env,ctx);
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.9.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.10.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -208,6 +213,18 @@ async function route(req,env,ctx){
    return json(published);
   }
   return bad("Metode tidak diizinkan",405);
+ }
+ if(path==="/api/admin/photos"){
+  if(method==="GET")return json({items:await listOwnerPhotos(db),storage:"PHOTO_KV",limit_bytes:850000});
+  if(method==="POST")return storeOwnerPhoto(req,env,db);
+  return bad("Metode tidak diizinkan",405);
+ }
+ const ownerPhotoSelect=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/photo$/);
+ if(ownerPhotoSelect&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik diperlukan",403);
+  try{return json(await selectOwnerPhoto(db,ownerPhotoSelect[1],str(b.photo_id,40)));}
+  catch(e){return bad(String(e.message),422);}
  }
  if(path==="/api/admin/business"){
   if(method==="GET"){
@@ -461,10 +478,10 @@ async function route(req,env,ctx){
    const rows=await db.prepare("SELECT c.*,r.media_slug,r.revision,r.rejected_at,r.rejection_reason,r.replacement_id "+
     "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id "+
     "ORDER BY c.created_at DESC,c.rowid DESC LIMIT 200").all();
-   return json({items:rows.results.map(x=>{
-    const preview=x.media_slug?campaignPhotoBySlug(x.media_slug):campaignPhotoForDraft(x.activity_id,x.caption);
+   return json({items:await Promise.all(rows.results.map(async x=>{
+    const preview=x.media_slug?await resolveCampaignPhoto(db,x.media_slug):campaignPhotoForDraft(x.activity_id,x.caption);
     return {...x,status:x.rejected_at?"REJECTED":x.status,preview_photo:preview};
-   })});
+   }))});
   }
   if(method==="POST"){
    const b=await parse(req),activity=str(b.activity_id,80),platform=str(b.platform,50),caption=str(b.caption,2500);
