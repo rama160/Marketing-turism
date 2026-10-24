@@ -9,6 +9,7 @@ import {approvedAutopilotEnabled,chooseApprovedSchedule,queueApprovedCampaign,ap
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
+import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
@@ -77,7 +78,7 @@ async function runMetaDiagnostic(db,env,source){
  await db.prepare("DELETE FROM meta_connection_checks WHERE day < date('now','-30 days')").run();
  return {status:"CHECKED",history:await recentMetaChecks(db)};
 }
-async function prepareMarketingWeek(db,dateString,source){
+async function prepareMarketingWeek(db,env,dateString,source){
  const monday=marketingWeekStart(dateString),runId="campaign-week-"+monday;
  if(await db.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first())return {week_start:monday,generated:0,status:"ALREADY_PREPARED"};
  // Daily recovery creates new future-dated review drafts, not expired editorial suggestions.
@@ -90,6 +91,19 @@ async function prepareMarketingWeek(db,dateString,source){
    "[REVIEW "+planned_date+" · "+item.lang.toUpperCase()+"]")};
  });
  const learned=marketingIntelligence(await marketingEvidence(db,dateString),drafts,dateString);
+ // Bounded autonomous source discovery BEFORE new review drafts. Existing approved/queued
+ // posts never change. Never claim live trends when only exploratory/performance data exists.
+ const selectedPhotos=[],reserved=new Set(),attemptedResearch=new Set();
+ for(const draft of drafts){
+  let selection={slug:null,origin:"FALLBACK_VETTED_GALLERY"};
+  try{
+   selection=await choosePhotoForReview(db,env,draft.activity_id,draft.caption,{
+    discover:!attemptedResearch.has(draft.activity_id),exclude:reserved});
+  }catch(_){}
+  if(selection.search_status)attemptedResearch.add(draft.activity_id);
+  if(selection.slug)reserved.add(selection.slug);
+  selectedPhotos.push(selection);
+ }
  const ranked=learned.recommendations.map(x=>({...x,recommended_hour:learned.best_hours[x.platform]?.hour??null}));
  const statements=[
   db.prepare("INSERT INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS"),
@@ -98,8 +112,13 @@ async function prepareMarketingWeek(db,dateString,source){
     learned.observation_count?"Kinerja terukur; saran jam hanya jika data memenuhi batas minimum":
     "Tanpa data nyata; semua 7 konten hanya draf, tidak ada publikasi otomatis")
  ];
- for(const item of drafts)statements.push(db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
-  .bind(uuid(),item.activity_id,item.platform,item.caption,"DRAFT"));
+ for(const [i,item] of drafts.entries()){
+  const id=uuid(),picked=selectedPhotos[i];
+  statements.push(db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
+   .bind(id,item.activity_id,item.platform,item.caption,"DRAFT"));
+  if(picked.slug)statements.push(db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,0)")
+   .bind(id,picked.slug));
+ }
  // Prepare a bounded 3-post opt-in queue; Graph publication is still DISABLED by default.
  const eligible=ranked.filter(x=>x.platform==="Instagram"||x.platform==="Facebook"),chosen=[],covered=new Set();
  for(const item of eligible){
@@ -113,7 +132,8 @@ async function prepareMarketingWeek(db,dateString,source){
    .bind(uuid(),monday,date.toISOString().slice(0,10),item.index,"READY"));
  }
  statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-  .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,late_recovery:late,publication_slots:late?0:chosen.length,observations:learned.observation_count,automatically_published:false})));
+  .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,late_recovery:late,publication_slots:late?0:chosen.length,observations:learned.observation_count,automatically_published:false,
+   imagery:selectedPhotos.map(x=>({source:x.origin||"GALLERY",search:x.search_status||"NOT_REQUIRED"}))})));
  await db.batch(statements);
  return {week_start:monday,generated:drafts.length,status:"DRAFT_REVIEW",observations_used:learned.observation_count,
   best_hours:learned.best_hours,ranked:ranked.slice(0,3),publication:"NONE"};
@@ -138,6 +158,10 @@ async function makePrice(db,b){
 }
 async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
+ if(path.startsWith("/photos/research/")){
+  if(!db)return bad("D1 database belum aktif",503);
+  return serveResearchPhoto(req,env,db);
+ }
  if(path.startsWith("/photos/owner/")){
   if(!db)return bad("D1 database belum aktif",503);
   return serveOwnerPhoto(req,env,db);
@@ -506,6 +530,31 @@ async function route(req,env,ctx){
    return json({id:existing.id,...queued});
   }catch(e){return bad(String(e.message||"Penjadwalan gagal"),409);}
  }
+ const research=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/research-photo$/);
+ if(research&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik untuk foto otomatis diperlukan",403);
+  const draft=await db.prepare("SELECT c.*,r.rejected_at FROM campaign_drafts c "+
+   "LEFT JOIN campaign_review_records r ON c.id=r.campaign_id WHERE c.id=?").bind(research[1]).first();
+  if(!draft||draft.status!=="DRAFT"||draft.rejected_at)return bad("Hanya draf belum disetujui yang dapat mengganti foto",409);
+  if(!photoResearchEnabled(env))return json({status:"DISABLED"});
+  const selected=await choosePhotoForReview(db,env,draft.activity_id,draft.caption,{discover:true});
+  if(!selected.slug)return json({status:"NO_VALID_NEW_PHOTO",fallback:"GALLERY",source:"WIKIMEDIA_COMMONS",
+    note:"Sumber belum menyediakan foto dengan izin dan lokasi yang dapat diperiksa; gunakan katalog lama atau Add Foto."});
+  const check=await db.prepare("SELECT status FROM campaign_drafts WHERE id=?").bind(research[1]).first();
+  if(check?.status!=="DRAFT")return bad("Draf sudah diproses; perubahan foto dibatalkan",409);
+  await db.batch([
+   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,0) "+
+    "ON CONFLICT(campaign_id) DO UPDATE SET media_slug=excluded.media_slug WHERE rejected_at IS NULL "+
+    "AND NOT EXISTS (SELECT 1 FROM approved_social_queue WHERE campaign_id=excluded.campaign_id)")
+    .bind(research[1],selected.slug),
+   db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
+    .bind(uuid(),"campaign",research[1],"LICENSED_PHOTO_RESEARCH",JSON.stringify({
+      source:selected.origin,photo_slug:selected.slug,owner_review_required:true}))
+  ]);
+  const photo=await resolveCampaignPhoto(db,selected.slug);
+  return json({status:"PHOTO_SELECTED_FOR_REVIEW",photo,source:selected.origin});
+ }
  const cm=path.match(/^\/api\/admin\/campaigns\/([^/]+)\/status$/);
  if(cm&&method==="PATCH"){
   const b=await parse(req),status=str(b.status,16),old=await db.prepare(
@@ -670,7 +719,7 @@ async function route(req,env,ctx){
   const b=await parse(req);
   if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib untuk menyiapkan kampanye",403);
   const day=new Date().toISOString().slice(0,10);
-  return json({...await prepareMarketingWeek(db,day,"OWNER_DASHBOARD"),publication:"NONE",social_networks_connected:false});
+  return json({...await prepareMarketingWeek(db,env,day,"OWNER_DASHBOARD"),publication:"NONE",social_networks_connected:false});
  }
  if(path==="/api/admin/marketing/draft"&&method==="POST"){
   const b=await parse(req),activity=str(b.activity_id,80);
@@ -714,7 +763,7 @@ export default {
  async scheduled(event,env){
   if(!env.DB)return;
   const day=new Date().toISOString().slice(0,10);
-  if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,day,"WEEKLY_CRON");return;}
+  if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,env,day,"WEEKLY_CRON");return;}
   // Only previously approved immutable snapshots are eligible. Never retry ambiguous POSTs.
   if(event.cron==="0 * * * *"){
    try{await dispatchApprovedQueue(env.DB,env);}
@@ -728,7 +777,7 @@ export default {
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
    // Recover missed Monday work without enqueuing any past-dated Meta post.
-   try{await prepareMarketingWeek(env.DB,day,"DAILY_RECOVERY");}
+   try{await prepareMarketingWeek(env.DB,env,day,"DAILY_RECOVERY");}
    catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
