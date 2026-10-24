@@ -6,6 +6,14 @@ document.addEventListener("error",event=>{
  if(!(img instanceof HTMLImageElement))return;
  const current=new URL(img.currentSrc||img.src,location.href);
  const phase=img.dataset.photoFallbackStage||"";
+ if(/^\/photos\/(?:owner|research)\/[0-9a-f-]{36}$/.test(current.pathname)){
+  if(img.dataset.localPhotoFailed!=="1"){
+   img.dataset.localPhotoFailed="1";
+   img.alt+=" — foto sementara tidak tersedia";
+   img.src="/photo-unavailable.svg";
+  }
+  return;
+ }
  const parts=current.pathname.match(/^\/photos\/([a-z-]+)(?:\.jpg)?$/);
  const slug=parts?.[1]||img.dataset.photoSlug;
  if(!slug||!/^[a-z-]+$/.test(slug))return;

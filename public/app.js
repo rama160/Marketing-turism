@@ -294,7 +294,7 @@ function renderCampaigns(){
  const current=data.campaigns.filter(c=>!history(c)),archived=data.campaigns.filter(history);
  function card(c,old=false){
   const photo=c.preview_photo||{},slug=String(photo.slug||"");
-  const image=photo.owner_supplied?photo.url:slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
+  const image=(photo.owner_supplied||photo.research_discovered)?photo.url:slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
   const title=c.activity_id==="SNORKELING_3_SPOTS"?"Snorkeling Nusa Penida":"Island Tour Nusa Penida";
   const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
   const label=planned?"Ide editorial "+planned[1]:"Dibuat "+String(c.created_at||"").slice(0,10);
@@ -316,7 +316,8 @@ function renderCampaigns(){
    '<a href="'+esc(photo.source)+'" target="_blank" rel="noopener noreferrer">'+esc(photo.credit)+' / '+esc(photo.license)+'</a>':"Foto referensi katalog";
   const actions=c.status==="DRAFT"&&!old?
    '<button class="primary" type="button" data-action="approveCampaign" data-id="'+esc(c.id)+'">✓ Setujui draf</button>'+
-   '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak &amp; Buat Ulang</button>':"";
+   '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak &amp; Buat Ulang</button>'+
+    '<button class="outline" type="button" data-action="researchPhoto" data-id="'+esc(c.id)+'">🔎 Cari foto otomatis</button>':"";
   const own=data.ownerPhotos.filter(p=>p.activity_id===c.activity_id);
   const pick=c.status==="DRAFT"&&!old&&own.length?
    '<div class="ownerPhotoSelect"><label>Ganti dengan foto Anda<select data-photo-pick="'+esc(c.id)+'">'+
@@ -332,6 +333,9 @@ function renderCampaigns(){
    '<div class="campaignCaption" aria-label="Pratinjau caption utuh">'+esc(c.caption)+'</div>'+
    '<small class="campaignCredit">Kredit foto: '+credit+'</small>'+
    (photo.is_illustrative?'<small>Ilustrasi lokasi; bukan dokumentasi spot spesifik.</small>':"")+
+   (photo.research_discovered?'<small class="photoResearchNotice">📸 Foto riset Wikimedia Commons: tinjau visual, nama lokasi, lisensi, dan hak subjek sebelum menyetujui.</small>'+
+      '<small>Lisensi: '+esc(photo.license||"")+
+      ' · <a href="'+esc(photo.license_url||"#")+'" target="_blank" rel="noopener noreferrer">Ketentuan lisensi ↗</a></small>':"")+
    '<a class="textLink" href="'+esc(page)+'" target="_blank" rel="noopener noreferrer">Lihat halaman paket wisata ↗</a>'+
    pick+'<div class="actions campaignReviewActions">'+actions+
    (c.status==="APPROVED"&&!queue.length?
@@ -457,6 +461,18 @@ document.addEventListener("click",async e=>{
   if(a==="salesAssist"){
    const res=await api("admin/leads/"+encodeURIComponent(id)+"/assistant","POST",{use_ai:true});
    lastSales=res.reply;$("#salesOutput").textContent="Skor lead "+res.score+"/100 ("+res.stage+"), generator "+res.generator+"\n\n"+res.reply+"\n\nDraf untuk diperiksa sebelum menghubungi guest.";changeTab("leads");
+  }
+  if(a==="researchPhoto"){
+   if(!confirm("Cari foto yang relevan dan memiliki metadata lisensi bebas untuk draf ini? Foto baru tetap memerlukan pemeriksaan Anda sebelum posting."))return;
+   button.disabled=true;
+   try{
+    const found=await api("admin/campaigns/"+encodeURIComponent(id)+"/research-photo","POST",{owner_confirmed:true});
+    await refresh();
+    say("#adminFeedback",found.status==="PHOTO_SELECTED_FOR_REVIEW"?
+     "Foto sudah dipilih untuk pratinjau. Periksa sumber, kecocokan lokasi, dan hak penggunaan sebelum setuju.":
+     "Belum ditemukan foto baru yang layak; katalog lama tetap bisa dipakai. Anda juga dapat Add Foto.",found.status==="PHOTO_SELECTED_FOR_REVIEW");
+   }finally{button.disabled=false;}
+   return;
   }
   if(a==="applyOwnerPhoto"){
    const picker=document.querySelector('[data-photo-pick="'+CSS.escape(id)+'"]');

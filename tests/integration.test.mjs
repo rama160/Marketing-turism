@@ -4,10 +4,11 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {DatabaseSync} from "node:sqlite";
 import worker from "../src/worker.mjs";
+import {validCommonsCandidate,choosePhotoForReview,topicForCampaign} from "../src/photo-research.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -1065,4 +1066,126 @@ test("user-picked photo is frozen into approved Meta queue; mismatched/rejected/
  const categoryError=await request("/api/admin/campaigns/"+other.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true});
  assert.equal(categoryError.httpStatus,422);
  sqlite.close();
+});
+
+test("Commons auto research accepts verified commercial-use metadata only, not unlicensed or mismatched destinations",()=>{
+ const page={title:"File:Kelingking Beach Nusa Penida South Bali.jpg",imageinfo:[{
+  mime:"image/jpeg",thumburl:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/photo.jpg",
+  extmetadata:{Artist:{value:"<b>Alice Photographer</b>"},LicenseShortName:{value:"CC BY-SA 4.0"},
+    LicenseUrl:{value:"https://creativecommons.org/licenses/by-sa/4.0/"}}}]};
+ assert.equal(topicForCampaign("ISLAND_TOUR_CAR","Kelingking Beach is stunning"),"kelingking");
+ assert.equal(topicForCampaign("SNORKELING_3_SPOTS","Respect wild manta rays"),"manta");
+ assert.equal(validCommonsCandidate(page,"kelingking").license,"CC BY-SA 4.0");
+ assert.equal(validCommonsCandidate(page,"kelingking").author,"Alice Photographer");
+ assert.equal(validCommonsCandidate(page,"manta"),null);
+ assert.equal(validCommonsCandidate({...page,title:"File:Paris Eiffel Tower.jpg"},"kelingking"),null);
+ assert.equal(validCommonsCandidate({...page,imageinfo:[{...page.imageinfo[0],
+  extmetadata:{...page.imageinfo[0].extmetadata,LicenseShortName:{value:"CC BY-NC 4.0"}}}]},"kelingking"),null);
+ assert.equal(validCommonsCandidate({...page,imageinfo:[{...page.imageinfo[0],thumburl:"https://evil.invalid/remote.jpg"}]},"kelingking"),null);
+ assert.equal(validCommonsCandidate({...page,imageinfo:[{...page.imageinfo[0],
+  extmetadata:{...page.imageinfo[0].extmetadata,Artist:{value:""}}}]},"kelingking"),null);
+});
+test("automatic research downloads an attributed photo into existing PHOTO_KV and freezes it into next owner-reviewed draft",async()=>{
+ const {request,db,env,sqlite}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ const storage=new Map();
+ env.PHOTO_KV={get:async k=>storage.get(k)||null,put:async(k,v)=>storage.set(k,v),delete:async k=>storage.delete(k)};
+ const blob=new Uint8Array(18000);
+ blob.set([255,216,255,224],0);blob.set([255,217],17998);
+ const candidate={title:"File:Kelingking Beach Nusa Penida aerial.jpg",imageinfo:[{
+  mime:"image/jpeg",url:"https://upload.wikimedia.org/wikipedia/commons/a/ab/aerial.jpg",
+  thumburl:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/aerial.jpg",
+  extmetadata:{Artist:{value:"Alice"},LicenseShortName:{value:"CC BY 4.0"},LicenseUrl:{value:"https://creativecommons.org/licenses/by/4.0/"}}}]};
+ const get=async url=>{
+  if(String(url).includes("/w/api.php"))return new Response(JSON.stringify({query:{pages:[
+   {...candidate,imageinfo:[{...candidate.imageinfo[0],extmetadata:{...candidate.imageinfo[0].extmetadata,
+    LicenseShortName:{value:"CC BY-NC 4.0"}}}]},candidate]}}),{status:200,headers:{"content-type":"application/json"}});
+  return new Response(blob,{status:200,headers:{"content-type":"image/jpeg","content-length":String(blob.length)}});
+ };
+ const first=await choosePhotoForReview(db,env,"ISLAND_TOUR_CAR","Kelingking Beach Nusa Penida",{
+  discover:true,request:get});
+ assert.equal(first.origin,"LICENSED_RESEARCH",JSON.stringify(first));
+ assert.ok(first.slug.startsWith("research-"));
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM researched_photo_library").get().n,1);
+ assert.equal(storage.size,1);
+ assert.equal(sqlite.prepare("SELECT license FROM researched_photo_library").get().license,"CC BY 4.0");
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=get;
+  const campaign=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Facebook",
+   caption:"Nusa Penida Kelingking Beach has distinctive dramatic coastline. Ask our team about accessible routes and weather."});
+  const photo=await request("/api/admin/campaigns/"+campaign.id+"/research-photo","POST",{owner_confirmed:true});
+  assert.equal(photo.httpStatus,200);
+  assert.equal(photo.status,"PHOTO_SELECTED_FOR_REVIEW");
+  assert.equal(photo.photo.research_discovered,true);
+  assert.match(photo.photo.source,/commons\.wikimedia\.org/);
+  const peek=(await request("/api/admin/campaigns")).items.find(c=>c.id===campaign.id);
+  assert.equal(peek.preview_photo.research_discovered,true);
+  const picture=await worker.fetch(new Request("https://agent.invalid"+peek.preview_photo.url),env);
+  assert.equal(picture.status,200);
+  assert.equal((await picture.arrayBuffer()).byteLength,blob.length);
+  const approval=await request("/api/admin/campaigns/"+campaign.id+"/status","PATCH",
+    {owner_confirmed:true,auto_publish:true,status:"APPROVED",platforms:["Facebook"]});
+  assert.equal(approval.httpStatus,200,JSON.stringify(approval));
+  const queued=sqlite.prepare("SELECT photo_slug,image_url,caption_snapshot FROM approved_social_queue WHERE campaign_id=?").get(campaign.id);
+  assert.ok(queued.photo_slug.startsWith("research-"));
+  assert.match(queued.image_url,/\/photos\/research\//);
+  assert.match(queued.caption_snapshot,/Alice/);
+  assert.match(queued.caption_snapshot,/License: https:\/\/creativecommons.org\/licenses\/by\/4.0\//);
+  const edit=await request("/api/admin/campaigns/"+campaign.id+"/research-photo","POST",{owner_confirmed:true});
+  assert.equal(edit.httpStatus,409);
+ }finally{globalThis.fetch=original;sqlite.close();}
+});
+test("research source outages keep draft workflow functional and never fabricate licensed photo",async()=>{
+ const {db,env,sqlite}=fixture();
+ env.PHOTO_KV={get:async()=>null,put:async()=>{},delete:async()=>{}};
+ const noNetwork=async()=>new Response("blocked",{status:503});
+ const choice=await choosePhotoForReview(db,env,"ISLAND_TOUR_CAR","Diamond Beach Nusa Penida",{
+  discover:true,request:noNetwork});
+ assert.equal(choice.slug,null);
+ assert.equal(choice.origin,"FALLBACK_VETTED_GALLERY");
+ assert.equal(choice.search_status,"EXTERNAL_UNAVAILABLE");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM researched_photo_library").get().n,0);
+ const outcome=sqlite.prepare("SELECT outcome FROM photo_research_runs").get();
+ assert.equal(outcome.outcome,"EXTERNAL_UNAVAILABLE");
+ sqlite.close();
+});
+
+test("weekly automatic topic research creates owner-review DRAFT with sourced media and no unapproved posts",async()=>{
+ const {db,sqlite,env,request}=fixture();
+ env.PHOTO_KV={value:new Map(),get(k){return this.value.get(k)||null},
+  put(k,v){this.value.set(k,v);return Promise.resolve()},delete(k){this.value.delete(k);return Promise.resolve()}};
+ const jpeg=new Uint8Array(22000);jpeg.set([255,216,255,224],0);jpeg.set([255,217],21998);
+ const sourceFetch=async url=>{
+  if(String(url).includes("/w/api.php")){
+   const search=new URL(url).searchParams.get("gsrsearch");
+   const name=/manta/i.test(search)?"Manta Nusa Penida snorkeling":
+    /snorkeling/i.test(search)?"Snorkeling Nusa Penida":
+    /diamond/i.test(search)?"Diamond Beach Nusa Penida":"Kelingking Beach Nusa Penida";
+   const page={title:"File:"+name+".jpg",imageinfo:[{mime:"image/jpeg",
+    thumburl:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/automatic.jpg",
+    extmetadata:{Artist:{value:"Penida photo author"},LicenseShortName:{value:"CC BY 4.0"},
+     LicenseUrl:{value:"https://creativecommons.org/licenses/by/4.0/"}}}]};
+   return new Response(JSON.stringify({query:{pages:[page]}}),{status:200,headers:{"content-type":"application/json"}});
+  }
+  return new Response(jpeg,{status:200,headers:{"content-type":"image/jpeg"}});
+ };
+ const oldFetch=globalThis.fetch;globalThis.fetch=sourceFetch;
+ try{
+  const result=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+  assert.equal(result.httpStatus,200,JSON.stringify(result));
+  assert.equal(result.generated,7);
+  const drafts=sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='DRAFT'").get().n;
+  assert.equal(drafts,7);
+  const sourced=sqlite.prepare("SELECT COUNT(*) n FROM campaign_review_records WHERE media_slug LIKE 'research-%'").get().n;
+  assert.ok(sourced>=1,"weekly prep must attach Commons media to at least one draft before approval");
+  const onlyDraft=sqlite.prepare("SELECT status FROM campaign_drafts").all().every(x=>x.status==="DRAFT");
+  assert.equal(onlyDraft,true);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0,"not posted/queued until owner approval");
+  const source=sqlite.prepare("SELECT source_url,license,author FROM researched_photo_library LIMIT 1").get();
+  assert.match(source.source_url,/commons\.wikimedia\.org/);assert.equal(source.license,"CC BY 4.0");
+  const repeated=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
+  assert.equal(repeated.generated,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
+ }finally{globalThis.fetch=oldFetch;sqlite.close();}
 });
