@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,market:[]},lastMarketing="",lastSales="";
+let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],market:[]},lastMarketing="",lastSales="";
 const say=(id,msg,success=false)=>{const el=$(id);if(el){el.textContent=msg;el.style.color=success?"#167058":"#a24836"}};
 async function api(path,method="GET",payload,admin=true){
  const headers={"accept":"application/json"};if(payload!==undefined)headers["content-type"]="application/json";
@@ -136,13 +136,13 @@ $("#unlock").onclick=async()=>{
 };
 async function refresh(){
  try{
-  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel,autoQueue]=await Promise.all([
-   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence"),api("admin/marketing/approved-queue")]);
-  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel,approvedQueue:autoQueue.posts,autopilotEnabled:autoQueue.enabled};
+  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel,autoQueue,photos]=await Promise.all([
+   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence"),api("admin/marketing/approved-queue"),api("admin/photos")]);
+  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel,approvedQueue:autoQueue.posts,autopilotEnabled:autoQueue.enabled,ownerPhotos:photos.items};
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
-  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
+  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderOwnerPhotos();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
   if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
@@ -230,6 +230,61 @@ $("#businessForm").onsubmit=async e=>{
  try{await api("admin/business","PATCH",b);await refresh();await publicReadiness();say("#adminFeedback","Data usaha disimpan; penerimaan guest masih memerlukan Turnstile dan persetujuan aktivasi.",true)}
  catch(e){say("#adminFeedback",e.message)}
 };
+function renderOwnerPhotos(){
+ const root=$("#ownerPhotoList");if(!root)return;
+ const photos=data.ownerPhotos||[];
+ root.innerHTML=photos.length?photos.map(p=>
+  '<div class="ownerPhotoTile"><img src="'+esc(p.url)+'" alt="'+esc(p.title)+'" loading="lazy" decoding="async">'+
+  '<div><strong>'+esc(p.title)+'</strong><small>'+esc(p.activity_id==="ISLAND_TOUR_CAR"?"Island Tour":"Snorkeling")+
+  ' · '+esc((p.bytes/1024).toFixed(0))+' KB · '+esc(p.queued_posts)+' posting terkait</small></div></div>'
+ ).join(""):'<p class="feedback">Belum ada foto milik Anda. Tekan + Add Foto untuk menambahkan.</p>';
+}
+async function compressOwnerPhoto(file){
+ if(!file||file.size>15000000)throw Error("Foto sumber maksimum 15 MB");
+ let bitmap;
+ try{bitmap=await createImageBitmap(file);}
+ catch(_){throw Error("Jenis foto tidak bisa dibuka di browser ini. Pilih JPEG, PNG, atau WebP.");}
+ try{
+  let scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+  if(!bitmap.width||!bitmap.height||bitmap.width*bitmap.height>50000000)throw Error("Resolusi foto terlalu besar");
+  const canvas=document.createElement("canvas");
+  for(const maxEdge of [1600,1400,1200,1000]){
+   scale=Math.min(1,maxEdge/Math.max(bitmap.width,bitmap.height));
+   canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+   canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const context=canvas.getContext("2d");
+   if(!context)throw Error("Browser tidak mendukung kompresi foto");
+   context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   for(const q of [0.86,0.74,0.62,0.50]){
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",q));
+    if(blob&&blob.size>=10000&&blob.size<=850000)return blob;
+   }
+  }
+  throw Error("Foto terlalu kompleks untuk batas gratis 850 KB. Pilih foto lain.");
+ }finally{bitmap.close?.();}
+}
+$("#ownerPhotoForm").onsubmit=async e=>{
+ e.preventDefault();
+ const b=$("#ownerPhotoUpload");
+ b.disabled=true;say("#ownerPhotoFeedback","Memproses dan mengunggah foto ...",true);
+ try{
+  if(!$("#ownerPhotoRights").checked)throw Error("Konfirmasi hak penggunaan foto diperlukan");
+  const file=$("#ownerPhotoFile").files?.[0];
+  const jpeg=await compressOwnerPhoto(file);
+  const form=new FormData();
+  form.append("file",jpeg,"npe-photo.jpg");
+  form.append("title",$("#ownerPhotoTitle").value.trim());
+  form.append("activity_id",$("#ownerPhotoActivity").value);
+  form.append("rights_confirmed","true");
+  const response=await fetch("/api/admin/photos",{method:"POST",headers:{authorization:"Bearer "+token},body:form});
+  const json=await response.json();
+  if(!response.ok)throw Error(json.error||"Upload gagal ("+response.status+")");
+  e.target.reset();
+  await refresh();
+  say("#ownerPhotoFeedback","Foto berhasil ditambahkan: "+json.photo.title+". Pilih melalui menu foto pada kartu draf.",true);
+ }catch(err){say("#ownerPhotoFeedback",err.message);}
+ finally{b.disabled=false;}
+};
 function renderCampaigns(){
  const localDay=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
  const monday=new Date(localDay+"T00:00:00Z");
@@ -239,7 +294,7 @@ function renderCampaigns(){
  const current=data.campaigns.filter(c=>!history(c)),archived=data.campaigns.filter(history);
  function card(c,old=false){
   const photo=c.preview_photo||{},slug=String(photo.slug||"");
-  const image=slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
+  const image=photo.owner_supplied?photo.url:slug&&/^[a-z-]+$/.test(slug)?'/photos/'+slug:"/photo-unavailable.svg";
   const title=c.activity_id==="SNORKELING_3_SPOTS"?"Snorkeling Nusa Penida":"Island Tour Nusa Penida";
   const planned=/^\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(c.caption||"");
   const label=planned?"Ide editorial "+planned[1]:"Dibuat "+String(c.created_at||"").slice(0,10);
@@ -255,11 +310,18 @@ function renderCampaigns(){
     (q.status==="QUEUED"?'<button class="outline" type="button" data-action="cancelAutoPost" data-id="'+esc(q.id)+'">Batalkan jadwal</button>':"")+
     (q.status==="REVIEW_REQUIRED"?'<small>Posting tidak diulang otomatis. Periksa akun Meta sebelum menjadwalkan ulang secara manual.</small>':"")+
     '</div>').join("");
-  const credit=photo.source?.startsWith("https://commons.wikimedia.org/wiki/File:")?
+  const credit=photo.owner_supplied?
+   '<strong>Nusa Penida Experiences · foto milik Anda</strong>':
+   photo.source?.startsWith("https://commons.wikimedia.org/wiki/File:")?
    '<a href="'+esc(photo.source)+'" target="_blank" rel="noopener noreferrer">'+esc(photo.credit)+' / '+esc(photo.license)+'</a>':"Foto referensi katalog";
   const actions=c.status==="DRAFT"&&!old?
    '<button class="primary" type="button" data-action="approveCampaign" data-id="'+esc(c.id)+'">✓ Setujui draf</button>'+
    '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak &amp; Buat Ulang</button>':"";
+  const own=data.ownerPhotos.filter(p=>p.activity_id===c.activity_id);
+  const pick=c.status==="DRAFT"&&!old&&own.length?
+   '<div class="ownerPhotoSelect"><label>Ganti dengan foto Anda<select data-photo-pick="'+esc(c.id)+'">'+
+   own.map(p=>'<option value="'+esc(p.photo_id)+'">'+esc(p.title)+'</option>').join("")+
+   '</select></label><button type="button" class="outline" data-action="applyOwnerPhoto" data-id="'+esc(c.id)+'">Pakai foto ini</button></div>':"";
   const after=c.status==="REJECTED"?
    '<small>Alasan: '+esc(c.rejection_reason||"Revisi diminta")+' · ID pengganti: '+esc(c.replacement_id||"—")+'</small>':"";
   return '<article class="campaignPreviewCard">'+
@@ -271,7 +333,7 @@ function renderCampaigns(){
    '<small class="campaignCredit">Kredit foto: '+credit+'</small>'+
    (photo.is_illustrative?'<small>Ilustrasi lokasi; bukan dokumentasi spot spesifik.</small>':"")+
    '<a class="textLink" href="'+esc(page)+'" target="_blank" rel="noopener noreferrer">Lihat halaman paket wisata ↗</a>'+
-   '<div class="actions campaignReviewActions">'+actions+
+   pick+'<div class="actions campaignReviewActions">'+actions+
    (c.status==="APPROVED"&&!queue.length?
      '<button type="button" class="primary" data-action="scheduleApproved" data-id="'+esc(c.id)+'">Jadwalkan otomatis</button>'+
      '<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
@@ -395,6 +457,18 @@ document.addEventListener("click",async e=>{
   if(a==="salesAssist"){
    const res=await api("admin/leads/"+encodeURIComponent(id)+"/assistant","POST",{use_ai:true});
    lastSales=res.reply;$("#salesOutput").textContent="Skor lead "+res.score+"/100 ("+res.stage+"), generator "+res.generator+"\n\n"+res.reply+"\n\nDraf untuk diperiksa sebelum menghubungi guest.";changeTab("leads");
+  }
+  if(a==="applyOwnerPhoto"){
+   const picker=document.querySelector('[data-photo-pick="'+CSS.escape(id)+'"]');
+   const photo_id=picker?.value;
+   if(!photo_id)throw Error("Silakan unggah dan pilih foto dahulu");
+   if(!confirm("Gunakan foto Anda sebagai gambar draf ini? Ini tidak mengubah posting yang sudah dijadwalkan."))return;
+   button.disabled=true;
+   try{
+    await api("admin/campaigns/"+encodeURIComponent(id)+"/photo","POST",{photo_id,owner_confirmed:true});
+    await refresh();say("#adminFeedback","Foto draf sudah diganti. Tinjau pratinjau sebelum menyetujui posting.",true);
+   }finally{button.disabled=false;}
+   return;
   }
   if(a==="copyCampaignLink"){const url=location.origin+"/?campaign="+encodeURIComponent(id);await navigator.clipboard.writeText(url);say("#adminFeedback","Tautan kampanye tersalin, publikasi dilakukan manual.",true)}
   if(a==="rejectCampaign"){
