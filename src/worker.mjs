@@ -4,6 +4,8 @@ import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart,replacementCampaign
 import {campaignPhotoForDraft,campaignPhotoBySlug} from "./marketing-media.mjs";
 import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
 import {metaPublicationConfig,metaConnectionStatus,checkMetaReadAccess,publishMetaTourism} from "./meta-publisher.mjs";
+import {approvedAutopilotEnabled,chooseApprovedSchedule,queueApprovedCampaign,approvedQueueStatus,
+ cancelApprovedQueue,dispatchApprovedQueue,collectApprovedInsights,feedbackEvidence} from "./approved-autopilot.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
@@ -33,9 +35,8 @@ async function audit(db,kind,key,action,detail={}){
 }
 // Creates a full review-only bilingual week in dedicated tourism D1; no social publishing.
 async function marketingEvidence(db,day){
- const cutoff=new Date(day+"T00:00:00Z");cutoff.setUTCDate(cutoff.getUTCDate()-90);
- const results=await db.prepare("SELECT * FROM marketing_observations WHERE observed_on>=? AND observed_on<=? ORDER BY observed_on DESC LIMIT 500").bind(cutoff.toISOString().slice(0,10),day).all();
- return results.results;
+ // Includes only real Graph media views, plus owner-verified campaign metrics.
+ return feedbackEvidence(db,day);
 }
 // Internal Meta diagnostic: GET-only Graph requests, sanitized D1 snapshots.
 // One row per UTC day; the owner may refresh at most once every five minutes.
@@ -531,6 +532,14 @@ async function route(req,env,ctx){
   if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
   const posted=str(b.public_url,500);
   if(status==="PUBLISHED"&&!posted.startsWith("https://"))return bad("URL HTTPS posting nyata dibutuhkan. Dashboard tidak menerbitkan konten");
+  if(status==="APPROVED"&&b.auto_publish===true){
+   try{
+    const platforms=b.platforms;
+    const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+    const plan=await queueApprovedCampaign(db,env,old,platforms,await marketingEvidence(db,day));
+    return json({id:cm[1],...plan});
+   }catch(e){return bad(String(e.message||"Autopilot gagal"),422);}
+  }
   if(status==="APPROVED"){
    const slug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
    await db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) "+
@@ -584,13 +593,24 @@ async function route(req,env,ctx){
    operator_confirmation_required:true,posts:rows.results,
    note:"Indikator ENABLED hanya berarti konfigurasi memenuhi gerbang lokal; belum membuktikan izin Graph Meta valid atau konten berhasil terbit."});
  }
+ if(path==="/api/admin/marketing/approved-queue"&&method==="GET"){
+  return json(await approvedQueueStatus(db,env));
+ }
+ const qp=path.match(/^\/api\/admin\/marketing\/approved-queue\/([^/]+)\/cancel$/);
+ if(qp&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  if(!(await cancelApprovedQueue(db,qp[1])))return bad("Hanya posting QUEUED dapat dibatalkan",409);
+  await audit(db,"approved_queue",qp[1],"CANCELLED_BY_OWNER");
+  return json({id:qp[1],status:"CANCELLED"});
+ }
  if(path==="/api/admin/marketing/intelligence"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
   const observations=await marketingEvidence(db,day),weekly=weeklyDrafts(marketingWeekStart(day));
   const analysis=marketingIntelligence(observations,weekly,day);
   const decisions=(await db.prepare("SELECT week_start,strategy_version,input_observations,ranked_json,assumptions,created_at FROM marketing_decisions ORDER BY created_at DESC LIMIT 8").all()).results;
   return json({...analysis,decisions:decisions.map(x=>({...x,ranked:JSON.parse(x.ranked_json||"[]"),ranked_json:undefined})),
-   production:{weekly_cron:"Senin 09.00 WITA",review_only:true,automatic_platform_publishing:false,
+   production:{weekly_cron:"Senin 09.00 WITA",review_only:true,automatic_platform_publishing:approvedAutopilotEnabled(env),
     metricool_api:"EXTERNAL_API_NOT_CONNECTED",meta_graph:metaConnectionStatus(env,day).ids_valid&&metaConnectionStatus(env,day).tokens_present?"CREDENTIALS_PRESENT_NOT_VERIFIED":"CREDENTIALS_INCOMPLETE",
     payment_collection:false,guest_leads:env.PUBLIC_LEADS_ENABLED==="true"}});
  }
@@ -662,6 +682,14 @@ export default {
   if(!env.DB)return;
   const day=new Date().toISOString().slice(0,10);
   if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,day,"WEEKLY_CRON");return;}
+  // Only previously approved immutable snapshots are eligible. Never retry ambiguous POSTs.
+  if(event.cron==="0 * * * *"){
+   try{await dispatchApprovedQueue(env.DB,env);}
+   catch(_){console.error("APPROVED_SOCIAL_DISPATCH_FAILED");}
+   try{await collectApprovedInsights(env.DB,env);}
+   catch(_){console.error("APPROVED_SOCIAL_METRICS_FAILED");}
+   return;
+  }
   // Existing daily trigger: check Meta read connectivity automatically without
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
