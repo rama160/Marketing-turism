@@ -341,3 +341,18 @@ test("owner can deliberately schedule an old approved post without silently post
  assert.match(app,/\/schedule"/);
  assert.match(app,/Batalkan jadwal/);
 });
+
+test("owner can add and choose her own photos on mobile without leaking uploads in offline app cache",()=>{
+ const html=read("index.html"),js=read("app.js"),sw=read("service-worker.js");
+ assert.match(html,/id="ownerPhotoForm"/);
+ assert.match(html,/id="ownerPhotoFile"[^>]*type="file"|id="ownerPhotoFile"[^>]*name="file"/);
+ assert.match(html,/\+ Add Foto/);
+ assert.match(html,/id="ownerPhotoRights"/);
+ assert.match(js,/async function compressOwnerPhoto/);
+ assert.match(js,/\/api\/admin\/photos/);
+ assert.match(js,/data-action="applyOwnerPhoto"/);
+ assert.match(js,/ownerPhotos/);
+ assert.match(js,/preview_photo/);
+ assert.doesNotMatch(sw,/\/photos\/owner\//);
+ assert.doesNotMatch(sw,/\/api\/admin\/photos/);
+});
