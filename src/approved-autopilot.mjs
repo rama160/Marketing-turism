@@ -16,9 +16,9 @@ const positive=x=>Number.isFinite(x)&&x>=0&&x<=1000000000?Math.round(x):null;
 const goodID=x=>/^[0-9]{6,40}$/.test(String(x||""));
 const fresh=(x)=>x&&Date.now()-Date.parse(String(x).replace(" ","T")+"Z")<36*3600000;
 function cleanCaption(text){
- const content=String(text||"").replace(/^\\[REVIEW [^\\]]+\\]\\s*/,"").trim();
+ const content=String(text||"").replace(/^\[REVIEW [^\]]+\]\s*/,"").trim();
  if(content.length<30||content.length>1800)throw Error("Caption harus 30–1800 karakter setelah metadata editorial dihapus");
- if(/\\[(?:AUTO|REVIEW)\\s+\\d{4}-/.test(content))throw Error("Caption berisi metadata editorial yang tidak valid");
+ if(/\[(?:AUTO|REVIEW)\s+\d{4}-/.test(content))throw Error("Caption berisi metadata editorial yang tidak valid");
  return content;
 }
 function mediaInfo(slug){
@@ -35,7 +35,7 @@ export async function chooseApprovedSchedule(db,platform,evidence=[],now=Date.no
  const measured=analysis.best_hours[platform];
  const hour=measured?.source==="MEASURED"&&Number.isInteger(measured.hour)?measured.hour:
   platform==="Facebook"?12:10;
- const blocked=new Set(String(env.META_EXTERNAL_POST_DATES||"").split(",").filter(x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x)));
+ const blocked=new Set(String(env.META_EXTERNAL_POST_DATES||"").split(",").filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)));
  for(let i=0;i<45;i++){
   const future=now+(i+1)*86400000; // allow > 12 hours' delay; never same-day unreviewed posts
   const day=baliDay(future),ts=utcFromBali(day,hour);
