@@ -7,7 +7,7 @@ import worker from "../src/worker.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -800,4 +800,145 @@ test("failed Workers AI regeneration falls back to safe editorial draft without 
  assert.equal((await request("/api/admin/campaigns")).items.find(x=>x.id===r.replacement_id).status,"DRAFT");
  assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM marketing_publications WHERE status='POSTED'").get().count,0);
  sqlite.close();
+});
+
+test("owner approves a frozen draft and receives a safe channel-specific schedule, never a legacy scheduled idea",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ env.META_EXTERNAL_POST_DATES="2026-10-26,2026-10-28,2026-10-30";
+ const created=await request("/api/admin/campaigns","POST",{platform:"Website",activity_id:"ISLAND_TOUR_CAR",
+  caption:"Jelajahi Nusa Penida Barat, termasuk Kelingking Beach dan pemandangan tebingnya. Cek tanggal dan operator lokal."});
+ assert.equal(created.httpStatus,201);
+ const denied=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{
+  status:"APPROVED",auto_publish:true,platforms:["Facebook","Instagram"],owner_confirmed:true},false);
+ assert.equal(denied.httpStatus,401);
+ const result=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{
+  status:"APPROVED",auto_publish:true,platforms:["Facebook","Instagram"],owner_confirmed:true});
+ assert.equal(result.httpStatus,200);
+ assert.equal(result.status,"APPROVED");
+ assert.equal(result.post_mode,"SCHEDULED_AUTO");
+ assert.equal(result.queue.length,2);
+ assert.ok(result.queue.every(x=>x.scheduled_wita.includes(":00")));
+ assert.ok(result.queue.every(x=>!["2026-10-26","2026-10-28","2026-10-30"].some(block=>x.scheduled_wita.startsWith(block))));
+ const queued=sqlite.prepare("SELECT * FROM approved_social_queue ORDER BY platform").all();
+ assert.equal(queued.length,2);
+ assert.ok(queued.every(x=>x.campaign_id===created.id&&x.status==="QUEUED"));
+ assert.ok(queued.every(x=>x.caption_snapshot.includes("Jelajahi Nusa Penida Barat")&&!x.caption_snapshot.includes("[REVIEW")));
+ assert.ok(queued.every(x=>x.caption_snapshot.includes("Photo: ")&&x.image_url.endsWith(".jpg")));
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='POSTED'").get().n,0);
+ const duplicate=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{
+  status:"APPROVED",auto_publish:true,platforms:["Facebook"],owner_confirmed:true});
+ assert.equal(duplicate.httpStatus,400);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,2);
+ assert.equal((await request("/api/admin/marketing/approved-queue","GET",undefined,false)).httpStatus,401);
+ const dashboard=await request("/api/admin/marketing/approved-queue");
+ assert.equal(dashboard.posts.length,2);
+ assert.equal(dashboard.enabled,true);
+ const cancel=await request("/api/admin/marketing/approved-queue/"+dashboard.posts[0].id+"/cancel","POST",{owner_confirmed:true});
+ assert.equal(cancel.status,"CANCELLED");
+ assert.equal((await request("/api/admin/marketing/approved-queue/"+dashboard.posts[0].id+"/cancel","POST",{owner_confirmed:true})).httpStatus,409);
+ sqlite.close();
+});
+test("read-only diagnostics gate remote posting, IG container finishes separately and no Graph POST repeats",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ env.META_PAGE_ID="1375913638943340";
+ env.META_IG_USER_ID="17841473759990847";
+ env.META_PAGE_ACCESS_TOKEN="test-only-graph-token-long-enough-to-use";
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"SNORKELING_3_SPOTS",platform:"Instagram",
+  caption:"Tanyakan paket snorkeling Nusa Penida yang cocok untuk Anda, serta kondisi laut dan operator setempat."});
+ const app=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{
+  status:"APPROVED",auto_publish:true,platforms:["Instagram","Facebook"],owner_confirmed:true});
+ assert.equal(app.status,"APPROVED");
+ sqlite.prepare("UPDATE approved_social_queue SET scheduled_at=datetime('now','-1 hour')").run();
+ const original=globalThis.fetch,posts=[];
+ try{
+  globalThis.fetch=async(u,o)=>{
+   if(o.method!=="GET")posts.push(u);
+   if(u.includes("/media_publish"))return new Response(JSON.stringify({id:"333333333333"}),{status:200});
+   if(u.includes("/media"))return new Response(JSON.stringify({id:"222222222222"}),{status:200});
+   if(u.includes("/photos"))return new Response(JSON.stringify({id:"111111111111"}),{status:200});
+   if(u.includes("?fields=id,status_code"))return new Response(JSON.stringify({id:"222222222222",status_code:"FINISHED"}),{status:200});
+   return new Response("{}",{status:404});
+  };
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  assert.equal(posts.length,0,"stale or missing Meta diagnostics must pause posting");
+  sqlite.prepare("INSERT INTO meta_connection_checks(day,source,configured,page_ok,instagram_ok,page_http_status,instagram_http_status,result) VALUES(date('now'),'DAILY_CRON',1,1,1,200,200,'READ_OK')").run();
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  assert.equal(posts.length,2);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue WHERE status='POSTED'").get().n,1);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue WHERE status='AWAITING_CONTAINER'").get().n,1);
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  assert.equal(posts.length,3);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue WHERE status='POSTED'").get().n,2);
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  assert.equal(posts.length,3,"published posts are not sent again");
+ }finally{globalThis.fetch=original;sqlite.close();}
+});
+test("verified Graph insights create a measured successor DRAFT and strategy without fabricated clicks",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ env.META_PAGE_ID="1375913638943340";
+ env.META_IG_USER_ID="17841473759990847";
+ env.META_PAGE_ACCESS_TOKEN="long-test-token-only-abcdef-abcdef";
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Instagram",
+  caption:"Nikmati rute wisata Nusa Penida Timur, lihat pemandangan Diamond Beach, lalu tanyakan operator lokal untuk tanggal Anda."});
+ await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"APPROVED",auto_publish:true,platforms:["Instagram"],owner_confirmed:true});
+ sqlite.prepare("UPDATE approved_social_queue SET status='POSTED',meta_post_id='333333333333',published_at=datetime('now','-23 hours')").run();
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async(url,options)=>{
+   if(url.includes("/insights?metric=views,reach,saved,shares"))
+    return new Response(JSON.stringify({data:[
+     {name:"views",values:[{value:540}]},{name:"reach",values:[{value:400}]},
+     {name:"saved",values:[{value:13}]},{name:"shares",values:[{value:8}]}]}),{status:200});
+   if(url.includes("?fields=id,like_count,comments_count"))
+    return new Response(JSON.stringify({id:"333333333333",like_count:39,comments_count:5}),{status:200});
+   return new Response("{}",{status:403});
+  };
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  const metrics=sqlite.prepare("SELECT * FROM approved_social_metrics").all();
+  assert.equal(metrics.length,1);
+  assert.equal(metrics[0].views,540);
+  assert.equal(metrics[0].reactions,39);
+  assert.equal(metrics[0].link_clicks,null,"unknown clicks cannot be invented");
+  assert.equal(metrics[0].data_status,"VERIFIED");
+  const feedback=sqlite.prepare("SELECT * FROM approved_social_learning").all();
+  assert.equal(feedback.length,1);
+  const successor=sqlite.prepare("SELECT * FROM campaign_drafts WHERE id=?").get(feedback[0].new_campaign_id);
+  assert.equal(successor.status,"DRAFT");
+  assert.match(successor.caption,/REVIEW/);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
+  const intel=await request("/api/admin/marketing/intelligence");
+  assert.ok(intel.observation_count>=1);
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,1);
+ }finally{globalThis.fetch=original;sqlite.close();}
+});
+test("unknown or removed Meta insights must not create invented observations or improved drafts",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ env.META_PAGE_ID="1375913638943340";
+ env.META_PAGE_ACCESS_TOKEN="long-test-token-only-abcdef-abcdef";
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Facebook",
+  caption:"Temukan pemandangan Broken Beach Nusa Penida dan konsultasikan tanggal dengan pemandu lokal."});
+ await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
+  {status:"APPROVED",auto_publish:true,platforms:["Facebook"],owner_confirmed:true});
+ sqlite.prepare("UPDATE approved_social_queue SET status='POSTED',meta_post_id='1234567890123',published_at=datetime('now','-23 hours')").run();
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async(url,opts)=>{
+   if(url.includes("?fields=id,likes.summary(true)"))
+    return new Response(JSON.stringify({id:"1234567890123",likes:{summary:{total_count:4}},comments:{summary:{total_count:2}}}),{status:200});
+   return new Response("{}",{status:400});
+  };
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  const metrics=sqlite.prepare("SELECT views,data_status,reactions FROM approved_social_metrics").get();
+  assert.equal(metrics.views,null);
+  assert.equal(metrics.data_status,"PARTIAL");
+  assert.equal(metrics.reactions,4);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,0);
+  assert.equal((await request("/api/admin/marketing/intelligence")).observation_count,0);
+ }finally{globalThis.fetch=original;sqlite.close();}
 });
