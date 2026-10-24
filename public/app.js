@@ -272,7 +272,9 @@ function renderCampaigns(){
    (photo.is_illustrative?'<small>Ilustrasi lokasi; bukan dokumentasi spot spesifik.</small>':"")+
    '<a class="textLink" href="'+esc(page)+'" target="_blank" rel="noopener noreferrer">Lihat halaman paket wisata ↗</a>'+
    '<div class="actions campaignReviewActions">'+actions+
-   (c.status==="APPROVED"&&!queue.length?'<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
+   (c.status==="APPROVED"&&!queue.length?
+     '<button type="button" class="primary" data-action="scheduleApproved" data-id="'+esc(c.id)+'">Jadwalkan otomatis</button>'+
+     '<button type="button" class="outline" data-action="publishCampaign" data-id="'+esc(c.id)+'">Catat sudah diposting manual</button>':"")+
    (c.status==="PUBLISHED"?'<button type="button" class="outline" data-action="copyCampaignLink" data-id="'+esc(c.id)+'">Salin tautan guest</button>':"")+
    '</div>'+queues+after+'<small>ID tracking: '+esc(c.id)+'</small></div></article>';
  }
@@ -409,8 +411,8 @@ document.addEventListener("click",async e=>{
    }finally{button.disabled=false;}
    return;
   }
-  if(a==="approveCampaign"||a==="publishCampaign"){
-   const status=a==="approveCampaign"?"APPROVED":"PUBLISHED",payload={status,owner_confirmed:true};
+  if(a==="approveCampaign"||a==="publishCampaign"||a==="scheduleApproved"){
+   const status=a==="publishCampaign"?"PUBLISHED":"APPROVED",payload={status,owner_confirmed:true};
    if(status==="APPROVED"){
     const draft=data.campaigns.find(v=>v.id===id);
     const suggested=["Instagram","Facebook"].includes(draft?.platform)?draft.platform:"Instagram,Facebook";
@@ -426,7 +428,8 @@ document.addEventListener("click",async e=>{
     if(!url)return;payload.public_url=url;
     if(!confirm("Catat sebagai posting manual yang sudah terbit?"))return;
    }
-   const r=await api("admin/campaigns/"+encodeURIComponent(id)+"/status","PATCH",payload);
+   const r=await api("admin/campaigns/"+encodeURIComponent(id)+(a==="scheduleApproved"?"/schedule":"/status"),
+    a==="scheduleApproved"?"POST":"PATCH",payload);
    if(r.post_mode==="SCHEDULED_AUTO")say("#adminFeedback","Persetujuan tersimpan. Jadwal "+r.queue.map(v=>v.platform+": "+v.scheduled_wita+" WITA").join("; "),true);
   }
   if(a==="cancelAutoPost"){

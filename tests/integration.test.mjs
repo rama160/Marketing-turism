@@ -942,3 +942,40 @@ test("unknown or removed Meta insights must not create invented observations or 
   assert.equal((await request("/api/admin/marketing/intelligence")).observation_count,0);
  }finally{globalThis.fetch=original;sqlite.close();}
 });
+
+test("pre-existing owner APPROVED campaign can be explicitly scheduled exactly once, without backfilling all approved drafts",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ const created=await request("/api/admin/campaigns","POST",{platform:"Instagram",activity_id:"ISLAND_TOUR_CAR",
+  caption:"Explore the landscapes of Nusa Penida with a local operator; ask our agent for practical travel options."});
+ const oldApproval=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{status:"APPROVED",owner_confirmed:true});
+ assert.equal(oldApproval.status,"APPROVED");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0,"old approval is not silently backfilled");
+ const unauth=await request("/api/admin/campaigns/"+created.id+"/schedule","POST",{owner_confirmed:true,auto_publish:true,platforms:["Instagram"]},false);
+ assert.equal(unauth.httpStatus,401);
+ const withoutConsent=await request("/api/admin/campaigns/"+created.id+"/schedule","POST",{owner_confirmed:false,auto_publish:true,platforms:["Instagram"]});
+ assert.equal(withoutConsent.httpStatus,403);
+ const scheduled=await request("/api/admin/campaigns/"+created.id+"/schedule","POST",{owner_confirmed:true,auto_publish:true,platforms:["Instagram"]});
+ assert.equal(scheduled.httpStatus,200);
+ assert.equal(scheduled.post_mode,"SCHEDULED_AUTO");
+ assert.equal(scheduled.queue.length,1);
+ assert.equal(sqlite.prepare("SELECT status FROM campaign_drafts WHERE id=?").get(created.id).status,"APPROVED");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,1);
+ const duplicate=await request("/api/admin/campaigns/"+created.id+"/schedule","POST",{owner_confirmed:true,auto_publish:true,platforms:["Facebook"]});
+ assert.equal(duplicate.httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM audit_log WHERE action='APPROVED_SCHEDULED'").get().n,1);
+ sqlite.close();
+});
+test("old APPROVED campaigns already recorded as published or rejected cannot be auto-scheduled",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ const created=await request("/api/admin/campaigns","POST",{platform:"Facebook",activity_id:"SNORKELING_3_SPOTS",
+  caption:"Nusa Penida offers snorkeling options with local operators; ask about routes and sea conditions first."});
+ await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{status:"APPROVED",owner_confirmed:true});
+ await request("/api/admin/campaigns/"+created.id+"/status","PATCH",{status:"PUBLISHED",owner_confirmed:true,public_url:"https://facebook.com/example-post"});
+ const refused=await request("/api/admin/campaigns/"+created.id+"/schedule","POST",{owner_confirmed:true,auto_publish:true,platforms:["Facebook"]});
+ assert.equal(refused.httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0);
+ sqlite.close();
+});

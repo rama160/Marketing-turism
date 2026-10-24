@@ -46,20 +46,25 @@ export async function chooseApprovedSchedule(db,platform,evidence=[],now=Date.no
  }
  throw Error("Tidak ada slot aman dalam 45 hari; jadwal harus ditinjau");
 }
-export async function queueApprovedCampaign(db,env,old,platforms,evidence=[]){
+export async function queueApprovedCampaign(db,env,old,platforms,evidence=[],options={}){
  if(!approvedAutopilotEnabled(env))throw Error("Autopilot belum diaktifkan pada Worker");
  if(!Array.isArray(platforms)||platforms.length===0||platforms.length>2||
   new Set(platforms).size!==platforms.length||platforms.some(p=>!channels.has(p)))
   throw Error("Pilih Facebook, Instagram, atau keduanya");
- if(old.status!=="DRAFT"||old.rejected_at)throw Error("Hanya draf aktif belum disetujui dapat dijadwalkan");
+ const previouslyApproved=options?.fromApproved===true;
+ if(old.rejected_at||old.public_url||(previouslyApproved?old.status!=="APPROVED":old.status!=="DRAFT"))
+  throw Error("Hanya draf aktif yang disetujui pemilik dan belum diposting dapat dijadwalkan");
+ const existing=await db.prepare("SELECT id FROM approved_social_queue WHERE campaign_id=? LIMIT 1").bind(old.id).first();
+ if(existing)throw Error("Draf sudah memiliki jadwal posting; tidak boleh dijadwalkan ulang tanpa pemeriksaan");
  const photo=mediaInfo(old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug);
  const caption=cleanCaption(old.caption)+"\n\n"+photo.captionCredit;
  if(caption.length>2200)throw Error("Caption termasuk atribusi melampaui batas Instagram");
  const slots=[];
  for(const platform of platforms)slots.push({platform,...await chooseApprovedSchedule(db,platform,evidence,Date.now(),env)});
  const statements=[
-  db.prepare("UPDATE campaign_drafts SET status='APPROVED',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='DRAFT' "+
-   "AND NOT EXISTS (SELECT 1 FROM campaign_review_records WHERE campaign_id=? AND rejected_at IS NOT NULL)").bind(old.id,old.id),
+  db.prepare("UPDATE campaign_drafts SET status='APPROVED',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=? AND public_url IS NULL "+
+   "AND NOT EXISTS (SELECT 1 FROM campaign_review_records WHERE campaign_id=? AND rejected_at IS NOT NULL)")
+   .bind(old.id,previouslyApproved?"APPROVED":"DRAFT",old.id),
   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) ON CONFLICT(campaign_id) DO NOTHING")
    .bind(old.id,photo.photo.slug,Number(old.revision||0))
  ];
@@ -68,7 +73,7 @@ export async function queueApprovedCampaign(db,env,old,platforms,evidence=[]){
   .bind(uid(),old.id,slot.platform,photo.photo.slug,caption,photo.image_url,slot.scheduled_at));
  statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
   .bind(uid(),"campaign",old.id,"APPROVED_SCHEDULED",
-    JSON.stringify({scheduled:slots.map(x=>({platform:x.platform,wita:x.scheduled_wita,basis:x.source})),owner_approved:true})));
+    JSON.stringify({scheduled:slots.map(x=>({platform:x.platform,wita:x.scheduled_wita,basis:x.source})),owner_approved:true,previously_approved:previouslyApproved})));
  await db.batch(statements);
  return {status:"APPROVED",queue:slots,post_mode:"SCHEDULED_AUTO",publication:"AWAITING_TIME"};
 }
