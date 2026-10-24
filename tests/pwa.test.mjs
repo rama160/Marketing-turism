@@ -282,7 +282,7 @@ test("owner marketing organic autopilot is transparent and gated",()=>{
  assert.match(html,/id="prepareMarketingWeek"/);
  assert.match(html,/id="marketingWeekFeedback"/);
  assert.match(html,/Hubungkan Instagram & Facebook/);
- assert.match(html,/publikasi otomatis langsung dari Cloudflare belum aktif/);
+ assert.match(html,/antrean publikasi draf yang disetujui aktif/);
  assert.match(app,/admin\/marketing\/prepare-week/);
  assert.match(app,/owner_confirmed:true/);
 });
