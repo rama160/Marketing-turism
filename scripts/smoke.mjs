@@ -119,6 +119,27 @@ if(idResponse.locale!=="id")throw Error("Indonesian CMS public API invalid");
 await get("/api/admin/site-content",401);
 const denied=await fetch(base+"/api/admin/site-content",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:"hero.title",locale:"en",value:"Unauthorized",expected_version:0,owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
 if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+denied.status);
+// Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
+if(!home.includes('id="tab-growth"')||!home.includes('id="growthResearch"')||
+ !home.includes('data-tab="growth"')||!app.includes('admin/growth')||
+ !app.includes("function renderGrowth")||!langJS.includes("/api/public/intent"))
+ throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
+if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
+ throw Error("Customer acquisition mobile styling absent");
+for(const pageToIndex of [home,snorkeling,island,west,east]){
+ if(!pageToIndex.includes('<meta name="robots" content="index, follow"'))
+  throw Error("Tourism landing page remains blocked from indexing");
+}
+await get("/api/admin/growth",401);
+await get("/api/admin/growth/research",401);
+const researchUnauthorized=await fetch(base+"/api/admin/growth/research",{
+ method:"POST",headers:{"content-type":"application/json"},
+ body:JSON.stringify({owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
+if(researchUnauthorized.status!==401)throw Error("Unauthorized public prospect research not guarded: "+researchUnauthorized.status);
+const crossOriginClick=await fetch(base+"/api/public/intent",{
+ method:"POST",headers:{"content-type":"application/json",origin:"https://attacker.invalid"},
+ body:JSON.stringify({kind:"WHATSAPP",source:"test",landing:"test"}),signal:AbortSignal.timeout(20000)});
+if(crossOriginClick.status!==403)throw Error("Cross-origin click event not blocked: "+crossOriginClick.status);
 await get("/api/admin/summary",401);
 await get("/api/admin/finance",401);
 await get("/api/admin/business",401);
