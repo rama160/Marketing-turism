@@ -356,3 +356,26 @@ test("owner can add and choose her own photos on mobile without leaking uploads 
  assert.doesNotMatch(sw,/\/photos\/owner\//);
  assert.doesNotMatch(sw,/\/api\/admin\/photos/);
 });
+
+test("growth acquisition dashboard is owner-only, source credited, click-tracking is aggregate, and public brochures indexable",()=>{
+ const html=read("index.html"),script=read("app.js"),lang=read("language.js");
+ const privacy=read("privacy.html");
+ assert.match(html,/data-tab="growth"/);
+ assert.match(html,/id="tab-growth"/);
+ assert.match(html,/id="growthResearch"/);
+ assert.match(html,/id="growthOpportunities"/);
+ assert.match(html,/id="growthStats"/);
+ assert.match(script,/api\("admin\/growth"\)/);
+ assert.match(script,/OSM_PUBLIC_BUSINESSES/);
+ assert.match(script,/OpenStreetMap contributors/);
+ assert.match(script,/No|tidak|belum/);
+ assert.match(lang,/a\[data-whatsapp-chat\]/);
+ assert.match(lang,/\/api\/public\/intent/);
+ assert.match(lang,/navigator\.sendBeacon/);
+ assert.match(privacy,/tidak menyimpan IP/);
+ for(const path of ["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"]){
+  const contents=read(path);
+  assert.match(contents,/<meta name="robots" content="index, follow"/);
+  assert.doesNotMatch(contents,/noindex, follow/);
+ }
+});
