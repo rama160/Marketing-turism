@@ -9,7 +9,7 @@ assert.equal(config.d1_databases?.length,1,"Expected dedicated tourism D1 only")
 assert.equal(config.d1_databases[0].binding,"DB","Database binding mismatched");
 assert.equal(config.d1_databases[0].database_name,"marketing-turism-db","Database target changed: refusing");
 assert.equal(config.d1_databases[0].database_id,"d2409026-8e01-43b0-8e4c-8fa0617f45dc","Database ID changed: refusing");
-assert.deepEqual(config.triggers?.crons,["0 1 * * 1","0 2 * * *","0 * * * *"],"Tourism campaign schedule changed unexpectedly");
+assert.deepEqual(config.triggers?.crons,["0 1 * * 1","0 2 * * *","0 * * * *","0 3 * * *"],"Tourism campaign schedule changed unexpectedly");
 if((config.routes||[]).length || config.route)throw Error("Custom routes are forbidden here; protect existing FinChat/Spenva domains");
 if((config.workers_dev??true)===false)throw Error("Tourism pilot must retain its isolated workers.dev origin");
 console.log("Marketing Turism deployment target isolation verified.");
