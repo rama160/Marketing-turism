@@ -65,8 +65,8 @@ export async function queueApprovedCampaign(db,env,old,platforms,evidence=[],opt
  const photo=await mediaInfo(db,old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug);
  if(photo.photo.owner_supplied&&photo.photo.activity_id!==old.activity_id)
   throw Error("Foto pribadi tidak sesuai kegiatan wisata pada draf");
- const caption=cleanCaption(old.caption)+"\n\n"+photo.captionCredit;
- if(caption.length>2200)throw Error("Caption termasuk atribusi melampaui batas Instagram");
+ const caption=cleanCaption(old.caption);
+ if(caption.length+photo.captionCredit.length>2070)throw Error("Caption termasuk atribusi melampaui batas Instagram");
  const slots=[];
  for(const platform of platforms)slots.push({platform,...await chooseApprovedSchedule(db,platform,evidence,Date.now(),env)});
  const statements=[
@@ -76,9 +76,19 @@ export async function queueApprovedCampaign(db,env,old,platforms,evidence=[],opt
   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) ON CONFLICT(campaign_id) DO NOTHING")
    .bind(old.id,photo.photo.slug,Number(old.revision||0))
  ];
- for(const slot of slots)statements.push(db.prepare(
-  "INSERT INTO approved_social_queue(id,campaign_id,platform,photo_slug,caption_snapshot,image_url,scheduled_at,status) VALUES(?,?,?,?,?,?,?,'QUEUED')")
-  .bind(uid(),old.id,slot.platform,photo.photo.slug,caption,photo.image_url,slot.scheduled_at));
+ for(const slot of slots){
+  // CTA is added only after owner approves this caption and channels. Existing queued posts are untouched.
+  // FB URLs may be clickable; IG caption links are not, so ask for an inbound DM instead.
+  const cta=slot.platform==="Facebook"?
+   "\n\n📩 Punya tanggal perjalanan dan jumlah tamu? Tanya opsi tour lewat WhatsApp: "+
+    pageHost+"/go/wa?source=CAMPAIGN_FACEBOOK&campaign="+old.id:
+   "\n\n📩 Planning Nusa Penida? DM us your preferred date, tour (snorkeling/West/East) and group size; we can check suitable local options.";
+  const snapshot=caption+"\n\n"+photo.captionCredit+cta;
+  if(snapshot.length>2200)throw Error("Caption terlalu panjang untuk Instagram setelah CTA promosi");
+  statements.push(db.prepare(
+   "INSERT INTO approved_social_queue(id,campaign_id,platform,photo_slug,caption_snapshot,image_url,scheduled_at,status) VALUES(?,?,?,?,?,?,?,'QUEUED')")
+   .bind(uid(),old.id,slot.platform,photo.photo.slug,snapshot,photo.image_url,slot.scheduled_at));
+ }
  statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
   .bind(uid(),"campaign",old.id,"APPROVED_SCHEDULED",
     JSON.stringify({scheduled:slots.map(x=>({platform:x.platform,wita:x.scheduled_wita,basis:x.source})),owner_approved:true,previously_approved:previouslyApproved})));
