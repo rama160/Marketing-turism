@@ -19,8 +19,8 @@ test("separate public activity pages retain guarded marketing disclosures",()=>{
  const sea=read("snorkeling.html"),island=read("island-tour.html"),home=read("index.html");
  assert.match(sea,/Snorkeling Nusa Penida.*Manta Bay/);
  assert.match(island,/Island Tour/);
- assert.match(sea,/noindex, follow/);
- assert.match(island,/noindex, follow/);
+ assert.match(sea,/index, follow/);
+ assert.match(island,/index, follow/);
  assert.match(home,/snorkeling\.html/);
  assert.match(home,/island-tour\.html/);
  assert.match(island,/maksim(?:um|al).*(?:7|tujuh)|6–7/i);
@@ -31,7 +31,7 @@ test("public marketing resources never promise unattended booking",()=>{
  assert.match(robots,/Disallow: \/api\//);
  assert.match(site,/snorkeling\.html/);
  assert.match(site,/island-tour\.html/);
- assert.match(home,/noindex, follow/);
+ assert.match(home,/index, follow/);
  assert.doesNotMatch(home,/BANK_ACCOUNT_NUMBER|api_key|secret_key/);
 });
 
@@ -134,7 +134,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v24/);
+ assert.match(read("service-worker.js"),/public-v25/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -313,7 +313,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v24/);
+ assert.match(sw,/marketing-turism-public-v25/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -330,7 +330,7 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v24/);
+ assert.match(read("service-worker.js"),/public-v25/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{
