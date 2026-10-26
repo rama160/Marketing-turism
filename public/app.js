@@ -298,7 +298,7 @@ function renderGrowth(){
   ["Booking",Number(g.bookings||0),"Pesanan nyata"]
  ].map(([label,val,caption])=>'<div class="growthKpi"><small>'+esc(label)+'</small><strong>'+esc(val)+'</strong><small>'+esc(caption)+'</small></div>').join("");
  const statuses={REVIEW:"Perlu tinjauan",SHORTLISTED:"Siap ditindaklanjuti",CONTACTED:"Sudah dihubungi",RESPONDED:"Ada respons",DISMISSED:"Diabaikan"};
- const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OWNER_PARTNER:"Calon mitra"};
+ const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik"};
  $("#growthOpportunities").innerHTML=opportunities.length?
   opportunities.map(o=>
    '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
