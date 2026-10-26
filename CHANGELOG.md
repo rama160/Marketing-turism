@@ -1,3 +1,11 @@
+### 3.13.0 — 27 October 2026: customer research expands beyond Reddit
+- Integrate public Bluesky search via public AppView API, permission-gated Facebook Page comments, Instagram Business media comments via read-only Graph API, and optional API-keyed YouTube public video search.
+- Preserve existing Reddit, OSM, owner review statuses, marketing/Meta publishing and WhatsApp behavior. No automatic response, direct messaging or unauthorized cross-platform scraping.
+- Expand dashboard per-source labels, public-source monitoring and manual research hubs for Facebook Groups, Instagram, TikTok, YouTube, Threads, X and Tripadvisor.
+- Apply additive D1 `0020_multichannel_growth.sql` after 0019. Social results are isolated, deduplicated by URL and expire after 48h or past 'today/tomorrow' travel deadlines; old sales records unchanged.
+- Reuse existing Cloudflare hourly scheduler and only approved/read-only API surfaces. YouTube is opt-in via `YOUTUBE_DATA_API_KEY`, not assumed ready in production.
+- Add integration security/freshness tests for source extraction, access errors, scoring, unified dashboard and status updates; CI and deployment verification required.
+
 ### 3.12.1 — 27 October 2026: verified fresh travel opportunities
 - Root cause: Reddit feed allowed posts up to a month old and the engine did not read publication dates or recognize already-passed 'tomorrow' trips.
 - Require per-entry published/pubDate, 48-hour maximum age, WITA 'today'/'tomorrow' expiry; reward the freshest posts and retain consent-first owner review.
