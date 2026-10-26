@@ -187,7 +187,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   db.prepare("DELETE FROM growth_publication_meta WHERE expires_at<datetime('now','-90 days')"),
   db.prepare("DELETE FROM growth_click_daily WHERE day<date('now','-90 days')")
  ]);
- return {status:total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
+ return {status:details.length===0?"RECENTLY_SCANNED":total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
   discovered:total,sources:details};
 }
 export async function growthOverview(db){
