@@ -8,6 +8,7 @@ import {approvedAutopilotEnabled,chooseApprovedSchedule,queueApprovedCampaign,ap
  cancelApprovedQueue,dispatchApprovedQueue,collectApprovedInsights,feedbackEvidence} from "./approved-autopilot.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
 import {servePhoto} from "./photos.mjs";
+import {prepareAcquisitionDay,acquisitionDashboard,updateAcquisitionTask,outboundWhatsApp} from "./acquisition.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
@@ -170,7 +171,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.11.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.12.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -178,6 +179,7 @@ async function route(req,env,ctx){
   const rows=await db.prepare("SELECT id,title,category,description FROM activities ORDER BY category DESC,id").all();
   return json({items:rows.results,variants:experienceVariants,modes:[{id:"SHARING",description:"Bisa digabung dengan guest lain; operator menjamin tarif per peserta tanpa minimal kuota yang dibebankan ke agen."},{id:"PRIVATE",description:"Perjalanan eksklusif mulai satu guest, selama biaya tetap, tambahan dan margin aman terpenuhi."}],note:"Snorkeling dan island tour tidak dilaksanakan pada hari yang sama. Harga dan jadwal final harus dikonfirmasi."});
  }
+ if(path==="/go/wa"&&method==="GET")return outboundWhatsApp(req,db);
  if(path==="/api/public/readiness"&&method==="GET"){
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
   const live=env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
@@ -264,6 +266,20 @@ async function route(req,env,ctx){
    await audit(db,"business","1","PROFILE_UPDATED",{privacy,refund});
    return json({updated:true,acceptance_requires_cloudflare_flag:true});
   }
+ }
+ if(path==="/api/admin/acquisition"&&method==="GET"){
+  return json(await acquisitionDashboard(db,env));
+ }
+ if(path==="/api/admin/acquisition/prepare"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  const date=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  return json(await prepareAcquisitionDay(db,date,"OWNER_DASHBOARD"));
+ }
+ const acquisitionTask=path.match(/^\/api\/admin\/acquisition\/tasks\/([^/]+)$/);
+ if(acquisitionTask&&method==="POST"){
+  try{return json(await updateAcquisitionTask(db,acquisitionTask[1],await parse(req)));}
+  catch(e){return bad(String(e.message||"Tugas akuisisi tidak valid"),422);}
  }
  if(path==="/api/admin/summary"&&method==="GET"){
   const table=["operators","leads","quotes","bookings"],values=await Promise.all(table.map(t=>db.prepare("SELECT COUNT(*) n FROM "+t).first()));
@@ -776,6 +792,8 @@ export default {
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
+   try{await prepareAcquisitionDay(env.DB,day,"DAILY_CRON");}
+   catch(_){console.error("ACQUISITION_PLAN_UNAVAILABLE");}
    // Recover missed Monday work without enqueuing any past-dated Meta post.
    try{await prepareMarketingWeek(env.DB,env,day,"DAILY_RECOVERY");}
    catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
