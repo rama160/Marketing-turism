@@ -179,7 +179,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   details.push({source:"OSM_PUBLIC_BUSINESSES",...found});total+=found.discovered;
  }
  const networks=await scanAdditionalNetworks(db,env,request);
- details.push(...networks);
+ details.push(...networks.filter(x=>x.status!=="NOT_CONFIGURED"));
  total+=networks.reduce((sum,x)=>sum+x.discovered,0);
  await db.batch([
   db.prepare("UPDATE growth_opportunities SET status='DISMISSED',updated_at=CURRENT_TIMESTAMP WHERE source='REDDIT_PUBLIC_RSS' AND status IN ('REVIEW','SHORTLISTED') AND NOT EXISTS (SELECT 1 FROM growth_publication_meta m WHERE m.source_url=growth_opportunities.source_url AND m.expires_at>datetime('now'))"),
