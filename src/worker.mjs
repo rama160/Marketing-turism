@@ -796,6 +796,12 @@ export default {
   if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,env,day,"WEEKLY_CRON");return;}
   // Only previously approved immutable snapshots are eligible. Never retry ambiguous POSTs.
   if(event.cron==="0 * * * *"){
+   // Reuse existing hourly trigger; discovery is bounded to once per two hours.
+   if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
+    const discovery=researchBuyerQuestions(env.DB,env).catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));
+    if(typeof ctx?.waitUntil==="function")ctx.waitUntil(discovery);
+    else await discovery;
+   }
    try{await dispatchApprovedQueue(env.DB,env);}
    catch(_){console.error("APPROVED_SOCIAL_DISPATCH_FAILED");}
    try{await collectApprovedInsights(env.DB,env);}
@@ -806,14 +812,6 @@ export default {
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
-   // Reuse the EXISTING daily Cron to honor Cloudflare Free's account-wide 5-trigger cap.
-   // Concurrent waitUntil work never delays approved Meta publishing on separate hourly Cron.
-   if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
-    const research=researchBuyerQuestions(env.DB,env)
-     .catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));
-    if(typeof ctx?.waitUntil==="function")ctx.waitUntil(research);
-    else await research;
-   }
    // Recover missed Monday work without enqueuing any past-dated Meta post.
    try{await prepareMarketingWeek(env.DB,env,day,"DAILY_RECOVERY");}
    catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
