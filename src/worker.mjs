@@ -717,7 +717,8 @@ async function route(req,env,ctx){
   return json({id:qp[1],status:"CANCELLED"});
  }
  if(path==="/api/admin/marketing/intelligence"&&method==="GET"){
-  const day=new Date().toISOString().slice(0,10);
+  // Tourism reporting follows Bali WITA, not UTC midnight.
+  const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
   const observations=await marketingEvidence(db,day),weekly=weeklyDrafts(marketingWeekStart(day));
   const analysis=marketingIntelligence(observations,weekly,day);
   const decisions=(await db.prepare("SELECT week_start,strategy_version,input_observations,ranked_json,assumptions,created_at FROM marketing_decisions ORDER BY created_at DESC LIMIT 8").all()).results;
