@@ -304,3 +304,23 @@ async function apply(){
 if(select)select.onchange=()=>{mode=select.value;localStorage.setItem("npe-language",mode);apply();};
 window.NusaLanguage={get language(){return current;},get mode(){return mode;},defaults:(lang)=>lang==="en"?englishHome:{...idDefaults,...originals},resetCache:()=>saved.clear(),apply};
 await apply();
+
+
+// Consent-free aggregate button analytics. Records only source/page counts after a real click.
+// Never stores visitor IP, cookies, user messages, phone, or identity and never blocks WhatsApp.
+document.addEventListener("click",event=>{
+ const anchor=event.target?.closest?.("a[data-whatsapp-chat]");
+ if(!anchor||!/^https:\/\/wa\.me\/628561752525(?:[/?]|$)/.test(anchor.href))return;
+ const params=new URL(location.href).searchParams;
+ const slug=v=>String(v??"").toLowerCase().replace(/[^a-z0-9_-]/g,"").slice(0,32);
+ const source=slug(params.get("utm_source")||params.get("source")||"direct")||"direct";
+ const landing=slug(location.pathname==="/"
+  ?"homepage":location.pathname.replace(/^\//,"").replace(/\.html$/,"").replace(/-/g,"_"))||"homepage";
+ const payload=JSON.stringify({kind:"WHATSAPP",source,landing});
+ try{
+  const bytes=new Blob([payload],{type:"application/json"});
+  if(navigator.sendBeacon?.("/api/public/intent",bytes))return;
+  fetch("/api/public/intent",{method:"POST",headers:{"content-type":"application/json"},
+   body:payload,keepalive:true,credentials:"omit"}).catch(()=>{});
+ }catch(_){}
+},{capture:true});
