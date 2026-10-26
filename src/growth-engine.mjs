@@ -63,37 +63,89 @@ const feeds=[
  "https://www.reddit.com/r/bali/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=month",
  "https://www.reddit.com/r/travel/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=month"
 ];
+export function extractOpenBusinesses(json){
+ const elements=Array.isArray(json?.elements)?json.elements:[];
+ const result=[];
+ for(const e of elements.slice(0,50)){
+  if(!["node","way","relation"].includes(e?.type)||!Number.isSafeInteger(e.id)||e.id<=0)continue;
+  const tags=e.tags||{},kind=String(tags.tourism||"");
+  if(!["hotel","guest_house","hostel","resort"].includes(kind))continue;
+  const name=cleanHeading(tags.name||"");
+  if(name.length<5||name.length>110)continue;
+  const link="https://www.openstreetmap.org/"+e.type+"/"+e.id;
+  result.push({id:uuid(),source:"OSM_PUBLIC_BUSINESSES",source_url:link,
+   headline:"Calon mitra akomodasi: "+name,theme:"PARTNERSHIP",score:65,
+   suggested_reply:answer("PARTNERSHIP","OWNER_PARTNER")});
+  if(result.length>=15)break;
+ }
+ return result;
+}
+async function discoverOpenAccommodation(db,request=fetch){
+ const query='[out:json][timeout:12];nwr["tourism"~"^(hotel|guest_house|hostel|resort)$"](-8.84,115.42,-8.65,115.63);out center 45;';
+ const url="https://overpass-api.de/api/interpreter";
+ let working=false,discovered=0;
+ try{
+  const res=await request(url,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded","accept":"application/json",
+   "user-agent":"NusaPenidaExperiences/1.0 (public OSM partnership research)"},
+   body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(12000)});
+  if(res.ok){
+   const json=await res.json();
+   if(Array.isArray(json.elements)){
+    working=true;
+    for(const item of extractOpenBusinesses(json)){
+     const out=await db.prepare("INSERT OR IGNORE INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,?,?,?,?,?,?)")
+      .bind(item.id,item.source,item.source_url,item.headline,item.theme,item.score,item.suggested_reply).run();
+     discovered+=Number(out.meta?.changes||0);
+    }
+   }
+  }
+ }catch(_){}
+ return {status:discovered>0?"FOUND":working?"NO_MATCH":"SOURCE_UNAVAILABLE",discovered};
+}
 export async function researchBuyerQuestions(db,env,request=fetch){
  if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="false")return {status:"DISABLED",discovered:0};
  const today=nowDay();
- const prior=await db.prepare("SELECT id FROM growth_discovery_runs WHERE source='REDDIT_PUBLIC_RSS' AND substr(created_at,1,10)=? LIMIT 1").bind(today).first();
- if(prior)return {status:"ALREADY_SCANNED_TODAY",discovered:0};
- let discovered=0,working=0;
- for(const url of feeds){
-  try{
-   const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://marketing-turism-agent.finchat-ai-gateway.workers.dev/)"},
-    signal:AbortSignal.timeout(7000)});
-   if(!response.ok)continue;
-   const type=response.headers.get("content-type")||"";
-   if(!/xml|rss|atom/i.test(type))continue;
-   const body=await response.text();
-   working++;
-   for(const item of extractPublicQuestions(body)){
-    const r=await db.prepare("INSERT OR IGNORE INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,?,?,?,?,?,?)")
+ const old=await db.prepare("SELECT source FROM growth_discovery_runs WHERE substr(created_at,1,10)=? OR (source='OSM_PUBLIC_BUSINESSES' AND created_at>=datetime('now','-7 days'))").bind(today).all();
+ const done=new Set(old.results.map(x=>x.source));
+ if(done.has("REDDIT_PUBLIC_RSS")&&done.has("OSM_PUBLIC_BUSINESSES"))return {status:"ALREADY_SCANNED_TODAY",discovered:0};
+ const details=[];
+ let total=0;
+ if(!done.has("REDDIT_PUBLIC_RSS")){
+  let discovered=0,working=0;
+  for(const url of feeds){
+   try{
+    const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://marketing-turism-agent.finchat-ai-gateway.workers.dev/)"},
+     signal:AbortSignal.timeout(7000)});
+    if(!response.ok)continue;
+    const type=response.headers.get("content-type")||"";
+    if(!/xml|rss|atom/i.test(type))continue;
+    const body=await response.text();working++;
+    for(const item of extractPublicQuestions(body)){
+     const r=await db.prepare("INSERT OR IGNORE INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,?,?,?,?,?,?)")
       .bind(item.id,item.source,item.source_url,item.headline,item.theme,item.score,item.suggested_reply).run();
-    discovered+=Number(r.meta?.changes||0);
-    if(discovered>=12)break;
-   }
-  }catch(_){/* source may be unavailable, no claims of actual discovery */}
-  if(discovered>=12)break;
+     discovered+=Number(r.meta?.changes||0);
+     if(discovered>=12)break;
+    }
+   }catch(_){}
+   if(discovered>=12)break;
+  }
+  const status=discovered>0?"FOUND":working>0?"NO_MATCH":"SOURCE_UNAVAILABLE";
+  await db.prepare("INSERT INTO growth_discovery_runs(id,source,result,candidates) VALUES(?,'REDDIT_PUBLIC_RSS',?,?)")
+   .bind(uuid(),status,discovered).run();
+  details.push({source:"REDDIT_PUBLIC_RSS",status,discovered});total+=discovered;
  }
- const status=discovered>0?"FOUND":working>0?"NO_MATCH":"SOURCE_UNAVAILABLE";
+ if(!done.has("OSM_PUBLIC_BUSINESSES")){
+  const found=await discoverOpenAccommodation(db,request);
+  await db.prepare("INSERT INTO growth_discovery_runs(id,source,result,candidates) VALUES(?,'OSM_PUBLIC_BUSINESSES',?,?)")
+   .bind(uuid(),found.status,found.discovered).run();
+  details.push({source:"OSM_PUBLIC_BUSINESSES",...found});total+=found.discovered;
+ }
  await db.batch([
-  db.prepare("INSERT INTO growth_discovery_runs(id,source,result,candidates) VALUES(?,'REDDIT_PUBLIC_RSS',?,?)").bind(uuid(),status,discovered),
   db.prepare("DELETE FROM growth_opportunities WHERE status IN ('REVIEW','DISMISSED') AND discovered_at<datetime('now','-30 days')"),
   db.prepare("DELETE FROM growth_click_daily WHERE day<date('now','-90 days')")
  ]);
- return {status,discovered};
+ return {status:total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
+  discovered:total,sources:details};
 }
 export async function growthOverview(db){
  const [opps,clicks,count,scans,bookings]=await Promise.all([
