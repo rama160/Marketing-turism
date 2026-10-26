@@ -1,3 +1,10 @@
+### 3.12.1 — 27 October 2026: verified fresh travel opportunities
+- Root cause: Reddit feed allowed posts up to a month old and the engine did not read publication dates or recognize already-passed 'tomorrow' trips.
+- Require per-entry published/pubDate, 48-hour maximum age, WITA 'today'/'tomorrow' expiry; reward the freshest posts and retain consent-first owner review.
+- Add a repeat-safe public URL/timestamp metadata table via migration 0019; old undated Reddit entries are not shown as active opportunities, while existing interactions and hotel partnership research remain unchanged.
+- Reuse existing hourly Cloudflare Cron, scan Reddit at most once per two hours, and preserve OSM weekly cadence; no additional scheduled triggers.
+- Display post age in the acquisition dashboard and add regression coverage for one-month-old, undated and expired-tomorrow prospects.
+
 ### 3.12.0 deployment hotfix — Cloudflare Free account Cron cap (26 October 2026)
 - Initial production upload and D1 migration succeeded but final deploy job failed while setting a fourth Cron: Cloudflare API 10072, account-wide Free cap of 5 Cron triggers. **No paid upgrade and no Spenva cron changes.**
 - Restore the original three tourism triggers. Start public customer research via `ctx.waitUntil` on existing 10:00 WITA daily `0 2 * * *` Cron, independent of daily health work and hourly approved Meta posts. Add explicit `GROWTH_PUBLIC_RESEARCH_ENABLED=true` Worker variable, bounded RSS / OSM request timeouts, and preflight to prevent recurrence.

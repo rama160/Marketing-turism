@@ -9,7 +9,7 @@ import {extractPublicQuestions,extractOpenBusinesses,researchBuyerQuestions} fro
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -1192,7 +1192,7 @@ test("weekly automatic topic research creates owner-review DRAFT with sourced me
 });
 
 test("growth acquisition extracts only public travel questions and real mapped business names, no member identities",()=>{
- const feed='<feed><entry><title>Any tips for snorkeling around Nusa Penida and Bali itinerary?</title>'+
+ const feed='<feed><entry><published>'+new Date().toISOString()+'</published><title>Any tips for snorkeling around Nusa Penida and Bali itinerary?</title>'+
   '<link href="https://www.reddit.com/r/bali/comments/abc123/visiting_penida/"/></entry>'+
   '<entry><title>Cheap crypto followers for sale?</title><link href="https://www.reddit.com/r/bali/comments/bad12/"/></entry>'+
   '<entry><title>Penida tours</title><link href="https://evil.invalid/private"/></entry></feed>';
@@ -1213,9 +1213,38 @@ test("growth acquisition extracts only public travel questions and real mapped b
  assert.doesNotMatch(JSON.stringify(partners),/profile_id|telephone|contact:phone/);
 });
 
+test("freshness guard rejects one-month-old honeymoons, missing dates and expired tomorrow trips",()=>{
+ const now=Date.parse("2026-10-27T04:00:00Z"); // 12:00 WITA, 27 Oct
+ const entry=(id,date,body="")=>'<entry>'+ (date?'<published>'+date+'</published>':"")+
+  '<title>Nusa Penida day trip tomorrow? Any advice?</title>'+
+  '<content type="html">'+body+'</content>'+
+  '<link href="https://www.reddit.com/r/bali/comments/'+id+'/trip/"/></entry>';
+ const feed='<feed>'+
+  entry("old001","2026-09-27T03:00:00Z","We leave tomorrow")+
+  entry("expired1","2026-10-25T12:00:00Z","We plan Nusa Penida tomorrow")+
+  entry("unknown1",null,"We leave tomorrow")+
+  entry("fresh01","2026-10-27T03:00:00Z","We are going tomorrow")+
+  entry("fresh02","2026-10-26T12:00:00Z","We travel next week")+
+ '</feed>';
+ const r=extractPublicQuestions(feed,"REDDIT_PUBLIC_RSS",now);
+ assert.equal(r.length,2);
+ assert.ok(r.every(x=>x.published_at&&x.expires_at&&x.age_hours>=0));
+ assert.ok(r.every(x=>!x.source_url.includes("old001")&&!x.source_url.includes("expired1")));
+ assert.ok(r[0].score>=r[1].score);
+});
+test("old Reddit records without verified publication timestamps do not surface as new leads",async()=>{
+ const {db,sqlite}=createD1();
+ await db.prepare("INSERT INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,'REDDIT_PUBLIC_RSS',? ,?,'GENERAL',90,?)")
+  .bind("00000000-0000-4000-8000-000000000001","https://www.reddit.com/r/bali/comments/old123/trip/","Nusa Penida advice for tomorrow?","This is a previously discovered public post without a verified published date.").run();
+ const overview=(await import("../src/growth-engine.mjs")).growthOverview;
+ const data=await overview(db);
+ assert.equal(data.opportunities.length,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_opportunities").get().n,1); // audit history preserved
+ sqlite.close();
+});
 test("daily growth research discovers public prospects but cannot auto-send or create guest leads",async()=>{
  const {request,db,sqlite,env}=fixture();
- const rss='<feed><entry><title>How to plan Nusa Penida snorkeling for friends?</title>'+
+ const rss='<feed><entry><published>'+new Date().toISOString()+'</published><title>How to plan Nusa Penida snorkeling for friends?</title>'+
  '<link href="https://www.reddit.com/r/bali/comments/qwe123/itinerary/"/></entry></feed>';
  const finder=async url=>{
   if(String(url).includes("reddit.com"))return new Response(rss,{status:200,headers:{"content-type":"application/atom+xml"}});
@@ -1228,11 +1257,12 @@ test("daily growth research discovers public prospects but cannot auto-send or c
  assert.equal(scan.status,"FOUND",JSON.stringify(scan));
  assert.equal(scan.discovered,2);
  const again=await researchBuyerQuestions(db,env,finder);
- assert.equal(again.status,"ALREADY_SCANNED_TODAY");
+ assert.equal(again.status,"RECENTLY_SCANNED");
  const limited=await request("/api/admin/growth","GET",undefined,false);
  assert.equal(limited.httpStatus,401);
  const detail=await request("/api/admin/growth");
  assert.equal(detail.opportunities.length,2);
+ assert.ok(detail.opportunities.some(x=>x.source==="REDDIT_PUBLIC_RSS"&&x.published_at&&x.expires_at));
  assert.equal(detail.leads,0);
  assert.equal(detail.bookings,0);
  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM leads").get().n,0);

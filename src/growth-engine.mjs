@@ -8,6 +8,24 @@ const commercial=/\b(sell|for sale|promo|discount|coupon|cheap followers|crypto|
 const question=/\?|recommend|advice|help|how to|where|looking for|worth visiting|tips|itinerary|plan|transport|boat|snorkel|guide|travel/i;
 const cleanHeading=s=>text(escapeXml(s)).slice(0,240);
 const nowDay=()=>new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+const HOUR=3600000, DAY=24*HOUR, MAX_REDDIT_AGE=48*HOUR;
+// Use original publication time, never the feed's updated/ingestion time.
+function freshPublicQuestion(entry,nowMs){
+ const stamp=entry.match(/<published(?:\s[^>]*)?>([^<]+)<\/published>/i)?.[1]||
+  entry.match(/<pubDate(?:\s[^>]*)?>([^<]+)<\/pubDate>/i)?.[1];
+ const published=Date.parse(stamp||"");
+ if(!Number.isFinite(published)||published>nowMs+5*60000||nowMs-published>MAX_REDDIT_AGE)return null;
+ const words=escapeXml(entry).replace(/<[^>]+>/g," ").slice(0,14000);
+ const baliMidnight=Math.floor((published+8*HOUR)/DAY)*DAY-8*HOUR;
+ const cutoff=/\b(tomorrow|esok)\b/i.test(words)?baliMidnight+2*DAY-1000:
+  /\b(today|tonight)\b|hari ini/i.test(words)?baliMidnight+DAY-1000:Infinity;
+ const expires=Math.min(published+MAX_REDDIT_AGE,cutoff);
+ if(expires<=nowMs)return null;
+ const ageHours=Math.max(0,Math.floor((nowMs-published)/HOUR));
+ return {published_at:new Date(published).toISOString().replace("T"," ").slice(0,19),
+  expires_at:new Date(expires).toISOString().replace("T"," ").slice(0,19),
+  age_hours:ageHours,urgency:ageHours<6?"HIGH":ageHours<24?"ACTIVE":"VERIFY"};
+}
 const urlSafe=url=>{try{const u=new URL(url);return u.protocol==="https:"&&u.hostname==="www.reddit.com"&&/^\/r\/[a-z0-9_]+\/comments\/[a-z0-9]+\/?/i.test(u.pathname)?u.toString():null}catch{return null}};
 const hubs=Object.freeze([
  {name:"Facebook Groups: Bali travel",network:"Facebook",type:"MANUAL_SEARCH",
@@ -44,15 +62,19 @@ function answer(theme,source){
   "For Nusa Penida, check the fast-boat route, realistic island travel time, weather and verified local operator availability before committing to a full itinerary.")+
   " "+tag+" If the community allows business suggestions and you want help, I can answer specific questions about dates or group size. No unsolicited DM.";
 }
-export function extractPublicQuestions(xml,source="REDDIT_PUBLIC_RSS"){
- if(typeof xml!=="string"||xml.length>300000)return [];
+export function extractPublicQuestions(xml,source="REDDIT_PUBLIC_RSS",nowMs=Date.now()){
+ if(typeof xml!=="string"||xml.length>300000||!Number.isFinite(nowMs))return [];
  const result=[];
  for(const entry of xml.match(/<entry\b[^>]*>[\s\S]*?<\/entry>/gi)||[]){
   const title=cleanHeading(entry.match(/<title(?:\s[^>]*)?>([\s\S]*?)<\/title>/i)?.[1]||"");
   const link=urlSafe(entry.match(/<link[^>]+href=["']([^"']+)["']/i)?.[1]||"");
   if(!link||!validTitle(title))continue;
+  const freshness=freshPublicQuestion(entry,nowMs);
+  if(!freshness)continue;
   const theme=themeOf(title);
-  result.push({id:uuid(),source,source_url:link,headline:title,theme,score:scoring(title),suggested_reply:answer(theme,source)});
+  result.push({id:uuid(),source,source_url:link,headline:title,theme,
+   score:Math.min(100,scoring(title)+(freshness.urgency==="HIGH"?12:freshness.urgency==="ACTIVE"?6:0)),
+   suggested_reply:answer(theme,source),...freshness});
   if(result.length>=12)break;
  }
  return result;
@@ -60,8 +82,8 @@ export function extractPublicQuestions(xml,source="REDDIT_PUBLIC_RSS"){
 // Reddit RSS is a best-effort PUBLIC source only; this source may be retired or rate-limited.
 // We do not bypass authentication, read personal info, or automatically comment.
 const feeds=[
- "https://www.reddit.com/r/bali/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=month",
- "https://www.reddit.com/r/travel/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=month"
+ "https://www.reddit.com/r/bali/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=week",
+ "https://www.reddit.com/r/travel/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=week"
 ];
 export function extractOpenBusinesses(json){
  const elements=Array.isArray(json?.elements)?json.elements:[];
@@ -104,10 +126,9 @@ async function discoverOpenAccommodation(db,request=fetch){
 }
 export async function researchBuyerQuestions(db,env,request=fetch){
  if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="false")return {status:"DISABLED",discovered:0};
- const today=nowDay();
- const old=await db.prepare("SELECT source FROM growth_discovery_runs WHERE substr(created_at,1,10)=? OR (source='OSM_PUBLIC_BUSINESSES' AND created_at>=datetime('now','-7 days'))").bind(today).all();
+ const old=await db.prepare("SELECT source FROM growth_discovery_runs WHERE (source='REDDIT_PUBLIC_RSS' AND created_at>=datetime('now','-2 hours')) OR (source='OSM_PUBLIC_BUSINESSES' AND created_at>=datetime('now','-7 days'))").all();
  const done=new Set(old.results.map(x=>x.source));
- if(done.has("REDDIT_PUBLIC_RSS")&&done.has("OSM_PUBLIC_BUSINESSES"))return {status:"ALREADY_SCANNED_TODAY",discovered:0};
+ if(done.has("REDDIT_PUBLIC_RSS")&&done.has("OSM_PUBLIC_BUSINESSES"))return {status:"RECENTLY_SCANNED",discovered:0};
  const details=[];
  let total=0;
  if(!done.has("REDDIT_PUBLIC_RSS")){
@@ -124,6 +145,8 @@ export async function researchBuyerQuestions(db,env,request=fetch){
      const r=await db.prepare("INSERT OR IGNORE INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,?,?,?,?,?,?)")
       .bind(item.id,item.source,item.source_url,item.headline,item.theme,item.score,item.suggested_reply).run();
      discovered+=Number(r.meta?.changes||0);
+     await db.prepare("INSERT OR REPLACE INTO growth_publication_meta(source_url,published_at,expires_at) VALUES(?,?,?)")
+      .bind(item.source_url,item.published_at,item.expires_at).run();
      if(discovered>=12)break;
     }
    }catch(_){}
@@ -141,7 +164,9 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   details.push({source:"OSM_PUBLIC_BUSINESSES",...found});total+=found.discovered;
  }
  await db.batch([
+  db.prepare("UPDATE growth_opportunities SET status='DISMISSED',updated_at=CURRENT_TIMESTAMP WHERE source='REDDIT_PUBLIC_RSS' AND status IN ('REVIEW','SHORTLISTED') AND NOT EXISTS (SELECT 1 FROM growth_publication_meta m WHERE m.source_url=growth_opportunities.source_url AND m.expires_at>datetime('now'))"),
   db.prepare("DELETE FROM growth_opportunities WHERE status IN ('REVIEW','DISMISSED') AND discovered_at<datetime('now','-30 days')"),
+  db.prepare("DELETE FROM growth_publication_meta WHERE expires_at<datetime('now','-90 days')"),
   db.prepare("DELETE FROM growth_click_daily WHERE day<date('now','-90 days')")
  ]);
  return {status:total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
@@ -149,7 +174,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
 }
 export async function growthOverview(db){
  const [opps,clicks,count,scans,bookings]=await Promise.all([
-  db.prepare("SELECT id,source,source_url,headline,theme,score,suggested_reply,status,discovered_at FROM growth_opportunities WHERE discovered_at>=datetime('now','-60 days') AND status!='DISMISSED' ORDER BY CASE status WHEN 'REVIEW' THEN 0 WHEN 'SHORTLISTED' THEN 1 WHEN 'CONTACTED' THEN 2 ELSE 3 END,score DESC,discovered_at DESC LIMIT 60").all(),
+  db.prepare("SELECT g.id,g.source,g.source_url,g.headline,g.theme,g.score,g.suggested_reply,g.status,g.discovered_at,m.published_at,m.expires_at,CAST((julianday('now')-julianday(m.published_at))*24 AS INTEGER) AS age_hours FROM growth_opportunities g LEFT JOIN growth_publication_meta m ON m.source_url=g.source_url WHERE g.discovered_at>=datetime('now','-60 days') AND g.status!='DISMISSED' AND (g.source!='REDDIT_PUBLIC_RSS' OR (m.published_at IS NOT NULL AND m.expires_at>datetime('now'))) ORDER BY CASE g.status WHEN 'REVIEW' THEN 0 WHEN 'SHORTLISTED' THEN 1 WHEN 'CONTACTED' THEN 2 ELSE 3 END,g.score DESC,g.discovered_at DESC LIMIT 60").all(),
   db.prepare("SELECT day,source,landing,count FROM growth_click_daily WHERE day>=date('now','-30 days') ORDER BY day DESC,count DESC LIMIT 120").all(),
   db.prepare("SELECT COUNT(*) AS n FROM leads").first(),
   db.prepare("SELECT source,result,candidates,created_at FROM growth_discovery_runs ORDER BY created_at DESC LIMIT 8").all(),

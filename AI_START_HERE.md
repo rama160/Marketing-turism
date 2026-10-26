@@ -1,3 +1,10 @@
+## CRITICAL 27 OCT 2026 — FRESH, ACTIONABLE TRAVEL LEADS
+- Reddit matches require verifiable original published/pubDate timestamps, age <=48 hours and still-future deadlines for 'today' or 'tomorrow' in Bali time. Missing/old timestamps are NOT actionable leads.
+- Reuse the EXISTING hourly Cron with a two-hour Reddit research cooldown; OSM accommodation research stays weekly. Do not add a fourth tourism Cron or pay for a Cloudflare upgrade.
+- Additive, rerunnable migration database/migrations/0019_growth_freshness.sql records only public post URL and expiry. Apply after 0018 and before Worker deployment. Existing undated Reddit posts are hidden, not deleted; contacts and guest history remain intact.
+- The dashboard displays post age and hides expired records. RSS blocks/403 mean SOURCE_UNAVAILABLE, not manufactured prospects. Responses remain owner-controlled; no auto-DM or group joining.
+- This supersedes the 26 October daily-only research schedule described below.
+
 ## CRITICAL 26 OCT 2026 FREE CRON CAP HOTFIX — current truth
 - This account hit Cloudflare Free **five Cron triggers account-wide** while trying to add tourism `0 3 * * *` (fourth tourism Cron); Wrangler deployment failed code 10072 despite successful D1 migration and Worker asset upload. Never upgrade to paid without user opt-in and never disable Spenva schedules.
 - Real acquisition research is on existing tourism `0 2 * * *` at **10:00 WITA**, launched under `ctx.waitUntil` when config `GROWTH_PUBLIC_RESEARCH_ENABLED=true`. Tourism Cron remains exactly `["0 1 * * 1","0 2 * * *","0 * * * *"]`; preserve all three. RSS and OSM requests bounded in background. Historical v3.12.0 documentation referring to a *new 11:00 WITA* Cron is superseded.
