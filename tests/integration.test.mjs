@@ -5,6 +5,7 @@ import {readFileSync} from "node:fs";
 import {DatabaseSync} from "node:sqlite";
 import worker from "../src/worker.mjs";
 import {validCommonsCandidate,choosePhotoForReview,topicForCampaign} from "../src/photo-research.mjs";
+import {extractPublicQuestions,extractOpenBusinesses,researchBuyerQuestions} from "../src/growth-engine.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
@@ -1188,4 +1189,120 @@ test("weekly automatic topic research creates owner-review DRAFT with sourced me
   assert.equal(repeated.generated,0);
   assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
  }finally{globalThis.fetch=oldFetch;sqlite.close();}
+});
+
+test("growth acquisition extracts only public travel questions and real mapped business names, no member identities",()=>{
+ const feed='<feed><entry><title>Any tips for snorkeling around Nusa Penida and Bali itinerary?</title>'+
+  '<link href="https://www.reddit.com/r/bali/comments/abc123/visiting_penida/"/></entry>'+
+  '<entry><title>Cheap crypto followers for sale?</title><link href="https://www.reddit.com/r/bali/comments/bad12/"/></entry>'+
+  '<entry><title>Penida tours</title><link href="https://evil.invalid/private"/></entry></feed>';
+ const questions=extractPublicQuestions(feed);
+ assert.equal(questions.length,1);
+ assert.equal(questions[0].source,"REDDIT_PUBLIC_RSS");
+ assert.match(questions[0].headline,/snorkeling/);
+ assert.match(questions[0].suggested_reply,/Nusa Penida Experiences/);
+ assert.match(questions[0].suggested_reply,/No unsolicited DM/);
+ const partners=extractOpenBusinesses({elements:[
+  {type:"node",id:123456,tags:{name:"Penida Guest House",tourism:"guest_house"}},
+  {type:"way",id:2222,tags:{name:"Penida Hostel",tourism:"hostel"}},
+  {type:"node",id:987,tags:{name:"Someone Private",tourism:"residential"}}
+ ]});
+ assert.equal(partners.length,2);
+ assert.equal(partners[0].source,"OSM_PUBLIC_BUSINESSES");
+ assert.equal(partners[0].source_url,"https://www.openstreetmap.org/node/123456");
+ assert.doesNotMatch(JSON.stringify(partners),/profile_id|telephone|contact:phone/);
+});
+
+test("daily growth research discovers public prospects but cannot auto-send or create guest leads",async()=>{
+ const {request,db,sqlite,env}=fixture();
+ const rss='<feed><entry><title>How to plan Nusa Penida snorkeling for friends?</title>'+
+ '<link href="https://www.reddit.com/r/bali/comments/qwe123/itinerary/"/></entry></feed>';
+ const finder=async url=>{
+  if(String(url).includes("reddit.com"))return new Response(rss,{status:200,headers:{"content-type":"application/atom+xml"}});
+  if(String(url).includes("overpass-api.de"))return new Response(JSON.stringify({elements:[
+   {type:"node",id:99124567,tags:{tourism:"hotel",name:"Penida View Hotel"}}
+  ]}),{status:200,headers:{"content-type":"application/json"}});
+  throw Error("Unexpected external data request");
+ };
+ const scan=await researchBuyerQuestions(db,env,finder);
+ assert.equal(scan.status,"FOUND",JSON.stringify(scan));
+ assert.equal(scan.discovered,2);
+ const again=await researchBuyerQuestions(db,env,finder);
+ assert.equal(again.status,"ALREADY_SCANNED_TODAY");
+ const limited=await request("/api/admin/growth","GET",undefined,false);
+ assert.equal(limited.httpStatus,401);
+ const detail=await request("/api/admin/growth");
+ assert.equal(detail.opportunities.length,2);
+ assert.equal(detail.leads,0);
+ assert.equal(detail.bookings,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM leads").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_discovery_runs").get().n,2);
+ const unauth=await request("/api/admin/growth/opportunities/"+detail.opportunities[0].id+"/status","PATCH",
+  {owner_confirmed:true,status:"CONTACTED"},false);
+ assert.equal(unauth.httpStatus,401);
+ const owner=await request("/api/admin/growth/opportunities/"+detail.opportunities[0].id+"/status","PATCH",
+  {owner_confirmed:true,status:"SHORTLISTED"});
+ assert.equal(owner.httpStatus,200);
+ assert.equal(owner.status,"SHORTLISTED");
+ const denied=await request("/api/admin/growth/opportunities/"+detail.opportunities[0].id+"/status","PATCH",
+  {owner_confirmed:false,status:"CONTACTED"});
+ assert.equal(denied.httpStatus,403);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM wa_outbox").get().n,0);
+ sqlite.close();
+});
+test("public click-to-chat measures aggregate intent only, never a guest lead or guaranteed message",async()=>{
+ const {sqlite,env,request}=fixture();
+ const payload={kind:"WHATSAPP",source:"facebook",landing:"snorkeling",phone:"SHOULD_NOT_BE_STORED"};
+ async function ping(origin,body=payload){
+  const res=await worker.fetch(new Request("https://agent.invalid/api/public/intent",{
+   method:"POST",headers:{"content-type":"application/json","origin":origin},body:JSON.stringify(body)}),env);
+  return {status:res.status,data:await res.json()};
+ }
+ assert.equal((await ping("https://attacker.invalid")).status,403);
+ assert.equal((await ping("https://agent.invalid",{kind:"OTHER"})).status,400);
+ assert.equal((await ping("https://agent.invalid")).status,202);
+ assert.equal((await ping("https://agent.invalid")).status,202);
+ const rows=sqlite.prepare("SELECT day,kind,source,landing,count FROM growth_click_daily").all();
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].count,2);
+ assert.equal(rows[0].source,"facebook");
+ assert.equal(rows[0].landing,"snorkeling");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM leads").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM bookings").get().n,0);
+ const growth=await request("/api/admin/growth");
+ assert.equal(growth.click_count_30d,2);
+ assert.equal(growth.leads,0);
+ sqlite.close();
+});
+test("existing published Meta post with verified zero views generates new owner-review growth draft instead of stalling",async()=>{
+ const {request,sqlite,env}=fixture();
+ env.META_APPROVED_AUTOPOST_ENABLED="true";
+ env.META_PAGE_ID="1375913638943340";
+ env.META_PAGE_ACCESS_TOKEN="long-test-token-only-abcdef-abcdef";
+ const campaign=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",
+  platform:"Facebook",caption:"Explore Nusa Penida West cliffs and ask about local travel options."});
+ assert.equal(campaign.httpStatus,201);
+ const approval=await request("/api/admin/campaigns/"+campaign.id+"/status","PATCH",
+  {status:"APPROVED",auto_publish:true,platforms:["Facebook"],owner_confirmed:true});
+ assert.equal(approval.httpStatus,200);
+ sqlite.prepare("UPDATE approved_social_queue SET status='POSTED',meta_post_id='1234567890123',published_at=datetime('now','-24 hours')").run();
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async url=>{
+   if(String(url).includes("post_media_view"))return new Response(JSON.stringify({data:[{name:"post_media_view",values:[{value:0}]}]}),{status:200});
+   if(String(url).includes("likes.summary"))return new Response(JSON.stringify({id:"1234567890123",likes:{summary:{total_count:0}},comments:{summary:{total_count:0}}}),{status:200});
+   return new Response("{}",{status:403});
+  };
+  await worker.scheduled({cron:"0 * * * *"},env,{});
+  const stats=sqlite.prepare("SELECT views,data_status FROM approved_social_metrics").get();
+  assert.equal(stats.views,0);
+  assert.equal(stats.data_status,"VERIFIED");
+  const learning=sqlite.prepare("SELECT * FROM approved_social_learning").all();
+  assert.equal(learning.length,1);
+  assert.equal(learning[0].source_views,0);
+  const next=sqlite.prepare("SELECT status,caption FROM campaign_drafts WHERE id=?").get(learning[0].new_campaign_id);
+  assert.equal(next.status,"DRAFT");
+  assert.match(next.caption,/tanggal|peserta|date|group size/i);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM approved_social_queue").get().n,1,"new draft not automatically approved");
+ }finally{globalThis.fetch=original;sqlite.close();}
 });
