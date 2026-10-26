@@ -790,7 +790,7 @@ async function runIndependentMetaPublication(db,env,day){
 }
 export default {
  async fetch(req,env,ctx){try{return await route(req,env,ctx)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
- async scheduled(event,env){
+ async scheduled(event,env,ctx){
   if(!env.DB)return;
   const day=new Date().toISOString().slice(0,10);
   if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,env,day,"WEEKLY_CRON");return;}
@@ -802,17 +802,18 @@ export default {
    catch(_){console.error("APPROVED_SOCIAL_METRICS_FAILED");}
    return;
   }
-  // Customer research is isolated from the approved publishing and Meta health tasks.
-  // 03:00 UTC = 11:00 WITA. Public-source failures must never affect scheduled posts.
-  if(event.cron==="0 3 * * *"){
-   try{await researchBuyerQuestions(env.DB,env);}
-   catch(_){console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE");}
-   return;
-  }
   // Existing daily trigger: check Meta read connectivity automatically without
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
+   // Reuse the EXISTING daily Cron to honor Cloudflare Free's account-wide 5-trigger cap.
+   // Concurrent waitUntil work never delays approved Meta publishing on separate hourly Cron.
+   if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
+    const research=researchBuyerQuestions(env.DB,env)
+     .catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));
+    if(typeof ctx?.waitUntil==="function")ctx.waitUntil(research);
+    else await research;
+   }
    // Recover missed Monday work without enqueuing any past-dated Meta post.
    try{await prepareMarketingWeek(env.DB,env,day,"DAILY_RECOVERY");}
    catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
