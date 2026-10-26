@@ -211,20 +211,24 @@ export async function feedbackEvidence(db,day){
   published_hour:Number(new Date(r.published_at.replace(" ","T")+"Z").toLocaleString("en-US",{timeZone:"Asia/Makassar",hour:"2-digit",hour12:false}))%24}))];
 }
 async function newLearningDraft(db,env,row,stats,sourceEvidence){
- if(!(stats.views>=50))return "INSUFFICIENT_VIEWS";
+ if(!Number.isSafeInteger(stats.views)||stats.views<0)return "UNVERIFIED_VIEWS";
  if(await db.prepare("SELECT queue_id FROM approved_social_learning WHERE queue_id=?").bind(row.id).first())return "ALREADY_LEARNED";
  const day=baliDay(Date.now()),obs=sourceEvidence.filter(x=>(x.views??x.impressions)>0);
  const strategy=marketingIntelligence(obs,weeklyDrafts(marketingWeekStart(day)),day);
  const top=strategy.recommendations.find(x=>channels.has(x.platform)&&x.samples>0)||
   strategy.recommendations.find(x=>channels.has(x.platform));
- const preferredPlatform=top?.platform||row.platform,preferredActivity=top?.activity_id||row.activity_id;
- const revision=(obs.length%5)+1,reason="Buat variasi dari performa "+stats.views+" media views nyata pada "+row.platform;
+ const lowReach=stats.views<50;
+ const preferredPlatform=lowReach?row.platform:(top?.platform||row.platform);
+ const preferredActivity=lowReach?row.activity_id:(top?.activity_id||row.activity_id);
+ const revision=(obs.length%5)+1;
+ const reason=lowReach?"caption dan CTA perlu berbeda karena "+stats.views+" views; gunakan pertanyaan tanggal dan jumlah peserta":
+  "Buat variasi dari performa "+stats.views+" media views nyata pada "+row.platform;
  let caption=replacementCampaignCaption({activity_id:preferredActivity,platform:preferredPlatform,revision,reason,date:day});
  let generator="CURATED_FEEDBACK";
  if(env.AI){
   try{
    const data=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
-    {role:"system",content:"Write an original organic tourism caption for owner review only in Indonesian, 100-700 characters. No invented prices, availability, guarantees or wildlife sightings. Avoid repeating the previous post; include a question. Return caption only."},
+    {role:"system",content:"Write an original organic tourism caption for owner review only in Indonesian, 100-700 characters. No invented prices, availability, guarantees or wildlife sightings. Avoid repeating the previous post. If reach was low, change the opening hook and offer a useful itinerary tip. Ask the reader to share their travel date and group size, without implying availability. Return caption only."},
     {role:"user",content:"Nusa Penida Experiences; "+preferredPlatform+"; "+preferredActivity+". Based on verified "+stats.views+" views and "+(stats.reactions??"unavailable")+" reactions on prior post. Use a different storytelling angle."}
    ]});
    const proposed=String(data?.response||"").trim();
@@ -251,10 +255,11 @@ async function newLearningDraft(db,env,row,stats,sourceEvidence){
     .bind(row.id,id,MARKETING_STRATEGY_VERSION,stats.views),
    db.prepare("INSERT INTO marketing_decisions(id,week_start,strategy_version,input_observations,ranked_json,assumptions) VALUES(?,?,?,?,?,?)")
     .bind(uid(),marketingWeekStart(day),MARKETING_STRATEGY_VERSION,strategy.observation_count,JSON.stringify(strategyRows),
-     "Draf baru dari pengamatan Meta asli; "+stats.views+" views, data lainnya nullable; pemilik wajib menyetujui."),
+     (lowReach?"Distribusi lemah, belum ada bukti konten sukses. Prioritaskan hook dan CTA yang dapat diuji. ":
+      "Bukti tayangan Meta tersedia. ")+"Draf baru dari pengamatan Meta asli; "+stats.views+" views, data lainnya nullable; pemilik wajib menyetujui."),
    db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
     .bind(uid(),"campaign",id,"STRATEGY_FEEDBACK_DRAFT",JSON.stringify({source_queue_id:row.id,views:stats.views,generator,owner_review_required:true,
-       photo_origin:discovered.origin,photo_slug:draftSlug}))
+       low_reach:lowReach,photo_origin:discovered.origin,photo_slug:draftSlug}))
   ]);
   return "NEW_DRAFT_CREATED";
  }catch(_){return "ALREADY_PROCESSED";}
@@ -277,7 +282,7 @@ export async function collectApprovedInsights(db,env,request=fetch,now=Date.now(
    .bind(uid(),row.id,day,stats.views,stats.reach,stats.reactions,stats.comments,stats.shares,stats.saves,null,stats.data_status,stats.error_code).run();
   await db.prepare("UPDATE approved_social_queue SET last_insight_at=CURRENT_TIMESTAMP WHERE id=? AND status='POSTED'").bind(row.id).run();
   let learning="NEED_VERIFIED_METRICS";
-  if(stats.data_status==="VERIFIED"&&stats.views>=50){
+  if(stats.data_status==="VERIFIED"&&stats.views!==null){
    const evidence=await feedbackEvidence(db,day);
    learning=await newLearningDraft(db,env,row,stats,evidence);
   }
