@@ -129,7 +129,12 @@ export async function addPartnerOpportunity(db,b){
 export async function recordChatIntent(request,db){
  const origin=request.headers.get("origin")||"";
  const site=new URL(request.url).origin;
- if(origin!==site)return {status:403,data:{error:"Same-origin event required"}};
+ const referer=request.headers.get("referer")||"";
+ const fetchSite=request.headers.get("sec-fetch-site")||"";
+ let refererMatches=false;
+ try{refererMatches=new URL(referer).origin===site}catch(_){}
+ if(origin?origin!==site:!refererMatches&&fetchSite!=="same-origin")
+  return {status:403,data:{error:"Same-origin event required"}};
  const len=Number(request.headers.get("content-length")||0);
  if(len>400)return {status:413,data:{error:"Event terlalu besar"}};
  let body;try{body=await request.json()}catch{return {status:400,data:{error:"JSON tidak valid"}}}
