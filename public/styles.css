@@ -224,3 +224,24 @@ body{background:#f3f7fa;color:#17374b}
 .ownerPhotoSelect label{display:grid;gap:4px}
 .ownerPhotoSelect select{max-width:100%;width:100%}
 @media(max-width:540px){.ownerPhotoGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ownerPhotoTile img{height:110px}}
+
+/* Owner-controlled acquisition workspace: public opportunity research and verified funnel. */
+.growthHeader{margin:0 0 20px}
+.growthHeader h3{font-size:clamp(21px,2.5vw,30px);color:var(--ink);margin:8px 0}
+.growthKpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:11px;margin:22px 0}
+.growthKpi{padding:14px;border-radius:12px;border:1px solid #d3e3e0;background:#f8fbfa;display:grid;gap:4px}
+.growthKpi strong{font-size:27px;line-height:1.2;color:#0d6374}
+.growthKpi small{font-size:11px;color:#577078}
+.growthColumns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.growthOpportunity{padding:16px 0;border-bottom:1px solid #e2ebea;display:grid;gap:10px}
+.growthOpportunity .meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+.growthOpportunity .meta strong{max-width:80%;overflow-wrap:anywhere}
+.growthOpportunity>small{font-size:11px;color:#527076}
+.growthSuggestion{margin:0;white-space:pre-line;overflow-wrap:anywhere;border-left:3px solid #b1d8d3;background:#f0f7f5;border-radius:6px;padding:11px;color:#2b5559;font-size:13px;line-height:1.6}
+.growthOpportunity .actions a,.growthOpportunity .actions button{font-size:12px}
+.growthHubs{display:grid;gap:8px;margin:12px 0 20px}
+.growthHubs .item{gap:9px}
+.growthHubs a{width:max-content;max-width:100%;overflow-wrap:anywhere}
+.growthClickList{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;font-size:13px}
+.growthClickList>*{padding:9px;border-bottom:1px solid #e5eeee}
+@media(max-width:900px){.growthColumns{grid-template-columns:1fr}.growthKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}

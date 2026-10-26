@@ -12,6 +12,7 @@ import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolve
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
+import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -170,7 +171,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.11.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.12.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -182,6 +183,10 @@ async function route(req,env,ctx){
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
   const live=env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
   return json({accepting_leads:!!live,business_name:info?.legal_name||"",trade_brand:info?.trade_brand||"Penivara Experiences",payment_methods:{bank_transfer:"manual_only",qris:"NOT_CONFIGURED"},business_contact:info?.public_contact||"",privacy_page:"/privacy.html",terms_page:"/terms.html",turnstile_required:true});
+ }
+ if(path==="/api/public/intent"&&method==="POST"){
+  const outcome=await recordChatIntent(req,db);
+  return json(outcome.data,outcome.status);
  }
  if(path==="/api/public/leads"&&method==="POST"){
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
@@ -264,6 +269,31 @@ async function route(req,env,ctx){
    await audit(db,"business","1","PROFILE_UPDATED",{privacy,refund});
    return json({updated:true,acceptance_requires_cloudflare_flag:true});
   }
+ }
+ if(path==="/api/admin/growth"&&method==="GET")return json(await growthOverview(db));
+ if(path==="/api/admin/growth/research"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  return json(await researchBuyerQuestions(db,env));
+ }
+ if(path==="/api/admin/growth/partners"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  try{
+   const created=await addPartnerOpportunity(db,b);
+   await audit(db,"growth_opportunity",created.id,"PARTNER_ADDED");
+   return json(created,201);
+  }catch(e){return bad(String(e.message),422);}
+ }
+ const opportunityPath=path.match(/^\/api\/admin\/growth\/opportunities\/([^/]+)\/status$/);
+ if(opportunityPath&&method==="PATCH"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  try{
+   const updated=await progressOpportunity(db,opportunityPath[1],str(b.status,20));
+   await audit(db,"growth_opportunity",updated.id,"OWNER_ACTION",{status:updated.status});
+   return json(updated);
+  }catch(e){return bad(String(e.message),422);}
  }
  if(path==="/api/admin/summary"&&method==="GET"){
   const table=["operators","leads","quotes","bookings"],values=await Promise.all(table.map(t=>db.prepare("SELECT COUNT(*) n FROM "+t).first()));
@@ -770,6 +800,13 @@ export default {
    catch(_){console.error("APPROVED_SOCIAL_DISPATCH_FAILED");}
    try{await collectApprovedInsights(env.DB,env);}
    catch(_){console.error("APPROVED_SOCIAL_METRICS_FAILED");}
+   return;
+  }
+  // Customer research is isolated from the approved publishing and Meta health tasks.
+  // 03:00 UTC = 11:00 WITA. Public-source failures must never affect scheduled posts.
+  if(event.cron==="0 3 * * *"){
+   try{await researchBuyerQuestions(env.DB,env);}
+   catch(_){console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE");}
    return;
   }
   // Existing daily trigger: check Meta read connectivity automatically without
