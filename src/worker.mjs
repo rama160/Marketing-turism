@@ -802,6 +802,13 @@ export default {
    catch(_){console.error("APPROVED_SOCIAL_METRICS_FAILED");}
    return;
   }
+  // Customer research is isolated from the approved publishing and Meta health tasks.
+  // 03:00 UTC = 11:00 WITA. Public-source failures must never affect scheduled posts.
+  if(event.cron==="0 3 * * *"){
+   try{await researchBuyerQuestions(env.DB,env);}
+   catch(_){console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE");}
+   return;
+  }
   // Existing daily trigger: check Meta read connectivity automatically without
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
@@ -811,8 +818,6 @@ export default {
    catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
-   try{await researchBuyerQuestions(env.DB,env);}
-   catch(_){console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE");}
    await runIndependentMetaPublication(env.DB,env,day);
   }
  }
