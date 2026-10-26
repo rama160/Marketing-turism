@@ -6,10 +6,11 @@ import {DatabaseSync} from "node:sqlite";
 import worker from "../src/worker.mjs";
 import {validCommonsCandidate,choosePhotoForReview,topicForCampaign} from "../src/photo-research.mjs";
 import {extractPublicQuestions,extractOpenBusinesses,researchBuyerQuestions} from "../src/growth-engine.mjs";
+import {extractBlueskyPosts,extractMetaPageComments,extractInstagramComments,extractYouTubeVideos,scanAdditionalNetworks} from "../src/growth-platforms.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -1266,7 +1267,7 @@ test("daily growth research discovers public prospects but cannot auto-send or c
  assert.equal(detail.leads,0);
  assert.equal(detail.bookings,0);
  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM leads").get().n,0);
- assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_discovery_runs").get().n,2);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_discovery_runs WHERE source IN ('REDDIT_PUBLIC_RSS','OSM_PUBLIC_BUSINESSES')").get().n,2);
  const unauth=await request("/api/admin/growth/opportunities/"+detail.opportunities[0].id+"/status","PATCH",
   {owner_confirmed:true,status:"CONTACTED"},false);
  assert.equal(unauth.httpStatus,401);
@@ -1278,6 +1279,87 @@ test("daily growth research discovers public prospects but cannot auto-send or c
   {owner_confirmed:false,status:"CONTACTED"});
  assert.equal(denied.httpStatus,403);
  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM wa_outbox_requests").get().n,0);
+ sqlite.close();
+});
+test("new public APIs enforce freshness and do not record author identities or stale travel questions",()=>{
+ const now=Date.parse("2026-10-27T04:00:00Z"),published="2026-10-27T03:00:00Z",old="2026-09-27T03:00:00Z";
+ const did="did:plc:abcdefgh1234567";
+ const bluesky={posts:[
+  {uri:"at://"+did+"/app.bsky.feed.post/3abc123",author:{did,handle:"private-like-handle.invalid"},
+   record:{text:"Nusa Penida trip tomorrow? Any snorkel advice?",createdAt:published}},
+  {uri:"at://"+did+"/app.bsky.feed.post/3old123",author:{did},
+   record:{text:"Nusa Penida trip tomorrow? Any tips?",createdAt:old}}]};
+ const bs=extractBlueskyPosts(bluesky,now);assert.equal(bs.length,1);
+ assert.equal(bs[0].source,"BLUESKY_PUBLIC");
+ assert.ok(!JSON.stringify(bs).includes("private-like-handle"));
+ const fb=extractMetaPageComments({data:[{id:"123456_778899",comments:{data:[
+  {id:"123456_789",message:"Nusa Penida day trip tomorrow? Any tips?",created_time:published,from:{name:"NEVER_STORE"}},
+  {id:"123456_790",message:"Nusa Penida tomorrow? Advice?",created_time:old}
+ ]}}]},now);
+ assert.equal(fb.length,1);assert.equal(fb[0].source,"FACEBOOK_PAGE_COMMENTS");
+ assert.ok(!JSON.stringify(fb).includes("NEVER_STORE"));
+ const ig=extractInstagramComments({data:[{id:"123456",permalink:"https://www.instagram.com/p/xyz123/",
+  comments:{data:[{id:"987654",text:"Nusa Penida snorkeling tomorrow? Any advice?",timestamp:published,username:"DO_NOT_SAVE"}]}}]},now);
+ assert.equal(ig.length,1);assert.ok(!JSON.stringify(ig).includes("DO_NOT_SAVE"));
+ assert.match(ig[0].source_url,/instagram.com/);
+ const videos=extractYouTubeVideos({items:[{id:{videoId:"AbCdEfGh123"},
+  snippet:{title:"Nusa Penida: is a day trip worth it?",publishedAt:published}}]},now);
+ assert.equal(videos.length,1);assert.ok(videos[0].score<=65);
+ assert.match(videos[0].suggested_reply,/NOT|not treat/i);
+});
+
+test("Bluesky, Facebook Page, Instagram business and optional YouTube feed single owner-review queue",async()=>{
+ const {db,sqlite,request,env}=fixture();
+ const now=new Date().toISOString(),did="did:plc:abcdefgh1234567";
+ env.META_PAGE_ID="1234567890";
+ env.META_IG_USER_ID="9876543210";
+ env.META_PAGE_ACCESS_TOKEN="test-meta-page-access-token-1234567890";
+ env.GROWTH_META_RESEARCH_ENABLED="true";
+ env.GROWTH_YOUTUBE_RESEARCH_ENABLED="true";
+ env.YOUTUBE_DATA_API_KEY="test-youtube-key-abcdefghijklmnopqrstuvwxyz";
+ const caller=async(url,options)=>{
+  url=String(url);
+  if(url.startsWith("https://public.api.bsky.app/"))return new Response(JSON.stringify({posts:[{
+   uri:"at://"+did+"/app.bsky.feed.post/3abc123",author:{did},record:{text:"Nusa Penida tomorrow? How to plan day trip?",createdAt:now}
+  }]}),{status:200,headers:{"content-type":"application/json"}});
+  if(url.includes("/1234567890/posts"))return new Response(JSON.stringify({data:[{id:"1234567890_123456",comments:{data:[{
+   id:"987654_123456",message:"Nusa Penida island tour tomorrow? Any advice?",created_time:now
+  }]}}]}),{status:200});
+  if(url.includes("/9876543210/media"))return new Response(JSON.stringify({data:[{
+   id:"1234567",permalink:"https://www.instagram.com/p/xyz/",comments:{data:[{
+    id:"5678999",text:"Nusa Penida snorkel tomorrow? Recommend a safe boat?",timestamp:now
+   }]}}]}),{status:200});
+  if(url.startsWith("https://www.googleapis.com/youtube/"))return new Response(JSON.stringify({items:[{id:{videoId:"AbCdEfGh123"},snippet:{
+   title:"Nusa Penida trip? How to plan a day itinerary?",publishedAt:now
+  }}]}),{status:200});
+  throw Error("unexpected external endpoint");
+ };
+ const statuses=await scanAdditionalNetworks(db,env,caller);
+ assert.equal(statuses.filter(x=>x.status==="FOUND").length,4);
+ const overview=await request("/api/admin/growth");
+ assert.equal(overview.opportunities.length,4);
+ assert.equal(overview.bookings,0);assert.equal(overview.leads,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_network_opportunities").get().n,4);
+ const fb=overview.opportunities.find(x=>x.source==="FACEBOOK_PAGE_COMMENTS");
+ assert.ok(fb&&fb.published_at&&fb.expires_at);
+ const action=await request("/api/admin/growth/opportunities/"+fb.id+"/status","PATCH",{owner_confirmed:true,status:"SHORTLISTED"});
+ assert.equal(action.httpStatus,200);
+ const noAction=await request("/api/admin/growth/opportunities/"+fb.id+"/status","PATCH",{owner_confirmed:false,status:"CONTACTED"});
+ assert.equal(noAction.httpStatus,403);
+ const repeat=await scanAdditionalNetworks(db,env,caller);
+ assert.equal(repeat.length,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM wa_outbox_requests").get().n,0);
+ sqlite.close();
+});
+
+test("non-configured Meta and YouTube do not fabricate access, while public source errors are reported",async()=>{
+ const {db,sqlite}=createD1();
+ const caller=async()=>new Response("denied",{status:403});
+ const results=await scanAdditionalNetworks(db,{},caller);
+ assert.equal(results.find(x=>x.source==="BLUESKY_PUBLIC").status,"SOURCE_UNAVAILABLE");
+ for(const source of ["FACEBOOK_PAGE_COMMENTS","INSTAGRAM_MEDIA_COMMENTS","YOUTUBE_PUBLIC_VIDEO"])
+  assert.equal(results.find(x=>x.source===source).status,"NOT_CONFIGURED");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_network_opportunities").get().n,0);
  sqlite.close();
 });
 test("public click-to-chat measures aggregate intent only, never a guest lead or guaranteed message",async()=>{

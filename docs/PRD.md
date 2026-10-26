@@ -1,3 +1,10 @@
+## Multi-platform acquisition research — 27 October 2026
+- Discover recent, actionable Nusa Penida travel questions from authorized/public sources, not solely Reddit.
+- Automated: Reddit, Bluesky public search, permitted own Facebook Page and Instagram Business comments; optional official YouTube Data API. Partner research: public OpenStreetMap lodging.
+- Manual follow-up hubs: Facebook Groups, Instagram public hashtags, TikTok, Threads, YouTube, X, Tripadvisor, maps. Official API restrictions must be reported and no private scraping is allowed.
+- Owner dashboard shows network, publication age, title, freshness and recommended reply draft. Never count observations as consented leads or guaranteed bookings.
+- All first-party sales, booking, WhatsApp and publishing permissions remain unchanged. No unsolicited messaging or automatic group posts.
+
 # PRD — AI Tourism Marketing & Booking Agent v3.0.0
 ## Goal
 Support an independent travel sales agent in Nusa Penida to attract consenting leads, qualify guests, quote tourism activities without loss, collect guest payments via verified manual processes, hand over activities to local operator, and retain auditable records.

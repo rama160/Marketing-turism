@@ -298,11 +298,11 @@ function renderGrowth(){
   ["Booking",Number(g.bookings||0),"Pesanan nyata"]
  ].map(([label,val,caption])=>'<div class="growthKpi"><small>'+esc(label)+'</small><strong>'+esc(val)+'</strong><small>'+esc(caption)+'</small></div>').join("");
  const statuses={REVIEW:"Perlu tinjauan",SHORTLISTED:"Siap ditindaklanjuti",CONTACTED:"Sudah dihubungi",RESPONDED:"Ada respons",DISMISSED:"Diabaikan"};
- const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik"};
+ const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik",BLUESKY_PUBLIC:"Bluesky · postingan publik",FACEBOOK_PAGE_COMMENTS:"Facebook · komentar pada Page sendiri",INSTAGRAM_MEDIA_COMMENTS:"Instagram · komentar pada akun bisnis sendiri",YOUTUBE_PUBLIC_VIDEO:"YouTube · video publik (bukan calon booking terverifikasi)"};
  $("#growthOpportunities").innerHTML=opportunities.length?
   opportunities.map(o=>
    '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
-   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(o.source==="REDDIT_PUBLIC_RSS" && Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
+   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
    '<p class="growthSuggestion">'+esc(o.suggested_reply)+'</p><div class="actions">'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(o.source_url)+'">Baca sumber &amp; aturan ↗</a>'+
    '<button class="outline small" data-action="growthCopy" data-id="'+esc(o.id)+'">Salin saran</button>'+
@@ -319,12 +319,13 @@ function renderGrowth(){
   '<div class="growthClickList">'+clickRows.slice(0,24).map(x=>
     '<span>'+esc(x.day)+' · '+esc(x.source)+' · '+esc(x.landing)+'</span><strong>'+esc(x.count)+' klik</strong>').join("")+'</div>':
   '<p class="feedback">Belum ada klik WhatsApp terukur. Saat pengunjung menekan tombol chat di website, jumlah klik agregat tercatat tanpa identitas mereka.</p>';
- const latest=(g.research||[])[0];
- const status={FOUND:"Pertanyaan relevan ditemukan",NO_MATCH:"Feed tersedia tetapi belum ada pertanyaan relevan",SOURCE_UNAVAILABLE:"Sumber publik tidak tersedia / membatasi akses"};
- $("#growthResearchStatus").textContent=latest?
-  "Riset terakhir: "+latest.created_at+" UTC · "+(status[latest.result]||latest.result)+
-   " · "+latest.candidates+" kandidat. Hasil pencarian publik tidak menjamin keberadaan calon pelanggan.":
-  "Pemindaian otomatis pertama berlangsung pada Cron harian 10.00 WITA; dapat dicoba sekarang secara manual.";
+ const scans=g.research||[];
+ const status={FOUND:"Ada hasil",NO_MATCH:"Belum ada yang cocok",SOURCE_UNAVAILABLE:"API tidak tersedia / akses terbatas"};
+ const displaySource={BLUESKY_PUBLIC:"Bluesky",FACEBOOK_PAGE_COMMENTS:"Facebook Page",INSTAGRAM_MEDIA_COMMENTS:"Instagram Bisnis",YOUTUBE_PUBLIC_VIDEO:"YouTube",REDDIT_PUBLIC_RSS:"Reddit",OSM_PUBLIC_BUSINESSES:"Mitra hotel"};
+ $("#growthResearchStatus").textContent=scans.length?
+  "Sumber terpantau: "+scans.slice(0,8).map(x=>(displaySource[x.source]||x.source)+" · "+(status[x.result]||x.result)+" ("+x.candidates+")").join(" | ")+
+  ". Temuan adalah bahan riset, bukan calon pelanggan yang sudah menyetujui kontak.":
+  "Pemindaian multi-platform memakai Cron yang sudah ada, dengan jeda riset untuk tiap sumber; dapat dicoba sekarang secara manual.";
 }
 $("#growthRefresh").onclick=refresh;
 $("#growthResearch").onclick=async()=>{
@@ -334,8 +335,8 @@ $("#growthResearch").onclick=async()=>{
   const result=await api("admin/growth/research","POST",{owner_confirmed:true});
   await refresh();
   say("#growthFeedback",result.status==="FOUND"?
-   "Tercatat "+result.discovered+" pertanyaan publik baru. Tinjau relevansi sebelum berinteraksi.":
-   result.status==="ALREADY_SCANNED_TODAY"?"Riset hari ini sudah dijalankan; akan diperiksa lagi besok.":
+   "Tercatat "+result.discovered+" temuan baru lintas platform. Periksa apakah benar pertanyaan calon tamu sebelum berinteraksi.":
+   result.status==="RECENTLY_SCANNED"?"Sumber telah diperiksa baru-baru ini; pemindaian selanjutnya mengikuti jeda masing-masing platform.":
    "Belum ada kandidat. Sumber mungkin membatasi akses; gunakan tautan riset komunitas.",result.status==="FOUND");
  }catch(err){say("#growthFeedback","Pencarian gagal: "+err.message)}
  finally{button.disabled=false;}

@@ -1,4 +1,5 @@
 // Consent-first customer acquisition: public travel questions -> helpful draft -> owner action.
+import {scanAdditionalNetworks,additionalNetworkOpportunities,progressNetworkOpportunity} from "./growth-platforms.mjs";
 // Never joins groups, scrapes private lists or sends unsolicited messages. No social writes.
 const uuid=()=>crypto.randomUUID();
 const text=s=>String(s??"").replace(/<[^>]*>/g," ").replace(/&(?:amp|quot|apos|lt|gt|#39|nbsp);/g," ").replace(/\s+/g," ").trim();
@@ -35,7 +36,21 @@ const hubs=Object.freeze([
  {name:"Hotel, hostel, villa Nusa Penida",network:"Google Maps",type:"PARTNER_RESEARCH",
   url:"https://www.google.com/maps/search/?api=1&query=Nusa+Penida+hotel+hostel+villa",description:"Temukan calon mitra B2B; kontak hanya pada kanal bisnis yang tersedia dan sesuai aturan"},
  {name:"Reddit: pertanyaan Nusa Penida",network:"Reddit",type:"MANUAL_SEARCH",
-  url:"https://www.reddit.com/r/bali/search/?q=nusa%20penida&restrict_sr=1&sort=new",description:"Tinjau pertanyaan publik, hormati larangan promosi dan aturan subreddit"}
+  url:"https://www.reddit.com/r/bali/search/?q=nusa%20penida&restrict_sr=1&sort=new",description:"Tinjau pertanyaan publik, hormati larangan promosi dan aturan subreddit"},
+ {name:"Instagram: unggahan Nusa Penida",network:"Instagram",type:"MANUAL_SEARCH",
+  url:"https://www.instagram.com/explore/tags/nusapenida/",description:"Tinjau percakapan dan lokasi publik secara manual; API bisnis hanya membaca aset yang diizinkan"},
+ {name:"TikTok: pencarian Nusa Penida",network:"TikTok",type:"MANUAL_SEARCH",
+  url:"https://www.tiktok.com/search?q=nusa%20penida",description:"Cari pertanyaan tentang itinerary; tidak ada pengambilan akun pribadi atau API riset komersial otomatis"},
+ {name:"YouTube: wisata Nusa Penida",network:"YouTube",type:"MANUAL_SEARCH",
+  url:"https://www.youtube.com/results?search_query=Nusa+Penida+travel+advice",description:"Cari video dan komentar publik yang relevan, bukan bukti otomatis calon booking"},
+ {name:"Threads: percakapan wisata",network:"Threads",type:"MANUAL_SEARCH",
+  url:"https://www.threads.com/search?q=nusa%20penida",description:"Riset manual percakapan yang tersedia publik; akses API mengikuti izin platform"},
+ {name:"X: pertanyaan wisata terbaru",network:"X",type:"MANUAL_SEARCH",
+  url:"https://x.com/search?q=nusa%20penida&f=live",description:"Periksa pertanyaan wisata terbaru, tanpa scraping atau DM massal"},
+ {name:"Tripadvisor: forum Bali",network:"Tripadvisor",type:"MANUAL_SEARCH",
+  url:"https://www.tripadvisor.com/Search?q=Nusa%20Penida",description:"Periksa forum dan ulasan untuk memahami kebutuhan wisata, tanpa menyalin data pribadi"},
+ {name:"Bluesky: pencarian Nusa Penida",network:"Bluesky",type:"MANUAL_SEARCH",
+  url:"https://bsky.app/search?q=nusa%20penida",description:"Pelengkap penelusuran otomatis melalui pencarian publik resmi"}
 ]);
 export const growthHubs=()=>hubs;
 function validTitle(title){return title.length>=10&&title.length<=240&&topics.test(title)&&question.test(title)&&!commercial.test(title);}
@@ -128,7 +143,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
  if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="false")return {status:"DISABLED",discovered:0};
  const old=await db.prepare("SELECT source FROM growth_discovery_runs WHERE (source='REDDIT_PUBLIC_RSS' AND created_at>=datetime('now','-2 hours')) OR (source='OSM_PUBLIC_BUSINESSES' AND created_at>=datetime('now','-7 days'))").all();
  const done=new Set(old.results.map(x=>x.source));
- if(done.has("REDDIT_PUBLIC_RSS")&&done.has("OSM_PUBLIC_BUSINESSES"))return {status:"RECENTLY_SCANNED",discovered:0};
+ // All channels have independent cooldowns. Reddit/OSM being recent must not block new networks.
  const details=[];
  let total=0;
  if(!done.has("REDDIT_PUBLIC_RSS")){
@@ -163,31 +178,41 @@ export async function researchBuyerQuestions(db,env,request=fetch){
    .bind(uuid(),found.status,found.discovered).run();
   details.push({source:"OSM_PUBLIC_BUSINESSES",...found});total+=found.discovered;
  }
+ const networks=await scanAdditionalNetworks(db,env,request);
+ details.push(...networks.filter(x=>x.status!=="NOT_CONFIGURED"));
+ total+=networks.reduce((sum,x)=>sum+x.discovered,0);
  await db.batch([
   db.prepare("UPDATE growth_opportunities SET status='DISMISSED',updated_at=CURRENT_TIMESTAMP WHERE source='REDDIT_PUBLIC_RSS' AND status IN ('REVIEW','SHORTLISTED') AND NOT EXISTS (SELECT 1 FROM growth_publication_meta m WHERE m.source_url=growth_opportunities.source_url AND m.expires_at>datetime('now'))"),
   db.prepare("DELETE FROM growth_opportunities WHERE status IN ('REVIEW','DISMISSED') AND discovered_at<datetime('now','-30 days')"),
   db.prepare("DELETE FROM growth_publication_meta WHERE expires_at<datetime('now','-90 days')"),
   db.prepare("DELETE FROM growth_click_daily WHERE day<date('now','-90 days')")
  ]);
- return {status:total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
+ return {status:details.length===0?"RECENTLY_SCANNED":total>0?"FOUND":details.some(x=>x.status==="NO_MATCH")?"NO_MATCH":"SOURCE_UNAVAILABLE",
   discovered:total,sources:details};
 }
 export async function growthOverview(db){
- const [opps,clicks,count,scans,bookings]=await Promise.all([
+ const [opps,clicks,count,scans,bookings,additional]=await Promise.all([
   db.prepare("SELECT g.id,g.source,g.source_url,g.headline,g.theme,g.score,g.suggested_reply,g.status,g.discovered_at,m.published_at,m.expires_at,CAST((julianday('now')-julianday(m.published_at))*24 AS INTEGER) AS age_hours FROM growth_opportunities g LEFT JOIN growth_publication_meta m ON m.source_url=g.source_url WHERE g.discovered_at>=datetime('now','-60 days') AND g.status!='DISMISSED' AND (g.source!='REDDIT_PUBLIC_RSS' OR (m.published_at IS NOT NULL AND m.expires_at>datetime('now'))) ORDER BY CASE g.status WHEN 'REVIEW' THEN 0 WHEN 'SHORTLISTED' THEN 1 WHEN 'CONTACTED' THEN 2 ELSE 3 END,g.score DESC,g.discovered_at DESC LIMIT 60").all(),
   db.prepare("SELECT day,source,landing,count FROM growth_click_daily WHERE day>=date('now','-30 days') ORDER BY day DESC,count DESC LIMIT 120").all(),
   db.prepare("SELECT COUNT(*) AS n FROM leads").first(),
   db.prepare("SELECT source,result,candidates,created_at FROM growth_discovery_runs ORDER BY created_at DESC LIMIT 8").all(),
-  db.prepare("SELECT COUNT(*) AS n FROM bookings").first()
+  db.prepare("SELECT COUNT(*) AS n FROM bookings").first(),
+  additionalNetworkOpportunities(db)
  ]);
- return {opportunities:opps.results,clicks:clicks.results,click_count_30d:clicks.results.reduce((sum,x)=>sum+x.count,0),
+ const priority=s=>({REVIEW:0,SHORTLISTED:1,CONTACTED:2,RESPONDED:3}[s]??4);
+ const all=[...opps.results,...additional].sort((a,b)=>priority(a.status)-priority(b.status)||b.score-a.score).slice(0,80);
+ return {opportunities:all,clicks:clicks.results,click_count_30d:clicks.results.reduce((sum,x)=>sum+x.count,0),
   leads:count.n,bookings:bookings.n,research:scans.results,hubs:growthHubs(),
-  limits:"No automatic joining, mass DM, Facebook Group posts, or scraping member identities. Owner manually reviews public opportunities."};
+  limits:"Only public Bluesky posts, authorised owned Meta comments, official optional YouTube video metadata and existing Reddit/OSM; no automatic joining, mass DMs, Facebook Group posts, or scraping member identities."};
 }
 export async function progressOpportunity(db,id,status){
  if(!/^[0-9a-f-]{36}$/i.test(id)||!["REVIEW","SHORTLISTED","CONTACTED","RESPONDED","DISMISSED"].includes(status))throw Error("Invalid opportunity or state");
  const op=await db.prepare("SELECT status FROM growth_opportunities WHERE id=?").bind(id).first();
- if(!op)throw Error("Peluang tidak ditemukan");
+ if(!op){
+  const network=await progressNetworkOpportunity(db,id,status);
+  if(network)return network;
+  throw Error("Peluang tidak ditemukan");
+ }
  const r=await db.prepare("UPDATE growth_opportunities SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,id).run();
  return {id,status,updated:Number(r.meta?.changes||0)===1};
 }
