@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],market:[]},lastMarketing="",lastSales="";
+let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],growth:null,market:[]},lastMarketing="",lastSales="";
 const say=(id,msg,success=false)=>{const el=$(id);if(el){el.textContent=msg;el.style.color=success?"#167058":"#a24836"}};
 async function api(path,method="GET",payload,admin=true){
  const headers={"accept":"application/json"};if(payload!==undefined)headers["content-type"]="application/json";
@@ -136,13 +136,13 @@ $("#unlock").onclick=async()=>{
 };
 async function refresh(){
  try{
-  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel,autoQueue,photos]=await Promise.all([
-   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence"),api("admin/marketing/approved-queue"),api("admin/photos")]);
-  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel,approvedQueue:autoQueue.posts,autopilotEnabled:autoQueue.enabled,ownerPhotos:photos.items};
+  const [summary,operators,rates,leads,quotes,bookings,finance,campaigns,market,business,marketingIntel,autoQueue,photos,growth]=await Promise.all([
+   api("admin/summary"),api("admin/operators"),api("admin/rates"),api("admin/leads"),api("admin/quotes"),api("admin/bookings"),api("admin/finance"),api("admin/campaigns"),api("admin/market"),api("admin/business"),api("admin/marketing/intelligence"),api("admin/marketing/approved-queue"),api("admin/photos"),api("admin/growth")]);
+  data={operators:operators.items,rates:rates.items,leads:leads.items,quotes:quotes.items,bookings:bookings.items,finance,campaigns:campaigns.items,market:market.items,marketingIntel,approvedQueue:autoQueue.posts,autopilotEnabled:autoQueue.enabled,ownerPhotos:photos.items,growth};
   $("#stats").innerHTML=Object.entries(summary).map(([key,num])=>'<div class="stat"><strong>'+Number(num)+'</strong><span>'+esc({operators:"Operator",leads:"Guest leads",quotes:"Penawaran",bookings:"Booking"}[key]||key)+'</span></div>').join("");
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
-  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderOwnerPhotos();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
+  renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderOwnerPhotos();renderGrowth();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
   if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
@@ -284,6 +284,70 @@ $("#ownerPhotoForm").onsubmit=async e=>{
   say("#ownerPhotoFeedback","Foto berhasil ditambahkan: "+json.photo.title+". Pilih melalui menu foto pada kartu draf.",true);
  }catch(err){say("#ownerPhotoFeedback",err.message);}
  finally{b.disabled=false;}
+};
+function renderGrowth(){
+ const g=data.growth||{},opportunities=Array.isArray(g.opportunities)?g.opportunities:[];
+ const stats=$("#growthStats");
+ if(!stats)return;
+ const clickTotal=Number(g.click_count_30d||0);
+ stats.innerHTML=[
+  ["Klik WhatsApp (30 hari)",clickTotal,"Klik, bukan chat masuk"],
+  ["Peluang riset",opportunities.filter(x=>x.status==="REVIEW").length,"Pertanyaan publik untuk diperiksa"],
+  ["Interaksi dicatat",opportunities.filter(x=>["CONTACTED","RESPONDED"].includes(x.status)).length,"Ditandai manual oleh pemilik"],
+  ["Lead terdaftar",Number(g.leads||0),"Kontak yang masuk dengan persetujuan"],
+  ["Booking",Number(g.bookings||0),"Pesanan nyata"]
+ ].map(([label,val,caption])=>'<div class="growthKpi"><small>'+esc(label)+'</small><strong>'+esc(val)+'</strong><small>'+esc(caption)+'</small></div>').join("");
+ const statuses={REVIEW:"Perlu tinjauan",SHORTLISTED:"Siap ditindaklanjuti",CONTACTED:"Sudah dihubungi",RESPONDED:"Ada respons",DISMISSED:"Diabaikan"};
+ const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OWNER_PARTNER:"Calon mitra"};
+ $("#growthOpportunities").innerHTML=opportunities.length?
+  opportunities.map(o=>
+   '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
+   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+'</small>'+
+   '<p class="growthSuggestion">'+esc(o.suggested_reply)+'</p><div class="actions">'+
+   '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(o.source_url)+'">Baca sumber &amp; aturan ↗</a>'+
+   '<button class="outline small" data-action="growthCopy" data-id="'+esc(o.id)+'">Salin saran</button>'+
+   (o.status==="REVIEW"?'<button class="outline small" data-action="growthShortlist" data-id="'+esc(o.id)+'">Prioritaskan</button>':"")+
+   (["REVIEW","SHORTLISTED"].includes(o.status)?'<button class="outline small" data-action="growthContacted" data-id="'+esc(o.id)+'">Sudah berinteraksi</button>':"")+
+   (o.status==="CONTACTED"?'<button class="outline small" data-action="growthResponded" data-id="'+esc(o.id)+'">Ada respons</button>':"")+
+   '<button class="outline small" data-action="growthDismiss" data-id="'+esc(o.id)+'">Abaikan</button></div></article>'
+  ).join(""):'<p class="feedback">Belum ada pertanyaan publik yang cocok. Anda bisa membuka tautan riset komunitas atau menambahkan mitra. Ini bukan bukti ada calon tamu yang ditemukan.</p>';
+ $("#growthHubs").innerHTML=(g.hubs||[]).map(h=>
+   '<div class="item"><b>'+esc(h.name)+'</b><small>'+esc(h.description)+'</small>'+
+   '<a class="outline small" href="'+esc(h.url)+'" target="_blank" rel="noopener noreferrer">Telusuri manual ↗</a></div>').join("");
+ const clickRows=g.clicks||[];
+ $("#growthClickStats").innerHTML=clickRows.length?
+  '<div class="growthClickList">'+clickRows.slice(0,24).map(x=>
+    '<span>'+esc(x.day)+' · '+esc(x.source)+' · '+esc(x.landing)+'</span><strong>'+esc(x.count)+' klik</strong>').join("")+'</div>':
+  '<p class="feedback">Belum ada klik WhatsApp terukur. Saat pengunjung menekan tombol chat di website, jumlah klik agregat tercatat tanpa identitas mereka.</p>';
+ const latest=(g.research||[])[0];
+ const status={FOUND:"Pertanyaan relevan ditemukan",NO_MATCH:"Feed tersedia tetapi belum ada pertanyaan relevan",SOURCE_UNAVAILABLE:"Sumber publik tidak tersedia / membatasi akses"};
+ $("#growthResearchStatus").textContent=latest?
+  "Riset terakhir: "+latest.created_at+" UTC · "+(status[latest.result]||latest.result)+
+   " · "+latest.candidates+" kandidat. Hasil pencarian publik tidak menjamin keberadaan calon pelanggan.":
+  "Pemindaian otomatis pertama berlangsung pada Cron harian 10.00 WITA; dapat dicoba sekarang secara manual.";
+}
+$("#growthRefresh").onclick=refresh;
+$("#growthResearch").onclick=async()=>{
+ const button=$("#growthResearch");
+ button.disabled=true;say("#growthFeedback","Mencari peluang dari sumber publik ...",true);
+ try{
+  const result=await api("admin/growth/research","POST",{owner_confirmed:true});
+  await refresh();
+  say("#growthFeedback",result.status==="FOUND"?
+   "Tercatat "+result.discovered+" pertanyaan publik baru. Tinjau relevansi sebelum berinteraksi.":
+   result.status==="ALREADY_SCANNED_TODAY"?"Riset hari ini sudah dijalankan; akan diperiksa lagi besok.":
+   "Belum ada kandidat. Sumber mungkin membatasi akses; gunakan tautan riset komunitas.",result.status==="FOUND");
+ }catch(err){say("#growthFeedback","Pencarian gagal: "+err.message)}
+ finally{button.disabled=false;}
+};
+$("#growthPartnerForm").onsubmit=async e=>{
+ e.preventDefault();
+ const payload=formValues(e.target);
+ if(!confirm("Catat calon mitra bisnis publik ini untuk ditinjau? Agen tidak akan menghubunginya otomatis."))return;
+ try{
+  const result=await api("admin/growth/partners","POST",{...payload,owner_confirmed:true});
+  e.target.reset();await refresh();say("#growthFeedback","Calon mitra disimpan untuk ditinjau: "+result.id,true);
+ }catch(err){say("#growthFeedback",err.message)}
 };
 function renderCampaigns(){
  const localDay=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
@@ -458,6 +522,22 @@ $("#copySales").onclick=async()=>{if(!lastSales)return;try{await navigator.clipb
 document.addEventListener("click",async e=>{
  const button=e.target.closest("[data-action]");if(!button)return;const a=button.dataset.action,id=button.dataset.id;
  try{
+  if(["growthCopy","growthShortlist","growthContacted","growthResponded","growthDismiss"].includes(a)){
+   const opp=data.growth?.opportunities?.find(o=>o.id===id);
+   if(!opp)throw Error("Peluang perlu dimuat ulang");
+   if(a==="growthCopy"){
+    await navigator.clipboard.writeText(opp.suggested_reply);
+    say("#growthFeedback","Saran tersalin. Baca aturan komunitas dan ungkapkan afiliasi sebelum mengirim.",true);
+   }else{
+    const transitions={growthShortlist:"SHORTLISTED",growthContacted:"CONTACTED",growthResponded:"RESPONDED",growthDismiss:"DISMISSED"};
+    const next=transitions[a];
+    if(a==="growthContacted"&&!confirm("Anda sudah benar-benar berinteraksi secara manual dan tidak melanggar aturan komunitas?"))return;
+    if(a==="growthResponded"&&!confirm("Pihak lain benar-benar memberi respons?"))return;
+    await api("admin/growth/opportunities/"+encodeURIComponent(id)+"/status","PATCH",{status:next,owner_confirmed:true});
+    await refresh();say("#growthFeedback","Status peluang diperbarui: "+next,true);
+   }
+   return;
+  }
   if(a==="salesAssist"){
    const res=await api("admin/leads/"+encodeURIComponent(id)+"/assistant","POST",{use_ai:true});
    lastSales=res.reply;$("#salesOutput").textContent="Skor lead "+res.score+"/100 ("+res.stage+"), generator "+res.generator+"\n\n"+res.reply+"\n\nDraf untuk diperiksa sebelum menghubungi guest.";changeTab("leads");
