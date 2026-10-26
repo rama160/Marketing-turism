@@ -302,7 +302,7 @@ function renderGrowth(){
  $("#growthOpportunities").innerHTML=opportunities.length?
   opportunities.map(o=>
    '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
-   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+'</small>'+
+   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(o.source==="REDDIT_PUBLIC_RSS" && Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
    '<p class="growthSuggestion">'+esc(o.suggested_reply)+'</p><div class="actions">'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(o.source_url)+'">Baca sumber &amp; aturan ↗</a>'+
    '<button class="outline small" data-action="growthCopy" data-id="'+esc(o.id)+'">Salin saran</button>'+
