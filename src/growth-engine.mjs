@@ -87,7 +87,7 @@ async function discoverOpenAccommodation(db,request=fetch){
  try{
   const res=await request(url,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded","accept":"application/json",
    "user-agent":"NusaPenidaExperiences/1.0 (public OSM partnership research)"},
-   body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(12000)});
+   body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(8500)});
   if(res.ok){
    const json=await res.json();
    if(Array.isArray(json.elements)){
@@ -115,7 +115,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   for(const url of feeds){
    try{
     const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://marketing-turism-agent.finchat-ai-gateway.workers.dev/)"},
-     signal:AbortSignal.timeout(7000)});
+     signal:AbortSignal.timeout(4500)});
     if(!response.ok)continue;
     const type=response.headers.get("content-type")||"";
     if(!/xml|rss|atom/i.test(type))continue;
