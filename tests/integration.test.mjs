@@ -1247,7 +1247,7 @@ test("daily growth research discovers public prospects but cannot auto-send or c
  const denied=await request("/api/admin/growth/opportunities/"+detail.opportunities[0].id+"/status","PATCH",
   {owner_confirmed:false,status:"CONTACTED"});
  assert.equal(denied.httpStatus,403);
- assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM wa_outbox").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM wa_outbox_requests").get().n,0);
  sqlite.close();
 });
 test("public click-to-chat measures aggregate intent only, never a guest lead or guaranteed message",async()=>{
