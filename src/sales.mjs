@@ -50,8 +50,15 @@ export function weeklyDrafts(dateString){
  return ideas.map((idea,index)=>{
   const date=new Date(monday+"T00:00:00Z");
   date.setUTCDate(date.getUTCDate()+index);
+  const channel=idea.platform.toLowerCase().replace(/[^a-z]/g,"");
+  const route=idea.activity_id==="SNORKELING_3_SPOTS"?"/snorkeling.html":"/island-tour.html";
+  const tracked=site+route+"?utm_source="+channel+"&utm_medium=organic";
+  const hasEnglish=idea.lang==="en";
+  const cta=idea.platform==="Instagram"?
+   (hasEnglish?" Tell us your travel date and group size via the WhatsApp link in our profile.":" Kirim tanggal wisata dan jumlah peserta melalui tautan WhatsApp di profil kami."):
+   (hasEnglish?" Traveling soon? Share your date and group size so we can check options: ":" Sedang merencanakan perjalanan? Kirim tanggal dan jumlah tamu agar kami dapat memeriksa opsi: ")+tracked;
   return {...idea,planned_date:date.toISOString().slice(0,10),
-   caption:"[REVIEW "+date.toISOString().slice(0,10)+" · "+idea.lang.toUpperCase()+"] "+idea.caption};
+   caption:"[REVIEW "+date.toISOString().slice(0,10)+" · "+idea.lang.toUpperCase()+"] "+idea.caption+cta};
  });
 }
 
@@ -83,5 +90,12 @@ export function replacementCampaignCaption({activity_id,platform,revision,reason
  const language=revision%2===0?"en":"id";
  const wording=texts[index][language==="en"?1:0];
  const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+(activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":index%2?"east-tour.html":"west-tour.html");
- return "[REVIEW "+date+" · "+language.toUpperCase()+" · V"+revision+"] "+style+wording+" 🌐 "+link+" #NusaPenida #"+(activity_id==="SNORKELING_3_SPOTS"?"SnorkelingNusaPenida":"IslandTour");
+ const platformSource=String(platform||"").toLowerCase().replace(/[^a-z]/g,"");
+ const tracked=link+"?utm_source="+platformSource+"&utm_medium=organic";
+ const invite=platform==="Instagram"?(language==="en"?
+  " Have a travel date? Send it with your group size through the WhatsApp link in our bio.":
+  " Punya tanggal liburan? Kirim tanggal dan jumlah peserta lewat WhatsApp di bio."):(language==="en"?
+  " For route options, tell us your date and group size.":
+  " Untuk info rute, kirim tanggal dan jumlah peserta.");
+ return "[REVIEW "+date+" · "+language.toUpperCase()+" · V"+revision+"] "+style+wording+invite+" 🌐 "+tracked+" #NusaPenida #"+(activity_id==="SNORKELING_3_SPOTS"?"SnorkelingNusaPenida":"IslandTour");
 }
