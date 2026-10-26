@@ -298,11 +298,11 @@ function renderGrowth(){
   ["Booking",Number(g.bookings||0),"Pesanan nyata"]
  ].map(([label,val,caption])=>'<div class="growthKpi"><small>'+esc(label)+'</small><strong>'+esc(val)+'</strong><small>'+esc(caption)+'</small></div>').join("");
  const statuses={REVIEW:"Perlu tinjauan",SHORTLISTED:"Siap ditindaklanjuti",CONTACTED:"Sudah dihubungi",RESPONDED:"Ada respons",DISMISSED:"Diabaikan"};
- const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik"};
+ const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik",BLUESKY_PUBLIC:"Bluesky · postingan publik",FACEBOOK_PAGE_COMMENTS:"Facebook · komentar pada Page sendiri",INSTAGRAM_MEDIA_COMMENTS:"Instagram · komentar pada akun bisnis sendiri",YOUTUBE_PUBLIC_VIDEO:"YouTube · video publik (bukan calon booking terverifikasi)"};
  $("#growthOpportunities").innerHTML=opportunities.length?
   opportunities.map(o=>
    '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
-   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(o.source==="REDDIT_PUBLIC_RSS" && Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
+   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
    '<p class="growthSuggestion">'+esc(o.suggested_reply)+'</p><div class="actions">'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(o.source_url)+'">Baca sumber &amp; aturan ↗</a>'+
    '<button class="outline small" data-action="growthCopy" data-id="'+esc(o.id)+'">Salin saran</button>'+
