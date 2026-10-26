@@ -1,7 +1,7 @@
 -- v3.12 owner-governed, consent-based acquisition: no person lists, scraping or group posting.
 CREATE TABLE IF NOT EXISTS growth_opportunities(
  id TEXT PRIMARY KEY,
- source TEXT NOT NULL CHECK(source IN ('REDDIT_PUBLIC_RSS','OWNER_PARTNER')),
+ source TEXT NOT NULL CHECK(source IN ('REDDIT_PUBLIC_RSS','OSM_PUBLIC_BUSINESSES','OWNER_PARTNER')),
  source_url TEXT NOT NULL UNIQUE,
  headline TEXT NOT NULL CHECK(length(headline) BETWEEN 10 AND 240),
  theme TEXT NOT NULL CHECK(theme IN ('SNORKELING','ISLAND_TOUR','GENERAL','PARTNERSHIP')),
