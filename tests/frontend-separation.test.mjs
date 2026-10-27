@@ -35,6 +35,20 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  }
  assert.ok(page.includes('href="/?view=website"'));
  assert.ok(page.includes('Lihat Website'));
+ assert.equal((page.match(/Lihat Website/g)||[]).length,1,"Dashboard must show exactly one website link");
+ for(const group of ["home","sales","content","growth","analytics","settings"]){
+  assert.ok(page.includes('data-workspace="'+group+'"'),"Workspace missing "+group);
+ }
+ assert.ok(page.includes('id="dashWorkspaces"'));
+ assert.ok(page.includes('class="dashBottomNav"'));
+ assert.ok(page.includes('id="dashPriorities"'));
+ assert.ok(page.includes('id="tab-analytics"'));
+ assert.ok(page.includes('id="dashAnalyticsStats"'));
+ assert.match(script,/function initCompactPanels/);
+ assert.match(script,/loadDashboardAnalytics/);
+ assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
+ assert.ok(styles.includes(".dashCompactShortcuts"));
+ assert.ok(styles.includes(".dashPaneNav"));
  assert.ok(page.includes('src="/app.js"'));
  assert.ok(!page.includes('id="leadForm"'));
  assert.ok(!page.includes('class="hero premiumHero"'));
@@ -63,7 +77,7 @@ test("Android installed agent goes to dashboard; public service worker never cac
 
 test("separating website does not change critical routes, operator prices, or manual approvals",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
- assert.ok(worker.includes('version:"3.16.0"'));
+ assert.ok(worker.includes('version:"3.17.0"'));
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }
