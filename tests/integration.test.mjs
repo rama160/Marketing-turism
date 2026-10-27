@@ -5,12 +5,14 @@ import {readFileSync} from "node:fs";
 import {DatabaseSync} from "node:sqlite";
 import worker from "../src/worker.mjs";
 import {validCommonsCandidate,choosePhotoForReview,topicForCampaign} from "../src/photo-research.mjs";
-import {extractPublicQuestions,extractOpenBusinesses,researchBuyerQuestions} from "../src/growth-engine.mjs";
+import {extractPublicQuestions,extractOpenBusinesses,researchBuyerQuestions,growthDestination} from "../src/growth-engine.mjs";
+import {extractBlueskyPosts as extractBlueskyForLembongan} from "../src/growth-platforms.mjs";
+import {groupOpportunityDraft,addGroupQuestion} from "../src/group-workflow.mjs";
 import {extractBlueskyPosts,extractMetaPageComments,extractInstagramComments,extractYouTubeVideos,scanAdditionalNetworks} from "../src/growth-platforms.mjs";
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql","0021_facebook_group_owner_workflow.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -1243,6 +1245,80 @@ test("old Reddit records without verified publication timestamps do not surface 
  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_opportunities").get().n,1); // audit history preserved
  sqlite.close();
 });
+test("Nusa Lembongan research is discoverable with distinct, unpriced reply guidance",()=>{
+ assert.equal(growthDestination("Nusa Lembongan island tour"),"NUSA_LEMBONGAN");
+ assert.equal(growthDestination("Nusa Ceningan Yellow Bridge"),"NUSA_LEMBONGAN");
+ assert.equal(growthDestination("Nusa Penida tour"),"NUSA_PENIDA");
+ const published=new Date(Date.now()-HOUR_FOR_TEST).toISOString();
+ const rss='<feed><entry><published>'+published+'</published><title>How do I plan a Nusa Lembongan day trip?</title>'+
+  '<link href="https://www.reddit.com/r/bali/comments/ab12345/lembongan/"/></entry></feed>';
+ const extracted=extractPublicQuestions(rss);
+ assert.equal(extracted.length,1);assert.equal(extracted[0].destination,"NUSA_LEMBONGAN");
+ assert.match(extracted[0].suggested_reply,/operator.*pricing|operator.*price/i);
+ assert.doesNotMatch(extracted[0].suggested_reply,/Rp\d+/i);
+ const data={posts:[{uri:"at://did:plc:abcdefgh1234567/app.bsky.feed.post/3abc123",author:{did:"did:plc:abcdefgh1234567"},
+  record:{text:"Nusa Lembongan next week? Any boat and tour advice?",createdAt:published}}]};
+ const bl=extractBlueskyForLembongan(data);assert.equal(bl.length,1);assert.equal(bl[0].destination,"NUSA_LEMBONGAN");
+ const draft=groupOpportunityDraft({destination:"NUSA_LEMBONGAN",summary:"Tour tips?"});
+ assert.match(draft.suggested_reply,/local operator/);assert.doesNotMatch(draft.suggested_reply,/confirmed booking|Rp\d/i);
+});
+const HOUR_FOR_TEST=3600000;
+test("owner-assisted Facebook Groups allow only reviewed PUBLIC, recent, anonymous question summaries",async()=>{
+ const {request,db,sqlite}=fixture();
+ const unauth=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true},false);
+ assert.equal(unauth.httpStatus,401);
+ const denied=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:false});
+ assert.equal(denied.httpStatus,403);
+ const malformed=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/profile.php?id=1",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true});
+ assert.equal(malformed.httpStatus,422);
+ const added=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true});
+ assert.equal(added.httpStatus,201);assert.ok(added.id);
+ const addedAgain=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true});
+ assert.equal(addedAgain.httpStatus,200);assert.equal(addedAgain.id,added.id);
+ const current=new Date(Date.now()-3600000).toISOString();
+ const base={group_id:added.id,url:"https://www.facebook.com/groups/balitravel/posts/123456789",
+  summary:"Nusa Lembongan group of four asking for boat and tour advice next week?",
+  published_at:current,owner_verified_public:true,owner_confirmed:true};
+ const unapproved=await request("/api/admin/growth/facebook-questions","POST",{...base,owner_confirmed:false});
+ assert.equal(unapproved.httpStatus,403);
+ const privateIdentity=await request("/api/admin/growth/facebook-questions","POST",{...base,summary:"WhatsApp +6281112223334 Nusa Lembongan needs tour"});
+ assert.equal(privateIdentity.httpStatus,422);
+ const wrongGroup=await request("/api/admin/growth/facebook-questions","POST",{...base,url:"https://www.facebook.com/groups/other/posts/333"});
+ assert.equal(wrongGroup.httpStatus,422);
+ const stale=await request("/api/admin/growth/facebook-questions","POST",{...base,published_at:"2026-01-01T00:00:00Z"});
+ assert.equal(stale.httpStatus,422);
+ const inserted=await request("/api/admin/growth/facebook-questions","POST",base);
+ assert.equal(inserted.httpStatus,201,JSON.stringify(inserted));
+ const duplicate=await request("/api/admin/growth/facebook-questions","POST",base);
+ assert.equal(duplicate.httpStatus,200);assert.equal(duplicate.id,inserted.id);
+ const overview=await request("/api/admin/growth");
+ assert.equal(overview.facebook_groups.length,1);
+ const question=overview.opportunities.find(x=>x.id===inserted.id);
+ assert.equal(question.source,"FACEBOOK_GROUP_MANUAL");
+ assert.equal(question.destination,"NUSA_LEMBONGAN");assert.equal(question.status,"REVIEW");
+ assert.match(question.suggested_reply,/business disclosure/);assert.match(question.suggested_reply,/confirm/);
+ assert.equal(overview.leads,0);assert.equal(overview.bookings,0);
+ const classified=await request("/api/admin/growth/opportunities/"+inserted.id+"/status","PATCH",{status:"SHORTLISTED",owner_confirmed:true});
+ assert.equal(classified.httpStatus,200);
+ const manuallyJoined=await request("/api/admin/growth/facebook-groups/"+added.id+"/status","PATCH",{status:"JOINED_MANUALLY",owner_confirmed:true});
+ assert.equal(manuallyJoined.httpStatus,200);
+ const member=sqlite.prepare("SELECT status FROM growth_facebook_groups WHERE id=?").get(added.id);
+ assert.equal(member.status,"JOINED_MANUALLY");
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_facebook_questions").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_discovery_runs WHERE source LIKE 'FACEBOOK_GROUP%'").get().n,0);
+ sqlite.close();
+});
+test("Facebook Groups travel deadline is explicitly expired and cannot be manually relabeled fresh",async()=>{
+ const {db,sqlite}=createD1();
+ const groupId="ce510314-ce51-4314-8314-ce510314ce51";
+ sqlite.prepare("INSERT INTO growth_facebook_groups(id,name,group_url,destination,rules_note) VALUES(?,?,?,?,?)")
+  .run(groupId,"Lembongan Travel Public","https://www.facebook.com/groups/lembongan/","NUSA_LEMBONGAN","Help and advice welcome");
+ await assert.rejects(addGroupQuestion(db,{group_id:groupId,summary:"Nusa Lembongan tour tomorrow? Any tips",url:"https://www.facebook.com/groups/lembongan/posts/123/",
+  published_at:"2026-10-26T02:00:00Z",owner_verified_public:true},Date.parse("2026-10-27T17:00:00Z")),/berlalu/);
+ sqlite.close();
+});
+
 test("daily growth research discovers public prospects but cannot auto-send or create guest leads",async()=>{
  const {request,db,sqlite,env}=fixture();
  const rss='<feed><entry><published>'+new Date().toISOString()+'</published><title>How to plan Nusa Penida snorkeling for friends?</title>'+
