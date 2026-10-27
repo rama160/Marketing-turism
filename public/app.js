@@ -36,8 +36,8 @@ function changeTab(name){
  if(name==="whatsapp"&&token)void loadWhatsAppInbox();
  if(name==="website"&&token)void loadSiteEditor();
  if(name==="summary"&&token)void loadQuickEditor();
- $(".tabs button").forEach(b=>{const active=b.dataset.tab===name;b.classList.toggle("current",active);b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");});
- $(".tabcontent").forEach(el=>el.hidden=el!==page);
+ $$(".tabs button").forEach(b=>{const active=b.dataset.tab===name;b.classList.toggle("current",active);b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");});
+ $$(".tabcontent").forEach(el=>el.hidden=el!==page);
  const title=$("#dashCurrentPage"),current=$(".tabs button.current");if(title)title.textContent=current?.textContent||"Dashboard";
  const menu=$("#dashNavigation"),toggle=$("#dashMenuToggle");menu?.classList.remove("open");toggle?.setAttribute("aria-expanded","false");
  window.scrollTo?.({top:0,behavior:"instant"});
