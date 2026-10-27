@@ -164,6 +164,10 @@
 .dashboardPage .dashPaneBtn{border:0;border-radius:8px;background:transparent;color:#8b94a8;padding:10px 12px;font-size:11px;font-weight:750}
 .dashboardPage .dashPaneBtn.current{background:#ebf4f7;color:#1e6e82}
 .dashboardPage .dashPane{max-height:calc(100dvh - 278px);overflow:auto;scrollbar-width:thin;scrollbar-color:#d8dfeb transparent;padding:1px 3px 10px}
+.dashboardPage .dashCompactSplit{display:block;min-width:0}
+.dashboardPage .dashCompactSplit>.dashPane{display:block;max-width:100%;min-width:0}
+.dashboardPage .dashCompactSplit>.dashPane[hidden]{display:none!important}
+.dashboardPage .dashCompactSplit .panel,.dashboardPage .dashCompactSplit form{max-width:100%}
 .dashboardPage .dashPane .growthHeader{margin-top:0}
 .dashboardPage .dashPane .scroll{max-height:unset}
 .dashboardPage .dashPane .split{align-items:start}
