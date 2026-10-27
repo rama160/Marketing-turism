@@ -1,3 +1,11 @@
+## Persistent owner dashboard authentication — October 27, 2026
+1. On the secure NPE dashboard `/dashboard.html`, paste ADMIN_TOKEN into the login field **once** on each trusted browser/device and press Hubungkan dashboard.
+2. The backend verifies the token and creates a server-side session identified by a random opaque HttpOnly secure cookie. Only its SHA256 digest is stored in tourism D1, not the token or private guest data in browser storage.
+3. Normal refresh, closing Android PWA, switching tabs or reopening the browser keeps the owner logged in. At startup, GET `/api/admin/session` transparently renews a 365-day rolling browser session. A one-time migration discards the old insecure sessionStorage token.
+4. Press **Keluar** to explicitly revoke the current cookie in D1 and clear browser cookie; a stale cookie then produces 401. Never assume logout succeeded if the device is offline.
+5. Under safety exceptions, the owner will need to reauthenticate: clearing site cookies, revocation by ADMIN_TOKEN rotation, a browser change/new device, or after >365 days with no successful session renewal.
+6. The existing Worker maintains a guarded Bearer-token access path for non-browser authorized integrations; all frontend operations now rely exclusively on same-origin cookie sessions and origin-checked mutations. Never log a session cookie or publish ADMIN_TOKEN.
+
 ## Public Website vs Dashboard — 27 Oct 2026
 - Website for guests: `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/`. This contains tourism offers, photos, bilingual CMS and consented guest enquiry; NO link or admin login is visible to visitors.
 - Agent owner dashboard: `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/dashboard.html`. Bookmark this on Android and desktop; app installation uses this as the default home. Use Lihat Website to open public site without losing current dashboard session.

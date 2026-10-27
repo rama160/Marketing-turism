@@ -14,6 +14,7 @@ import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-cont
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
+import {ownerAuthorized,ownerLogin,ownerSession,ownerLogout} from "./owner-session.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -27,13 +28,6 @@ const variantAllowed=(activity,mode,variant)=>mode==="LEGACY"?variant==="DEFAULT
 
 const dateOK=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x)&&!Number.isNaN(Date.parse(x+"T00:00:00Z"))&&new Date(x+"T00:00:00Z").toISOString().slice(0,10)===x;
 async function parse(req){const raw=await req.text();if(raw.length>12000)throw Error("Request terlalu besar");return JSON.parse(raw);}
-async function owner(req,env){
- const expected=env.ADMIN_TOKEN||"";
- if(expected.length<24)return false;
- const token=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
- const [a,b]=await Promise.all([crypto.subtle.digest("SHA-256",new TextEncoder().encode(token)),crypto.subtle.digest("SHA-256",new TextEncoder().encode(expected))]);
- let d=0;const x=new Uint8Array(a),y=new Uint8Array(b);for(let i=0;i<x.length;i++)d|=x[i]^y[i];return d===0&&token.length===expected.length;
-}
 async function audit(db,kind,key,action,detail={}){
  await db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),kind,key,action,JSON.stringify(detail)).run();
 }
@@ -172,7 +166,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.15.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.16.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -222,7 +216,11 @@ async function route(req,env,ctx){
  }
  if(!path.startsWith("/api/admin/"))return bad("Endpoint tidak ditemukan",404);
  if(!env.ADMIN_TOKEN||env.ADMIN_TOKEN.length<24)return bad("Set ADMIN_TOKEN secret terlebih dahulu",503);
- if(!(await owner(req,env)))return bad("Akses owner diperlukan",401);
+ // Session issuance/renewal and revocation are handled before general admin authorization.
+ if(path==="/api/admin/session/login")return method==="POST"?ownerLogin(req,env,db):bad("Metode tidak diizinkan",405);
+ if(path==="/api/admin/session")return method==="GET"?ownerSession(req,env,db):bad("Metode tidak diizinkan",405);
+ if(path==="/api/admin/session/logout")return method==="POST"?ownerLogout(req,db):bad("Metode tidak diizinkan",405);
+ if(!(await ownerAuthorized(req,env,db)))return bad("Akses owner diperlukan",401);
  if(path==="/api/admin/whatsapp"){
   if(method==="GET")return waAdminInbox(db,env);
   return bad("Metode tidak diizinkan",405);

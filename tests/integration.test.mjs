@@ -12,7 +12,7 @@ import {extractBlueskyPosts,extractMetaPageComments,extractInstagramComments,ext
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql","0021_facebook_group_owner_workflow.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql","0021_facebook_group_owner_workflow.sql","0022_owner_sessions.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -74,6 +74,79 @@ async function approvedQuote(request,b,selling_price){
  assert.equal(o.httpStatus,200);
  return q.id;
 }
+test("owner login persists via HttpOnly cookie, restores across dashboard reload and only Logout revokes it",async()=>{
+ const {db,sqlite,env}=fixture();
+ const base="https://agent.invalid";
+ async function raw(path,method="GET",body,cookie,origin){
+  const headers={};
+  if(body!==undefined)headers["content-type"]="application/json";
+  if(cookie)headers.cookie=cookie;
+  if(origin)headers.origin=origin;
+  const res=await worker.fetch(new Request(base+path,{method,headers,...(body===undefined?{}:{body:JSON.stringify(body)})}),env);
+  const result=await res.json();
+  return {status:res.status,cookie:res.headers.get("set-cookie"),body:result};
+ }
+ const notLoggedIn=await raw("/api/admin/session");
+ assert.equal(notLoggedIn.status,401);assert.equal(notLoggedIn.body.authenticated,false);
+ assert.equal((await raw("/api/admin/summary")).status,401);
+ const incorrect=await raw("/api/admin/session/login","POST",{token:"not-the-real-secret-but-long-enough-0000000"},null,base);
+ assert.equal(incorrect.status,401);assert.equal(incorrect.cookie,null);
+ const crossOrigin=await raw("/api/admin/session/login","POST",{token:TOKEN},null,"https://attacker.invalid");
+ assert.equal(crossOrigin.status,403);assert.equal(crossOrigin.cookie,null);
+ const login=await raw("/api/admin/session/login","POST",{token:TOKEN},null,base);
+ assert.equal(login.status,200);assert.equal(login.body.authenticated,true);
+ const attributes=login.cookie;
+ assert.match(attributes,/^__Secure-npe_owner_session=[a-f0-9]{64};/);
+ for(const expected of ["HttpOnly","Secure","SameSite=Strict","Path=/api/admin","Max-Age=31536000"])assert.ok(attributes.includes(expected),expected);
+ const cookie=attributes.split(";")[0],stored=sqlite.prepare("SELECT session_hash,credential_digest,expires_at,revoked_at FROM owner_sessions").get();
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM owner_sessions").get().n,1);
+ assert.equal(stored.session_hash.length,64);assert.ok(!JSON.stringify(stored).includes(TOKEN),"never store raw token in DB");
+ assert.ok(!attributes.includes(TOKEN));
+ const canUse=await raw("/api/admin/summary","GET",undefined,cookie);
+ assert.equal(canUse.status,200);assert.equal(typeof canUse.body.leads,"number");
+ const blockedCrossOrigin=await raw("/api/admin/business","PATCH",{legal_name:"Bad",owner_confirmed:true},cookie,"https://attacker.invalid");
+ assert.equal(blockedCrossOrigin.status,401);
+ // Simulate a browser/tab/app restart: no bearer or token, only durable cookie.
+ const reload=await raw("/api/admin/session","GET",undefined,cookie);
+ assert.equal(reload.status,200);assert.equal(reload.body.authenticated,true);
+ assert.match(reload.cookie,/Max-Age=31536000/);
+ const noOriginMutation=await raw("/api/admin/growth/research","POST",{owner_confirmed:false},cookie);
+ assert.equal(noOriginMutation.status,401,"cookie mutations require same-origin Origin or Fetch Metadata");
+ const logout=await raw("/api/admin/session/logout","POST",{},cookie,base);
+ assert.equal(logout.status,200);assert.equal(logout.body.logged_out,true);
+ assert.match(logout.cookie,/Max-Age=0/);
+ assert.ok(sqlite.prepare("SELECT revoked_at FROM owner_sessions").get().revoked_at!==null);
+ assert.equal((await raw("/api/admin/session","GET",undefined,cookie)).status,401);
+ assert.equal((await raw("/api/admin/summary","GET",undefined,cookie)).status,401);
+ const secondLogin=await raw("/api/admin/session/login","POST",{token:TOKEN},null,base);
+ assert.equal(secondLogin.status,200);assert.notEqual(secondLogin.cookie.split(";")[0],cookie);
+ sqlite.close();
+});
+test("owner session rejects injected cookie, expires safely and is invalidated on ADMIN_TOKEN rotation",async()=>{
+ const {db,sqlite,env}=fixture(),base="https://agent.invalid";
+ const req=async(path,method,body,cookie)=>{
+  const headers={"content-type":"application/json",origin:base};
+  if(cookie)headers.cookie=cookie;
+  const r=await worker.fetch(new Request(base+path,{method,headers,...(body?{body:JSON.stringify(body)}:{})}),env);
+  return r;
+ };
+ const unauthorized=await req("/api/admin/session/login","POST",{token:TOKEN});
+ assert.equal(unauthorized.status,200);
+ const cookie=unauthorized.headers.get("set-cookie").split(";")[0];
+ assert.equal((await req("/api/admin/session","GET",undefined,cookie+"; __Secure-npe_owner_session=ffff")).status,401);
+ sqlite.prepare("UPDATE owner_sessions SET expires_at=?").run(1);
+ assert.equal((await req("/api/admin/session","GET",undefined,cookie)).status,401);
+ const second=await req("/api/admin/session/login","POST",{token:TOKEN});
+ assert.equal(second.status,200);
+ const cookie2=second.headers.get("set-cookie").split(";")[0];
+ env.ADMIN_TOKEN="new-admin-token-secret-rotated-should-revoke-old-sessions";
+ assert.equal((await req("/api/admin/summary","GET",undefined,cookie2)).status,401);
+ const crossOriginLogout=await worker.fetch(new Request(base+"/api/admin/session/logout",{
+  method:"POST",headers:{"content-type":"application/json",origin:"https://attacker.invalid",cookie:cookie2},body:"{}"}),env);
+ assert.equal(crossOriginLogout.status,403);
+ sqlite.close();
+});
+
 test("all quote and booking components use verified historic partner prices, all steps guarded",async()=>{
  const {request,sqlite}=fixture();
  const tour=await verifiedOperator(request,"Verified Tour Operator");

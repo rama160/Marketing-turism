@@ -1,3 +1,9 @@
+## Owner login persistence & explicit logout
+- Owner enters ADMIN_TOKEN once per trusted browser and remains signed in after refresh, navigation, closing Android PWA or reopening browser. Only pressing Logout intentionally ends that device session.
+- Use revocable opaque server sessions in D1 and a Secure HttpOnly SameSite=Strict cookie scoped to /api/admin. Do not persist the admin token to localStorage/sessionStorage/IndexedDB or service worker.
+- Dashboard startup automatically checks/reissues valid session cookies; Login POST establishes session; Logout POST revokes it and shows login again. Protect mutation requests against cross-origin CSRF, and continue rejecting unauthorized direct admin API calls.
+- Security invalidation or long inactivity expiry can still require a new token: owner-controlled logout is not a claim of technically infinite credential validity.
+
 ## Website/dashboard product boundary — 27 October 2026
 - Public Nusa Penida Experiences website must not show admin login, supplier nets, campaign management, analytics or dashboard link anywhere; visitors can only browse and submit real opt-in requests/WhatsApp contacts.
 - Agent application must open the /dashboard.html route directly, show a branded owner sign-in if no token is available, and provide a website view control.

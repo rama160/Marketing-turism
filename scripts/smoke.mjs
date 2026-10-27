@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.15.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.16.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -160,6 +160,16 @@ const crossOriginClick=await fetch(base+"/api/public/intent",{
  method:"POST",headers:{"content-type":"application/json",origin:"https://attacker.invalid"},
  body:JSON.stringify({kind:"WHATSAPP",source:"test",landing:"test"}),signal:AbortSignal.timeout(20000)});
 if(crossOriginClick.status!==403)throw Error("Cross-origin click event not blocked: "+crossOriginClick.status);
+const unauthSession=JSON.parse(await get("/api/admin/session",401));
+if(unauthSession.authenticated!==false)throw Error("Owner session claims authenticated without a cookie");
+const deniedLogin=await fetch(base+"/api/admin/session/login",{
+ method:"POST",headers:{"content-type":"application/json",origin:base},
+ body:JSON.stringify({token:"intentionally-invalid-test-token-0000000000"}),signal:AbortSignal.timeout(20000)});
+if(deniedLogin.status!==401||deniedLogin.headers.get("set-cookie"))throw Error("Owner login security check failed");
+const deniedOrigin=await fetch(base+"/api/admin/session/login",{
+ method:"POST",headers:{"content-type":"application/json",origin:"https://evil.invalid"},
+ body:JSON.stringify({token:"intentionally-invalid-test-token-0000000000"}),signal:AbortSignal.timeout(20000)});
+if(deniedOrigin.status!==403)throw Error("Cross-origin owner login must reject requests");
 await get("/api/admin/summary",401);
 await get("/api/admin/finance",401);
 await get("/api/admin/business",401);
@@ -169,4 +179,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.15.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.16.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
