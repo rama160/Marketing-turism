@@ -52,6 +52,7 @@ function changeTab(name){
  if(name==="website"&&ownerSignedIn)void loadSiteEditor();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
+ if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
  document.querySelectorAll(".tabs button").forEach(b=>{
   const active=b.dataset.tab===name;
   b.classList.toggle("current",active);
@@ -420,6 +421,32 @@ $("#ownerPhotoForm").onsubmit=async e=>{
  }catch(err){say("#ownerPhotoFeedback",err.message);}
  finally{b.disabled=false;}
 };
+function renderSavedFacebookGroups(groups){
+ groups=Array.isArray(groups)?groups:[];
+ const status=$("#growthGroupCount");
+ if(status)status.textContent=groups.length+" grup tersimpan di database";
+ const list=$("#growthGroupList"),select=$("#growthGroupSelect");
+ if(!list||!select)return;
+ list.innerHTML=groups.length?groups.map(x=>
+  '<div class="item"><b>'+esc(x.name)+'</b><small>'+esc(x.destination==="NUSA_LEMBONGAN"?"Nusa Lembongan":"Nusa Penida")+
+  ' · '+esc({RESEARCH:"Perlu periksa aturan",JOINED_MANUALLY:"Sudah bergabung (ditandai pemilik)",NO_PROMOTION:"Promosi dilarang"}[x.status]||x.status)+'</small>'+
+  '<small>Aturan: '+esc(x.rules_note)+'</small>'+
+  '<a class="outline small" href="'+esc(x.group_url)+'" target="_blank" rel="noopener noreferrer">Buka grup di Facebook ↗</a>'+
+  (x.status==="RESEARCH"?'<button class="outline small" data-group-status="JOINED_MANUALLY" data-id="'+esc(x.id)+'">Saya sudah bergabung</button>':"")+
+  (x.status!=="NO_PROMOTION"?'<button class="outline small" data-group-status="NO_PROMOTION" data-id="'+esc(x.id)+'">Promosi dilarang</button>':"")+
+  '<button class="outline small" data-group-status="DISMISSED" data-id="'+esc(x.id)+'">Arsipkan</button></div>'
+ ).join(""):'<p class="feedback">Belum ada grup tersimpan. Isi form dan tekan Simpan grup untuk menambahkan.</p>';
+ const selected=select.value;
+ select.innerHTML='<option value="">Pilih grup tersimpan</option>'+groups
+  .filter(x=>x.status!=="NO_PROMOTION").map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+esc(x.destination==="NUSA_LEMBONGAN"?"Lembongan":"Penida")+'</option>').join("");
+ if(groups.some(x=>x.id===selected))select.value=selected;
+}
+async function loadSavedFacebookGroups(){
+ const res=await api("admin/growth/facebook-groups");
+ if(!Array.isArray(res.groups))throw Error("Daftar grup tidak tersedia dari database");
+ renderSavedFacebookGroups(res.groups);
+ return res.groups;
+}
 function renderGrowth(){
  const g=data.growth||{},opportunities=Array.isArray(g.opportunities)?g.opportunities:[];
  const stats=$("#growthStats");
@@ -449,20 +476,7 @@ function renderGrowth(){
  $("#growthHubs").innerHTML=(g.hubs||[]).map(h=>
    '<div class="item"><b>'+esc(h.name)+'</b><small>'+esc(h.description)+'</small>'+
    '<a class="outline small" href="'+esc(h.url)+'" target="_blank" rel="noopener noreferrer">Telusuri manual ↗</a></div>').join("");
- const groups=Array.isArray(g.facebook_groups)?g.facebook_groups:[];
- $("#growthGroupList").innerHTML=groups.length?groups.map(x=>
-  '<div class="item"><b>'+esc(x.name)+'</b><small>'+esc(x.destination==="NUSA_LEMBONGAN"?"Nusa Lembongan":"Nusa Penida")+
-  ' · '+esc({RESEARCH:"Belum bergabung",JOINED_MANUALLY:"Bergabung (ditandai pemilik)",NO_PROMOTION:"Aturan melarang promosi"}[x.status]||x.status)+'</small>'+
-  '<small>Aturan dicatat: '+esc(x.rules_note)+'</small>'+
-  '<a class="outline small" href="'+esc(x.group_url)+'" target="_blank" rel="noopener noreferrer">Buka grup secara manual ↗</a>'+
-  (x.status==="RESEARCH"?'<button class="outline small" data-group-status="JOINED_MANUALLY" data-id="'+esc(x.id)+'">Saya sudah bergabung</button>':"")+
-  (x.status!=="NO_PROMOTION"?'<button class="outline small" data-group-status="NO_PROMOTION" data-id="'+esc(x.id)+'">Dilarang promosi</button>':"")+
-  '<button class="outline small" data-group-status="DISMISSED" data-id="'+esc(x.id)+'">Arsipkan</button></div>'
- ).join(""):'<p class="feedback">Belum ada grup yang Anda catat. Gunakan tautan pencarian di atas.</p>';
- const selected=$("#growthGroupSelect").value;
- $("#growthGroupSelect").innerHTML='<option value="">Pilih grup yang tercatat</option>'+groups
-  .filter(x=>x.status!=="NO_PROMOTION").map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+esc(x.destination==="NUSA_LEMBONGAN"?"Lembongan":"Penida")+'</option>').join("");
- if(groups.some(x=>x.id===selected))$("#growthGroupSelect").value=selected;
+ renderSavedFacebookGroups(g.facebook_groups);
  const clickRows=g.clicks||[];
  $("#growthClickStats").innerHTML=clickRows.length?
   '<div class="growthClickList">'+clickRows.slice(0,24).map(x=>
@@ -501,12 +515,31 @@ $("#growthPartnerForm").onsubmit=async e=>{
 };
 // User-curated Facebook Groups: no Graph Groups requests and no autonomous social actions.
 $("#growthGroupForm").onsubmit=async e=>{
- e.preventDefault();const b=formValues(e.target);
- if(!confirm("Simpan grup untuk riset manual? Agen tidak akan bergabung atau memposting."))return;
+ e.preventDefault();
+ const form=e.target,button=form.querySelector('[type="submit"]'),b=formValues(form);
+ if(button?.disabled)return;
+ if(!confirm("Simpan tautan grup untuk ditinjau manual? Tidak ada tindakan otomatis pada Facebook."))return;
+ if(button)button.disabled=true;
+ say("#growthGroupFeedback","Menyimpan grup ke database Cloudflare ...",true);
  try{
-  await api("admin/growth/facebook-groups","POST",{...b,owner_confirmed:true});
-  e.target.reset();await refresh();say("#growthGroupFeedback","Grup berhasil dicatat. Periksa aturan dan bergabung sendiri di Facebook.",true);
- }catch(err){say("#growthGroupFeedback",err.message)}
+  const result=await api("admin/growth/facebook-groups","POST",{...b,owner_confirmed:true});
+  if(!result.saved||!result.group?.id)throw Error("Server belum mengonfirmasi penyimpanan grup");
+  // Confirmation is backed by a read-after-write D1 query, even if the full acquisition refresh fails.
+  renderSavedFacebookGroups([result.group,...(Array.isArray(data.growth?.facebook_groups)?data.growth.facebook_groups:[]).filter(x=>x.id!==result.group.id)]);
+  form.reset();
+  const notice=result.already_exists?"Grup sudah tersimpan sebelumnya":"Grup berhasil tersimpan";
+  say("#growthGroupFeedback",notice+": "+result.group.name+". Memeriksa daftar...",true);
+  try{
+   const groups=await loadSavedFacebookGroups();
+   if(!groups.some(x=>x.id===result.group.id))throw Error("Grup belum muncul di daftar database");
+   data.growth={...(data.growth||{}),facebook_groups:groups};
+   say("#growthGroupFeedback",notice+": "+result.group.name+". Total "+groups.length+" grup tersimpan.",true);
+  }catch(err){
+   say("#growthGroupFeedback",notice+": "+result.group.name+". Konfirmasi database diterima, namun memuat daftar ulang gagal: "+err.message,true);
+  }
+ }catch(err){
+  say("#growthGroupFeedback","Belum tersimpan: "+err.message+". Periksa tautan grup, lalu coba lagi.");
+ }finally{if(button)button.disabled=false;}
 };
 $("#growthGroupQuestionForm").onsubmit=async e=>{
  e.preventDefault();const b=formValues(e.target);
@@ -527,7 +560,9 @@ $("#growthGroupList").addEventListener("click",async e=>{
  button.disabled=true;
  try{
   await api("admin/growth/facebook-groups/"+encodeURIComponent(id)+"/status","PATCH",{status,owner_confirmed:true});
-  await refresh();say("#growthGroupFeedback","Status grup diperbarui. Tidak ada tindakan otomatis di Facebook.",true);
+  const groups=await loadSavedFacebookGroups();
+  data.growth={...(data.growth||{}),facebook_groups:groups};
+  say("#growthGroupFeedback","Status grup disimpan. Total "+groups.length+" grup aktif.",true);
  }catch(err){say("#growthGroupFeedback",err.message)}finally{button.disabled=false;}
 });
 function renderCampaigns(){
