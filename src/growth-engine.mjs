@@ -1,10 +1,15 @@
 // Consent-first customer acquisition: public travel questions -> helpful draft -> owner action.
 import {scanAdditionalNetworks,additionalNetworkOpportunities,progressNetworkOpportunity} from "./growth-platforms.mjs";
+import {groupOverview,progressGroupQuestion} from "./group-workflow.mjs";
 // Never joins groups, scrapes private lists or sends unsolicited messages. No social writes.
 const uuid=()=>crypto.randomUUID();
 const text=s=>String(s??"").replace(/<[^>]*>/g," ").replace(/&(?:amp|quot|apos|lt|gt|#39|nbsp);/g," ").replace(/\s+/g," ").trim();
 const escapeXml=s=>s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1");
-const topics=/\b(nusa penida|penida|manta|snorkel|bali itinerary|day trip|bali trip|boat to bali|fast boat)\b/i;
+const topics=/\b(nusa penida|nusa lembongan|lembongan|ceningan|penida|manta|snorkel|bali itinerary|day trip|bali trip|boat to bali|fast boat)\b/i;
+export function growthDestination(s){
+ return /\b(?:nusa\s+)?lembongan\b|\bceningan\b/i.test(String(s))?"NUSA_LEMBONGAN":
+  /\b(?:nusa\s+)?penida\b/i.test(String(s))?"NUSA_PENIDA":"BALI_GENERAL";
+}
 const commercial=/\b(sell|for sale|promo|discount|coupon|cheap followers|crypto|adult|bitcoin|affiliate)\b/i;
 const question=/\?|recommend|advice|help|how to|where|looking for|worth visiting|tips|itinerary|plan|transport|boat|snorkel|guide|travel/i;
 const cleanHeading=s=>text(escapeXml(s)).slice(0,240);
@@ -33,12 +38,22 @@ const hubs=Object.freeze([
   url:"https://www.facebook.com/search/groups/?q=bali%20travel",description:"Temukan komunitas publik, baca aturan; bergabung dan berkontribusi secara manual"},
  {name:"Facebook Groups: Nusa Penida",network:"Facebook",type:"MANUAL_SEARCH",
   url:"https://www.facebook.com/search/groups/?q=nusa%20penida",description:"Periksa aturan promosi dan relevansi sebelum berinteraksi"},
+ {name:"Facebook Groups: Nusa Lembongan",network:"Facebook",type:"MANUAL_SEARCH",
+  url:"https://www.facebook.com/search/groups/?q=nusa%20lembongan",description:"Bergabung dan membaca grup secara manual, tanpa bot atau ekstraksi anggota"},
+ {name:"Facebook Groups: Bali backpackers",network:"Facebook",type:"MANUAL_SEARCH",
+  url:"https://www.facebook.com/search/groups/?q=bali%20backpackers",description:"Cari diskusi backpacker yang relevan dan ikuti aturan admin grup"},
  {name:"Hotel, hostel, villa Nusa Penida",network:"Google Maps",type:"PARTNER_RESEARCH",
   url:"https://www.google.com/maps/search/?api=1&query=Nusa+Penida+hotel+hostel+villa",description:"Temukan calon mitra B2B; kontak hanya pada kanal bisnis yang tersedia dan sesuai aturan"},
+ {name:"Hotel dan villa Nusa Lembongan",network:"Google Maps",type:"PARTNER_RESEARCH",
+  url:"https://www.google.com/maps/search/?api=1&query=Nusa+Lembongan+hotels+villas",description:"Riset calon mitra Lembongan; tarif, operator, dan penawaran belum diverifikasi"},
  {name:"Reddit: pertanyaan Nusa Penida",network:"Reddit",type:"MANUAL_SEARCH",
   url:"https://www.reddit.com/r/bali/search/?q=nusa%20penida&restrict_sr=1&sort=new",description:"Tinjau pertanyaan publik, hormati larangan promosi dan aturan subreddit"},
+ {name:"Reddit: pertanyaan Nusa Lembongan",network:"Reddit",type:"MANUAL_SEARCH",
+  url:"https://www.reddit.com/r/bali/search/?q=nusa%20lembongan&restrict_sr=1&sort=new",description:"Baca permintaan wisata yang masih baru, jangan kirim pesan massal"},
  {name:"Instagram: unggahan Nusa Penida",network:"Instagram",type:"MANUAL_SEARCH",
   url:"https://www.instagram.com/explore/tags/nusapenida/",description:"Tinjau percakapan dan lokasi publik secara manual; API bisnis hanya membaca aset yang diizinkan"},
+ {name:"Instagram: Nusa Lembongan",network:"Instagram",type:"MANUAL_SEARCH",
+  url:"https://www.instagram.com/explore/tags/nusalembongan/",description:"Riset manual konten publik, bukan pengambilan komentar akun lain oleh API"},
  {name:"TikTok: pencarian Nusa Penida",network:"TikTok",type:"MANUAL_SEARCH",
   url:"https://www.tiktok.com/search?q=nusa%20penida",description:"Cari pertanyaan tentang itinerary; tidak ada pengambilan akun pribadi atau API riset komersial otomatis"},
  {name:"YouTube: wisata Nusa Penida",network:"YouTube",type:"MANUAL_SEARCH",
@@ -57,7 +72,7 @@ function validTitle(title){return title.length>=10&&title.length<=240&&topics.te
 function scoring(title){
  const s=title.toLowerCase();
  let score=35;
- if(/nusa penida/.test(s))score+=30;
+ if(/nusa penida|nusa lembongan|lembongan|ceningan/.test(s))score+=30;
  if(/snorkel|manta|tour|itinerary|day trip|fast boat/.test(s))score+=15;
  if(/recommend|help|advice|how|where|looking for|\?/.test(s))score+=15;
  return Math.min(100,score);
@@ -67,9 +82,11 @@ function themeOf(title){
  if(/island tour|day trip|itinerary|beach|kelingking|diamond beach|transport/i.test(title))return "ISLAND_TOUR";
  return "GENERAL";
 }
-function answer(theme,source){
- const tag="I help visitors plan Nusa Penida trips with Nusa Penida Experiences (disclosure).";
+function answer(theme,source,destination="NUSA_PENIDA"){
+ const isLembongan=destination==="NUSA_LEMBONGAN";
+ const tag="I help travellers explore "+(isLembongan?"Nusa Lembongan":"Nusa Penida")+" through Nusa Penida Experiences (business disclosure).";
  if(source==="OWNER_PARTNER")return "Hello, I coordinate Nusa Penida Experiences with local tour and snorkeling operators. Would a mutually agreed referral arrangement be useful for your guests? We can share itinerary options; pricing, safety, and capacity are confirmed before any booking. No obligation to partner.";
+ if(isLembongan)return "For Nusa Lembongan, check sea conditions, realistic boat transfers and whether a mangrove visit, Dream Beach or Devil's Tear fits the itinerary. A local operator, safety arrangements, availability and pricing must be confirmed before any booking. "+tag+" If the group's rules permit, I can share general guidance. What dates and group size do you have in mind? No unsolicited DM.";
  return (theme==="SNORKELING"?
   "For snorkeling, choose sharing vs private based on group size; check ocean conditions, boat safety, operator capacity and exact stops in advance. Wild manta sightings cannot be guaranteed.":
   theme==="ISLAND_TOUR"?
@@ -89,7 +106,7 @@ export function extractPublicQuestions(xml,source="REDDIT_PUBLIC_RSS",nowMs=Date
   const theme=themeOf(title);
   result.push({id:uuid(),source,source_url:link,headline:title,theme,
    score:Math.min(100,scoring(title)+(freshness.urgency==="HIGH"?12:freshness.urgency==="ACTIVE"?6:0)),
-   suggested_reply:answer(theme,source),...freshness});
+   suggested_reply:answer(theme,source,growthDestination(title)),destination:growthDestination(title),...freshness});
   if(result.length>=12)break;
  }
  return result;
@@ -98,7 +115,9 @@ export function extractPublicQuestions(xml,source="REDDIT_PUBLIC_RSS",nowMs=Date
 // We do not bypass authentication, read personal info, or automatically comment.
 const feeds=[
  "https://www.reddit.com/r/bali/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=week",
- "https://www.reddit.com/r/travel/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=week"
+ "https://www.reddit.com/r/travel/search.rss?q=nusa%20penida&restrict_sr=on&sort=new&t=week",
+ "https://www.reddit.com/r/bali/search.rss?q=nusa%20lembongan&restrict_sr=on&sort=new&t=week",
+ "https://www.reddit.com/r/travel/search.rss?q=nusa%20lembongan&restrict_sr=on&sort=new&t=week"
 ];
 export function extractOpenBusinesses(json){
  const elements=Array.isArray(json?.elements)?json.elements:[];
@@ -191,18 +210,21 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   discovered:total,sources:details};
 }
 export async function growthOverview(db){
- const [opps,clicks,count,scans,bookings,additional]=await Promise.all([
+ const [opps,clicks,count,scans,bookings,additional,groups]=await Promise.all([
   db.prepare("SELECT g.id,g.source,g.source_url,g.headline,g.theme,g.score,g.suggested_reply,g.status,g.discovered_at,m.published_at,m.expires_at,CAST((julianday('now')-julianday(m.published_at))*24 AS INTEGER) AS age_hours FROM growth_opportunities g LEFT JOIN growth_publication_meta m ON m.source_url=g.source_url WHERE g.discovered_at>=datetime('now','-60 days') AND g.status!='DISMISSED' AND (g.source!='REDDIT_PUBLIC_RSS' OR (m.published_at IS NOT NULL AND m.expires_at>datetime('now'))) ORDER BY CASE g.status WHEN 'REVIEW' THEN 0 WHEN 'SHORTLISTED' THEN 1 WHEN 'CONTACTED' THEN 2 ELSE 3 END,g.score DESC,g.discovered_at DESC LIMIT 60").all(),
   db.prepare("SELECT day,source,landing,count FROM growth_click_daily WHERE day>=date('now','-30 days') ORDER BY day DESC,count DESC LIMIT 120").all(),
   db.prepare("SELECT COUNT(*) AS n FROM leads").first(),
   db.prepare("SELECT source,result,candidates,created_at FROM growth_discovery_runs ORDER BY created_at DESC LIMIT 8").all(),
   db.prepare("SELECT COUNT(*) AS n FROM bookings").first(),
-  additionalNetworkOpportunities(db)
+  additionalNetworkOpportunities(db),
+  groupOverview(db)
  ]);
  const priority=s=>({REVIEW:0,SHORTLISTED:1,CONTACTED:2,RESPONDED:3}[s]??4);
- const all=[...opps.results,...additional].sort((a,b)=>priority(a.status)-priority(b.status)||b.score-a.score).slice(0,80);
+ const all=[...opps.results.map(x=>({...x,destination:growthDestination(x.headline)})),
+  ...additional.map(x=>({...x,destination:growthDestination(x.headline)})),...groups.opportunities]
+  .sort((a,b)=>priority(a.status)-priority(b.status)||b.score-a.score).slice(0,80);
  return {opportunities:all,clicks:clicks.results,click_count_30d:clicks.results.reduce((sum,x)=>sum+x.count,0),
-  leads:count.n,bookings:bookings.n,research:scans.results,hubs:growthHubs(),
+  leads:count.n,bookings:bookings.n,research:scans.results,hubs:growthHubs(),facebook_groups:groups.groups,
   limits:"Only public Bluesky posts, authorised owned Meta comments, official optional YouTube video metadata and existing Reddit/OSM; no automatic joining, mass DMs, Facebook Group posts, or scraping member identities."};
 }
 export async function progressOpportunity(db,id,status){
@@ -211,6 +233,8 @@ export async function progressOpportunity(db,id,status){
  if(!op){
   const network=await progressNetworkOpportunity(db,id,status);
   if(network)return network;
+  const group=await progressGroupQuestion(db,id,status);
+  if(group)return group;
   throw Error("Peluang tidak ditemukan");
  }
  const r=await db.prepare("UPDATE growth_opportunities SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,id).run();
