@@ -1,17 +1,25 @@
 {
-  "name": "Nusa Penida Experiences",
-  "short_name": "Nusa Penida",
-  "start_url": "/",
+  "name": "Nusa Penida Experiences · Agent Dashboard",
+  "short_name": "NPE Agent",
+  "start_url": "/dashboard.html",
   "display": "standalone",
   "background_color": "#f5f8f7",
   "theme_color": "#103947",
-  "description": "Explore Nusa Penida snorkeling and island tours with verified local operators.",
+  "description": "Dashboard pemilik Nusa Penida Experiences untuk tamu, pemasaran, kampanye dan operasional",
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lihat Website",
+      "short_name": "Website",
+      "url": "/",
+      "description": "Buka website publik pengalaman wisata"
     }
   ]
 }
