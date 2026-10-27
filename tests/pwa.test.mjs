@@ -100,7 +100,7 @@ test("brand icon appears in all guest pages and bilingual picker is included",()
  assert.match(i18n,/navigator\.languages/);assert.match(i18n,/localStorage/);
  assert.match(i18n,/api\/public\/site-content/);
  assert.match(app,/admin\/site-content/);
- assert.match(read("index.html"),/id="cmsValue"/);
+ assert.match(read("dashboard.html"),/id="cmsValue"/);
  assert.doesNotMatch(read("service-worker.js"),/\/api\/public\/site-content/);
 });
 
@@ -114,7 +114,7 @@ test("premium tourism visuals use real credited destination images and honest ac
  assert.match(home,/class="tour-showcase-grid"/);
  assert.match(home,/Wikimedia Commons/);
  assert.match(logo,/Siluet tebing Nusa Penida dan pari manta/);
- assert.match(home,/id="quickSave"/);
+ assert.match(read("dashboard.html"),/id="quickSave"/);
  assert.match(read("app.js"),/admin\/site-content/);
  assert.match(home,/Penerimaan permintaan|Pengiriman lead akan tersedia/);
 });
@@ -134,12 +134,12 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v25/);
+ assert.match(read("service-worker.js"),/public-v26/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
  const {runInNewContext}=await import("node:vm");
- const html=read("index.html"),app=read("app.js");
+ const html=read("dashboard.html"),app=read("app.js");
  const tabs=[...html.matchAll(/<button data-tab="([^"]+)"/g)].map(x=>x[1]);
  const routes=[...html.matchAll(/data-go-tab="([^"]+)"/g)].map(x=>x[1]);
  const contentNames=[...html.matchAll(/id="tab-([a-z-]+)" class="tabcontent"/g)].map(x=>x[1]);
@@ -150,9 +150,10 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
   const listeners=new Map();
   const classes=new Set();
   return {selector,id:selector.startsWith("#")?selector.slice(1):selector,dataset,listeners,classes,
-   style:{},hidden:selector==="#adminArea"||selector==="#adminContent"||selector.startsWith("#tab-")&&selector!=="#tab-summary",
+   style:{},hidden:selector==="#adminContent"||selector.startsWith("#tab-")&&selector!=="#tab-summary",
    value:"",textContent:"",innerHTML:"",checked:false,disabled:false,
-   classList:{toggle(c,active){if(active)classes.add(c);else classes.delete(c)},contains(c){return classes.has(c)}},
+   classList:{toggle(c,active){if(active)classes.add(c);else classes.delete(c);return classes.has(c)},add(c){classes.add(c)},remove(c){classes.delete(c)},contains(c){return classes.has(c)}},
+   setAttribute(name,value){this[name]=String(value)},
    addEventListener(name,fn){listeners.set(name,fn)},
    querySelector(){return null},
    querySelectorAll(){return []},
@@ -184,6 +185,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  };
  const document={
   querySelector:get,
+  getElementById:id=>get("#"+id),
   querySelectorAll(selector){
    if(selector===".tabs button")return tabButtons;
    if(selector==="[data-go-tab]")return shortcuts;
@@ -197,10 +199,8 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
   location:{href:"https://tour.example/",origin:"https://tour.example"},fetch:fakeFetch,Response,URL,
   Intl,Date,Number,Array,Object,Map,String,console,confirm:()=>true,prompt:()=>null};
  assert.doesNotThrow(()=>runInNewContext(app,context,{filename:"public/app.js"}),"app bootstrap must not crash before binding owner login");
- assert.equal(typeof get("#adminToggle").onclick,"function");
- get("#adminToggle").click();
- assert.equal(get("#adminArea").hidden,false);
- assert.equal(get("#adminArea").scrolled,true);
+ assert.equal(get("#adminArea").hidden,false,"Dashboard is the landing page; no public toggle needed");
+ assert.equal(typeof get("#dashMenuToggle").onclick,"function");
  assert.ok(tabButtons.every(btn=>btn.listeners.has("click")),"every sidebar tab must bind a click");
  assert.ok(shortcuts.every(btn=>btn.listeners.has("click")),"every dashboard shortcut must bind a click");
  tabButtons.find(x=>x.dataset.tab==="bookings").click();
@@ -223,7 +223,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
 });
 
 test("official WhatsApp Business contact and catalog links are visible, separate and accessible to guests",()=>{
- const home=read("index.html"),lang=read("language.js"),css=read("styles.css"),app=read("app.js");
+ const home=read("index.html"),dashboard=read("dashboard.html"),lang=read("language.js"),css=read("styles.css"),app=read("app.js");
  const number="628561752525";
  const link="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
  assert.match(home,/id="whatsapp"/);
@@ -231,9 +231,9 @@ test("official WhatsApp Business contact and catalog links are visible, separate
  assert.match(home,/class="wa-contact-card"/);
  assert.match(home,/class="wa-floating"/);
  assert.match(home,/data-whatsapp-chat/);
- assert.match(home,/id="tab-whatsapp"/);
- assert.match(home,/data-go-tab="whatsapp"/);
- assert.match(home,/data-tab="whatsapp"/);
+ assert.match(dashboard,/id="tab-whatsapp"/);
+ assert.match(dashboard,/data-go-tab="whatsapp"/);
+ assert.match(dashboard,/data-tab="whatsapp"/);
  assert.ok(home.includes(link), "Direct chat link missing");
  assert.ok(home.includes(catalog), "Official catalog link missing");
  assert.equal((home.match(/data-whatsapp-chat/g)||[]).length,3);
@@ -249,13 +249,13 @@ test("official WhatsApp Business contact and catalog links are visible, separate
  assert.match(lang,/encodeURIComponent\(message\)/);
  assert.match(lang,/View WhatsApp Catalog/);
  assert.match(app,/\[data-wa-copy\]/);
- assert.match(home,/Koneksi otomatis ke inbox WhatsApp/);
- assert.match(home,/Tidak ada pengiriman otomatis/);
+ assert.match(dashboard,/Koneksi otomatis ke inbox WhatsApp/);
+ assert.match(dashboard,/Tidak ada pengiriman otomatis/);
  assert.doesNotMatch(home,/WhatsApp API sudah terhubung|Balasan terkirim secara otomatis/);
 });
 
 test("official WhatsApp inbox management is prepared but never falsely shown as connected",()=>{
- const h=read("index.html"),js=read("app.js"),css=read("styles.css"),privacy=read("privacy.html");
+ const h=read("dashboard.html"),js=read("app.js"),css=read("styles.css"),privacy=read("privacy.html");
  for(const id of ["waRefresh","waConnectionStatus","waThreadList","waMessages","waComposer","waDraftAI","waCopyComposer","waSendApproved"]){
   assert.ok(h.includes('id="'+id+'"'),"WhatsApp UI missing "+id);
  }
@@ -270,7 +270,7 @@ test("official WhatsApp inbox management is prepared but never falsely shown as 
 });
 
 test("owner WhatsApp dashboard links directly to the Indonesian setup guide",()=>{
- const html=read("index.html");
+ const html=read("dashboard.html");
  assert.match(html,/id="waSetupGuideId"/);
  assert.match(html,/Panduan Hubungkan WhatsApp \(Bahasa Indonesia\)/);
  assert.match(html,/href="https:\/\/github.com\/rama160\/Marketing-turism\/blob\/main\/docs\/WHATSAPP_SETUP.md"/);
@@ -278,7 +278,7 @@ test("owner WhatsApp dashboard links directly to the Indonesian setup guide",()=
 });
 
 test("owner marketing organic autopilot is transparent and gated",()=>{
- const html=read("index.html"),app=read("app.js");
+ const html=read("dashboard.html"),app=read("app.js");
  assert.match(html,/id="prepareMarketingWeek"/);
  assert.match(html,/id="marketingWeekFeedback"/);
  assert.match(html,/Hubungkan Instagram & Facebook/);
@@ -288,7 +288,7 @@ test("owner marketing organic autopilot is transparent and gated",()=>{
 });
 
 test("autonomous marketing learning is owner-only and rejects fabricated analytics UI",()=>{
- const html=read("index.html"),app=read("app.js");
+ const html=read("dashboard.html"),app=read("app.js");
  assert.match(html,/id="marketingMetricsForm"/);
  assert.match(html,/id="marketingInsights"/);
  assert.match(html,/id="marketingObservedOn"/);
@@ -299,7 +299,7 @@ test("autonomous marketing learning is owner-only and rejects fabricated analyti
 });
 
 test("marketing independent Meta Graph queue does not pretend to be connected",()=>{
- const home=read("index.html"),app=read("app.js");
+ const home=read("dashboard.html"),app=read("app.js");
  assert.match(home,/id="refreshMetaQueue"/);
  assert.match(home,/id="marketingPublicationQueue"/);
  assert.match(app,/admin\/marketing\/publications/);
@@ -313,7 +313,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v25/);
+ assert.match(sw,/marketing-turism-public-v26/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -330,7 +330,7 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v25/);
+ assert.match(read("service-worker.js"),/public-v26/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{
@@ -343,7 +343,7 @@ test("owner can deliberately schedule an old approved post without silently post
 });
 
 test("owner can add and choose her own photos on mobile without leaking uploads in offline app cache",()=>{
- const html=read("index.html"),js=read("app.js"),sw=read("service-worker.js");
+ const html=read("dashboard.html"),js=read("app.js"),sw=read("service-worker.js");
  assert.match(html,/id="ownerPhotoForm"/);
  assert.match(html,/id="ownerPhotoFile"[^>]*type="file"|id="ownerPhotoFile"[^>]*name="file"/);
  assert.match(html,/\+ Add Foto/);
@@ -358,7 +358,7 @@ test("owner can add and choose her own photos on mobile without leaking uploads 
 });
 
 test("growth acquisition dashboard is owner-only, source credited, click-tracking is aggregate, and public brochures indexable",()=>{
- const html=read("index.html"),script=read("app.js"),lang=read("language.js");
+ const html=read("dashboard.html"),script=read("app.js"),lang=read("language.js");
  const privacy=read("privacy.html");
  assert.match(html,/data-tab="growth"/);
  assert.match(html,/id="tab-growth"/);
