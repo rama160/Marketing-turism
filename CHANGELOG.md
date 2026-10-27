@@ -1,3 +1,10 @@
+### 3.16.0 — 27 October 2026: stay signed in until owner Logout
+- Replace tab-only raw ADMIN_TOKEN browser storage with an opaque, revocable, persistent D1 session + secure HttpOnly SameSite=Strict cookie.
+- After first token login, dashboard automatically restores the session across refresh, browser close and app restart. Login again is required only after owner Logout or a security exception (cookie removal, credential rotation or long inactivity expiry).
+- Explicit owner Logout revokes the server session and expires the cookie. Server rejects the revoked session even if the old cookie is replayed.
+- Keep existing admin Bearer token API interoperability without exposing it to the dashboard or public website. Add origin/Fetch-Metadata CSRF defenses for cookie-authorized mutations.
+- Add migration 0022, frontend auth tests, integration tests for restore/logout/expiry/rotation and live unauthenticated login security checks. Existing guest lead Turnstile remains unchanged.
+
 ### 3.15.0 — 27 October 2026: dedicated agent dashboard, public guest website
 - Move the original extensive admin UI from `public/index.html` to `public/dashboard.html`, with branded login, sticky header, adaptive side navigation, mobile menu and one-click **Lihat Website** access.
 - Separate public website JS `public/guest.js` from owner-only `public/app.js`; preserve guest consent + Turnstile lead intake and all existing owner operational form handlers.
