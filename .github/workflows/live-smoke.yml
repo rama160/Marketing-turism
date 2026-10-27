@@ -1,18 +1,26 @@
 name: Verify Cloudflare pilot
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["Deploy Tourism Cloudflare (manual)"]
+    types: [completed]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   smoke:
+    # Never race ahead of deployment, or run smoke after a failed/skipped deployment.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: External live smoke
+      - name: External live smoke only after successful Cloudflare deployment
         run: node scripts/smoke.mjs
