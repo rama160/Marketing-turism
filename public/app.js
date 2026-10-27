@@ -30,15 +30,45 @@ for(const [formId,selector] of [["#quoteForm","#quoteVariant"],["#rateForm","#ra
  updateVariants(form,selector);
 }
 const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.title||label||x.id)+'</option>').join("");
+const NPE_WORKSPACES={
+ home:{name:"Beranda",defaultTab:"summary",title:"Overview",description:"Semua yang perlu ditangani hari ini, dalam satu tampilan."},
+ sales:{name:"Tamu & Penjualan",defaultTab:"leads",title:"Kelola calon tamu",description:"Permintaan tamu, penawaran, reservasi dan komunikasi."},
+ content:{name:"Konten & Kampanye",defaultTab:"campaigns",title:"Konten yang menghasilkan",description:"Tinjau media, persetujuan konten, jadwal dan website."},
+ growth:{name:"Akuisisi Pelanggan",defaultTab:"growth",title:"Temukan pelanggan",description:"Riset peluang terbaru untuk Penida dan Lembongan."},
+ analytics:{name:"Analitik",defaultTab:"analytics",title:"Performa aktual",description:"Keputusan berdasarkan data tersimpan, bukan angka perkiraan."},
+ settings:{name:"Pengaturan",defaultTab:"business",title:"Pengaturan usaha",description:"Operator, harga net dan konfigurasi bisnis."}
+};
+const NPE_PAGE_GROUP={
+ summary:"home",leads:"sales",quotes:"sales",bookings:"sales",finance:"sales",whatsapp:"sales",
+ campaigns:"content",marketing:"content",website:"content",
+ growth:"growth",market:"growth",analytics:"analytics",
+ business:"settings",operators:"settings",rates:"settings"
+};
 function changeTab(name){
  const page=document.getElementById("tab-"+name);if(!page)return;
+ const group=NPE_PAGE_GROUP[name]||"home",workspace=NPE_WORKSPACES[group];
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
  if(name==="website"&&ownerSignedIn)void loadSiteEditor();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
- $$(".tabs button").forEach(b=>{const active=b.dataset.tab===name;b.classList.toggle("current",active);b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");});
- $$(".tabcontent").forEach(el=>el.hidden=el!==page);
- const title=$("#dashCurrentPage"),current=$(".tabs button.current");if(title)title.textContent=current?.textContent||"Dashboard";
+ if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
+ $(".tabs button").forEach(b=>{
+  const active=b.dataset.tab===name;
+  b.classList.toggle("current",active);
+  b.hidden=b.dataset.group!==undefined&&b.dataset.group!==group;
+  b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");
+ });
+ $(".tabcontent").forEach(el=>el.hidden=el!==page);
+ $("[data-workspace]").forEach(b=>{
+  const active=b.dataset.workspace===group;
+  b.classList.toggle("current",active);b.setAttribute("aria-current",active?"page":"false");
+ });
+ const title=$("#dashCurrentPage"),current=$(".tabs button.current");
+ if(title)title.textContent=current?.textContent||workspace.name;
+ const secTitle=$("#dashSectionTitle");if(secTitle)secTitle.textContent=workspace.name;
+ const header=$("#dashHeadingTitle");if(header)header.textContent=workspace.title;
+ const desc=$("#dashHeadingDescription");if(desc)desc.textContent=workspace.description;
+ const crumb=$("#dashWorkspaceName");if(crumb)crumb.textContent=workspace.name;
  const menu=$("#dashNavigation"),toggle=$("#dashMenuToggle");menu?.classList.remove("open");toggle?.setAttribute("aria-expanded","false");
  window.scrollTo?.({top:0,behavior:"instant"});
 }
@@ -46,8 +76,51 @@ const dashMenuToggle=$("#dashMenuToggle");
 if(dashMenuToggle)dashMenuToggle.onclick=()=>{
  const open=$("#dashNavigation").classList.toggle("open");dashMenuToggle.setAttribute("aria-expanded",String(open));
 };
-$$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
-$$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
+$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+$("[data-workspace]").forEach(button=>button.addEventListener("click",()=>{
+ const group=NPE_WORKSPACES[button.dataset.workspace];
+ if(group)changeTab(group.defaultTab);
+}));
+// Break long operational pages into short, selectable panels without replacing their existing forms or handlers.
+function initCompactPanels(){
+ if(typeof document.createElement!=="function")return;
+ const layouts={
+  growth:["Riset peluang","Percakapan & mitra","Facebook Groups","Funnel"],
+  campaigns:["Pustaka foto","Draf & persetujuan","Jadwal konten","Analisis konten"],
+  whatsapp:["Koneksi WhatsApp","Kotak masuk","Balasan cepat"]
+ };
+ for(const [tabName,titles] of Object.entries(layouts)){
+  const panel=document.getElementById("tab-"+tabName);
+  if(!panel?.children?.length || panel.dataset.compactReady==="true")continue;
+  const children=Array.from(panel.children).filter(el=>el.nodeType===1);
+  if(children.length<2)continue;
+  const nav=document.createElement("div");
+  nav.className="dashPaneNav";nav.setAttribute("aria-label","Bagian "+tabName);
+  const wrappers=[];
+  children.forEach((child,i)=>{
+   const wrap=document.createElement("div");
+   wrap.className="dashPane";wrap.dataset.pane=String(i);
+   wrap.appendChild(child);panel.appendChild(wrap);wrappers.push(wrap);
+   const btn=document.createElement("button");
+   btn.type="button";btn.className="dashPaneBtn";btn.textContent=titles[i]||"Bagian "+(i+1);
+   btn.dataset.pane=String(i);btn.setAttribute("aria-pressed","false");
+   nav.appendChild(btn);
+   btn.addEventListener("click",()=>select(i));
+  });
+  panel.insertBefore(nav,panel.firstChild);
+  function select(index){
+   wrappers.forEach((el,i)=>el.hidden=i!==index);
+   Array.from(nav.children).forEach((b,i)=>{b.classList.toggle("current",i===index);b.setAttribute("aria-pressed",String(i===index))});
+   sessionStorage.setItem("npe-dashboard-pane:"+tabName,String(index));
+  }
+  const saved=Number(sessionStorage.getItem("npe-dashboard-pane:"+tabName)||0);
+  select(Number.isSafeInteger(saved)&&saved>=0&&saved<wrappers.length?saved:0);
+  panel.dataset.compactReady="true";
+ }
+}
+initCompactPanels();
+
 $$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
  const key=button.dataset.waCopy,reply=$("#"+key)?.textContent?.trim();
  if(!reply){say("#waDraftFeedback","Balasan tidak tersedia.");return;}
@@ -163,10 +236,42 @@ async function refresh(){
   $("#rateOperator").innerHTML=options(data.operators);
   $("#quoteOperator").innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"));["#lunchOperator","#boatOutOperator","#boatReturnOperator"].forEach(selector=>{$(selector).innerHTML=options(data.operators.filter(x=>x.status==="VERIFIED"))});
   renderOperators();renderRates();renderLeads();renderQuotes();renderBookings();renderFinance();renderCampaigns();renderOwnerPhotos();renderGrowth();renderMarketingIntelligence();renderMarket();renderBusiness(business.business);void loadMetaDiagnostic();
+  renderDashPriorities();
   if(!$("#tab-summary").hidden)await loadQuickEditor();
   say("#adminFeedback","Data diperbarui.",true);
  }catch(err){say("#adminFeedback",err.message)}
 }
+function renderDashPriorities(){
+ const target=$("#dashPriorities");if(!target)return;
+ const leads=Array.isArray(data.leads)?data.leads:[],campaigns=Array.isArray(data.campaigns)?data.campaigns:[],operators=Array.isArray(data.operators)?data.operators:[];
+ const openLeads=leads.filter(x=>!["CONVERTED","CLOSED","CANCELLED","REJECTED"].includes(String(x.status||"").toUpperCase())).length;
+ const reviewCampaigns=campaigns.filter(x=>["DRAFT","REVIEW","PENDING_REVIEW"].includes(String(x.status||"").toUpperCase())).length;
+ const pendingOperators=operators.filter(x=>x.status!=="VERIFIED").length;
+ const actionable=[
+  {tab:"leads",title:"Periksa permintaan tamu",info:openLeads+" permintaan dalam proses"},
+  {tab:"campaigns",title:"Review kampanye",info:reviewCampaigns+" draf perlu dicek"},
+  {tab:"operators",title:"Verifikasi operator",info:pendingOperators+" operator belum terverifikasi"}
+ ];
+ target.innerHTML=actionable.map(x=>'<button class="dashPriorityItem" type="button" data-go-tab="'+x.tab+'"><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.info)+'</small></span><span aria-hidden="true">↗</span></button>').join("");
+}
+$("#dashPriorities")?.addEventListener("click",e=>{
+ const action=e.target.closest("[data-go-tab]");if(action)changeTab(action.dataset.goTab);
+});
+async function loadDashboardAnalytics(){
+ if(!ownerSignedIn)return;
+ const el=$("#dashAnalyticsStats"),sales=$("#dashAnalyticsSales"),posts=$("#dashAnalyticsCampaigns");
+ try{
+  const a=await api("admin/analytics");
+  const groups=[["Permintaan",a.leads],["Penawaran",a.quotes],["Booking",a.bookings],["Konten",a.campaigns]];
+  const total=rows=>(Array.isArray(rows)?rows:[]).reduce((acc,x)=>acc+Number(x.n||0),0);
+  if(el)el.innerHTML=groups.map(([label,rows])=>'<article class="dashMetric"><span>'+esc(label)+'</span><strong>'+total(rows)+'</strong><small>Rekaman tersimpan</small></article>').join("");
+  function breakdown(rows){return (Array.isArray(rows)&&rows.length?rows.map(x=>
+   '<div class="dashMetricLine"><span>'+esc(x.status||"Belum berstatus")+'</span><strong>'+Number(x.n||0)+'</strong></div>').join(""):'<p class="feedback">Belum ada data tercatat.</p>')}
+  if(sales)sales.innerHTML='<h4>Permintaan tamu</h4>'+breakdown(a.leads)+'<h4>Penawaran & booking</h4>'+breakdown(a.quotes)+breakdown(a.bookings);
+  if(posts)posts.innerHTML=breakdown(a.campaigns)+'<p class="feedback">Jangkauan dan impresi tidak ditampilkan jika belum tersedia dari platform.</p>';
+ }catch(err){if(el)el.textContent="Analitik belum dapat dimuat: "+err.message;}
+}
+const dashRefreshAnalytics=$("#dashRefreshAnalytics");if(dashRefreshAnalytics)dashRefreshAnalytics.onclick=loadDashboardAnalytics;
 $("#refreshAll").onclick=refresh;
 function renderOperators(){
  $("#operatorList").innerHTML=data.operators.map(o=>
