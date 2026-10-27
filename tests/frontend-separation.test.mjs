@@ -51,7 +51,12 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.ok(script.includes("container.appendChild(wrap)"),"Original form elements must be moved, not replaced");
  assert.ok(script.includes('wrappers.forEach((el,i)=>el.hidden=i!==index)'),"Only selected subpage should be visible");
  assert.ok(page.indexOf('class="dashBottomNav"')>page.indexOf('id="adminContent" hidden'),"Mobile workspace must be owner-only");
-  assert.match(script,/function initCompactPanels/);
+  assert.ok(page.includes('id="growthGroupsReload"'),"Saved groups reload control missing");
+ assert.ok(page.includes('id="growthGroupCount"'),"Saved group count missing");
+ assert.ok(script.includes('loadSavedFacebookGroups'),"Standalone saved group listing missing");
+ assert.ok(script.includes('result.saved'),"Group write must require persistence confirmation");
+ assert.ok(script.includes('const groups=await loadSavedFacebookGroups()'),"Group list must verify server state");
+ assert.match(script,/function initCompactPanels/);
  assert.match(script,/loadDashboardAnalytics/);
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
  assert.ok(styles.includes(".dashCompactShortcuts"));
@@ -84,7 +89,7 @@ test("Android installed agent goes to dashboard; public service worker never cac
 
 test("separating website does not change critical routes, operator prices, or manual approvals",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
- assert.ok(worker.includes('version:"3.17.0"'));
+ assert.ok(worker.includes('version:"3.17.1"'));
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }

@@ -93,11 +93,11 @@
   <h4 class="wide">1. Simpan grup publik untuk ditinjau</h4>
   <label>Nama grup<input name="name" required minlength="5" maxlength="100" placeholder="Contoh: Bali Travel Questions"></label>
   <label>Destinasi<select name="destination" required><option value="NUSA_PENIDA">Nusa Penida</option><option value="NUSA_LEMBONGAN">Nusa Lembongan</option></select></label>
-  <label class="wide">Tautan utama Facebook Group<input type="url" name="url" required placeholder="https://www.facebook.com/groups/..."></label>
-  <label class="wide">Ringkasan aturan grup<textarea name="rules_note" rows="2" minlength="12" maxlength="400" required placeholder="Contoh: Dilarang promosi kecuali hari Jumat; kontribusi informatif diperbolehkan."></textarea></label>
+  <label class="wide">Tautan grup Facebook<input type="url" name="url" required placeholder="https://www.facebook.com/groups/... atau /share/g/..." aria-describedby="groupUrlHelp"><small id="groupUrlHelp">Bisa menempel link dari tombol Bagikan grup, termasuk /share/g/ dan parameter tautan.</small></label>
+  <label class="wide">Ringkasan aturan grup (opsional)<textarea name="rules_note" rows="2" maxlength="400" placeholder="Boleh kosong saat menyimpan. Sebelum promosi, periksa aturan dan izin admin grup."></textarea></label>
   <button class="primary wide" type="submit">Simpan grup (tanpa bergabung otomatis)</button>
  </form>
- <div class="scroll"><h4>Daftar grup pilihan pemilik</h4><div id="growthGroupList"><p class="feedback">Belum ada grup yang ditambahkan.</p></div></div>
+ <div class="scroll"><h4>Daftar grup pilihan pemilik <span id="growthGroupCount" class="feedback">Memuat...</span></h4><button id="growthGroupsReload" class="outline small" type="button">↻ Muat grup tersimpan</button><div id="growthGroupList"><p class="feedback">Belum ada grup yang ditambahkan.</p></div></div>
  </div>
  <form class="formgrid" id="growthGroupQuestionForm">
   <h4 class="wide">2. Analisis pertanyaan publik dari grup yang Anda buka</h4>

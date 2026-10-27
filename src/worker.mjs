@@ -13,7 +13,7 @@ import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEn
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
-import {saveGroup,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
+import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
 import {ownerAuthorized,ownerLogin,ownerSession,ownerLogout} from "./owner-session.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
@@ -166,7 +166,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.17.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.17.1",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
@@ -275,13 +275,16 @@ async function route(req,env,ctx){
   if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
   return json(await researchBuyerQuestions(db,env));
  }
+ if(path==="/api/admin/growth/facebook-groups"&&method==="GET")return json(await listSavedGroups(db));
  if(path==="/api/admin/growth/facebook-groups"&&method==="POST"){
   const b=await parse(req);
   if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
   try{
    const created=await saveGroup(db,b);
+   const saved=await db.prepare("SELECT id,name,group_url,destination,rules_note,status,created_at FROM growth_facebook_groups WHERE id=?").bind(created.id).first();
+   if(!saved)return bad("Grup belum tercatat; silakan coba lagi",503);
    await audit(db,"facebook_group",created.id,created.already_exists?"REOPENED":"OWNER_ADDED");
-   return json(created,created.already_exists?200:201);
+   return json({...created,saved:true,group:saved},created.already_exists?200:201);
   }catch(e){return bad(String(e.message),422);}
  }
  const groupStatusPath=path.match(/^\/api\/admin\/growth\/facebook-groups\/([^/]+)\/status$/);

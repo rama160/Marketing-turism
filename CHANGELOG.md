@@ -1,3 +1,9 @@
+### 3.17.1 — 27 October 2026: repair Facebook Group bookmarks not persisting
+- Verified production D1 has no saved Facebook Groups; report user-created groups were not recorded and cannot be recovered without re-entry.
+- Support standard, mobile/tracking and Facebook share/g group links in owner bookmarks. Allow rules pending review while rejecting off-Facebook profile links and ensuring owner acknowledges manual-only interaction.
+- Independent owner-authorized group list endpoint, D1 read-after-write save acknowledgement, visible saved count and manual reload to avoid a full growth research failure concealing a successfully written record.
+- New integration and UI regression tests guard two-group durable storage, duplicate normalization, authentication, archive and error surfaces.
+
 ### 3.17.0 — 27 October 2026: elegant compact NPE Studio workspace
 - Restyle owner dashboard in a modern, compact, light workspace inspired by the structural design of the supplied Ceritexa dashboard reference, adapted to Nusa Penida Experiences' marine branding.
 - Group over 14 operator/marketing pages into six workspace categories; on desktop use clean sidebar, on mobile six-icon bottom navigation and horizontally scrolling contextual submenu.

@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.17.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.17.1")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -160,6 +160,7 @@ for(const pageToIndex of [home,snorkeling,island,west,east]){
 }
 await get("/api/admin/growth",401);
 await get("/api/admin/growth/facebook-groups",401);
+await get("/api/admin/growth/facebook-groups",401);
 await get("/api/admin/growth/facebook-questions",401);
 await get("/api/admin/growth/research",401);
 const researchUnauthorized=await fetch(base+"/api/admin/growth/research",{
@@ -189,4 +190,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.17.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.17.1 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");

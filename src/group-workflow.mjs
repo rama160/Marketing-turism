@@ -5,17 +5,24 @@ const cut=(s,n)=>String(s??"").replace(/\s+/g," ").trim().slice(0,n);
 const HOUR=3600000, DAY=24*HOUR,MAX_AGE=48*HOUR;
 const allowedDestinations=["NUSA_PENIDA","NUSA_LEMBONGAN"];
 const hasIdentity=s=>/@|(?:\+?\d[\d\s()-]{8,}\d)|(?:https?:\/\/)|(?:www\.)|(?:facebook\.com\/profile)/i.test(s);
-function facebookGroupUrl(raw){
- let url;try{url=new URL(String(raw||""))}catch{throw Error("Link grup Facebook tidak valid")}
- if(url.protocol!=="https:"||!["facebook.com","www.facebook.com","m.facebook.com"].includes(url.hostname)
-   ||url.username||url.password||!/^(?:\/groups\/[a-zA-Z0-9_.-]+)\/?$/.test(url.pathname))throw Error("Gunakan link utama grup Facebook publik: https://www.facebook.com/groups/...");
- return "https://www.facebook.com"+url.pathname.replace(/\/$/,"")+"/";
+export function facebookGroupUrl(raw){
+ let url;try{url=new URL(String(raw||"").trim())}catch{throw Error("Link grup Facebook tidak valid")}
+ if(url.protocol!=="https:"||!["facebook.com","www.facebook.com","m.facebook.com","web.facebook.com"].includes(url.hostname)
+  ||url.username||url.password)throw Error("Link grup harus menggunakan https://facebook.com");
+ const path=url.pathname.replace(/\/+$/,"");
+ // Facebook's Copy link frequently includes trailing share parameters, a group post URL,
+ // or a /share/g/<token> link. Resolve only path shapes we know; never trust non-Facebook URLs.
+ const canonical=path.match(/^\/groups\/([a-zA-Z0-9_.-]+)(?:\/(?:posts|permalink)\/[a-zA-Z0-9_.-]+)?$/);
+ if(canonical)return "https://www.facebook.com/groups/"+canonical[1]+"/";
+ const share=path.match(/^\/share\/g\/([a-zA-Z0-9_.-]+)$/);
+ if(share)return "https://www.facebook.com/share/g/"+share[1]+"/";
+ throw Error("Salin tautan grup Facebook (bukan Page atau profil). Link grup /groups/... maupun /share/g/... didukung.");
 }
 function publicGroupPostUrl(raw,groupUrl){
  let url;try{url=new URL(String(raw||""))}catch{throw Error("Link postingan grup tidak valid")}
  const g=new URL(groupUrl),groupId=g.pathname.split("/")[2];
- if(url.protocol!=="https:"||!["facebook.com","www.facebook.com","m.facebook.com"].includes(url.hostname)
-   ||url.username||url.password||!url.pathname.startsWith("/groups/"+groupId+"/")
+ if(url.protocol!=="https:"||!["facebook.com","www.facebook.com","m.facebook.com","web.facebook.com"].includes(url.hostname)
+   ||url.username||url.password||!groupUrl.includes("/groups/")||!url.pathname.startsWith("/groups/"+groupId+"/")
    ||!/^\/groups\/[a-zA-Z0-9_.-]+\/(?:posts\/[a-zA-Z0-9_.-]+|permalink\/\d+)\/?$/.test(url.pathname))
   throw Error("Gunakan tautan postingan pada grup yang telah disimpan");
  return "https://www.facebook.com"+url.pathname.replace(/\/$/,"")+"/";
@@ -37,13 +44,19 @@ export async function saveGroup(db,b){
  const name=cut(b.name,100),group_url=facebookGroupUrl(b.url),rules=cut(b.rules_note,400);
  const destination=cut(b.destination,30);
  if(name.length<5||!allowedDestinations.includes(destination))throw Error("Nama grup atau destinasi tidak valid");
- if(!rules||rules.length<12)throw Error("Catat aturan grup terlebih dahulu");
- if(hasIdentity(rules))throw Error("Catatan aturan tidak boleh memuat identitas atau tautan pribadi");
+ // Allow prospective-group bookmarks before the owner has had a chance to read the rules.
+ // Such groups must stay in RESEARCH and must not be treated as permission to advertise.
+ const ruleNote=rules||"Belum diperiksa — jangan promosi sebelum membaca aturan grup";
+ if(hasIdentity(ruleNote))throw Error("Catatan aturan tidak boleh memuat identitas atau tautan pribadi");
  const existing=await db.prepare("SELECT id FROM growth_facebook_groups WHERE group_url=?").bind(group_url).first();
  if(existing)return {id:existing.id,already_exists:true};
  const id=uuid();await db.prepare("INSERT INTO growth_facebook_groups(id,name,group_url,destination,rules_note) VALUES(?,?,?,?,?)")
-  .bind(id,name,group_url,destination,rules).run();
+  .bind(id,name,group_url,destination,ruleNote).run();
  return {id,already_exists:false};
+}
+export async function listSavedGroups(db){
+ const rows=await db.prepare("SELECT id,name,group_url,destination,rules_note,status,created_at,updated_at FROM growth_facebook_groups WHERE status!='DISMISSED' ORDER BY created_at DESC LIMIT 100").all();
+ return {groups:rows.results,total:rows.results.length};
 }
 export async function changeGroupStatus(db,id,status){
  if(!/^[0-9a-f-]{36}$/i.test(id)||!["RESEARCH","JOINED_MANUALLY","NO_PROMOTION","DISMISSED"].includes(status))
@@ -86,11 +99,11 @@ export async function addGroupQuestion(db,b,now=Date.now()){
  return {id,already_exists:false};
 }
 export async function groupOverview(db){
- const [groups,questions]=await Promise.all([
-  db.prepare("SELECT id,name,group_url,destination,rules_note,status,created_at FROM growth_facebook_groups WHERE status!='DISMISSED' ORDER BY created_at DESC LIMIT 50").all(),
+ const [saved,questions]=await Promise.all([
+  listSavedGroups(db),
   db.prepare("SELECT q.id,q.group_id,q.source_url,q.headline,q.destination,q.theme,q.score,q.suggested_reply,q.status,q.published_at,q.expires_at,q.created_at AS discovered_at,CAST((julianday('now')-julianday(q.published_at))*24 AS INTEGER) AS age_hours FROM growth_facebook_questions q JOIN growth_facebook_groups g ON g.id=q.group_id WHERE q.expires_at>datetime('now') AND q.status!='DISMISSED' AND g.status NOT IN ('NO_PROMOTION','DISMISSED') ORDER BY q.score DESC,q.created_at DESC LIMIT 50").all()
  ]);
- return {groups:groups.results,opportunities:questions.results.map(x=>({...x,source:"FACEBOOK_GROUP_MANUAL"}))};
+ return {groups:saved.groups,opportunities:questions.results.map(x=>({...x,source:"FACEBOOK_GROUP_MANUAL"}))};
 }
 export async function progressGroupQuestion(db,id,status){
  if(!/^[0-9a-f-]{36}$/i.test(id)||!["REVIEW","SHORTLISTED","CONTACTED","RESPONDED","DISMISSED"].includes(status))return null;
