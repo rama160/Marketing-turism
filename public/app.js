@@ -823,3 +823,5 @@ if(token){
  });
 }
 // Admin sessions and API responses are never cached by the guest service worker.
+// Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
