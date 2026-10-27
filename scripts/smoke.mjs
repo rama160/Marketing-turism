@@ -73,7 +73,7 @@ if((dashboard.match(/Lihat Website/g)||[]).length!==1||
 if(page.includes('id="dashWorkspaces"')||page.includes('id="dashPriorities"'))
  throw Error("Owner-only compact dashboard leaked to public tourism site");
 if(!app.includes("quotePayload"))throw Error("Owner admin controller missing");
-if(!app.includes('$('+' ".tabs button" )')||!app.includes('$('+' "[data-go-tab]" )'))throw Error("Owner dashboard navigation listeners missing on live Worker");
+if(!app.includes('document.querySelectorAll(".tabs button").forEach')||!app.includes('document.querySelectorAll("[data-go-tab]").forEach')||!app.includes('document.querySelectorAll("[data-workspace]").forEach'))throw Error("Owner dashboard navigation listeners missing on live Worker");
 const badBootLine=app.split("\n").some(line=>{
  const trimmed=line.trimStart();
  return trimmed.startsWith('$(".tabs button").forEach')||trimmed.startsWith('$("[data-go-tab]").forEach');
