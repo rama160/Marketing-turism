@@ -67,7 +67,7 @@ test("separating website does not change critical routes, operator prices, or ma
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }
- assert.ok(worker.includes("owner(req,env)"));
+ assert.ok(worker.includes("ownerAuthorized(req,env,db)"));
  assert.ok(file("dashboard.html").includes("Keluar"));
  const publicPage=file("index.html");
  assert.ok(publicPage.includes("https://wa.me/628561752525"));
