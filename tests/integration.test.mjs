@@ -1346,6 +1346,10 @@ test("owner-assisted Facebook Groups allow only reviewed PUBLIC, recent, anonymo
  assert.equal(malformed.httpStatus,422);
  const added=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true});
  assert.equal(added.httpStatus,201);assert.ok(added.id);
+ assert.equal(added.saved,true);
+ assert.equal(added.group?.name,"Bali Travel Public");
+ const fromApi=await request("/api/admin/growth/facebook-groups");
+ assert.equal(fromApi.total,1);assert.equal(fromApi.groups[0].name,"Bali Travel Public");
  const addedAgain=await request("/api/admin/growth/facebook-groups","POST",{name:"Bali Travel Public",url:"https://www.facebook.com/groups/balitravel",destination:"NUSA_LEMBONGAN",rules_note:"Helpful posts allowed; no mass promotion.",owner_confirmed:true});
  assert.equal(addedAgain.httpStatus,200);assert.equal(addedAgain.id,added.id);
  const current=new Date(Date.now()-3600000).toISOString();
@@ -1392,6 +1396,31 @@ test("owner-assisted Facebook Groups allow only reviewed PUBLIC, recent, anonymo
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,0);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_facebook_questions").get().n,1);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_discovery_runs WHERE source LIKE 'FACEBOOK_GROUP%'").get().n,0);
+ sqlite.close();
+});
+test("Facebook group bookmarks accept canonical, shared and tracking-link formats and persist without rules",async()=>{
+ const {request,sqlite}=fixture();
+ const create=async(name,url,destination="NUSA_PENIDA")=>request("/api/admin/growth/facebook-groups","POST",{name,url,destination,owner_confirmed:true});
+ const first=await create("Penida Local Group","https://m.facebook.com/groups/nusapenidatravel/?mibextid=ZbWKwL");
+ assert.equal(first.httpStatus,201);assert.equal(first.saved,true);
+ assert.equal(first.group.group_url,"https://www.facebook.com/groups/nusapenidatravel/");
+ assert.match(first.group.rules_note,/Belum diperiksa/);
+ const dedup=await create("Penida Local Group","https://www.facebook.com/groups/nusapenidatravel/posts/12345?ref=share");
+ assert.equal(dedup.httpStatus,200);assert.equal(dedup.already_exists,true);
+ const shared=await create("Lembongan Travel Group","https://www.facebook.com/share/g/AbCdEfGh123/?mibextid=K35XfP","NUSA_LEMBONGAN");
+ assert.equal(shared.httpStatus,201);assert.equal(shared.group.group_url,"https://www.facebook.com/share/g/AbCdEfGh123/");
+ const listed=await request("/api/admin/growth/facebook-groups");
+ assert.equal(listed.total,2);
+ assert.ok(listed.groups.some(x=>x.name==="Lembongan Travel Group"));
+ assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM growth_facebook_groups").get().n,2);
+ const invalid=await create("Wrong profile","https://www.facebook.com/profile.php?id=100");
+ assert.equal(invalid.httpStatus,422);
+ const missingPermissions=await request("/api/admin/growth/facebook-groups","GET",undefined,false);
+ assert.equal(missingPermissions.httpStatus,401);
+ const archived=await request("/api/admin/growth/facebook-groups/"+first.id+"/status","PATCH",{status:"DISMISSED",owner_confirmed:true});
+ assert.equal(archived.httpStatus,200);
+ const active=await request("/api/admin/growth/facebook-groups");
+ assert.equal(active.total,1);assert.equal(active.groups[0].id,shared.id);
  sqlite.close();
 });
 test("Facebook Groups travel deadline is explicitly expired and cannot be manually relabeled fresh",async()=>{
