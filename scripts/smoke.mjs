@@ -12,8 +12,8 @@ if(health.version!=="3.13.0")throw Error("Cloudflare release version mismatch: "
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
- const denied=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({}),signal:AbortSignal.timeout(20000)});
- if(denied.status!==403)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+denied.status);
+ const deniedGuestWithoutTurnstile=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({}),signal:AbortSignal.timeout(20000)});
+ if(deniedGuestWithoutTurnstile.status!==403)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+deniedGuestWithoutTurnstile.status);
  const landingMarkup=await get("/");
  if(!landingMarkup.includes('data-action="lead_enquiry"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
