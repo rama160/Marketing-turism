@@ -13,6 +13,7 @@ import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEn
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
+import {saveGroup,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
 const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
 const bad=(message,status=400)=>json({error:message},status);
 const str=(x,n=160)=>String(x??"").trim().slice(0,n);
@@ -275,6 +276,34 @@ async function route(req,env,ctx){
   const b=await parse(req);
   if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
   return json(await researchBuyerQuestions(db,env));
+ }
+ if(path==="/api/admin/growth/facebook-groups"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  try{
+   const created=await saveGroup(db,b);
+   await audit(db,"facebook_group",created.id,created.already_exists?"REOPENED":"OWNER_ADDED");
+   return json(created,created.already_exists?200:201);
+  }catch(e){return bad(String(e.message),422);}
+ }
+ const groupStatusPath=path.match(/^\/api\/admin\/growth\/facebook-groups\/([^/]+)\/status$/);
+ if(groupStatusPath&&method==="PATCH"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  try{
+   const updated=await changeGroupStatus(db,groupStatusPath[1],str(b.status,30));
+   await audit(db,"facebook_group",updated.id,"OWNER_ACTION",{status:updated.status});
+   return json(updated);
+  }catch(e){return bad(String(e.message),422);}
+ }
+ if(path==="/api/admin/growth/facebook-questions"&&method==="POST"){
+  const b=await parse(req);
+  if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik diperlukan",403);
+  try{
+   const created=await addGroupQuestion(db,b);
+   await audit(db,"facebook_group_question",created.id,created.already_exists?"DUPLICATE":"OWNER_PARAPHRASED");
+   return json(created,created.already_exists?200:201);
+  }catch(e){return bad(String(e.message),422);}
  }
  if(path==="/api/admin/growth/partners"&&method==="POST"){
   const b=await parse(req);
