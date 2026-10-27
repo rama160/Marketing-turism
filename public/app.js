@@ -1,12 +1,12 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let token=sessionStorage.getItem("tourAdmin")||"",data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],growth:null,market:[]},lastMarketing="",lastSales="";
+let ownerSignedIn=false,data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],growth:null,market:[]},lastMarketing="",lastSales="";
 const say=(id,msg,success=false)=>{const el=$(id);if(el){el.textContent=msg;el.style.color=success?"#167058":"#a24836"}};
 async function api(path,method="GET",payload,admin=true){
  const headers={"accept":"application/json"};if(payload!==undefined)headers["content-type"]="application/json";
- if(admin&&token)headers.authorization="Bearer "+token;
- const res=await fetch("/api/"+path,{method,headers,body:payload===undefined?undefined:JSON.stringify(payload)});
+ // Auth uses a persistent HttpOnly same-origin session cookie; never send the raw admin token on ordinary API calls.
+ const res=await fetch("/api/"+path,{method,headers,credentials:"same-origin",cache:"no-store",body:payload===undefined?undefined:JSON.stringify(payload)});
  const text=await res.text();let j;try{j=JSON.parse(text)}catch{throw Error("Respons server bukan JSON ("+res.status+")")}
  if(!res.ok)throw Error(j.error||"Server "+res.status);return j;
 }
@@ -33,9 +33,9 @@ const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.nam
 function changeTab(name){
  const page=document.getElementById("tab-"+name);if(!page)return;
  sessionStorage.setItem("npe-dashboard-tab",name);
- if(name==="whatsapp"&&token)void loadWhatsAppInbox();
- if(name==="website"&&token)void loadSiteEditor();
- if(name==="summary"&&token)void loadQuickEditor();
+ if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
+ if(name==="website"&&ownerSignedIn)void loadSiteEditor();
+ if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  $$(".tabs button").forEach(b=>{const active=b.dataset.tab===name;b.classList.toggle("current",active);b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");});
  $$(".tabcontent").forEach(el=>el.hidden=el!==page);
  const title=$("#dashCurrentPage"),current=$(".tabs button.current");if(title)title.textContent=current?.textContent||"Dashboard";
@@ -67,7 +67,7 @@ function waRenderThread(phone,messages){
  $("#waSendApproved").disabled=!waSendingEnabled;
 }
 async function loadWhatsAppInbox(){
- if(!token)return;
+ if(!ownerSignedIn)return;
  try{
   const result=await api("admin/whatsapp");
   const cfg=result.connection||{};
@@ -120,12 +120,39 @@ $("#waSendApproved").onclick=async()=>{
  finally{$("#waSendApproved").disabled=!waSendingEnabled||!waSelectedPhone;}
 };
 
-$("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;$("#lock").hidden=true;say("#loginMessage","Sesi admin ditutup.",true)};
+async function enterOwnerDashboard(){
+ ownerSignedIn=true;
+ $("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;
+ changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");
+ await refresh();
+}
+$("#lock").onclick=async()=>{
+ const button=$("#lock");button.disabled=true;
+ try{
+  await api("admin/session/logout","POST",{});
+  ownerSignedIn=false;
+  sessionStorage.removeItem("tourAdmin");
+  $("#adminContent").hidden=true;$("#unlockPanel").hidden=false;button.hidden=true;
+  $("#adminToken").value="";
+  data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],growth:null,market:[]};
+  say("#loginMessage","Anda sudah logout. Masukkan admin token untuk login kembali.",true);
+ }catch(err){say("#adminFeedback","Logout belum berhasil: "+err.message+". Sesi tidak diubah.");}
+ finally{button.disabled=false;}
+};
 const witaToday=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
 $("#quoteDate").min=witaToday;$("#marketDate").value=witaToday;$("#marketDate").max=witaToday;
 $("#unlock").onclick=async()=>{
- const value=$("#adminToken").value.trim();if(value.length<24){say("#loginMessage","Token minimal 24 karakter");return;}
- token=value;try{await api("admin/summary");sessionStorage.setItem("tourAdmin",token);$("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");say("#adminFeedback","Dashboard tersambung.",true);await refresh();}catch(err){token="";say("#loginMessage",err.message)}
+ const value=$("#adminToken").value.trim();
+ if(value.length<24){say("#loginMessage","Token minimal 24 karakter");return;}
+ const button=$("#unlock");button.disabled=true;
+ try{
+  await api("admin/session/login","POST",{token:value});
+  $("#adminToken").value="";
+  sessionStorage.removeItem("tourAdmin");
+  say("#adminFeedback","Login berhasil. Sesi akan dipulihkan saat aplikasi dibuka kembali.",true);
+  await enterOwnerDashboard();
+ }catch(err){$("#adminToken").value="";say("#loginMessage",err.message);}
+ finally{button.disabled=false;}
 };
 async function refresh(){
  try{
@@ -269,7 +296,7 @@ $("#ownerPhotoForm").onsubmit=async e=>{
   form.append("title",$("#ownerPhotoTitle").value.trim());
   form.append("activity_id",$("#ownerPhotoActivity").value);
   form.append("rights_confirmed","true");
-  const response=await fetch("/api/admin/photos",{method:"POST",headers:{authorization:"Bearer "+token},body:form});
+  const response=await fetch("/api/admin/photos",{method:"POST",credentials:"same-origin",cache:"no-store",body:form});
   const json=await response.json();
   if(!response.ok)throw Error(json.error||"Upload gagal ("+response.status+")");
   e.target.reset();
@@ -470,7 +497,7 @@ function renderMarketingIntelligence(){
 }
 async function loadMetaDiagnostic(){
  const target=$("#metaDiagnosticResults");
- if(!target||!token)return;
+ if(!target||!ownerSignedIn)return;
  try{
   const status=await api("admin/marketing/meta/status"),latest=status.latest;
   if(!latest){target.textContent="Belum ada hasil tersimpan. Pemeriksaan otomatis pertama berjalan pada Cron harian 10.00 WITA. Anda dapat menekan Uji koneksi sekarang.";return;}
@@ -730,7 +757,7 @@ const quickFallback={
  "id:hero.description":"Bayangkan birunya laut, megahnya tebing, dan kesempatan bertemu pari manta di habitat alaminya. Jelajahi keindahan Nusa Penida dalam perjalanan yang dirancang sesuai gaya liburan Anda."
 };
 async function loadQuickEditor(){
- if(!token)return;
+ if(!ownerSignedIn)return;
  try{
   const result=await api("admin/site-content");
   quickRecords=new Map((result.items||[]).map(item=>[item.locale+":"+item.key,item]));
@@ -809,19 +836,28 @@ $("#cmsPublish").onclick=async()=>{
  finally{button.disabled=false;}
 };
 
-if(token){
- api("admin/summary").then(()=>{
-  $("#unlockPanel").hidden=true;
-  $("#adminContent").hidden=false;
-  $("#lock").hidden=false;
-  changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");
-  return refresh();
- }).catch(()=>{
-  token="";sessionStorage.removeItem("tourAdmin");
-  $("#unlockPanel").hidden=false;$("#adminContent").hidden=true;$("#lock").hidden=true;
-  say("#loginMessage","Sesi berakhir; masukkan token admin lagi.");
- });
-}
+// Automatically restore durable login even after browser/app restart. No admin token stored in localStorage.
+(async function restoreOwnerSession(){
+ try{
+  await api("admin/session");
+  sessionStorage.removeItem("tourAdmin");
+  await enterOwnerDashboard();
+ }catch(err){
+  // One-time migration from the previous tab-only version; discard the stored secret immediately.
+  const legacy=sessionStorage.getItem("tourAdmin");
+  sessionStorage.removeItem("tourAdmin");
+  if(legacy){
+   try{
+    await api("admin/session/login","POST",{token:legacy});
+    await enterOwnerDashboard();
+    return;
+   }catch(_){/* User can authenticate with an updated token. */}
+  }
+  ownerSignedIn=false;$("#unlockPanel").hidden=false;$("#adminContent").hidden=true;$("#lock").hidden=true;
+  if(!/Akses owner|Server 401|authenticated/i.test(err.message))
+   say("#loginMessage","Koneksi atau sesi belum tersedia. Periksa internet lalu coba kembali.");
+ }
+})();
 // Admin sessions and API responses are never cached by the guest service worker.
 // Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
