@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.16.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.17.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -62,6 +62,16 @@ if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"
  !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
  guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
  throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
+// NPE Studio must keep a single website button while preserving the owner workspace.
+if((dashboard.match(/Lihat Website/g)||[]).length!==1||
+ !dashboard.includes('id="dashWorkspaces"')||!dashboard.includes('class="dashBottomNav"')||
+ !dashboard.includes('id="dashPriorities"')||!dashboard.includes('id="tab-analytics"')||
+ !dashboard.includes('data-workspace="growth"')||!dashboard.includes('data-workspace="settings"')||
+ !app.includes('function initCompactPanels')||!app.includes('loadDashboardAnalytics')||
+ !dashboardStyles.includes(".dashCompactShortcuts")||!dashboardStyles.includes(".dashPaneNav"))
+ throw Error("Compact NPE Studio dashboard, mobile navigation, or single website shortcut not live");
+if(page.includes('id="dashWorkspaces"')||page.includes('id="dashPriorities"'))
+ throw Error("Owner-only compact dashboard leaked to public tourism site");
 if(!app.includes("quotePayload"))throw Error("Owner admin controller missing");
 if(!app.includes('$('+' ".tabs button" )')||!app.includes('$('+' "[data-go-tab]" )'))throw Error("Owner dashboard navigation listeners missing on live Worker");
 const badBootLine=app.split("\n").some(line=>{
@@ -179,4 +189,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.16.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.17.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
