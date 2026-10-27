@@ -88,20 +88,30 @@ function initCompactPanels(){
  const layouts={
   growth:["Riset peluang","Percakapan & mitra","Facebook Groups","Funnel"],
   campaigns:["Pustaka foto","Draf & persetujuan","Jadwal konten","Analisis konten"],
-  whatsapp:["Koneksi WhatsApp","Kotak masuk","Balasan cepat"]
+  whatsapp:["Koneksi WhatsApp","Kotak masuk","Balasan cepat"],
+  operators:["Tambah operator","Daftar mitra"],
+  rates:["Kelola tarif","Riwayat tarif"],
+  quotes:["Buat penawaran","Daftar penawaran"],
+  market:["Catat harga","Referensi pasar"],
+  website:["Editor konten","Pratinjau website"],
+  marketing:["Buat draf","Hasil draf"]
  };
  for(const [tabName,titles] of Object.entries(layouts)){
   const panel=document.getElementById("tab-"+tabName);
   if(!panel?.children?.length || panel.dataset.compactReady==="true")continue;
-  const children=Array.from(panel.children).filter(el=>el.nodeType===1);
+  const direct=Array.from(panel.children).filter(el=>el.nodeType===1);
+  const split=direct.length===1&&direct[0].classList?.contains("split")?direct[0]:null;
+  const container=split||panel;
+  const children=Array.from(container.children).filter(el=>el.nodeType===1);
   if(children.length<2)continue;
+  if(split)split.classList.add("dashCompactSplit");
   const nav=document.createElement("div");
   nav.className="dashPaneNav";nav.setAttribute("aria-label","Bagian "+tabName);
   const wrappers=[];
   children.forEach((child,i)=>{
    const wrap=document.createElement("div");
    wrap.className="dashPane";wrap.dataset.pane=String(i);
-   wrap.appendChild(child);panel.appendChild(wrap);wrappers.push(wrap);
+   wrap.appendChild(child);container.appendChild(wrap);wrappers.push(wrap);
    const btn=document.createElement("button");
    btn.type="button";btn.className="dashPaneBtn";btn.textContent=titles[i]||"Bagian "+(i+1);
    btn.dataset.pane=String(i);btn.setAttribute("aria-pressed","false");
