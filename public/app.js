@@ -52,14 +52,14 @@ function changeTab(name){
  if(name==="website"&&ownerSignedIn)void loadSiteEditor();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
- $(".tabs button").forEach(b=>{
+ document.querySelectorAll(".tabs button").forEach(b=>{
   const active=b.dataset.tab===name;
   b.classList.toggle("current",active);
   b.hidden=b.dataset.group!==undefined&&b.dataset.group!==group;
   b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");
  });
- $(".tabcontent").forEach(el=>el.hidden=el!==page);
- $("[data-workspace]").forEach(b=>{
+ document.querySelectorAll(".tabcontent").forEach(el=>el.hidden=el!==page);
+ document.querySelectorAll("[data-workspace]").forEach(b=>{
   const active=b.dataset.workspace===group;
   b.classList.toggle("current",active);b.setAttribute("aria-current",active?"page":"false");
  });
@@ -76,9 +76,9 @@ const dashMenuToggle=$("#dashMenuToggle");
 if(dashMenuToggle)dashMenuToggle.onclick=()=>{
  const open=$("#dashNavigation").classList.toggle("open");dashMenuToggle.setAttribute("aria-expanded",String(open));
 };
-$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
-$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
-$("[data-workspace]").forEach(button=>button.addEventListener("click",()=>{
+document.querySelectorAll(".tabs button").forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
+document.querySelectorAll("[data-go-tab]").forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
+document.querySelectorAll("[data-workspace]").forEach(button=>button.addEventListener("click",()=>{
  const group=NPE_WORKSPACES[button.dataset.workspace];
  if(group)changeTab(group.defaultTab);
 }));
