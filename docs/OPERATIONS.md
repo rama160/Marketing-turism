@@ -1,3 +1,11 @@
+## Public Website vs Dashboard — 27 Oct 2026
+- Website for guests: `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/`. This contains tourism offers, photos, bilingual CMS and consented guest enquiry; NO link or admin login is visible to visitors.
+- Agent owner dashboard: `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/dashboard.html`. Bookmark this on Android and desktop; app installation uses this as the default home. Use Lihat Website to open public site without losing current dashboard session.
+- If owner token was already set in sessionStorage, dashboard restores the session upon refresh. Otherwise show login immediately. Only authenticated API routes return customer, supplier or business data. On Logout, clear existing session.
+- On mobile use Menu navigasi to switch functional modules without scrolling a monolithic combined tourism landing page.
+- Static guest SW caches public assets only. Neither admin JS nor private dashboard HTML nor guest/booking/API data is cached for offline use; private dashboard needs internet to work.
+- Public smoke asserts `/dashboard.html` exists with admin modules while `/` contains none. Confirm genuine browser Turnstile submission separately with owner-authorized test data, without inventing leads or bookings.
+
 ## 27 October 2026 — Nusa Lembongan and assisted Facebook Groups
 Operator workflow: dashboard → Akuisisi Pelanggan → research link Nusa Penida/Nusa Lembongan groups → owner manually checks public group rules and joins where permitted → owner writes a minimal anonymous question summary and original post time (max 48h) with public permalink → agent scores and drafts transparent reply → owner manually responds, then marks contacted/responses. Never import private group posts, accounts, contact lists or members. Meta Groups API is not available for external Group publishing/reading; approved own Page and Instagram connections remain distinct.
 Lembongan is a destination **for prospect research** and should not be represented as an already confirmed tour product. Verify operator, rates, boat transfers, licenses and safety and agree pricing before taking a Lembongan booking or deposit. Preserve pricing controls for Nusa Penida; do not apply existing Penida tariffs to Lembongan.
