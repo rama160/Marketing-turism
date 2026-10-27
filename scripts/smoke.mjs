@@ -54,7 +54,7 @@ const guestScript=await get("/guest.js"),dashboardStyles=await get("/dashboard.c
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
 if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
- !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/"')||
+ !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
  throw Error("Standalone agent dashboard or navigation missing");
 if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
