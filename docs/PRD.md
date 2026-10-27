@@ -1,3 +1,9 @@
+## Website/dashboard product boundary — 27 October 2026
+- Public Nusa Penida Experiences website must not show admin login, supplier nets, campaign management, analytics or dashboard link anywhere; visitors can only browse and submit real opt-in requests/WhatsApp contacts.
+- Agent application must open the /dashboard.html route directly, show a branded owner sign-in if no token is available, and provide a website view control.
+- Logged-in owner sees clean interactive multi-page operations with a stable sidebar (mobile hamburger), homepage shortcuts, data-backed KPIs, persistent selected section across refresh, logout and original controlled business/marketing actions.
+- Preserve entire CRUD/lead/sales/WhatsApp integration via existing authenticated backend, not a second duplicate service, and do not expose API data in public caching or HTML.
+
 ## Owner-assisted group acquisition & Nusa Lembongan — Oct 27
 - Add Nusa Lembongan and optional Nusa Ceningan intent to the discovery source/query and dashboard distinct from Penida.
 - Owner can save public Facebook Group links, summarized group rules, and manual join status. Owner can supply publicly available group post URL, its original publication time and a short de-identified question summary. Agent scores and drafts a factual, non-price reply that discloses affiliation. Owner alone chooses and performs all interactions in Facebook.
