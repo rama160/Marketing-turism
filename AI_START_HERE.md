@@ -1,3 +1,6 @@
+## 27 OCT 2026 — DEPLOYMENT VERIFICATION ORDER
+- `.github/workflows/live-smoke.yml` runs only when `Deploy Tourism Cloudflare (manual)` completes successfully (or explicit `workflow_dispatch`). Do not restore parallel push smoke: it runs before a deployment and gives false version mismatch. CI and 3-account Cron isolation unchanged.
+
 ## 27 OCT 2026 — NUSA LEMBONGAN + OWNER-GUIDED FACEBOOK GROUPS (v3.14.0)
 - The user owns **Nusa Penida Experiences** brand; destination acquisition now includes **Nusa Penida and Nusa Lembongan**, with Nusa Ceningan grouped as Lembongan travel intent. Brand/legal entity names and existing published Nusa Penida products, prices, operators, booking modes, and daily schedules remain unchanged.
 - Nusa Lembongan **RESEARCH ONLY / NON-BINDING ENQUIRIES**. No verified Lembongan tour or snorkel rates, supplier contract, group capacity, transfer route, or booking availability. NEVER reuse Penida prices/operators for Lembongan. Do not generate or approve binding quotes, prices, payments or published sellable Lembongan catalog until owner verifies actual operator and supplier agreements.
