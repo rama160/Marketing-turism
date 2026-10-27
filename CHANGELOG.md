@@ -1,3 +1,6 @@
+### 3.14.0 CI follow-up — 27 October 2026
+- Fix live smoke release race: run smoke after successful deployment using GitHub Actions workflow_run, not simultaneously on push. Owner may also dispatch smoke manually. Each smoke checks out deployed commit SHA; Spenva deployments unaffected.
+
 ### 3.14.0 — 27 October 2026: Facebook Groups assisted outreach + Nusa Lembongan
 - Expand acquisition research topics and manual discovery hubs to Nusa Lembongan/Ceningan, without inventing supplier costs or introducing an unverified bookable product.
 - Add owner-operated public Facebook Group watchlist and manually summarized post ingestion. Check group rules, public-post link, verified original published timestamp and 48-hour expiry; prevent identity/contact data from being stored. Suggest transparent informative replies, never automate group joins, group posts, comments or DMs.
