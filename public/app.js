@@ -24,19 +24,28 @@ function updateVariants(form,selector){
  const count=form.querySelector('[name=guests]'),max=item==="ISLAND_TOUR_CAR"?7:20;
  if(count){count.max=String(max);if(+count.value>max)count.value=max;}
 }
-for(const [formId,selector] of [["#leadForm","#leadVariant"],["#quoteForm","#quoteVariant"],["#rateForm","#rateVariant"]]){
+for(const [formId,selector] of [["#quoteForm","#quoteVariant"],["#rateForm","#rateVariant"]]){
  const form=$(formId);
  form.addEventListener("change",e=>{if(["activity_id","item_id","booking_mode"].includes(e.target.name))updateVariants(form,selector);});
  updateVariants(form,selector);
 }
 const options=(arr,label)=>arr.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.title||label||x.id)+'</option>').join("");
 function changeTab(name){
-  if(name==="whatsapp"&&token)loadWhatsAppInbox();
-  if(name==="website")loadSiteEditor();
-  if(name==="summary")loadQuickEditor();
- $$(".tabs button").forEach(b=>b.classList.toggle("current",b.dataset.tab===name));
- $$(".tabcontent").forEach(el=>el.hidden=el.id!=="tab-"+name);
+ const page=document.getElementById("tab-"+name);if(!page)return;
+ sessionStorage.setItem("npe-dashboard-tab",name);
+ if(name==="whatsapp"&&token)void loadWhatsAppInbox();
+ if(name==="website"&&token)void loadSiteEditor();
+ if(name==="summary"&&token)void loadQuickEditor();
+ $$(".tabs button").forEach(b=>{const active=b.dataset.tab===name;b.classList.toggle("current",active);b.setAttribute("aria-selected",String(active));b.setAttribute("tabindex",active?"0":"-1");});
+ $$(".tabcontent").forEach(el=>el.hidden=el!==page);
+ const title=$("#dashCurrentPage"),current=$(".tabs button.current");if(title)title.textContent=current?.textContent||"Dashboard";
+ const menu=$("#dashNavigation"),toggle=$("#dashMenuToggle");menu?.classList.remove("open");toggle?.setAttribute("aria-expanded","false");
+ window.scrollTo?.({top:0,behavior:"instant"});
 }
+const dashMenuToggle=$("#dashMenuToggle");
+if(dashMenuToggle)dashMenuToggle.onclick=()=>{
+ const open=$("#dashNavigation").classList.toggle("open");dashMenuToggle.setAttribute("aria-expanded",String(open));
+};
 $$( ".tabs button" ).forEach(el=>el.addEventListener("click",()=>changeTab(el.dataset.tab)));
 $$( "[data-go-tab]" ).forEach(button=>button.addEventListener("click",()=>changeTab(button.dataset.goTab)));
 $$("[data-wa-copy]").forEach(button=>button.addEventListener("click",async()=>{
@@ -111,28 +120,12 @@ $("#waSendApproved").onclick=async()=>{
  finally{$("#waSendApproved").disabled=!waSendingEnabled||!waSelectedPhone;}
 };
 
-$("#adminToggle").onclick=()=>{$("#adminArea").hidden=false;$("#adminArea").scrollIntoView({behavior:"smooth"});};
-$("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;say("#loginMessage","Sesi admin ditutup.",true)};
-$("#leadDate").min=new Date().toISOString().slice(0,10);$("#quoteDate").min=$("#leadDate").min;$("#marketDate").value=$("#leadDate").min;$("#marketDate").max=$("#leadDate").min;$("#leadForm [name=campaign_id]").value=(new URL(location.href).searchParams.get("campaign")||"").slice(0,100);
-async function publicReadiness(){
- try{const readiness=await api("public/readiness","GET",undefined,false);
-  const enabled=readiness.accepting_leads===true;
-  $("#leadSubmit").disabled=!enabled;
-  $("#publicBusinessContact").textContent=readiness.business_contact?("Kontak resmi usaha: "+readiness.business_contact):"Kontak resmi usaha belum dipublikasikan.";
-  if(!enabled)say("#leadFeedback","Penerimaan permintaan guest belum aktif. Agen sedang menyiapkan informasi usaha dan keamanan.");
-  else say("#leadFeedback","Form siap menerima permintaan. Mohon selesaikan verifikasi anti-bot.",true);
- }catch(e){$("#leadSubmit").disabled=true;say("#leadFeedback","Layanan belum siap menerima permintaan.");}
-}
-publicReadiness();
-$("#leadForm").onsubmit=async e=>{
- e.preventDefault();const b=Object.fromEntries(new FormData(e.target));
- b.guests=Number(b.guests);b.consent=$('#leadForm [name=consent]').checked;b.website=b.website||"";
- try{const res=await api("public/leads","POST",b,false);say("#leadFeedback","Permintaan diterima. Nomor referensi: "+res.reference,true);e.target.reset();}
- catch(err){say("#leadFeedback",err.message+" — Silakan hubungi agen melalui kontak resmi yang diberikan.")}
-};
+$("#lock").onclick=()=>{token="";sessionStorage.removeItem("tourAdmin");$("#adminContent").hidden=true;$("#unlockPanel").hidden=false;$("#lock").hidden=true;say("#loginMessage","Sesi admin ditutup.",true)};
+const witaToday=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+$("#quoteDate").min=witaToday;$("#marketDate").value=witaToday;$("#marketDate").max=witaToday;
 $("#unlock").onclick=async()=>{
  const value=$("#adminToken").value.trim();if(value.length<24){say("#loginMessage","Token minimal 24 karakter");return;}
- token=value;try{await api("admin/summary");sessionStorage.setItem("tourAdmin",token);$("#unlockPanel").hidden=true;$("#adminContent").hidden=false;say("#adminFeedback","Dashboard tersambung.",true);await refresh();}catch(err){token="";say("#loginMessage",err.message)}
+ token=value;try{await api("admin/summary");sessionStorage.setItem("tourAdmin",token);$("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");say("#adminFeedback","Dashboard tersambung.",true);await refresh();}catch(err){token="";say("#loginMessage",err.message)}
 };
 async function refresh(){
  try{
@@ -227,7 +220,7 @@ $("#businessForm").onsubmit=async e=>{
  b.privacy_approved=e.target.querySelector('[name=privacy_approved]').checked;
  b.refund_policy_approved=e.target.querySelector('[name=refund_policy_approved]').checked;
  if(!confirm("Konfirmasi data resmi usaha dan persetujuan kebijakan sesuai kenyataan?"))return;
- try{await api("admin/business","PATCH",b);await refresh();await publicReadiness();say("#adminFeedback","Data usaha disimpan; penerimaan guest masih memerlukan Turnstile dan persetujuan aktivasi.",true)}
+ try{await api("admin/business","PATCH",b);await refresh();say("#adminFeedback","Pengaturan usaha disimpan. Form tamu publik memakai Turnstile dan tetap meminta persetujuan.",true)}
  catch(e){say("#adminFeedback",e.message)}
 };
 function renderOwnerPhotos(){
@@ -817,17 +810,18 @@ $("#cmsPublish").onclick=async()=>{
 };
 
 if(token){
- $("#adminArea").hidden=false;
  api("admin/summary").then(()=>{
   $("#unlockPanel").hidden=true;
   $("#adminContent").hidden=false;
+  $("#lock").hidden=false;
+  changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");
   return refresh();
  }).catch(()=>{
   token="";sessionStorage.removeItem("tourAdmin");
-  $("#unlockPanel").hidden=false;$("#adminContent").hidden=true;
+  $("#unlockPanel").hidden=false;$("#adminContent").hidden=true;$("#lock").hidden=true;
   say("#loginMessage","Sesi berakhir; masukkan token admin lagi.");
  });
 }
-
-// Offline static shell only; no API, guest data or credentials are cached.
+// Admin sessions and API responses are never cached by the guest service worker.
+// Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});

@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.14.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.15.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -48,8 +48,21 @@ for(const id of imageChecks){
 }
 const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
+const dashboard=await get("/dashboard.html");
 const app=await get("/app.js");
-if(!app.includes("quotePayload"))throw Error("Frontend application missing");
+const guestScript=await get("/guest.js"),dashboardStyles=await get("/dashboard.css");
+const manifest=JSON.parse(await get("/manifest.webmanifest"));
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js"')||
+ !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
+ !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
+ !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
+ throw Error("Standalone agent dashboard or navigation missing");
+if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
+ page.includes('Dashboard agen')||page.includes('src="/app.js"')||
+ !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
+ guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
+ throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
+if(!app.includes("quotePayload"))throw Error("Owner admin controller missing");
 if(!app.includes('$('+' ".tabs button" )')||!app.includes('$('+' "[data-go-tab]" )'))throw Error("Owner dashboard navigation listeners missing on live Worker");
 const badBootLine=app.split("\n").some(line=>{
  const trimmed=line.trimStart();
@@ -58,7 +71,7 @@ const badBootLine=app.split("\n").some(line=>{
 if(badBootLine)throw Error("Owner dashboard broken singleton selector remains");
 // v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
 const home=await get("/");
-if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!home.includes('id="cmsPublish"')||!home.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!home.includes('id="quickSave"'))
+if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!dashboard.includes('id="cmsPublish"')||!dashboard.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!dashboard.includes('id="quickSave"'))
  throw Error("New logo/language/editor missing on live website");
 // Visitor should see marketing prices, never the owner supplier-net breakdown.
 for(const key of ["price.snorkeling","price.island","price.west","price.east"]){
@@ -85,13 +98,13 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v25"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v26"))throw Error("PWA asset cache did not bump");
 // Guest contact: primary click-to-chat must not be confused with public catalog.
 const number="628561752525";
 const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
 if(!home.includes('id="whatsapp"')||!home.includes('class="wa-floating"')||!home.includes(contact)||!home.includes(catalog))throw Error("Public WhatsApp contact links missing");
-if(!home.includes('id="tab-whatsapp"')||!home.includes('data-tab="whatsapp"'))throw Error("Owner WhatsApp reply workspace missing");
-if(!home.includes("Koneksi otomatis ke inbox WhatsApp")||!home.includes("Tidak ada pengiriman otomatis"))throw Error("WhatsApp connection falsely presented as active");
+if(!dashboard.includes('id="tab-whatsapp"')||!dashboard.includes('data-tab="whatsapp"'))throw Error("Owner WhatsApp reply workspace missing");
+if(!dashboard.includes("Koneksi otomatis ke inbox WhatsApp")||!dashboard.includes("Tidak ada pengiriman otomatis"))throw Error("WhatsApp connection falsely presented as active");
 if(!langJS.includes('encodeURIComponent(message)')||!langJS.includes('View WhatsApp Catalog'))throw Error("Guest WhatsApp language handling absent");
 for(const page of [snorkeling,island,west,east]){
  if(!page.includes('data-whatsapp-chat')||!page.includes(catalog))throw Error("Travel detail WhatsApp contact missing");
@@ -108,10 +121,10 @@ if(webhookProbe.status===503){
 await get("/api/admin/whatsapp",401);
 const waSendWithoutOwner=await fetch(base+"/api/admin/whatsapp/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({phone:"628561752525",message:"unauthorized",owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
 if(waSendWithoutOwner.status!==401)throw Error("Guest could call WhatsApp sending route: "+waSendWithoutOwner.status);
-if(!home.includes('id="waThreadList"')||!home.includes('id="waSendApproved" disabled')||!app.includes('waSendingEnabled=cfg.sending_enabled===true'))throw Error("Owner-only WhatsApp inbox management UI missing");
-if(!home.includes('id="marketingMetricsForm"')||!app.includes('admin/marketing/intelligence'))throw Error("Owner learning dashboard v3.8.0 missing");
-if(!home.includes('id="prepareMarketingWeek"')||!app.includes('admin/marketing/prepare-week'))throw Error("Owner organic marketing autopilot UI missing");
-if(!home.includes('id="waSetupGuideId"')||!home.includes('Panduan Hubungkan WhatsApp (Bahasa Indonesia)'))throw Error("Owner Indonesian WhatsApp guide link missing on live site");
+if(!dashboard.includes('id="waThreadList"')||!dashboard.includes('id="waSendApproved" disabled')||!app.includes('waSendingEnabled=cfg.sending_enabled===true'))throw Error("Owner-only WhatsApp inbox management UI missing");
+if(!dashboard.includes('id="marketingMetricsForm"')||!app.includes('admin/marketing/intelligence'))throw Error("Owner learning dashboard v3.8.0 missing");
+if(!dashboard.includes('id="prepareMarketingWeek"')||!app.includes('admin/marketing/prepare-week'))throw Error("Owner organic marketing autopilot UI missing");
+if(!dashboard.includes('id="waSetupGuideId"')||!dashboard.includes('Panduan Hubungkan WhatsApp (Bahasa Indonesia)'))throw Error("Owner Indonesian WhatsApp guide link missing on live site");
 const emblem=await get("/icon.svg");if(!emblem.includes("pari manta")||!emblem.includes("cliff"))throw Error("Manta cliff brand not live");
 for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
  const h=await get(subpage);
@@ -125,8 +138,8 @@ await get("/api/admin/site-content",401);
 const denied=await fetch(base+"/api/admin/site-content",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:"hero.title",locale:"en",value:"Unauthorized",expected_version:0,owner_confirmed:true}),signal:AbortSignal.timeout(20000)});
 if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+denied.status);
 // Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
-if(!home.includes('id="tab-growth"')||!home.includes('id="growthResearch"')||
- !home.includes('data-tab="growth"')||!app.includes('admin/growth')||
+if(!dashboard.includes('id="tab-growth"')||!dashboard.includes('id="growthResearch"')||
+ !dashboard.includes('data-tab="growth"')||!app.includes('admin/growth')||
  !app.includes("function renderGrowth")||!langJS.includes("/api/public/intent"))
  throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
 if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
@@ -156,4 +169,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.14.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.15.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");

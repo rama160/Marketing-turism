@@ -1,3 +1,10 @@
+### 3.15.0 — 27 October 2026: dedicated agent dashboard, public guest website
+- Move the original extensive admin UI from `public/index.html` to `public/dashboard.html`, with branded login, sticky header, adaptive side navigation, mobile menu and one-click **Lihat Website** access.
+- Separate public website JS `public/guest.js` from owner-only `public/app.js`; preserve guest consent + Turnstile lead intake and all existing owner operational form handlers.
+- App manifest launches `/dashboard.html`; public legacy standalone home forwards to owner dashboard. Static PWA cache v26 excludes private script, admin page, APIs and sensitive data.
+- Bump Worker, package and live smoke to 3.15.0. Add frontend regression checks for HTML isolation, protected business APIs, 14 dashboard pages, Android start URL and safe cache; ensure live smoke separately checks both pages.
+- No changes to partner costs, prices, quotas, Cloudflare cron schedules, social publishing or WhatsApp sending approval.
+
 ### Facebook Group moderation guard — 27 October 2026
 - When owner marks a Facebook Group NO_PROMOTION or DISMISSED, automatically dismiss pending REVIEW/SHORTLISTED question suggestions, hide prior CONTACTED/RESPONDED questions from active owner queue, and prevent API status transitions or new questions from blocked groups.
 - Preserve historical records for audit rather than deleting previously recorded interactions. No Facebook API joins/comments/posts added.
