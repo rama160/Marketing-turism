@@ -44,7 +44,14 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.ok(page.includes('id="dashPriorities"'));
  assert.ok(page.includes('id="tab-analytics"'));
  assert.ok(page.includes('id="dashAnalyticsStats"'));
- assert.match(script,/function initCompactPanels/);
+ for(const name of ["growth","campaigns","whatsapp","operators","rates","quotes","market","website","marketing"]){
+  assert.ok(script.includes(name+':["')||script.includes(name+':["'),"Missing compact subpage configuration for "+name);
+ }
+ assert.ok(script.includes('split.classList.add("dashCompactSplit")'),"Required forms need compact split navigation");
+ assert.ok(script.includes("container.appendChild(wrap)"),"Original form elements must be moved, not replaced");
+ assert.ok(script.includes('wrappers.forEach((el,i)=>el.hidden=i!==index)'),"Only selected subpage should be visible");
+ assert.ok(page.indexOf('class="dashBottomNav"')>page.indexOf('id="adminContent" hidden'),"Mobile workspace must be owner-only");
+  assert.match(script,/function initCompactPanels/);
  assert.match(script,/loadDashboardAnalytics/);
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
  assert.ok(styles.includes(".dashCompactShortcuts"));
