@@ -1,3 +1,8 @@
+### Facebook Group moderation guard — 27 October 2026
+- When owner marks a Facebook Group NO_PROMOTION or DISMISSED, automatically dismiss pending REVIEW/SHORTLISTED question suggestions, hide prior CONTACTED/RESPONDED questions from active owner queue, and prevent API status transitions or new questions from blocked groups.
+- Preserve historical records for audit rather than deleting previously recorded interactions. No Facebook API joins/comments/posts added.
+- Integration tests cover moderation transitions, deleted active suggestions, blocked follow-ups and historical audit retention.
+
 ### 3.14.0 CI follow-up — 27 October 2026
 - Fix live smoke release race: run smoke after successful deployment using GitHub Actions workflow_run, not simultaneously on push. Owner may also dispatch smoke manually. Each smoke checks out deployed commit SHA; Spenva deployments unaffected.
 
