@@ -59,7 +59,8 @@ function initPublicGuestForm(){
 initPublicGuestForm();
 // Existing agent PWA installations previously used "/" as their start_url;
 // bring standalone owners straight to the dedicated dashboard without changing ordinary guest browsing.
-if(window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone===true){
+if((window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone===true) &&
+ new URL(location.href).searchParams.get("view")!=="website"){
  location.replace("/dashboard.html");
 }
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
