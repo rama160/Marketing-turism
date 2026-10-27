@@ -1,3 +1,8 @@
+## NPE Studio compact dashboard — October 27 2026
+At `/dashboard.html`, restore existing persistent session automatically (once-per-device token login unchanged). Desktop: sidebar selects workspaces Home/Tamu/Konten/Peluang/Analitik/Pengaturan; the small bar at the top of the active work area selects specific modules. Android: same groups are available in the bottom navigation; local submenu selects module. Campaigns, Growth and WhatsApp have additional selectable inner panes to avoid long scrolling; all original actions remain under their specific pane. Home shows only real saved counts and actionable priorities, never demo reach.
+Only one **Lihat Website** shortcut is visible in dashboard topbar; it opens `/?view=website` in a new tab so an installed PWA still can view the public tourist landing page.
+Do not add new dashboard links to the public tourism website or copy Ceritexa-specific branding/content. The new `Analitik` tab reads `/api/admin/analytics` only; undefined Meta engagement metrics are not fabricated. When reviewing a form, use the pane tabs first to locate the corresponding section before submitting.
+
 ## Persistent owner dashboard authentication — October 27, 2026
 1. On the secure NPE dashboard `/dashboard.html`, paste ADMIN_TOKEN into the login field **once** on each trusted browser/device and press Hubungkan dashboard.
 2. The backend verifies the token and creates a server-side session identified by a random opaque HttpOnly secure cookie. Only its SHA256 digest is stored in tourism D1, not the token or private guest data in browser storage.

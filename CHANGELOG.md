@@ -1,3 +1,12 @@
+### 3.17.0 — 27 October 2026: elegant compact NPE Studio workspace
+- Restyle owner dashboard in a modern, compact, light workspace inspired by the structural design of the supplied Ceritexa dashboard reference, adapted to Nusa Penida Experiences' marine branding.
+- Group over 14 operator/marketing pages into six workspace categories; on desktop use clean sidebar, on mobile six-icon bottom navigation and horizontally scrolling contextual submenu.
+- One **Lihat Website** action in the topbar only; remove duplicated buttons from home, admin heading and editor.
+- Rework home into slim branded hero, eight compact action shortcuts, real KPI tiles and data-backed action priorities; advanced quick editor is collapsed by default rather than filling the screen.
+- Break large campaigns, growth research and WhatsApp pages into selectable nested panes, keeping all previous controls and authorized API behaviors intact.
+- Add genuine `/api/admin/analytics` counts and status breakdown view, explicitly not fabricating platform views or reach; maintain full module function under grouped navigation.
+- Regression guards and live smoke now check grouped workspace availability, one website shortcut and compact nav classes.
+
 ### 3.16.0 — 27 October 2026: stay signed in until owner Logout
 - Replace tab-only raw ADMIN_TOKEN browser storage with an opaque, revocable, persistent D1 session + secure HttpOnly SameSite=Strict cookie.
 - After first token login, dashboard automatically restores the session across refresh, browser close and app restart. Login again is required only after owner Logout or a security exception (cookie removal, credential rotation or long inactivity expiry).

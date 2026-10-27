@@ -84,3 +84,153 @@
  .dashboardPage .panel{padding:15px}
 }
 @media(prefers-reduced-motion:reduce){.dashboardPage .dashboardNavTile{transition:none}.dashboardPage .dashboardNavTile:hover{transform:none}}
+
+
+/* v3.17 — NPE Studio: airy compact reference-inspired workspace, ocean/indigo palette. */
+.dashboardPage{--dash-bg:#f7f8fc;--dash-ink:#252941;--dash-text:#737d94;--dash-line:#e9edf5;--dash-sea:#226f83;--dash-indigo:#343d82;background:#f7f8fc;font-size:13px}
+.dashboardPage .dashTop{background:rgba(255,255,255,.96);border-color:#eceff6}
+.dashboardPage .dashTopInner{max-width:1460px;padding:11px 23px;min-height:63px}
+.dashboardPage .dashBrand img{background:#12445c;width:38px;height:38px;border-radius:12px}
+.dashboardPage .dashBrand strong{font-size:14px;color:#252b43}
+.dashboardPage .dashVersion{color:#b0b5c7}
+.dashboardPage .dashWebsiteLink{border:1px solid #dce6ef;color:#376476;font-size:11px;padding:8px 11px;background:white}
+.dashboardPage #adminArea{max-width:1460px;margin:0 auto;padding:17px 23px 48px}
+.dashboardPage .adminHeading{margin-bottom:15px;gap:16px}
+.dashboardPage .adminHeading h2{font-size:27px;letter-spacing:-1.15px;margin:5px 0}
+.dashboardPage .adminHeading p{font-size:12px;color:#858ea2;margin:4px 0 0}
+.dashboardPage .adminHeading .eyebrow{color:#8a87aa;font-size:10px;letter-spacing:.14em}
+.dashboardPage .dashHeadingDivider{margin:0 7px;color:#c6c7d5}
+.dashboardPage .adminHeading .dashboardHeadingActions{align-self:flex-end}
+.dashboardPage .adminHeading #lock{padding:8px 12px;border-radius:9px;font-size:11px;color:#778299;border:1px solid #e6eaf1;background:#fff}
+.dashboardPage #adminContent{display:grid;grid-template-columns:210px minmax(0,1fr);gap:19px;align-items:start}
+.dashboardPage .dashSidebar{grid-column:1;grid-row:1;min-height:calc(100dvh - 160px);position:sticky;top:79px;display:flex;flex-direction:column;background:#fff;border:1px solid #edf0f7;border-radius:19px;padding:24px 12px 16px;box-shadow:0 10px 36px #25334d0a}
+.dashboardPage .dashSideSectionLabel{padding:0 14px 17px;font-weight:800;font-size:10px;letter-spacing:.13em;color:#a6aabd}
+.dashboardPage #dashWorkspaces{display:grid;gap:5px}
+.dashboardPage .dashWorkspaceBtn{display:flex;gap:12px;align-items:center;text-align:left;padding:12px 13px;border-radius:11px;background:transparent;color:#757e93;border:0;font-size:12px;font-weight:670;transition:background .16s ease,color .16s ease}
+.dashboardPage .dashWorkspaceBtn>span{font-size:19px;line-height:1;color:#959db2;width:21px;text-align:center;font-weight:400}
+.dashboardPage .dashWorkspaceBtn.current,.dashboardPage .dashWorkspaceBtn:hover{background:#eef7f8;color:#256b80;font-weight:800}
+.dashboardPage .dashWorkspaceBtn.current>span{color:#16839b}
+.dashboardPage .dashSideFoot{margin-top:auto;border-top:1px solid #edf0f5;padding:17px 10px 0;display:flex;gap:8px;align-items:center;color:#537588;font-weight:730;font-size:11px;flex-wrap:wrap}
+.dashboardPage .dashSideFoot small{width:100%;padding-left:14px;color:#adb2c0;font-size:10px;font-weight:500}
+.dashboardPage .dashContentArea{grid-column:2;grid-row:1;min-width:0}
+.dashboardPage .dashSectionIntro{display:flex;align-items:center;justify-content:space-between;margin:0 2px 9px}
+.dashboardPage .dashSectionIntro small{color:#99a1b6;font-size:9px;font-weight:750;letter-spacing:.12em}
+.dashboardPage .dashSectionIntro strong{color:#728096;font-size:11px;font-weight:700}
+.dashboardPage #adminContent .tabs{display:flex;flex-flow:row wrap;align-items:center;gap:4px;padding:5px;margin:0 0 14px;position:static;top:auto;max-height:none;background:#fff;border:1px solid #edf0f5;border-radius:12px;overflow:visible;box-shadow:0 3px 15px #364c6906}
+.dashboardPage #adminContent .tabs button{background:transparent;color:#8b92a4;white-space:nowrap;border-radius:8px;font-size:11px;padding:9px 12px;text-align:center}
+.dashboardPage #adminContent .tabs button.current,.dashboardPage #adminContent .tabs button:hover{background:#eaf3f6;color:#17687e;font-weight:800}
+.dashboardPage #adminContent .tabs button[hidden]{display:none!important}
+.dashboardPage #adminContent>.tabcontent{grid-column:auto;grid-row:auto}
+.dashboardPage .dashContentArea>.tabcontent{min-width:0;animation:dashFade .18s ease}
+@keyframes dashFade{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.dashboardPage .panel{border:1px solid #edf0f5;border-radius:16px;box-shadow:0 6px 26px #17263d08;padding:17px}
+.dashboardPage .panel h3,.dashboardPage .panel h4{color:#343d59}
+.dashboardPage .dashHero{position:relative;overflow:hidden;display:flex;align-items:center;background:linear-gradient(113deg,#133e5a 0%,#245e76 52%,#5256a0 100%);border-radius:21px;min-height:165px;padding:26px 27px;margin-bottom:13px;color:white;isolation:isolate}
+.dashboardPage .dashHeroContent{position:relative;z-index:2;max-width:480px}
+.dashboardPage .dashHeroContent small{font-size:10px;color:#bcdbe7;letter-spacing:.14em;font-weight:800}
+.dashboardPage .dashHeroContent h3{font-size:clamp(22px,2.7vw,30px);letter-spacing:-.042em;line-height:1.14;color:white;margin:10px 0 8px;max-width:370px}
+.dashboardPage .dashHeroContent p{font-size:12px;line-height:1.6;color:#cfdee8;max-width:460px;margin:0 0 14px}
+.dashboardPage .dashHeroCta{background:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:800;color:#265c74;font-size:11px;min-height:36px}
+.dashboardPage .dashHeroCta span{margin-left:10px}
+.dashboardPage .dashHeroArt{position:absolute;right:12%;height:100%;top:0;width:185px;pointer-events:none}
+.dashboardPage .dashArtOrb{position:absolute;border-radius:50%;border:1px solid #ffffff35}
+.dashboardPage .dashArtOrb.orbOne{right:25px;top:-70px;width:220px;height:220px;background:#c2d8fe1c}
+.dashboardPage .dashArtOrb.orbTwo{right:-28px;top:65px;width:155px;height:155px;background:#b7edee15}
+.dashboardPage .dashArtLandscape{position:absolute;font-size:117px;color:#d7f2f048;top:26px;right:5px;transform:rotate(20deg)}
+.dashboardPage .dashCompactShortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.dashboardPage .dashShort{display:flex;align-items:center;gap:9px;padding:10px 12px;min-height:50px;background:#fff;border:1px solid #edf0f5;border-radius:11px;text-align:left;color:#49596e;box-shadow:0 3px 15px #17263d06;font-size:11px}
+.dashboardPage .dashShort strong{flex:1;font-size:11px;font-weight:730;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboardPage .dashShort>span:last-child{font-size:14px;color:#aab1c0}
+.dashboardPage .dashShortIcon{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:8px;background:#eaf4f7;color:#357a8c;font-size:15px}
+.dashboardPage .dashShort:hover,.dashboardPage .dashPriorityItem:hover{border-color:#aed2de;background:#fbfefe}
+.dashboardPage .dashPanelHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:17px 0 10px}
+.dashboardPage .dashPanelHead h3{font-size:14px;letter-spacing:-.025em;color:#29344c;margin:0}
+.dashboardPage .dashPanelHead>span{color:#a1aabd;font-size:10px}
+.dashboardPage #stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0}
+.dashboardPage #stats .stat{background:#fff;border:1px solid #eef0f5;border-radius:13px;padding:15px;box-shadow:0 4px 18px #17263d06}
+.dashboardPage #stats .stat strong{font-size:26px;letter-spacing:-.04em;color:#2c3751}
+.dashboardPage #stats .stat span{font-size:10px;color:#939aaf}
+.dashboardPage .dashPriorityGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.dashboardPage .dashPriorityItem{display:flex;align-items:center;justify-content:space-between;gap:9px;text-align:left;border:1px solid #e9edf3;border-radius:12px;background:#fff;padding:13px;min-height:69px}
+.dashboardPage .dashPriorityItem strong{display:block;font-size:11px;color:#3c465f}
+.dashboardPage .dashPriorityItem small{display:block;font-size:10px;color:#a0a7b7;margin-top:6px}
+.dashboardPage .dashPriorityItem>span:last-child{color:#7aa5b2}
+.dashboardPage .dashExpandable{margin-top:16px;background:#fff;border:1px solid #e9edf3;border-radius:13px;overflow:hidden}
+.dashboardPage .dashExpandable summary{cursor:pointer;padding:14px 16px;font-weight:750;font-size:12px}
+.dashboardPage .dashExpandable summary span{float:right;color:#a3a9b8;font-size:10px}
+.dashboardPage .dashExpandable .panel{border:0;box-shadow:none}
+.dashboardPage #tab-summary>.feedback,.dashboardPage #tab-summary>.panel:last-of-type{display:none}
+.dashboardPage .dashPaneNav{display:flex;gap:5px;flex-wrap:wrap;padding:5px;background:#fff;border:1px solid #e9edf3;border-radius:12px;margin-bottom:12px;position:sticky;top:73px;z-index:5}
+.dashboardPage .dashPaneBtn{border:0;border-radius:8px;background:transparent;color:#8b94a8;padding:10px 12px;font-size:11px;font-weight:750}
+.dashboardPage .dashPaneBtn.current{background:#ebf4f7;color:#1e6e82}
+.dashboardPage .dashPane{max-height:calc(100dvh - 278px);overflow:auto;scrollbar-width:thin;scrollbar-color:#d8dfeb transparent;padding:1px 3px 10px}
+.dashboardPage .dashCompactSplit{display:block;min-width:0}
+.dashboardPage .dashCompactSplit>.dashPane{display:block;max-width:100%;min-width:0}
+.dashboardPage .dashCompactSplit>.dashPane[hidden]{display:none!important}
+.dashboardPage .dashCompactSplit .panel,.dashboardPage .dashCompactSplit form{max-width:100%}
+.dashboardPage .dashPane .growthHeader{margin-top:0}
+.dashboardPage .dashPane .scroll{max-height:unset}
+.dashboardPage .dashPane .split{align-items:start}
+.dashboardPage #tab-campaigns .dashPane form,.dashboardPage #tab-growth .dashPane form{min-width:0}
+.dashboardPage .dashAnalyticsStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.dashboardPage .dashMetric{background:white;border:1px solid #ebeff5;border-radius:14px;padding:18px}
+.dashboardPage .dashMetric span{display:block;font-size:11px;color:#969cb0}
+.dashboardPage .dashMetric strong{display:block;font-size:28px;letter-spacing:-.05em;color:#28334b;margin:10px 0 3px}
+.dashboardPage .dashMetric small{font-size:10px;color:#9aafb0}
+.dashboardPage .dashAnalyticsGrids{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}
+.dashboardPage .dashMetricLine{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf0f5;padding:11px 0;font-size:11px;color:#6f7b91}
+.dashboardPage .dashMetricLine strong{font-size:13px;color:#2d4055}
+.dashboardPage .dashBottomNav{display:none}
+@media(max-width:1120px){
+ .dashboardPage #adminContent{grid-template-columns:183px minmax(0,1fr);gap:13px}
+ .dashboardPage .dashSidebar{padding:18px 8px}
+ .dashboardPage .dashCompactShortcuts{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:900px){
+ .dashboardPage .dashTopInner{padding:10px 14px;min-height:58px}
+ .dashboardPage #adminArea{padding:14px 14px 96px}
+ .dashboardPage #adminContent{display:block}
+ .dashboardPage .dashSidebar{display:none}
+ .dashboardPage .dashContentArea{display:block}
+ .dashboardPage .adminHeading{display:flex;align-items:center;margin-bottom:10px}
+ .dashboardPage .adminHeading h2{font-size:24px}
+ .dashboardPage .adminHeading p{font-size:11px}
+ .dashboardPage .dashMobileToolbar{display:none}
+ .dashboardPage .dashSectionIntro{margin:0 0 8px}
+ .dashboardPage #adminContent .tabs{display:flex;flex-direction:row;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap;margin:0 0 12px;padding:4px;scrollbar-width:none}
+ .dashboardPage #adminContent .tabs button{flex-shrink:0;white-space:nowrap}
+ .dashboardPage .dashBottomNav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:55;background:#fff;border-top:1px solid #e8ecf4;padding:7px 6px calc(9px + env(safe-area-inset-bottom));box-shadow:0 -7px 30px #1f305011}
+ .dashboardPage .dashMobileNavBtn{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;border:0;background:transparent;font-size:9px;font-weight:750;color:#a0a6b6;padding:4px 0}
+ .dashboardPage .dashMobileNavBtn span{font-size:21px;line-height:1}
+ .dashboardPage .dashMobileNavBtn.current{color:#1b7a90}
+ .dashboardPage .dashHero{min-height:163px}
+ .dashboardPage .dashPane{max-height:calc(100dvh - 270px)}
+ .dashboardPage .dashPaneNav{position:sticky;top:55px}
+ .dashboardPage .dashAnalyticsGrids{grid-template-columns:1fr}
+ .dashboardPage .dashFooter{padding-bottom:110px}
+}
+@media(max-width:620px){
+ .dashboardPage .dashVersion{display:none}
+ .dashboardPage .dashBrand small{font-size:9px}
+ .dashboardPage .dashTopActions{gap:6px}
+ .dashboardPage .dashWebsiteLink{font-size:10px;padding:7px 9px}
+ .dashboardPage #adminArea{padding:11px 12px 96px}
+ .dashboardPage .adminHeading .eyebrow{font-size:9px}
+ .dashboardPage .adminHeading h2{font-size:22px}
+ .dashboardPage .adminHeading p{font-size:10px;max-width:230px}
+ .dashboardPage .dashHero{min-height:154px;padding:20px}
+ .dashboardPage .dashHeroContent h3{font-size:22px;max-width:260px}
+ .dashboardPage .dashHeroContent p{font-size:10px;max-width:260px}
+ .dashboardPage .dashHeroArt{opacity:.44;right:-30px}
+ .dashboardPage .dashCompactShortcuts{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .dashboardPage .dashShort{min-height:47px;padding:8px}
+ .dashboardPage #stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboardPage .dashPriorityGrid{grid-template-columns:1fr}
+ .dashboardPage .dashAnalyticsStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboardPage .dashPane{max-height:calc(100dvh - 277px)}
+ .dashboardPage .dashPaneNav{gap:2px;overflow:auto;flex-wrap:nowrap}
+ .dashboardPage .dashPaneBtn{white-space:nowrap;padding:9px}
+ .dashboardPage .dashBottomNav{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .dashboardPage .adminHeading #lock{font-size:10px;padding:7px 9px}
+}
+@media(prefers-reduced-motion:reduce){.dashboardPage .dashContentArea>.tabcontent{animation:none}}
