@@ -1,3 +1,8 @@
+## 27 October 2026 — Public guest enquiry mode
+The owner expressly requested enabling guest enquiry capture. On successful isolated deployment, `PUBLIC_LEADS_ENABLED=true` in `wrangler.jsonc`; production `/api/public/readiness` should show `accepting_leads=true`. This state requires Turnstile secret, valid host/action challenge, real guest consent, business contact and policy flags.
+**Enquiry does not equal verified booking.** Current supplier operator is DRAFT and all 12 tariffs remain unverified in production D1. Owner must independently verify availability, safety, licenses/permissions, operator pricing and guest terms before final quotations, payment collection, or booking PAID transitions. Use the owner-protected dashboard to review genuine consented enquiries.
+Release smoke sends an **empty denied** anti-bot request, asserts HTTP 403 and checks Page widget; no artificial customer entries are generated. One genuine, owner-authorised end-to-end Turnstile test is still required before claiming that successful live submissions have been tested from a real browser.
+
 # Marketing Turism Agent v2.0.0 — Operations
 ## Completed code
 Static PWA + owner-protected Cloudflare Worker API + D1 schema, operator/rate CRUD, immutable rate history, lead capture (disabled by default), admin quote pricing with Rp100k gross markup per booking, bookings, manual payment verification, operator handover, copywriting drafts and CI test/build.

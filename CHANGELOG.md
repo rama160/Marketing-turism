@@ -1,3 +1,9 @@
+### 3.13.0 LIVE guest enquiry activation — 27 Oct 2026
+- As explicitly authorised by owner, set `PUBLIC_LEADS_ENABLED="true"` for the isolated tourism Worker.
+- Preflight: Turnstile widget/sitekey matches the production Worker domain, server secret is present, and business profile, contact and owner-approved policy flags are populated.
+- Update live smoke: production readiness must be true and form must deny missing Turnstile proof (403), never creating fake booking/lead or bypassing bot protection.
+- **Boundary:** enquiries now allowed; no supplier inventory, paid booking or final quote was auto-approved. One operator is still DRAFT, and 12 rate records have no supplier verification. Live sales/payment flows remain subject to owner verification.
+
 ### 3.13.0 — 27 October 2026: customer research expands beyond Reddit
 - Integrate public Bluesky search via public AppView API, permission-gated Facebook Page comments, Instagram Business media comments via read-only Graph API, and optional API-keyed YouTube public video search.
 - Preserve existing Reddit, OSM, owner review statuses, marketing/Meta publishing and WhatsApp behavior. No automatic response, direct messaging or unauthorized cross-platform scraping.

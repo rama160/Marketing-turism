@@ -23,7 +23,7 @@
     ]
   },
   "vars": {
-    "PUBLIC_LEADS_ENABLED": "false",
+    "PUBLIC_LEADS_ENABLED": "true",
     "META_APPROVED_AUTOPOST_ENABLED": "true",
     "GROWTH_PUBLIC_RESEARCH_ENABLED": "true",
     "GROWTH_META_RESEARCH_ENABLED": "true",
