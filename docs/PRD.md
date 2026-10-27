@@ -1,3 +1,9 @@
+## Compact interactive agent dashboard (v3.17.0)
+- A complete, visually restrained, responsive workspace inspired by the **layout** of Ceritexa sample: sidebar on desktop, bottom nav on Android, slim contextual tabs, light cards, clear current section, and small action-first homepage.
+- Six primary groupings: Home, Guest/Sales, Content/Campaigns, Acquisition, Analytics, Settings. Map all existing original operational pages to these groups without dropping controls or backend workflows.
+- Ensure growth, campaigns, WhatsApp long pages have inner page selector; only selected section is shown and scrolled independently. Never disable required fields; form validation and approval actions remain preserved.
+- At most one View Website button. Keep guest marketing pages entirely separate. Analytics must use only saved live data with explicit blanks/zeros instead of inventing impressions.
+
 ## Owner login persistence & explicit logout
 - Owner enters ADMIN_TOKEN once per trusted browser and remains signed in after refresh, navigation, closing Android PWA or reopening browser. Only pressing Logout intentionally ends that device session.
 - Use revocable opaque server sessions in D1 and a Secure HttpOnly SameSite=Strict cookie scoped to /api/admin. Do not persist the admin token to localStorage/sessionStorage/IndexedDB or service worker.
