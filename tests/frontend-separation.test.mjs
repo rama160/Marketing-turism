@@ -15,6 +15,7 @@ test("guest tourism homepage does not expose agent dashboard links, forms or adm
  assert.match(guest,/publicAPI\("leads","POST"/);
  assert.match(guest,/publicAPI\("readiness"\)/);
  assert.match(guest,/location\.replace\("\/dashboard\.html"\)/);
+ assert.match(guest,/searchParams\.get\("view"\)!=="website"/);
  assert.doesNotMatch(guest,/ADMIN_TOKEN|tourAdmin|\/api\/admin\/|admin\/growth/);
 });
 
@@ -32,7 +33,7 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  for(const id of ["growthGroupForm","growthGroupQuestionForm","cmsPublish","waSendApproved","quickSave","dashMenuToggle","dashNavigation","dashCurrentPage"]){
   assert.ok(page.includes('id="'+id+'"'),"Missing UI "+id);
  }
- assert.ok(page.includes('href="/"'));
+ assert.ok(page.includes('href="/?view=website"'));
  assert.ok(page.includes('Lihat Website'));
  assert.ok(page.includes('src="/app.js"'));
  assert.ok(!page.includes('id="leadForm"'));
