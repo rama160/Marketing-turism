@@ -5,7 +5,7 @@
 const HOUR=3600000, MAX_AGE=48*HOUR, DAY=24*HOUR;
 const UUID=()=>crypto.randomUUID();
 const networks=["BLUESKY_PUBLIC","FACEBOOK_PAGE_COMMENTS","INSTAGRAM_MEDIA_COMMENTS","YOUTUBE_PUBLIC_VIDEO"];
-const tourism=/\b(nusa penida|penida|manta|snorkel|bali itinerary|bali trip|day trip|fast boat)\b/i;
+const tourism=/\b(nusa penida|nusa lembongan|lembongan|ceningan|penida|manta|snorkel|bali itinerary|bali trip|day trip|fast boat)\b/i;
 const question=/\?|recommend|suggest|advice|help|how|where|looking for|should we|is it worth|worth it|itinerary|planning|plan to visit|tips|anyone|book a tour/i;
 const spam=/\b(crypto|discount codes?|buy followers|affiliate|airdrop|bitcoin|adult content|for sale)\b/i;
 const clean=s=>String(s??"").replace(/<[^>]*>/g," ").replace(/&(?:amp|quot|lt|gt|#39);/g," ").replace(/\s+/g," ").trim();
@@ -27,12 +27,16 @@ function candidate(source,url,title,published,now=Date.now()){
  if(title.length<12||!tourism.test(title)||!question.test(title)||spam.test(title))return null;
  const age=fresh(title,published,now);if(!age)return null;
  const theme=/snorkel|manta/i.test(title)?"SNORKELING":/itinerary|day trip|kelingking|diamond beach|tour|boat/i.test(title)?"ISLAND_TOUR":"GENERAL";
- const score=Math.min(100,35+(/nusa penida/i.test(title)?30:10)+(/tour|snorkel|manta|boat|itinerary/i.test(title)?15:0)+(/recommend|advice|\?|help|looking for/i.test(title)?12:0)+(age.age_hours<6?8:age.age_hours<24?4:0));
+ const destination=/\b(?:nusa\s+)?lembongan\b|\bceningan\b/i.test(title)?"NUSA_LEMBONGAN":
+  /\b(?:nusa\s+)?penida\b/i.test(title)?"NUSA_PENIDA":"BALI_GENERAL";
+ const score=Math.min(100,35+(/nusa penida|nusa lembongan|lembongan|ceningan/i.test(title)?30:10)+(/tour|snorkel|manta|boat|itinerary/i.test(title)?15:0)+(/recommend|advice|\?|help|looking for/i.test(title)?12:0)+(age.age_hours<6?8:age.age_hours<24?4:0));
  const activity=theme==="SNORKELING"?"sea conditions, licensed operators and safe group sizes":
   theme==="ISLAND_TOUR"?"travel times, East/West routes and operator availability":"boat connections, realistic itineraries and weather";
- const reply="I help visitors plan Nusa Penida trips with Nusa Penida Experiences (business disclosure). For this question, I'd check "+activity+
+ const reply=destination==="NUSA_LEMBONGAN"?
+  "I help visitors explore Nusa Lembongan with Nusa Penida Experiences (business disclosure). Boat transfers, group sizes and ocean conditions matter; we must verify a Lembongan operator, actual availability and pricing before offering a booking. If community rules allow, happy to share guidance. No unsolicited messages.":
+  "I help visitors plan Nusa Penida trips with Nusa Penida Experiences (business disclosure). For this question, I'd check "+activity+
   ". If community rules allow business replies, I can share options after confirming your dates and group size. No unsolicited direct messages.";
- return {id:UUID(),source,source_url:url,headline:title,theme,score,suggested_reply:reply,...age};
+ return {id:UUID(),source,source_url:url,headline:title,destination,theme,score,suggested_reply:reply,...age};
 }
 export function extractBlueskyPosts(data,now=Date.now()){
  if(!Array.isArray(data?.posts))return [];
@@ -126,9 +130,13 @@ export async function scanAdditionalNetworks(db,env={},request=fetch){
  const done=new Set(sources.results.map(x=>x.source)),results=[];
  if(!done.has("BLUESKY_PUBLIC")){
   results.push(await runOne(db,"BLUESKY_PUBLIC",async()=>{
-   const endpoint="https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q="+encodeURIComponent("nusa penida")+"&sort=latest&limit=30";
-   const result=await getJson(endpoint,request);
-   return result?extractBlueskyPosts(result):null;
+   let responded=false;const all=[];
+   for(const q of ["nusa penida","nusa lembongan"]){
+    const endpoint="https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q="+encodeURIComponent(q)+"&sort=latest&limit=30";
+    const result=await getJson(endpoint,request);
+    if(result){responded=true;all.push(...extractBlueskyPosts(result));}
+   }
+   return responded?Array.from(new Map(all.map(x=>[x.source_url,x])).values()).slice(0,18):null;
   }));
  }
  const page=String(env.META_PAGE_ID||env.META_GRAPH_PAGE_ID||"");
@@ -158,10 +166,14 @@ export async function scanAdditionalNetworks(db,env={},request=fetch){
   const key=String(env.YOUTUBE_DATA_API_KEY||"");
   if(env.GROWTH_YOUTUBE_RESEARCH_ENABLED==="true"&&key.length>=20){
    results.push(await runOne(db,"YOUTUBE_PUBLIC_VIDEO",async()=>{
-    const query=new URLSearchParams({part:"snippet",type:"video",order:"date",q:"Nusa Penida travel advice",
-     maxResults:"20",publishedAfter:new Date(Date.now()-MAX_AGE).toISOString(),key});
-    const data=await getJson("https://www.googleapis.com/youtube/v3/search?"+query,request);
-    return data?extractYouTubeVideos(data):null;
+    const found=[];let available=false;
+    for(const q of ["Nusa Penida travel advice","Nusa Lembongan travel tips"]){
+     const query=new URLSearchParams({part:"snippet",type:"video",order:"date",q,
+      maxResults:"12",publishedAfter:new Date(Date.now()-MAX_AGE).toISOString(),key});
+     const data=await getJson("https://www.googleapis.com/youtube/v3/search?"+query,request);
+     if(data){available=true;found.push(...extractYouTubeVideos(data));}
+    }
+    return available?Array.from(new Map(found.map(x=>[x.source_url,x])).values()).slice(0,20):null;
    }));
   }else results.push({source:"YOUTUBE_PUBLIC_VIDEO",status:"NOT_CONFIGURED",discovered:0});
  }

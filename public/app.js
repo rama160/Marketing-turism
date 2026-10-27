@@ -298,11 +298,11 @@ function renderGrowth(){
   ["Booking",Number(g.bookings||0),"Pesanan nyata"]
  ].map(([label,val,caption])=>'<div class="growthKpi"><small>'+esc(label)+'</small><strong>'+esc(val)+'</strong><small>'+esc(caption)+'</small></div>').join("");
  const statuses={REVIEW:"Perlu tinjauan",SHORTLISTED:"Siap ditindaklanjuti",CONTACTED:"Sudah dihubungi",RESPONDED:"Ada respons",DISMISSED:"Diabaikan"};
- const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik",BLUESKY_PUBLIC:"Bluesky · postingan publik",FACEBOOK_PAGE_COMMENTS:"Facebook · komentar pada Page sendiri",INSTAGRAM_MEDIA_COMMENTS:"Instagram · komentar pada akun bisnis sendiri",YOUTUBE_PUBLIC_VIDEO:"YouTube · video publik (bukan calon booking terverifikasi)"};
+ const sources={REDDIT_PUBLIC_RSS:"Pertanyaan publik",OSM_PUBLIC_BUSINESSES:"Data bisnis publik · © OpenStreetMap contributors (ODbL)",OWNER_PARTNER:"Calon mitra ditambahkan pemilik",BLUESKY_PUBLIC:"Bluesky · postingan publik",FACEBOOK_PAGE_COMMENTS:"Facebook · komentar pada Page sendiri",INSTAGRAM_MEDIA_COMMENTS:"Instagram · komentar pada akun bisnis sendiri",YOUTUBE_PUBLIC_VIDEO:"YouTube · video publik (bukan calon booking terverifikasi)",FACEBOOK_GROUP_MANUAL:"Facebook Group · ditinjau manual oleh pemilik"};
  $("#growthOpportunities").innerHTML=opportunities.length?
   opportunities.map(o=>
    '<article class="growthOpportunity"><div class="meta"><strong>'+esc(o.headline)+'</strong><span class="pill">'+esc(statuses[o.status]||o.status)+'</span></div>'+
-   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+(Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
+   '<small>'+esc(sources[o.source]||o.source)+' · Skor kecocokan '+esc(o.score)+'/100 · '+esc(o.theme)+' · '+esc(o.destination==="NUSA_LEMBONGAN"?"Nusa Lembongan":o.destination==="NUSA_PENIDA"?"Nusa Penida":"Bali umum")+(Number.isFinite(o.age_hours)?' · Diterbitkan '+esc(Math.max(0,o.age_hours))+' jam lalu':'')+'</small>'+
    '<p class="growthSuggestion">'+esc(o.suggested_reply)+'</p><div class="actions">'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(o.source_url)+'">Baca sumber &amp; aturan ↗</a>'+
    '<button class="outline small" data-action="growthCopy" data-id="'+esc(o.id)+'">Salin saran</button>'+
@@ -314,6 +314,20 @@ function renderGrowth(){
  $("#growthHubs").innerHTML=(g.hubs||[]).map(h=>
    '<div class="item"><b>'+esc(h.name)+'</b><small>'+esc(h.description)+'</small>'+
    '<a class="outline small" href="'+esc(h.url)+'" target="_blank" rel="noopener noreferrer">Telusuri manual ↗</a></div>').join("");
+ const groups=Array.isArray(g.facebook_groups)?g.facebook_groups:[];
+ $("#growthGroupList").innerHTML=groups.length?groups.map(x=>
+  '<div class="item"><b>'+esc(x.name)+'</b><small>'+esc(x.destination==="NUSA_LEMBONGAN"?"Nusa Lembongan":"Nusa Penida")+
+  ' · '+esc({RESEARCH:"Belum bergabung",JOINED_MANUALLY:"Bergabung (ditandai pemilik)",NO_PROMOTION:"Aturan melarang promosi"}[x.status]||x.status)+'</small>'+
+  '<small>Aturan dicatat: '+esc(x.rules_note)+'</small>'+
+  '<a class="outline small" href="'+esc(x.group_url)+'" target="_blank" rel="noopener noreferrer">Buka grup secara manual ↗</a>'+
+  (x.status==="RESEARCH"?'<button class="outline small" data-group-status="JOINED_MANUALLY" data-id="'+esc(x.id)+'">Saya sudah bergabung</button>':"")+
+  (x.status!=="NO_PROMOTION"?'<button class="outline small" data-group-status="NO_PROMOTION" data-id="'+esc(x.id)+'">Dilarang promosi</button>':"")+
+  '<button class="outline small" data-group-status="DISMISSED" data-id="'+esc(x.id)+'">Arsipkan</button></div>'
+ ).join(""):'<p class="feedback">Belum ada grup yang Anda catat. Gunakan tautan pencarian di atas.</p>';
+ const selected=$("#growthGroupSelect").value;
+ $("#growthGroupSelect").innerHTML='<option value="">Pilih grup yang tercatat</option>'+groups
+  .filter(x=>x.status!=="NO_PROMOTION").map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+' · '+esc(x.destination==="NUSA_LEMBONGAN"?"Lembongan":"Penida")+'</option>').join("");
+ if(groups.some(x=>x.id===selected))$("#growthGroupSelect").value=selected;
  const clickRows=g.clicks||[];
  $("#growthClickStats").innerHTML=clickRows.length?
   '<div class="growthClickList">'+clickRows.slice(0,24).map(x=>
@@ -350,6 +364,37 @@ $("#growthPartnerForm").onsubmit=async e=>{
   e.target.reset();await refresh();say("#growthFeedback","Calon mitra disimpan untuk ditinjau: "+result.id,true);
  }catch(err){say("#growthFeedback",err.message)}
 };
+// User-curated Facebook Groups: no Graph Groups requests and no autonomous social actions.
+$("#growthGroupForm").onsubmit=async e=>{
+ e.preventDefault();const b=formValues(e.target);
+ if(!confirm("Simpan grup untuk riset manual? Agen tidak akan bergabung atau memposting."))return;
+ try{
+  await api("admin/growth/facebook-groups","POST",{...b,owner_confirmed:true});
+  e.target.reset();await refresh();say("#growthGroupFeedback","Grup berhasil dicatat. Periksa aturan dan bergabung sendiri di Facebook.",true);
+ }catch(err){say("#growthGroupFeedback",err.message)}
+};
+$("#growthGroupQuestionForm").onsubmit=async e=>{
+ e.preventDefault();const b=formValues(e.target);
+ const stamp=Date.parse(b.published_local||"");
+ if(!Number.isFinite(stamp)){say("#growthGroupFeedback","Tanggal publikasi harus valid.");return;}
+ if(!confirm("Anda memastikan ini postingan PUBLIK, ringkasannya tidak menyimpan identitas, dan tidak ada kontak otomatis?"))return;
+ try{
+  await api("admin/growth/facebook-questions","POST",{group_id:b.group_id,url:b.url,summary:b.summary,
+   published_at:new Date(stamp).toISOString(),owner_verified_public:true,owner_confirmed:true});
+  e.target.reset();await refresh();say("#growthGroupFeedback","Pertanyaan publik dicatat. Balasan hanya draf dan harus Anda posting sendiri setelah memeriksa aturan grup.",true);
+ }catch(err){say("#growthGroupFeedback",err.message)}
+};
+$("#growthGroupList").addEventListener("click",async e=>{
+ const button=e.target.closest("button[data-group-status]");
+ if(!button)return;
+ const status=button.dataset.groupStatus,id=button.dataset.id;
+ if(!confirm("Perubahan status ini hanya mencatat tindakan manual Anda. Lanjutkan?"))return;
+ button.disabled=true;
+ try{
+  await api("admin/growth/facebook-groups/"+encodeURIComponent(id)+"/status","PATCH",{status,owner_confirmed:true});
+  await refresh();say("#growthGroupFeedback","Status grup diperbarui. Tidak ada tindakan otomatis di Facebook.",true);
+ }catch(err){say("#growthGroupFeedback",err.message)}finally{button.disabled=false;}
+});
 function renderCampaigns(){
  const localDay=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
  const monday=new Date(localDay+"T00:00:00Z");

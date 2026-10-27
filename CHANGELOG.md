@@ -1,3 +1,9 @@
+### 3.14.0 — 27 October 2026: Facebook Groups assisted outreach + Nusa Lembongan
+- Expand acquisition research topics and manual discovery hubs to Nusa Lembongan/Ceningan, without inventing supplier costs or introducing an unverified bookable product.
+- Add owner-operated public Facebook Group watchlist and manually summarized post ingestion. Check group rules, public-post link, verified original published timestamp and 48-hour expiry; prevent identity/contact data from being stored. Suggest transparent informative replies, never automate group joins, group posts, comments or DMs.
+- Combine group opportunities with existing public research dashboard and manually updated follow-up statuses; leave consented enquiries, quotes, Meta publishing and approvals unchanged.
+- Add additive D1 migration 0021, new API integration tests, Worker release v3.14.0 and updated production verification.
+
 ### 3.13.0 LIVE guest enquiry activation — 27 Oct 2026
 - As explicitly authorised by owner, set `PUBLIC_LEADS_ENABLED="true"` for the isolated tourism Worker.
 - Preflight: Turnstile widget/sitekey matches the production Worker domain, server secret is present, and business profile, contact and owner-approved policy flags are populated.

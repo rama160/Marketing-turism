@@ -1,3 +1,9 @@
+## Owner-assisted group acquisition & Nusa Lembongan — Oct 27
+- Add Nusa Lembongan and optional Nusa Ceningan intent to the discovery source/query and dashboard distinct from Penida.
+- Owner can save public Facebook Group links, summarized group rules, and manual join status. Owner can supply publicly available group post URL, its original publication time and a short de-identified question summary. Agent scores and drafts a factual, non-price reply that discloses affiliation. Owner alone chooses and performs all interactions in Facebook.
+- No Groups API use, automated membership, auto comments/posts, bulk messaging or harvesting private memberships/identities. No auto-created opt-in leads/bookings.
+- Lembongan product pricing, supplier availability and booking are disabled as unverified until approved supplier cost and service scope exist; do not reuse Penida bookings or packages as verified Lembongan supply.
+
 ## Multi-platform acquisition research — 27 October 2026
 - Discover recent, actionable Nusa Penida travel questions from authorized/public sources, not solely Reddit.
 - Automated: Reddit, Bluesky public search, permitted own Facebook Page and Instagram Business comments; optional official YouTube Data API. Partner research: public OpenStreetMap lodging.
