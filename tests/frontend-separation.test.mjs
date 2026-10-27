@@ -39,7 +39,10 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.ok(!page.includes('id="leadForm"'));
  assert.ok(!page.includes('class="hero premiumHero"'));
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-tab",name\)/);
- assert.match(script,/sessionStorage\.setItem\("tourAdmin",token\)/);
+ assert.match(script,/api\("admin\/session\/login","POST"/);
+ assert.match(script,/api\("admin\/session"\)/);
+ assert.match(script,/api\("admin\/session\/logout","POST"/);
+ assert.doesNotMatch(script,/sessionStorage\.setItem\("tourAdmin"/);
  assert.match(script,/sessionStorage\.removeItem\("tourAdmin"\)/);
  assert.doesNotMatch(script,/adminToggle|leadForm|publicReadiness|leadDate/);
  assert.match(styles,/@media\(max-width:900px\)/);
@@ -60,7 +63,7 @@ test("Android installed agent goes to dashboard; public service worker never cac
 
 test("separating website does not change critical routes, operator prices, or manual approvals",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
- assert.ok(worker.includes('version:"3.15.0"'));
+ assert.ok(worker.includes('version:"3.16.0"'));
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }
