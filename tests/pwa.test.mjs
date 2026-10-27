@@ -170,10 +170,17 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  const tabContents=contentNames.map(tab=>{const x=element("#tab-"+tab);elements.set("#tab-"+tab,x);return x});
  const session=new Map();
  const OWNER="test-owner-token-not-used-in-production";
+ let hasSession=false;
  const fakeFetch=async(url,opts={})=>{
   const address=String(url); const p=address.startsWith("/api/")?address.slice(5):address;
-  const auth=(opts.headers?.authorization||"");
-  if(p.startsWith("admin/")&&auth!=="Bearer "+OWNER)return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{"content-type":"application/json"}});
+  const respond=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json"}});
+  if(p==="admin/session/login"){
+   if(JSON.parse(opts.body||"{}").token!==OWNER)return respond({error:"Unauthorized"},401);
+   hasSession=true;return respond({authenticated:true});
+  }
+  if(p==="admin/session")return respond(hasSession?{authenticated:true}:{authenticated:false},hasSession?200:401);
+  if(p==="admin/session/logout"){hasSession=false;return respond({logged_out:true});}
+  if(p.startsWith("admin/")&&!hasSession)return respond({error:"Unauthorized"},401);
   let body;
   if(p==="public/readiness")body={accepting_leads:false,business_contact:null};
   else if(p==="admin/summary")body={operators:0,leads:0,quotes:0,bookings:0};
@@ -214,9 +221,11 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  await get("#unlock").click();
  assert.equal(get("#adminContent").hidden,false,"verified owner should access dashboard");
  assert.equal(get("#unlockPanel").hidden,true,"login form should close after successful owner auth");
- assert.equal(session.get("tourAdmin"),OWNER,"token must remain session-only");
+ assert.equal(session.has("tourAdmin"),false,"raw token is never stored");
+ assert.equal(hasSession,true,"persistent cookie-backed session should be active");
  assert.ok(get("#stats").innerHTML.includes("Operator"),"live summary cards did not render");
- get("#lock").click();
+ await get("#lock").click();
+ assert.equal(hasSession,false,"explicit logout revokes persistent session");
  assert.equal(get("#adminContent").hidden,true);
  assert.equal(get("#unlockPanel").hidden,false);
  assert.equal(session.has("tourAdmin"),false);
