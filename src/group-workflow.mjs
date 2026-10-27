@@ -50,7 +50,14 @@ export async function changeGroupStatus(db,id,status){
   throw Error("Grup/status tidak valid");
  const current=await db.prepare("SELECT id FROM growth_facebook_groups WHERE id=?").bind(id).first();
  if(!current)throw Error("Grup tidak ditemukan");
- const res=await db.prepare("UPDATE growth_facebook_groups SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,id).run();
+ const change=db.prepare("UPDATE growth_facebook_groups SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,id);
+ // A group that disallows promotion or is archived must not leave outstanding reply drafts actionable.
+ // Keep already recorded CONTACTED/RESPONDED rows for audit history; hide all questions in overview.
+ let res;
+ if(status==="NO_PROMOTION"||status==="DISMISSED"){
+  const dismissed=db.prepare("UPDATE growth_facebook_questions SET status='DISMISSED',updated_at=CURRENT_TIMESTAMP WHERE group_id=? AND status IN ('REVIEW','SHORTLISTED')").bind(id);
+  [res]=await db.batch([change,dismissed]);
+ }else res=await change.run();
  return {id,status,updated:Number(res.meta?.changes||0)===1};
 }
 export async function addGroupQuestion(db,b,now=Date.now()){
@@ -81,13 +88,13 @@ export async function addGroupQuestion(db,b,now=Date.now()){
 export async function groupOverview(db){
  const [groups,questions]=await Promise.all([
   db.prepare("SELECT id,name,group_url,destination,rules_note,status,created_at FROM growth_facebook_groups WHERE status!='DISMISSED' ORDER BY created_at DESC LIMIT 50").all(),
-  db.prepare("SELECT q.id,q.group_id,q.source_url,q.headline,q.destination,q.theme,q.score,q.suggested_reply,q.status,q.published_at,q.expires_at,q.created_at AS discovered_at,CAST((julianday('now')-julianday(q.published_at))*24 AS INTEGER) AS age_hours FROM growth_facebook_questions q WHERE q.expires_at>datetime('now') AND q.status!='DISMISSED' ORDER BY q.score DESC,q.created_at DESC LIMIT 50").all()
+  db.prepare("SELECT q.id,q.group_id,q.source_url,q.headline,q.destination,q.theme,q.score,q.suggested_reply,q.status,q.published_at,q.expires_at,q.created_at AS discovered_at,CAST((julianday('now')-julianday(q.published_at))*24 AS INTEGER) AS age_hours FROM growth_facebook_questions q JOIN growth_facebook_groups g ON g.id=q.group_id WHERE q.expires_at>datetime('now') AND q.status!='DISMISSED' AND g.status NOT IN ('NO_PROMOTION','DISMISSED') ORDER BY q.score DESC,q.created_at DESC LIMIT 50").all()
  ]);
  return {groups:groups.results,opportunities:questions.results.map(x=>({...x,source:"FACEBOOK_GROUP_MANUAL"}))};
 }
 export async function progressGroupQuestion(db,id,status){
  if(!/^[0-9a-f-]{36}$/i.test(id)||!["REVIEW","SHORTLISTED","CONTACTED","RESPONDED","DISMISSED"].includes(status))return null;
- const row=await db.prepare("SELECT id FROM growth_facebook_questions WHERE id=? AND expires_at>datetime('now')").bind(id).first();
+ const row=await db.prepare("SELECT q.id FROM growth_facebook_questions q JOIN growth_facebook_groups g ON g.id=q.group_id WHERE q.id=? AND q.expires_at>datetime('now') AND q.status!='DISMISSED' AND g.status NOT IN ('NO_PROMOTION','DISMISSED')").bind(id).first();
  if(!row)return null;
  const r=await db.prepare("UPDATE growth_facebook_questions SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,id).run();
  return {id,status,updated:Number(r.meta?.changes||0)===1};

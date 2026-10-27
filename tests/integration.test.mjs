@@ -1304,6 +1304,18 @@ test("owner-assisted Facebook Groups allow only reviewed PUBLIC, recent, anonymo
  assert.equal(manuallyJoined.httpStatus,200);
  const member=sqlite.prepare("SELECT status FROM growth_facebook_groups WHERE id=?").get(added.id);
  assert.equal(member.status,"JOINED_MANUALLY");
+ const noPromotion=await request("/api/admin/growth/facebook-groups/"+added.id+"/status","PATCH",
+  {status:"NO_PROMOTION",owner_confirmed:true});
+ assert.equal(noPromotion.httpStatus,200);
+ assert.equal(sqlite.prepare("SELECT status FROM growth_facebook_questions WHERE id=?").get(inserted.id).status,"DISMISSED");
+ const afterModeration=await request("/api/admin/growth");
+ assert.equal(afterModeration.opportunities.some(x=>x.id===inserted.id),false);
+ const blockedFollowUp=await request("/api/admin/growth/opportunities/"+inserted.id+"/status","PATCH",
+  {status:"CONTACTED",owner_confirmed:true});
+ assert.equal(blockedFollowUp.httpStatus,422);
+ const blockedNew=await request("/api/admin/growth/facebook-questions","POST",
+  {...base,url:"https://www.facebook.com/groups/balitravel/posts/87654321"});
+ assert.equal(blockedNew.httpStatus,422);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM leads").get().n,0);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_facebook_questions").get().n,1);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM growth_discovery_runs WHERE source LIKE 'FACEBOOK_GROUP%'").get().n,0);
@@ -1316,6 +1328,24 @@ test("Facebook Groups travel deadline is explicitly expired and cannot be manual
   .run(groupId,"Lembongan Travel Public","https://www.facebook.com/groups/lembongan/","NUSA_LEMBONGAN","Help and advice welcome");
  await assert.rejects(addGroupQuestion(db,{group_id:groupId,summary:"Nusa Lembongan tour tomorrow? Any tips",url:"https://www.facebook.com/groups/lembongan/posts/123/",
   published_at:"2026-10-26T02:00:00Z",owner_verified_public:true},Date.parse("2026-10-27T17:00:00Z")),/berlalu/);
+ sqlite.close();
+});
+
+test("moderating archived Facebook groups hides previous replied conversations, without deleting audit history",async()=>{
+ const {db,sqlite}=createD1();
+ const id="ef510314-ef51-4314-8314-ef510314ef51",qid="ef520314-ef52-4314-8314-ef520314ef52";
+ const published=new Date(Date.now()-60000).toISOString().replace("T"," ").slice(0,19);
+ const expires=new Date(Date.now()+60000).toISOString().replace("T"," ").slice(0,19);
+ sqlite.prepare("INSERT INTO growth_facebook_groups(id,name,group_url,destination,rules_note,status) VALUES(?,?,?,?,?,?)")
+  .run(id,"Bali Public Tourism","https://www.facebook.com/groups/balipublic/","NUSA_PENIDA","Advice allowed; review each response","JOINED_MANUALLY");
+ sqlite.prepare("INSERT INTO growth_facebook_questions(id,group_id,source_url,headline,destination,theme,score,suggested_reply,published_at,expires_at,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)")
+  .run(qid,id,"https://www.facebook.com/groups/balipublic/posts/123/","Nusa Penida group wants a boat booking?","NUSA_PENIDA","GENERAL",60,"Informative owner review reply with business disclosure only.",published,expires,"CONTACTED");
+ const {groupOverview,changeGroupStatus,progressGroupQuestion}=await import("../src/group-workflow.mjs");
+ const before=await groupOverview(db);assert.equal(before.opportunities.length,1);
+ await changeGroupStatus(db,id,"DISMISSED");
+ const after=await groupOverview(db);assert.equal(after.opportunities.length,0);
+ const blocked=await progressGroupQuestion(db,qid,"RESPONDED");assert.equal(blocked,null);
+ assert.equal(sqlite.prepare("SELECT status FROM growth_facebook_questions WHERE id=?").get(qid).status,"CONTACTED");
  sqlite.close();
 });
 
