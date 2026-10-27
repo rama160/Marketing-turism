@@ -514,6 +514,15 @@ $("#growthPartnerForm").onsubmit=async e=>{
  }catch(err){say("#growthFeedback",err.message)}
 };
 // User-curated Facebook Groups: no Graph Groups requests and no autonomous social actions.
+$("#growthGroupsReload").onclick=async()=>{
+ const button=$("#growthGroupsReload");button.disabled=true;
+ try{
+  const groups=await loadSavedFacebookGroups();
+  data.growth={...(data.growth||{}),facebook_groups:groups};
+  say("#growthGroupFeedback","Daftar terbaru dari database: "+groups.length+" grup tersimpan.",true);
+ }catch(err){say("#growthGroupFeedback","Tidak bisa memuat daftar grup: "+err.message);}
+ finally{button.disabled=false;}
+};
 $("#growthGroupForm").onsubmit=async e=>{
  e.preventDefault();
  const form=e.target,button=form.querySelector('[type="submit"]'),b=formValues(form);
