@@ -1,3 +1,14 @@
+## 24 NOV 2026 — WEBSITE CMS & ADD ACTIVITY v3.18.0 (pending deployment)
+- Public site retains all original guest pages and old operator booking pathways. Additions occur in a standalone `src/website-cms.mjs`, existing `src/worker.mjs`, dashboard and public presentation.
+- Existing `site_content` handles static text; new `website_activities` stores versioned draft/public snapshot (no auto publication), `website_media` metadata, `website_photo_slots` existing-page imagery; audit events use existing audit_log. New additive migration: `database/migrations/0023_website_cms.sql`.
+- Owner must verify supplier scope before publishing an experience. Public pricing only if confirmed separately. Dynamic website experiences are enquiry-only via WhatsApp; **never** insert new activity codes into existing `rates`, `quotes`, `leads`, or `bookings` or pretend to support automated booking.
+- Public SSR SEO pages: `/en/experiences/:slug`, `/id/experiences/:slug`; dynamic `/sitemap.xml` and `/robots.txt` need Worker-first routing. CMS photo binary uses existing `PHOTO_KV` key prefix `website-media/v1/`; unrelated photo library and social queue remain unchanged.
+- Public JS `public/website-content.js` only reads published items and image slot metadata. Existing `public/guest.js`, `public/language.js`, guest consent, and WhatsApp intent tracking are preserved.
+- The GitHub deployment workflow is opt-in and has been updated to apply ONLY the additive CMS migration; do not replay previously applied D1 schema migrations. Publish only after CI, D1 migration and isolated Worker/assets deployment verified.
+- Existing Cloudflare Worker config must preserve `keep_vars`, three cron strings, D1, AI, static assets, PHOTO_KV, Meta, WhatsApp and any dashboard-managed bindings. Never alter other Workers or secrets.
+
+---
+
 ## 27 OCT 2026 — FACEBOOK GROUPS SAVE HOTFIX v3.17.1
 - Production D1 inspection showed **0 rows** in `growth_facebook_groups` when user reported 2 manual saves. No previous group URLs/names were in DB; never invent or silently re-create groups.
 - Permit Facebook group /groups/<slug> plus mobile/tracking URL and Facebook-native /share/g/<token> bookmarks; normalize accepted origins strictly to facebook.com. /share/g links can be saved for review but a group-specific PUBLIC post reference must use the canonical /groups/<slug>/posts/<id> URL for confirmation. This never grants access to private Group content.
