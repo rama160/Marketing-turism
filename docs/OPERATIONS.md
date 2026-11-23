@@ -1,3 +1,15 @@
+## Website CMS & Add Activity — v3.18.0 (deployment gated)
+1. Open dashboard > Konten & Kampanye > Editor Website > Aktivitas & Foto.
+2. Upload a rights-confirmed JPEG; the existing browser compression can reduce image size to the Cloudflare 850 KB limit.
+3. Click Add Activity; enter unique slug, title/summary/full description in English and Indonesian, choose category and photo. Save Draft.
+4. Confirm partner/service scope is genuine; include a public price only after independently confirming sale price and checking the price-verification box. Click Publish after checking the preview and details. Unpublished drafts remain invisible to guests.
+5. Existing activity edits save as draft until a new Publish. For removal, Archive. Old public pages remain unchanged during editing. Slugs cannot be edited to avoid breaking SEO.
+6. For existing static photos select slot (hero, snorkeling, island, west or east) and uploaded photo, then Publish Photo. Existing text CMS is unchanged.
+7. Guests see a new card on the home page and server-rendered pages at `/en/experiences/{slug}` and `/id/experiences/{slug}`; enquiry is via WhatsApp, **not** the original Penida quote workflow.
+8. First deployment only: review and execute migration `0023_website_cms.sql` in the dedicated Marketing Tourism D1; validate CI, assets, Worker bindings and live smoke. Do not replay historical migrations. Do not deploy unrelated Workers.
+
+---
+
 ## Facebook Group save verification — 27 Oct 2026
 In dashboard `Akuisisi Pelanggan → Akuisisi Pelanggan → Facebook Groups`, enter group name (min 5 characters), destination, and Facebook link (accepts /groups/ or /share/g/ links). Rules can be blank initially and display "Belum diperiksa"; do not promote before checking them yourself. Press Simpan grup and confirm the status displays `Grup berhasil tersimpan: <name>. Total N grup tersimpan.` The backend independently reads the stored row from D1, then GETs current saved groups. Use `Muat grup tersimpan` to inspect saved entries even when other growth sources are unavailable. This is a manual bookmark list; does not join Facebook, read private group data, publish or message users.
 If link is rejected, copy the actual Facebook group share link rather than an individual profile or Page. If the browser displays `Belum tersimpan: ...`, preserve form values and inspect error instead of assuming saved. Old failed attempts with zero D1 rows require manual re-entry by the owner; do not synthesize or guess them.
