@@ -49,7 +49,7 @@ function changeTab(name){
  const group=NPE_PAGE_GROUP[name]||"home",workspace=NPE_WORKSPACES[group];
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
- if(name==="website"&&ownerSignedIn)void loadSiteEditor();
+ if(name==="website"&&ownerSignedIn){void loadSiteEditor();void loadWebsiteCMS();}
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
  if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
@@ -94,7 +94,7 @@ function initCompactPanels(){
   rates:["Kelola tarif","Riwayat tarif"],
   quotes:["Buat penawaran","Daftar penawaran"],
   market:["Catat harga","Referensi pasar"],
-  website:["Editor konten","Pratinjau website"],
+  website:["Editor konten","Pratinjau website","Aktivitas & Foto"],
   marketing:["Buat draf","Hasil draf"]
  };
  for(const [tabName,titles] of Object.entries(layouts)){
@@ -995,6 +995,108 @@ $("#cmsPublish").onclick=async()=>{
  finally{button.disabled=false;}
 };
 
+// Dynamic website CMS: separate from verified operator pricing, quotes and bookings.
+let npeCmsActivities=[],npeCmsMedia=[],npeCmsEditing=null;
+const cmsForm=$("#cmsActivityForm");
+const cmsField=name=>cmsForm.elements.namedItem(name);
+const cmsSet=(name,value)=>{const el=cmsField(name);if(!el)return;if(el.type==="checkbox")el.checked=value===true;else el.value=value??"";};
+const cmsRead=name=>{const el=cmsField(name);return el?.type==="checkbox"?el.checked:el?.value?.trim()??"";};
+function resetWebsiteForm(){
+ npeCmsEditing=null;cmsForm.reset();
+ cmsField("slug").readOnly=false;
+ $("#cmsFormHeading").textContent="Tambah aktivitas";
+ cmsForm.hidden=false;
+ $("#cmsActivityFeedback").textContent="";
+ cmsForm.scrollIntoView?.({behavior:"smooth",block:"start"});
+}
+function editWebsiteActivity(id){
+ const record=npeCmsActivities.find(x=>x.id===id);if(!record)return;
+ npeCmsEditing=record;cmsForm.reset();
+ for(const [key,value] of Object.entries(record.draft||{}))cmsSet(key,value);
+ cmsField("slug").readOnly=true;
+ $("#cmsFormHeading").textContent="Edit: "+record.draft.title_en;
+ cmsForm.hidden=false;
+ say("#cmsActivityFeedback","Perubahan disimpan sebagai draf; versi terbit sebelumnya tetap tampil sampai disetujui.",true);
+ cmsForm.scrollIntoView?.({behavior:"smooth",block:"start"});
+}
+function drawWebsiteCMS(){
+ const root=$("#cmsActivities");
+ root.innerHTML=npeCmsActivities.length?npeCmsActivities.map(a=>{
+  const d=a.draft||{};
+  const state=a.status==="PUBLISHED"?"Terbit"+(a.pending_changes?" · draf baru menunggu":""):a.status==="ARCHIVED"?"Diarsipkan":"Draf";
+  return '<article class="npeCmsItem"><div><strong>'+esc(d.title_en||d.slug)+'</strong><p>'+esc(d.title_id||"")+'</p><small>'+esc(d.category||"")+" · "+esc(state)+'</small></div>'+
+   '<div class="actions"><button type="button" class="outline small" data-cms-edit="'+esc(a.id)+'">Edit</button>'+
+   '<button type="button" class="primary small" data-cms-publish="'+esc(a.id)+'">Publish</button>'+
+   (a.status==="PUBLISHED"?'<button type="button" class="outline small" data-cms-archive="'+esc(a.id)+'">Arsip</button>':"")+
+   (a.status==="PUBLISHED"&&a.published?'<a class="outline small" target="_blank" rel="noopener" href="/en/experiences/'+encodeURIComponent(a.slug)+'">Lihat</a>':"")+'</div></article>';
+ }).join(""):'<p class="feedback">Belum ada aktivitas dinamis. Gunakan Add Activity untuk mulai.</p>';
+ root.querySelectorAll("[data-cms-edit]").forEach(b=>b.onclick=()=>editWebsiteActivity(b.dataset.cmsEdit));
+ root.querySelectorAll("[data-cms-publish]").forEach(b=>b.onclick=()=>cmsPublishActivity(b.dataset.cmsPublish));
+ root.querySelectorAll("[data-cms-archive]").forEach(b=>b.onclick=()=>cmsArchiveActivity(b.dataset.cmsArchive));
+ const selects=[$("#cmsActivityMedia"),$("#cmsSlotMedia")];
+ for(const el of selects){
+  const previous=el.value;el.innerHTML='<option value="">Pilih foto...</option>'+npeCmsMedia.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.title)+'</option>').join("");
+  if(npeCmsMedia.some(m=>m.id===previous))el.value=previous;
+ }
+ $("#cmsMediaGrid").innerHTML=npeCmsMedia.map(m=>'<div class="npeCmsMedia"><img src="'+esc(m.url)+'" loading="lazy" alt="'+esc(m.alt_id)+'"><small>'+esc(m.title)+'</small></div>').join("");
+}
+async function loadWebsiteCMS(){
+ if(!ownerSignedIn)return;
+ try{
+  const [acts,media]=await Promise.all([api("admin/website/activities"),api("admin/website/media")]);
+  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];drawWebsiteCMS();
+ }catch(e){say("#cmsActivityFeedback","Gagal memuat CMS: "+e.message);$("#cmsActivities").textContent="Fitur CMS belum siap. Periksa migrasi database.";}
+}
+$("#cmsAddActivity").onclick=resetWebsiteForm;
+$("#cmsCancelActivity").onclick=()=>{cmsForm.hidden=true;};
+cmsForm.onsubmit=async e=>{
+ e.preventDefault();
+ const draft=Object.fromEntries(["slug","category","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_label_en","price_label_id","price_verified","supplier_confirmed"].map(k=>[k,cmsRead(k)]));
+ const b=$("#cmsSaveActivity");b.disabled=true;
+ try{
+  const path=npeCmsEditing?"admin/website/activities/"+npeCmsEditing.id:"admin/website/activities";
+  const payload={draft,...(npeCmsEditing?{expected_version:npeCmsEditing.version}:{})};
+  await api(path,npeCmsEditing?"PATCH":"POST",payload);
+  cmsForm.hidden=true;await loadWebsiteCMS();
+  say("#cmsSlotFeedback","Draf aktivitas tersimpan. Klik Publish setelah memeriksa foto dan operator.",true);
+ }catch(e){say("#cmsActivityFeedback",e.message);}
+ finally{b.disabled=false;}
+};
+async function cmsPublishActivity(id){
+ const a=npeCmsActivities.find(x=>x.id===id);if(!a)return;
+ if(!a.draft.supplier_confirmed){say("#cmsSlotFeedback","Periksa dan konfirmasi operator terlebih dahulu melalui Edit.");return;}
+ if(!window.confirm("Publikasikan aktivitas "+a.draft.title_en+" ke website publik?"))return;
+ try{await api("admin/website/activities/"+id+"/publish","POST",{expected_version:a.version,owner_confirmed:true});await loadWebsiteCMS();say("#cmsSlotFeedback","Aktivitas terbit. Halaman Google dan katalog publik tersedia.",true);}
+ catch(e){say("#cmsSlotFeedback",e.message);}
+}
+async function cmsArchiveActivity(id){
+ const a=npeCmsActivities.find(x=>x.id===id);if(!a||!window.confirm("Arsipkan "+a.draft.title_en+" dari website publik?"))return;
+ try{await api("admin/website/activities/"+id+"/archive","POST",{expected_version:a.version,owner_confirmed:true});await loadWebsiteCMS();say("#cmsSlotFeedback","Aktivitas diarsipkan.",true);}
+ catch(e){say("#cmsSlotFeedback",e.message);}
+}
+$("#cmsMediaUpload").onsubmit=async e=>{
+ e.preventDefault();const b=e.currentTarget.querySelector("button[type=submit]");b.disabled=true;
+ try{
+  const formEl=e.currentTarget,raw=new FormData(formEl),file=raw.get("file"),jpeg=await compressOwnerPhoto(file);
+  const form=new FormData();form.append("file",jpeg,"npe-website-photo.jpg");
+  for(const k of ["title","alt_en","alt_id"])form.append(k,String(raw.get(k)||"").trim());
+  form.append("rights_confirmed",raw.has("rights_confirmed")?"true":"false");
+  const res=await fetch("/api/admin/website/media",{method:"POST",credentials:"same-origin",cache:"no-store",body:form});
+  const j=await res.json();
+  if(!res.ok)throw Error(j.error||"Upload foto gagal");
+  formEl.reset();await loadWebsiteCMS();
+  $("#cmsActivityMedia").value=j.id;$("#cmsSlotMedia").value=j.id;
+  say("#cmsMediaFeedback","Foto tersimpan. Pilih sebagai cover aktivitas atau slot halaman.",true);
+ }catch(e){say("#cmsMediaFeedback",e.message);}
+ finally{b.disabled=false;}
+};
+$("#cmsPublishSlot").onclick=async()=>{
+ const slot=$("#cmsPhotoSlot").value,media_id=$("#cmsSlotMedia").value;
+ if(!media_id){say("#cmsSlotFeedback","Pilih foto yang sudah diupload.");return;}
+ if(!window.confirm("Ubah foto "+slot+" pada website publik?"))return;
+ try{await api("admin/website/slots","POST",{slot,media_id,owner_confirmed:true});say("#cmsSlotFeedback","Foto baru diterbitkan. Muat ulang website publik.",true);}
+ catch(e){say("#cmsSlotFeedback",e.message);}
+};
 // Automatically restore durable login even after browser/app restart. No admin token stored in localStorage.
 (async function restoreOwnerSession(){
  try{

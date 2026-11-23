@@ -234,3 +234,19 @@
  .dashboardPage .adminHeading #lock{font-size:10px;padding:7px 9px}
 }
 @media(prefers-reduced-motion:reduce){.dashboardPage .dashContentArea>.tabcontent{animation:none}}
+
+/* Dynamic website CMS: compact mobile-first activity and photo editor. */
+.dashboardPage .npeCmsPanel{display:grid;gap:15px}
+.dashboardPage .npeCmsHeading{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}
+.dashboardPage .npeCmsActivities{display:grid;gap:10px}
+.dashboardPage .npeCmsItem{border:1px solid #d5e5e2;border-radius:12px;padding:13px;display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dashboardPage .npeCmsItem>div:first-child{min-width:180px;flex:1}
+.dashboardPage .npeCmsItem p{margin:2px 0;font-size:12px}
+.dashboardPage .npeCmsItem small{font-size:11px;color:#607a7c}
+.dashboardPage .npeCmsItem .actions{margin:0;display:flex;flex-wrap:wrap;gap:6px}
+.dashboardPage .npeCmsForm{border:1px solid #cee2df;border-radius:12px;padding:14px;background:#f8fbfa}
+.dashboardPage .npeCmsMediaGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px;max-height:340px;overflow:auto}
+.dashboardPage .npeCmsMedia{display:grid;gap:4px;border:1px solid #deebea;border-radius:9px;padding:5px}
+.dashboardPage .npeCmsMedia img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px}
+.dashboardPage .npeCmsMedia small{font-size:11px;overflow-wrap:anywhere}
+@media(max-width:700px){.dashboardPage .npeCmsPanel .formgrid{grid-template-columns:1fr}}

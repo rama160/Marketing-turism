@@ -1,3 +1,15 @@
+## [3.18.0] — 2026-11-24 (branch implementation; live deployment not yet verified)
+### Added
+- Website CMS Add Activity form, two-language copy, SEO metadata, owner-approved publication, archive and immutable revisions.
+- Own-photo website media upload, dynamic photo slot assignments, auto-generated public activity cards, SEO HTML pages and live sitemap.
+- Isolated Cloudflare D1 migration 0023 and CMS tests.
+### Preserved
+- Original pricing, partner rates, guest lead opt-in, WhatsApp, booking/payment process, AI marketing, existing owner login, cron and site text editor.
+### Deployment
+- Apply only the new additive D1 migration; CI and live rollout must be independently verified before claiming public availability.
+
+---
+
 ### 3.17.1 — 27 October 2026: repair Facebook Group bookmarks not persisting
 - Verified production D1 has no saved Facebook Groups; report user-created groups were not recorded and cannot be recovered without re-entry.
 - Support standard, mobile/tracking and Facebook share/g group links in owner bookmarks. Allow rules pending review while rejecting off-Facebook profile links and ensuring owner acknowledges manual-only interaction.

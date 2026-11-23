@@ -1,3 +1,23 @@
+## v3.18.0 — Dynamic Website CMS & SEO-preserving experiences (24 November 2026)
+The existing `src/site-content.mjs` remains canonical for editable static hero and tour text. New isolated `src/website-cms.mjs` handles **dynamic activity draft, revision, publishing, media, photo slots and public experience page rendering**. No duplicate text editor or pricing engine.
+
+### Data & boundaries
+- `website_activities(id,slug,draft_json,published_json,status,version,published_at,...)` versions draft and public independently. Editing a published activity does not alter public content until owner approves Publish. Slug cannot change after creation, preventing broken SEO URLs.
+- `website_activity_revisions` captures immutable published snapshots. `website_media` stores only JPEG metadata/digest while binary goes to the existing PHOTO_KV under `website-media/v1/{uuid}`. `website_photo_slots` assigns verified photos to hero/snorkeling/island/west/east without editing JSX or static page markup again.
+- D1 migration `0023_website_cms.sql` is additive and isolated from supplier rates, approved quotes, booking and guest contact details.
+- Admin APIs behind the existing revocable HttpOnly owner session: `GET/POST /api/admin/website/activities`, `PATCH /api/admin/website/activities/:id`, `POST /api/admin/website/activities/:id/publish|archive`, `GET/POST /api/admin/website/media`, `GET/POST /api/admin/website/slots`.
+- Public read-only APIs: `GET /api/public/website/activities`, `GET /api/public/website/slots`; media `GET /photos/website/:uuid`; indexable pre-rendered pages `GET /en/experiences/:slug`, `/id/experiences/:slug`.
+- Dynamic sitemap and robots derive the live hostname; `wrangler.jsonc` worker-first paths cover only SEO routes and preserve existing static asset service for the other paths.
+- Publishing requires an owner confirmation, a rights-confirmed website photo, and checked supplier scope. Public prices additionally require checked price verification. These flags are human attestations, **not** proof of verified inventory, operational booking, or supplier API integrations. Payment/quote processing stays unchanged.
+- Public activity cards are appended by `public/website-content.js` and link to server-rendered HTML indexable pages. Failed CMS API calls leave the old static site usable.
+- Static homepage title/description editor remains `src/site-content.mjs`, so owners can edit copy, photos, create activities, change SEO fields and publish without updating source files for each routine operation.
+
+### SEO & operational tradeoffs
+Dynamic activity pages render HTML with unique localized title/meta, canonical, hreflang en/id, OG and basic WebPage JSON-LD, all escaped. Existing .html route titles/canonical remain unchanged until a future domain migration. Google indexing/first-page placement is not guaranteed. Google Search Console must be configured after custom domain purchase.
+Plan a future migration of older .html static pages to localized server-rendered routes if search data supports it; do not introduce automatic redirects or domain assumptions before the domain exists.
+
+---
+
 # Technical Architecture v3.0.0
 
 ## Components

@@ -11,6 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
+import {listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -158,6 +159,10 @@ async function route(req,env,ctx){
   if(!db)return bad("D1 database belum aktif",503);
   return serveResearchPhoto(req,env,db);
  }
+ if(path.startsWith("/photos/website/")){
+  if(!db)return bad("D1 database belum aktif",503);
+  return serveWebsiteMedia(req,env,db);
+ }
  if(path.startsWith("/photos/owner/")){
   if(!db)return bad("D1 database belum aktif",503);
   return serveOwnerPhoto(req,env,db);
@@ -166,8 +171,18 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.17.1",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.18.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
+ if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
+ if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
+ const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
+ if(experience&&method==="GET"){
+  const published=await findPublishedExperience(db,experience[2]);
+  if(!published)return new Response("Experience not found",{status:404,headers:{"cache-control":"no-store"}});
+  return new Response(renderExperiencePage(published,experience[1],u.origin),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
+ }
+ if(path==="/api/public/website/activities"&&method==="GET")return json(await publicWebsiteActivities(db));
+ if(path==="/api/public/website/slots"&&method==="GET")return json(await getWebsiteSlots(db));
  if(path==="/api/public/cancellation-policy"&&method==="GET")return json({version:CANCELLATION_POLICY_VERSION,tiers:[{days:"H-7+",forfeit_percent:25},{days:"H-6 s.d. H-3",forfeit_percent:50},{days:"H-2 s.d. H-1",forfeit_percent:75},{days:"Hari H/no-show",forfeit_percent:100}],status:"DRAFT_REQUIRES_BUSINESS_REVIEW",special_cases:"Pembatalan operator/tidak aman ditinjau terpisah untuk perlindungan guest."});
  if(path==="/api/public/site-content"&&method==="GET")return json(await publicSiteContent(db,u.searchParams.get("lang")));
  if(path==="/api/public/catalog"&&method==="GET"){
@@ -231,6 +246,49 @@ async function route(req,env,ctx){
   const b=await parse(req),result=await waAdminSend(db,env,b);
   if(result.ok)await audit(db,"whatsapp",String(b.client_nonce||""),"OWNER_SUBMITTED_REPLY",{via:"official_cloud_api"});
   return result;
+ }
+ if(path==="/api/admin/website/activities"){
+  if(method==="GET")return json(await listWebsiteActivities(db));
+  if(method==="POST"){
+   const saved=await saveWebsiteActivity(db,await parse(req));
+   await audit(db,"website_activity",saved.id,"DRAFT_CREATED",{version:saved.version});
+   return json(saved,201);
+  }
+  return bad("Metode tidak diizinkan",405);
+ }
+ const websiteActivity=path.match(/^\/api\/admin\/website\/activities\/([0-9a-f-]+)(?:\/(publish|archive))?$/);
+ if(websiteActivity){
+  const id=websiteActivity[1],action=websiteActivity[2],b=await parse(req);
+  if(!action&&method==="PATCH"){
+   const saved=await saveWebsiteActivity(db,b,id);
+   await audit(db,"website_activity",id,"DRAFT_EDITED",{version:saved.version});
+   return json(saved);
+  }
+  if(action==="publish"&&method==="POST"){
+   const out=await publishWebsiteActivity(db,id,b);
+   await audit(db,"website_activity",id,"PUBLISHED",{version:out.version});
+   return json(out);
+  }
+  if(action==="archive"&&method==="POST"){
+   const out=await archiveWebsiteActivity(db,id,b);
+   await audit(db,"website_activity",id,"ARCHIVED",{});
+   return json(out);
+  }
+  return bad("Metode tidak diizinkan",405);
+ }
+ if(path==="/api/admin/website/media"){
+  if(method==="GET")return json(await listWebsiteMedia(db));
+  if(method==="POST")return storeWebsiteMedia(req,env,db);
+  return bad("Metode tidak diizinkan",405);
+ }
+ if(path==="/api/admin/website/slots"){
+  if(method==="GET")return json(await getWebsiteSlots(db));
+  if(method==="POST"){
+   const out=await updateWebsiteSlot(db,await parse(req));
+   await audit(db,"website_slot",out.slot,"PHOTO_CHANGED",{media_id:out.media_id});
+   return json(out);
+  }
+  return bad("Metode tidak diizinkan",405);
  }
  if(path==="/api/admin/site-content"){
   if(method==="GET")return json(await adminSiteContent(db));

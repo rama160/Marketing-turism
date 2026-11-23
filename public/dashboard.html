@@ -56,7 +56,57 @@
  <label>Bagian halaman<select id="cmsKey"></select></label>
  <label>Isi konten<textarea id="cmsValue" rows="6" minlength="2" maxlength="1200" spellcheck="true"></textarea></label>
  <p id="cmsVersion" class="feedback"></p><div class="actions"><button id="cmsPreview" type="button" class="outline">Pratinjau</button><button id="cmsPublish" type="button" class="primary">Simpan &amp; terbitkan</button></div><p id="cmsFeedback" class="feedback" role="status"></p></div>
- <div class="panel"><h3>Pratinjau sebelum terbit</h3><p id="cmsPreviewText" class="cmsPreview" aria-live="polite">Pilih bagian dan isi konten.</p><p class="feedback">Hindari menjanjikan jadwal, tarif, fasilitas atau jaminan keselamatan yang belum disetujui operator. Editor menerima teks biasa; HTML dan skrip ditolak server.</p></div></div></div><div id="tab-marketing" class="tabcontent" hidden><div class="split"><div class="panel"><h3>Draft konten promosi</h3><label>Produk<select id="marketingProduct"><option value="SNORKELING_3_SPOTS">Snorkeling</option><option value="ISLAND_TOUR_CAR">Island Tour</option></select></label><label class="check"><input id="marketingAI" type="checkbox">Gunakan Workers AI jika tersedia</label><button id="generateContent" class="primary">Buat draf</button><p>Draf baru harus disetujui. Draf yang disetujui melalui halaman Kampanye akan dijadwalkan otomatis hanya ke kanal yang Anda pilih; tanpa spam/iklan berbayar.</p></div><div class="panel"><h3>Hasil draf</h3><pre id="marketingOutput" class="output">Belum ada konten</pre><button id="copyMarketing" class="outline">Salin teks</button></div></div></div>
+ <div class="panel"><h3>Pratinjau sebelum terbit</h3><p id="cmsPreviewText" class="cmsPreview" aria-live="polite">Pilih bagian dan isi konten.</p><p class="feedback">Hindari menjanjikan jadwal, tarif, fasilitas atau jaminan keselamatan yang belum disetujui operator. Editor menerima teks biasa; HTML dan skrip ditolak server.</p></div>
+ <section class="panel npeCmsPanel" aria-label="Pengelola aktivitas dan foto website">
+ <div class="npeCmsHeading"><div><h3>Website Content Manager</h3><p class="feedback">Tambah paket, ubah foto, dan publikasi tanpa mengedit GitHub. Draf tidak tampil di website sebelum disetujui pemilik.</p></div><button id="cmsAddActivity" class="primary" type="button">＋ Add Activity</button></div>
+ <div id="cmsActivities" class="npeCmsActivities" aria-live="polite"><p class="feedback">Memuat aktivitas...</p></div>
+ <form id="cmsActivityForm" class="formgrid npeCmsForm" hidden>
+ <h4 class="wide" id="cmsFormHeading">Tambah aktivitas</h4>
+ <label class="wide">Nama URL / slug (tetap setelah disimpan)<input name="slug" required minlength="3" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nusa-lembongan-island-tour"></label>
+ <label>Kategori<select name="category"><option value="ISLAND_TOUR">Island Tour</option><option value="SNORKELING">Snorkeling</option><option value="TRANSPORT">Fast Boat / Transport</option><option value="OTHER">Aktivitas lainnya</option></select></label>
+ <label>Foto utama<select name="media_id" id="cmsActivityMedia"><option value="">Pilih foto...</option></select></label>
+ <label>Judul (English)<input name="title_en" required minlength="3" maxlength="150"></label>
+ <label>Judul (Indonesia)<input name="title_id" required minlength="3" maxlength="150"></label>
+ <label class="wide">Ringkasan (English)<textarea name="summary_en" rows="2" maxlength="300" required></textarea></label>
+ <label class="wide">Ringkasan (Indonesia)<textarea name="summary_id" rows="2" maxlength="300" required></textarea></label>
+ <label class="wide">Deskripsi lengkap (English)<textarea name="description_en" rows="5" maxlength="3000" required></textarea></label>
+ <label class="wide">Deskripsi lengkap (Indonesia)<textarea name="description_id" rows="5" maxlength="3000" required></textarea></label>
+ <details class="wide"><summary>SEO dan harga publik (opsional)</summary>
+ <div class="formgrid">
+ <label>SEO Title English<input name="seo_title_en" maxlength="140"></label>
+ <label>SEO Title Indonesia<input name="seo_title_id" maxlength="140"></label>
+ <label class="wide">Meta Description English<textarea name="seo_description_en" maxlength="300" rows="2"></textarea></label>
+ <label class="wide">Meta Description Indonesia<textarea name="seo_description_id" maxlength="300" rows="2"></textarea></label>
+ <label>Label harga English<input name="price_label_en" maxlength="120" placeholder="From IDR..."></label>
+ <label>Label harga Indonesia<input name="price_label_id" maxlength="120" placeholder="Mulai Rp..."></label>
+ <label class="check wide"><input name="price_verified" type="checkbox"> Harga jual sudah diverifikasi dan disetujui pemilik</label>
+ </div></details>
+ <label class="check wide"><input name="supplier_confirmed" type="checkbox"> Saya telah memeriksa bahwa aktivitas, cakupan, dan mitra operator tersedia sesuai deskripsi</label>
+ <div class="actions wide"><button id="cmsSaveActivity" class="primary" type="submit">Simpan Draft</button><button id="cmsCancelActivity" class="outline" type="button">Batal</button></div>
+ <p class="feedback wide" id="cmsActivityFeedback" role="status"></p>
+ </form>
+ <hr>
+ <h4>Media Library & Foto Website</h4>
+ <p class="feedback">Unggah foto milik Anda dari HP (JPG otomatis dikompresi). Tidak menghapus foto kampanye yang sudah ada.</p>
+ <form id="cmsMediaUpload" class="formgrid" enctype="multipart/form-data">
+ <label class="wide">Foto<input name="file" type="file" accept="image/*" required></label>
+ <label>Nama foto<input name="title" minlength="2" maxlength="120" required></label>
+ <label>Deskripsi foto (English)<input name="alt_en" minlength="2" maxlength="180" required></label>
+ <label>Deskripsi foto (Indonesia)<input name="alt_id" minlength="2" maxlength="180" required></label>
+ <label class="check wide"><input type="checkbox" name="rights_confirmed" required> Saya mempunyai hak pakai komersial atas foto dan izin subjek apabila diperlukan</label>
+ <button class="primary wide" type="submit">＋ Upload Foto</button>
+ </form>
+ <p id="cmsMediaFeedback" class="feedback" role="status"></p>
+ <div id="cmsMediaGrid" class="npeCmsMediaGrid"></div>
+ <hr>
+ <h4>Ganti Foto Halaman Utama</h4>
+ <div class="formgrid">
+ <label>Bagian website<select id="cmsPhotoSlot"><option value="hero">Banner utama</option><option value="snorkeling">Snorkeling Nusa Penida</option><option value="island">Island Tour Nusa Penida</option><option value="west">West Tour</option><option value="east">East Tour</option></select></label>
+ <label>Foto pengganti<select id="cmsSlotMedia"><option value="">Pilih foto...</option></select></label>
+ <button id="cmsPublishSlot" class="primary wide" type="button">Simpan & Terbitkan Foto</button>
+ </div>
+ <p id="cmsSlotFeedback" class="feedback" role="status"></p>
+ </section></div></div><div id="tab-marketing" class="tabcontent" hidden><div class="split"><div class="panel"><h3>Draft konten promosi</h3><label>Produk<select id="marketingProduct"><option value="SNORKELING_3_SPOTS">Snorkeling</option><option value="ISLAND_TOUR_CAR">Island Tour</option></select></label><label class="check"><input id="marketingAI" type="checkbox">Gunakan Workers AI jika tersedia</label><button id="generateContent" class="primary">Buat draf</button><p>Draf baru harus disetujui. Draf yang disetujui melalui halaman Kampanye akan dijadwalkan otomatis hanya ke kanal yang Anda pilih; tanpa spam/iklan berbayar.</p></div><div class="panel"><h3>Hasil draf</h3><pre id="marketingOutput" class="output">Belum ada konten</pre><button id="copyMarketing" class="outline">Salin teks</button></div></div></div>
 <div id="tab-growth" class="tabcontent" hidden>
 <section class="panel growthHeader">
  <span class="eyebrow">AUDIENCE → CONVERSATION → BOOKING</span>
