@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.17.1")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.18.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -22,7 +22,17 @@ const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
 if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
-await get("/robots.txt");await get("/sitemap.xml");
+await get("/robots.txt");const websiteSitemap=await get("/sitemap.xml");
+if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
+const websiteCatalog=JSON.parse(await get("/api/public/website/activities"));
+if(!Array.isArray(websiteCatalog.items))throw Error("Public CMS activity catalog unavailable");
+const websiteSlots=JSON.parse(await get("/api/public/website/slots"));
+if(!Array.isArray(websiteSlots.items))throw Error("Public CMS photo slots unavailable");
+await get("/api/admin/website/activities",401);
+await get("/api/admin/website/media",401);
+await get("/api/admin/website/slots",401);
+const missingExperience=await fetch(base+"/en/experiences/this-activity-does-not-exist",{signal:AbortSignal.timeout(20000)});
+if(missingExperience.status!==404)throw Error("Unpublished dynamic activity must remain hidden");
 const policy=JSON.parse(await get("/api/public/cancellation-policy"));
 if(policy.tiers?.length!==4)throw Error("Cancellation disclosure missing");
 const cat=JSON.parse(await get("/api/public/catalog"));
@@ -190,4 +200,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.17.1 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.18.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
