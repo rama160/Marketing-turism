@@ -1,0 +1,164 @@
+// Independent website content publishing. Never mutate operator rates, quote snapshots or bookings.
+// Website photos use the existing PHOTO_KV binding but a separate key prefix and metadata table.
+const emailWhatsApp="628561752525";
+const mediaKey=id=>"website-media/v1/"+id;
+const idRE=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i;
+const slugRE=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const validSlots=new Set(["hero","snorkeling","island","west","east"]);
+const validCategories=new Set(["SNORKELING","ISLAND_TOUR","TRANSPORT","OTHER"]);
+const plain=(x,max=1500)=>typeof x==="string"&&x.trim().length>0&&x.trim().length<=max&&!/[<>\u0000-\u001f\u007f]/.test(x);
+const escapeHTML=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const jsonReply=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
+const reject=(msg,code=422)=>jsonReply({error:msg},code);
+const binaryJpeg=b=>b.length>=10000&&b.length<=850000&&b[0]===255&&b[1]===216&&b[2]===255&&b.at(-2)===255&&b.at(-1)===217;
+const u16=x=>String(x??"").trim();
+export function validateWebsiteDraft(input){
+ if(!input||typeof input!=="object")throw Error("Isi aktivitas tidak valid");
+ const slug=u16(input.slug).toLowerCase(),category=u16(input.category);
+ if(slug.length<3||slug.length>90||!slugRE.test(slug))throw Error("Slug gunakan huruf kecil, angka, dan tanda hubung (3–90 karakter)");
+ if(!validCategories.has(category))throw Error("Kategori aktivitas tidak valid");
+ const data={slug,category};
+ for(const field of ["title_id","title_en","summary_id","summary_en","description_id","description_en"]){
+  const max=field.startsWith("description_")?3000:field.startsWith("summary_")?300:150;
+  const value=u16(input[field]);
+  if(!plain(value,max)||value.length<3)throw Error(field+" harus teks biasa 3–"+max+" karakter");
+  data[field]=value;
+ }
+ for(const f of ["seo_title_id","seo_title_en","seo_description_id","seo_description_en"]){
+  const limit=f.startsWith("seo_title")?140:300,value=u16(input[f]);
+  if(value&&!plain(value,limit))throw Error(f+" tidak valid");
+  data[f]=value;
+ }
+ data.media_id=u16(input.media_id);
+ if(data.media_id&&!idRE.test(data.media_id))throw Error("Foto utama tidak valid");
+ data.price_label_id=u16(input.price_label_id);
+ data.price_label_en=u16(input.price_label_en);
+ if((data.price_label_id||data.price_label_en)&&(
+ !plain(data.price_label_id,120)||!plain(data.price_label_en,120)||input.price_verified!==true))
+  throw Error("Harga publik harus lengkap di kedua bahasa dan diverifikasi oleh pemilik");
+ data.price_verified=input.price_verified===true;
+ data.supplier_confirmed=input.supplier_confirmed===true;
+ return data;
+}
+function publicValue(row){
+ const a=JSON.parse(row.published_json);
+ return {id:row.id,...a,photo_url:a.media_id?"/photos/website/"+a.media_id:null,published_at:row.published_at};
+}
+export async function listWebsiteActivities(db){
+ const r=await db.prepare("SELECT id,slug,draft_json,published_json,status,version,published_at,created_at,updated_at FROM website_activities ORDER BY updated_at DESC LIMIT 150").all();
+ return {items:r.results.map(x=>({id:x.id,slug:x.slug,draft:JSON.parse(x.draft_json),published:x.published_json?JSON.parse(x.published_json):null,status:x.status,version:x.version,published_at:x.published_at,updated_at:x.updated_at,pending_changes:x.published_json!==x.draft_json}))};
+}
+export async function publicWebsiteActivities(db){
+ const r=await db.prepare("SELECT id,published_json,published_at FROM website_activities WHERE status='PUBLISHED' AND published_json IS NOT NULL ORDER BY published_at DESC LIMIT 100").all();
+ return {items:r.results.map(publicValue)};
+}
+export async function saveWebsiteActivity(db,b,id=null){
+ const data=validateWebsiteDraft(b.draft);
+ if(!id){
+  const exists=await db.prepare("SELECT id FROM website_activities WHERE slug=?").bind(data.slug).first();
+  if(exists)throw Error("Slug sudah digunakan");
+  id=crypto.randomUUID();
+  await db.prepare("INSERT INTO website_activities(id,slug,draft_json,status,version) VALUES(?,?,?,'DRAFT',1)").bind(id,data.slug,JSON.stringify(data)).run();
+  return {id,version:1,status:"DRAFT"};
+ }
+ if(!idRE.test(id))throw Error("ID aktivitas tidak valid");
+ const prev=await db.prepare("SELECT version,slug FROM website_activities WHERE id=?").bind(id).first();
+ if(!prev)throw Error("Aktivitas tidak ditemukan");
+ if(!Number.isSafeInteger(b.expected_version)||prev.version!==b.expected_version)throw Error("Versi telah berubah; muat ulang editor");
+ if(data.slug!==prev.slug)throw Error("Slug tidak boleh diganti setelah dibuat untuk menjaga tautan SEO");
+ const write=await db.prepare("UPDATE website_activities SET draft_json=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(JSON.stringify(data),id,prev.version).run();
+ if(write.meta?.changes!==1)throw Error("Konflik penyimpanan. Muat ulang editor");
+ return {id,version:prev.version+1,status:"DRAFT_SAVED"};
+}
+export async function publishWebsiteActivity(db,id,body){
+ if(!idRE.test(id)||body.owner_confirmed!==true)throw Error("Publikasi harus disetujui pemilik");
+ const row=await db.prepare("SELECT version,draft_json FROM website_activities WHERE id=?").bind(id).first();
+ if(!row)throw Error("Aktivitas tidak ditemukan");
+ if(!Number.isSafeInteger(body.expected_version)||row.version!==body.expected_version)throw Error("Versi berubah. Muat ulang sebelum terbit");
+ const draft=validateWebsiteDraft(JSON.parse(row.draft_json));
+ if(!draft.supplier_confirmed)throw Error("Konfirmasi cakupan layanan dan operator wajib sebelum terbit");
+ if(!draft.media_id)throw Error("Pilih foto utama yang memiliki izin penggunaan sebelum terbit");
+ const photo=await db.prepare("SELECT id FROM website_media WHERE id=?").bind(draft.media_id).first();
+ if(!photo)throw Error("Foto utama tidak ditemukan");
+ const snapshot=JSON.stringify(draft);
+ const write=await db.prepare("UPDATE website_activities SET published_json=?,status='PUBLISHED',version=version+1,published_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(snapshot,id,row.version).run();
+ if(write.meta?.changes!==1)throw Error("Konflik penerbitan; muat ulang");
+ await db.prepare("INSERT INTO website_activity_revisions(id,activity_id,version,snapshot_json) VALUES(?,?,?,?)").bind(crypto.randomUUID(),id,row.version+1,snapshot).run();
+ return {id,status:"PUBLISHED",version:row.version+1,url:"/en/experiences/"+draft.slug};
+}
+export async function archiveWebsiteActivity(db,id,body){
+ if(!idRE.test(id)||body.owner_confirmed!==true)throw Error("Arsip memerlukan konfirmasi pemilik");
+ const write=await db.prepare("UPDATE website_activities SET status='ARCHIVED',version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(id,body.expected_version).run();
+ if(write.meta?.changes!==1)throw Error("Aktivitas tidak ditemukan atau versi berubah");
+ return {id,status:"ARCHIVED"};
+}
+export async function listWebsiteMedia(db){
+ const r=await db.prepare("SELECT id,title,alt_id,alt_en,bytes,created_at FROM website_media ORDER BY created_at DESC LIMIT 200").all();
+ return {items:r.results.map(x=>({...x,url:"/photos/website/"+x.id}))};
+}
+export async function storeWebsiteMedia(request,env,db){
+ if(!env.PHOTO_KV)return reject("Penyimpanan foto Cloudflare tidak tersedia",503);
+ if(Number(request.headers.get("content-length")||0)>1100000)return reject("Foto terlalu besar",413);
+ if(!(request.headers.get("content-type")||"").startsWith("multipart/form-data;"))return reject("Gunakan formulir foto",415);
+ const form=await request.formData();
+ const file=form.get("file"),title=u16(form.get("title")),altId=u16(form.get("alt_id")),altEn=u16(form.get("alt_en"));
+ if(form.get("rights_confirmed")!=="true")return reject("Konfirmasi hak foto wajib",403);
+ if(!plain(title,120)||!plain(altId,180)||!plain(altEn,180))return reject("Judul dan alt text bahasa Indonesia/Inggris wajib diisi");
+ if(!file||file.type!=="image/jpeg"||file.size>850000||file.size<10000)return reject("Unggah foto JPG 10–850 KB yang sudah dikompresi",422);
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ if(!binaryJpeg(bytes))return reject("Format berkas JPG tidak valid");
+ const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(x=>x.toString(16).padStart(2,"0")).join("");
+ if(await db.prepare("SELECT id FROM website_media WHERE digest=?").bind(digest).first())return reject("Foto sudah ada",409);
+ const id=crypto.randomUUID();
+ try{await env.PHOTO_KV.put(mediaKey(id),bytes.buffer);}catch(_){return reject("Gagal menyimpan foto",503);}
+ try{
+  await db.prepare("INSERT INTO website_media(id,title,alt_id,alt_en,digest,bytes,rights_confirmed) VALUES(?,?,?,?,?,?,1)").bind(id,title,altId,altEn,digest,bytes.length).run();
+ }catch(_){
+  try{await env.PHOTO_KV.delete(mediaKey(id));}catch(_){}
+  return reject("Gagal mencatat foto. Periksa kembali",409);
+ }
+ return jsonReply({id,url:"/photos/website/"+id,title,alt_id:altId,alt_en:altEn},201);
+}
+export async function serveWebsiteMedia(request,env,db){
+ if(request.method!=="GET"&&request.method!=="HEAD")return reject("Metode tidak diizinkan",405);
+ const id=new URL(request.url).pathname.slice("/photos/website/".length);
+ if(!idRE.test(id))return reject("Foto tidak ditemukan",404);
+ if(!(await db.prepare("SELECT id FROM website_media WHERE id=?").bind(id).first()))return reject("Foto tidak ditemukan",404);
+ const raw=await env.PHOTO_KV?.get(mediaKey(id),"arrayBuffer");
+ if(!raw||!binaryJpeg(new Uint8Array(raw)))return reject("Foto tidak tersedia",503);
+ return new Response(request.method==="HEAD"?null:raw,{headers:{"content-type":"image/jpeg","content-length":String(raw.byteLength),"cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}});
+}
+export async function getWebsiteSlots(db){
+ const r=await db.prepare("SELECT slot,media_id,alt_id,alt_en FROM website_photo_slots").all();
+ return {items:r.results.map(x=>({...x,url:"/photos/website/"+x.media_id}))};
+}
+export async function updateWebsiteSlot(db,b){
+ if(b.owner_confirmed!==true||!validSlots.has(b.slot)||!idRE.test(u16(b.media_id)))throw Error("Slot atau foto tidak valid");
+ const media=await db.prepare("SELECT id,alt_id,alt_en FROM website_media WHERE id=?").bind(b.media_id).first();
+ if(!media)throw Error("Foto tidak ditemukan");
+ await db.prepare("INSERT INTO website_photo_slots(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?) ON CONFLICT(slot) DO UPDATE SET media_id=excluded.media_id,alt_id=excluded.alt_id,alt_en=excluded.alt_en,updated_at=CURRENT_TIMESTAMP").bind(b.slot,media.id,media.alt_id,media.alt_en).run();
+ return {slot:b.slot,media_id:media.id,url:"/photos/website/"+media.id};
+}
+export function renderExperiencePage(activity,locale,origin){
+ const lang=locale==="id"?"id":"en";
+ const isEN=lang==="en",p=isEN?"en":"id",title=activity["title_"+p],summary=activity["summary_"+p],desc=activity["description_"+p];
+ const seoTitle=activity["seo_title_"+p]||title+" | Nusa Penida Experiences";
+ const seoDesc=activity["seo_description_"+p]||summary;
+ const root=origin+"/"+lang+"/experiences/"+activity.slug;
+ const en=origin+"/en/experiences/"+activity.slug,id=origin+"/id/experiences/"+activity.slug;
+ const message=encodeURIComponent((isEN?"Hello, I would like details about ":"Halo, saya ingin info tentang ")+title+".");
+ const schema=JSON.stringify({"@context":"https://schema.org","@type":"WebPage",name:seoTitle,description:seoDesc,url:root,isPartOf:{"@type":"WebSite",name:"Nusa Penida Experiences",url:origin}}).replace(/</g,"\\u003c");
+ return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><link rel="stylesheet" href="/styles.css"><script type="application/ld+json">'+schema+'</script></head><body><header class="top"><a class="brand" href="/"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'" alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div></section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer></body></html>';
+}
+export async function findPublishedExperience(db,slug){
+ if(!slugRE.test(slug))return null;
+ const row=await db.prepare("SELECT id,published_json,published_at FROM website_activities WHERE slug=? AND status='PUBLISHED' AND published_json IS NOT NULL").bind(slug).first();
+ return row?publicValue(row):null;
+}
+const xmlEsc=s=>escapeHTML(s).replace(/&#39;/g,"&apos;").replace(/&quot;/g,"&quot;");
+export async function renderWebsiteSitemap(db,origin){
+ const staticPaths=["/","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"];
+ const items=(await publicWebsiteActivities(db)).items;
+ const paths=[...staticPaths.map(p=>origin+p),...items.flatMap(i=>["/en/experiences/","/id/experiences/"].map(p=>origin+p+i.slug))];
+ return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+paths.map(p=>"<url><loc>"+xmlEsc(p)+"</loc></url>").join("")+"</urlset>";
+}
