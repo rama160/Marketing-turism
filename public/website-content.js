@@ -9,6 +9,7 @@ async function loadWebsitePublic(){
    fetch("/api/public/website/activities",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("activities");return r.json()})
   ]);
   const slots=new Map((photos.items||[]).map(x=>[x.slot,x]));
+  window.__npeWebsiteSlots=slots;
   document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
    const slot=slots.get(img.dataset.npeSlot);
    if(!slot)return;
