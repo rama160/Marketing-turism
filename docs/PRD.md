@@ -1,3 +1,17 @@
+## FR-29–FR-38 — Website CMS & Add Activity (v3.18.0)
+- FR-29 Owner can create activity via Add Activity without GitHub edits, choose category, bilingual title, summary and description, slug, optional SEO title/meta and photo.
+- FR-30 Owner can save unpublished drafts, edit draft after publishing without mutating prior live revision, explicitly publish/archive with stale-version conflict rejection.
+- FR-31 Activity appears as a guest-facing card and a dedicated bilingual indexable HTML page only when published; drafts and archived products are not in public listings/sitemap.
+- FR-32 Owner can upload rights-confirmed JPG media from phone, capped at 850 KB post-compression, stored in existing Cloudflare PHOTO_KV with isolated metadata.
+- FR-33 Owner can replace homepage banner/snorkeling/island/west/east photo through media slots, without redeploying site code.
+- FR-34 Public price labels are absent unless owner explicitly verifies both-language price labels. Activities remain enquiry-only until full operator integration; no dummy quotes or altered supplier costs.
+- FR-35 Published content includes SEO title/meta description and localized canonical/hreflang; public sitemap and robots use current hostname.
+- FR-36 No admin auth, supplier net, booking personal data or draft content is exposed through public API or rendered guest HTML.
+- FR-37 Legacy static site continues working during API/media failures; preserve existing guest lead opt-in, sessions, Meta integration, WhatsApp and booking approval paths.
+- FR-38 Deployment requires gated CI, additive D1 migration, isolated Worker/static assets and post-deploy smoke; no automatic destructive schema replay.
+
+---
+
 ## Compact interactive agent dashboard (v3.17.0)
 - A complete, visually restrained, responsive workspace inspired by the **layout** of Ceritexa sample: sidebar on desktop, bottom nav on Android, slim contextual tabs, light cards, clear current section, and small action-first homepage.
 - Six primary groupings: Home, Guest/Sales, Content/Campaigns, Acquisition, Analytics, Settings. Map all existing original operational pages to these groups without dropping controls or backend workflows.
