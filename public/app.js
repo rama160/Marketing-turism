@@ -1128,10 +1128,23 @@ function drawWebsiteCMS(){
   input.innerHTML='<option value="">Pilih foto...</option>'+npeCmsMedia.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.title)+'</option>').join("");
   if(npeCmsMedia.some(m=>m.id===old))input.value=old;
  }
- $("#cmsMediaGrid").innerHTML=npeCmsMedia.length?npeCmsMedia.map(m=>
-  '<div class="npeCmsMedia"><img src="'+esc(m.url)+'" loading="lazy" alt="'+esc(m.alt_id)+'"><small>'+esc(m.title)+'</small>'+
-  '<button type="button" class="outline small" data-cms-use-media="'+esc(m.id)+'">Gunakan foto</button></div>').join(""):'<p class="feedback">Belum ada foto. Upload foto yang memiliki izin penggunaan.</p>';
- $("#cmsMediaGrid").querySelectorAll("[data-cms-use-media]").forEach(b=>b.onclick=()=>{
+ renderNpeMediaGallery();
+ refreshActivityPreview();
+}
+function renderNpeMediaGallery(){
+ const q=$("#cmsGallerySearch").value.trim().toLowerCase();
+ const shown=npeCmsMedia.filter(m=>(m.title+" "+m.alt_id+" "+m.alt_en).toLowerCase().includes(q));
+ $("#cmsGalleryCount").textContent="("+npeCmsMedia.length+")";
+ $("#cmsGalleryStatus").textContent=shown.length+" dari "+npeCmsMedia.length+" foto tersimpan";
+ const root=$("#cmsMediaGrid");
+ root.innerHTML=shown.length?shown.map(m=>
+  '<article class="npeCmsMedia"><img src="'+esc(m.url)+'" loading="lazy" alt="'+esc(m.alt_id)+'">'+
+  '<strong>'+esc(m.title)+'</strong><small>'+esc(m.alt_id)+'</small>'+
+  '<small class="npeMediaUsage">'+(m.usage_count>0?"Dipakai pada "+m.usage_count+" bagian":"Tidak digunakan")+'</small>'+
+  '<div class="npeMediaActions"><button type="button" class="outline small" data-cms-use-media="'+esc(m.id)+'">Gunakan</button>'+
+  '<button type="button" class="outline small" data-cms-delete-media="'+esc(m.id)+'" '+(m.usage_count>0?'disabled title="Ganti foto pada halaman atau aktivitas sebelum menghapus"':'')+'>Hapus</button></div></article>'
+ ).join(""):'<p class="feedback">Belum ada foto tersimpan yang cocok. Klik Upload Foto Baru untuk menambahkan foto.</p>';
+ root.querySelectorAll("[data-cms-use-media]").forEach(b=>b.onclick=()=>{
   if(npeCmsPhotoReturn){
    cmsSet("media_id",b.dataset.cmsUseMedia);cmsView("activity");npeCmsPhotoReturn=false;
    refreshActivityPreview();say("#cmsActivityFeedback","Foto dipilih. Simpan draft untuk menyimpan perubahan.",true);
@@ -1140,8 +1153,28 @@ function drawWebsiteCMS(){
    say("#cmsMediaFeedback","Foto dipilih. Pilih bagian website lalu klik Simpan & Terbitkan Foto.",true);
   }
  });
- refreshActivityPreview();
+ root.querySelectorAll("[data-cms-delete-media]").forEach(b=>b.onclick=()=>void deleteNpeMedia(b.dataset.cmsDeleteMedia));
 }
+async function deleteNpeMedia(id){
+ const photo=npeCmsMedia.find(m=>m.id===id);
+ if(!photo)return;
+ if(photo.usage_count>0){say("#cmsMediaFeedback","Foto sedang digunakan. Ganti pada semua halaman atau aktivitas sebelum menghapus.");return;}
+ if(!window.confirm("Hapus foto '"+photo.title+"' secara permanen dari Galeri NPE? Tindakan ini tidak dapat dibatalkan."))return;
+ const buttons=Array.from($("#cmsMediaGrid").querySelectorAll("[data-cms-delete-media]"));
+ buttons.forEach(b=>b.disabled=true);
+ try{
+  const deleted=await api("admin/website/media/"+id,"DELETE",{owner_confirmed:true});
+  if(!deleted.deleted)throw Error("Server tidak mengonfirmasi penghapusan.");
+  npeCmsMedia=npeCmsMedia.filter(m=>m.id!==id);
+  drawWebsiteCMS();
+  say("#cmsMediaFeedback",deleted.storage_cleaned?"Foto berhasil dihapus dari Galeri NPE.":"Foto dihapus dari galeri; pembersihan penyimpanan perlu diperiksa.",true);
+ }catch(e){say("#cmsMediaFeedback","Gagal menghapus: "+e.message);renderNpeMediaGallery();}
+}
+$("#cmsGallerySearch").oninput=renderNpeMediaGallery;
+$("#cmsOpenGallery").onclick=()=>{
+ npeCmsPhotoReturn=false;cmsView("media");
+ if(ownerSignedIn)void loadWebsiteCMS();
+};
 async function loadWebsiteCMS(){
  if(!ownerSignedIn)return;
  try{
