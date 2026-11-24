@@ -4,7 +4,14 @@ const emailWhatsApp="628561752525";
 const mediaKey=id=>"website-media/v1/"+id;
 const idRE=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i;
 const slugRE=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const validSlots=new Set(["hero","snorkeling","island","west","east"]);
+const legacyPhotoSlots=new Set(["hero","snorkeling","island","west","east"]);
+const galleryPhotoSlots=new Set([
+ "snorkeling-manta-bay","snorkeling-manta-point","snorkeling-crystal-bay","snorkeling-gamat-bay",
+ "island-west","island-east",
+ "west-kelingking","west-broken-beach","west-angels-billabong","west-crystal-bay",
+ "east-diamond-beach","east-atuh-beach","east-tree-house"
+]);
+const validSlots=new Set([...legacyPhotoSlots,...galleryPhotoSlots]);
 const validCategories=new Set(["SNORKELING","ISLAND_TOUR","TRANSPORT","OTHER"]);
 const plain=(x,max=1500)=>typeof x==="string"&&x.trim().length>0&&x.trim().length<=max&&!/[<>\u0000-\u001f\u007f]/.test(x);
 const escapeHTML=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -148,14 +155,18 @@ export async function serveWebsiteMedia(request,env,db){
  return new Response(request.method==="HEAD"?null:raw,{headers:{"content-type":"image/jpeg","content-length":String(raw.byteLength),"cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}});
 }
 export async function getWebsiteSlots(db){
- const r=await db.prepare("SELECT slot,media_id,alt_id,alt_en FROM website_photo_slots").all();
- return {items:r.results.map(x=>({...x,url:"/photos/website/"+x.media_id}))};
+ const [legacy,gallery]=await Promise.all([
+  db.prepare("SELECT slot,media_id,alt_id,alt_en FROM website_photo_slots").all(),
+  db.prepare("SELECT slot,media_id,alt_id,alt_en FROM website_gallery_photo_slots").all()
+ ]);
+ return {items:[...(legacy.results||[]),...(gallery.results||[])].map(x=>({...x,url:"/photos/website/"+x.media_id}))};
 }
 export async function updateWebsiteSlot(db,b){
  if(b.owner_confirmed!==true||!validSlots.has(b.slot)||!idRE.test(u16(b.media_id)))throw Error("Slot atau foto tidak valid");
  const media=await db.prepare("SELECT id,alt_id,alt_en FROM website_media WHERE id=?").bind(b.media_id).first();
  if(!media)throw Error("Foto tidak ditemukan");
- await db.prepare("INSERT INTO website_photo_slots(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?) ON CONFLICT(slot) DO UPDATE SET media_id=excluded.media_id,alt_id=excluded.alt_id,alt_en=excluded.alt_en,updated_at=CURRENT_TIMESTAMP").bind(b.slot,media.id,media.alt_id,media.alt_en).run();
+ const table=legacyPhotoSlots.has(b.slot)?"website_photo_slots":"website_gallery_photo_slots";
+ await db.prepare("INSERT INTO "+table+"(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?) ON CONFLICT(slot) DO UPDATE SET media_id=excluded.media_id,alt_id=excluded.alt_id,alt_en=excluded.alt_en,updated_at=CURRENT_TIMESTAMP").bind(b.slot,media.id,media.alt_id,media.alt_en).run();
  return {slot:b.slot,media_id:media.id,url:"/photos/website/"+media.id};
 }
 export function renderExperiencePage(activity,locale,origin){
