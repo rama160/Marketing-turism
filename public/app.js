@@ -1268,9 +1268,9 @@ $("#cmsPageSave").onclick=async()=>{
  try{
   for(const el of $("#cmsPageFields").querySelectorAll("[data-cms-page-key]")){
    const key=el.dataset.cmsPageKey,value=el.value.trim(),prev=cmsRecords.get(lang+":"+key);
+   if(value===(prev?.value??original[key]??""))continue;
    if(!key.startsWith("price.")&&value.length<2)throw Error("Judul/deskripsi minimal 2 karakter: "+key);
    if(/[<>\u0000-\u001f\u007f]/.test(value)||value.length>1200)throw Error("Konten tidak valid: "+key);
-   if(value===(prev?.value??original[key]??""))continue;
    const saved=await api("admin/site-content","POST",{key,locale:lang,value,expected_version:prev?.version||0,owner_confirmed:true});
    cmsRecords.set(lang+":"+key,saved);updated++;
   }
