@@ -148,7 +148,7 @@ test("owner photo replacement updates gallery credit rather than misattributing 
  assert.match(client,/owner confirmed usage rights/);
 });
 
-test("ganti foto goes straight to phone gallery instead of a second CMS editor",async()=>{
+test("ganti foto offers saved NPE photos or phone gallery in the same dialog",async()=>{
  const {readFileSync}=await import("node:fs");
  const html=readFileSync("public/dashboard.html","utf8");
  const js=readFileSync("public/app.js","utf8");
@@ -164,7 +164,7 @@ test("ganti foto goes straight to phone gallery instead of a second CMS editor",
  assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsEditPhoto\)/);
  assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsQuickPhoto\)/);
  assert.match(js,/beginCmsQuickPhoto\(slot\);\s*\};\s*\$\("#cmsPageSave"\)/);
- assert.match(js,/picker\.click\(\); \/\/ synchronous user gesture/);
+ assert.match(js,/picker\.click\(\); \/\/ native file picker called directly by user gesture/);
  assert.match(js,/quickPhotoDialog\.showModal\(\)/);
  assert.match(js,/async function uploadCmsWebsitePhoto\(/);
  assert.match(js,/if\(!cmsQuickPhotoMediaId\)/);
@@ -179,7 +179,7 @@ test("photo publishing is opt-in and does not navigate or change bookings",async
  const {readFileSync}=await import("node:fs");
  const js=readFileSync("public/app.js","utf8");
  const directFlow=js.slice(js.indexOf('$("#cmsQuickPhotoSave").onclick'),js.indexOf("function cmsCurrentPhoto("));
- assert.match(directFlow,/if\(!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
+ assert.match(directFlow,/if\(cmsQuickPhotoSource&&!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
  assert.match(directFlow,/owner_confirmed:true/);
  assert.match(js,/form\.append\("rights_confirmed","true"\)/);
  assert.doesNotMatch(directFlow,/admin\/bookings|admin\/rates|window\.location|location\.href/);
