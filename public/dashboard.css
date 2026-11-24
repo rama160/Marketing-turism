@@ -361,3 +361,30 @@
 .dashboardPage .npeQuickPhotoActions{display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:-19px;background:#fffffff5;padding:12px 0 4px}
 .dashboardPage .npeQuickPhotoActions button{min-height:42px}
 @media(max-width:600px){.dashboardPage .npeQuickPhotoDialogBody{padding:13px}.dashboardPage .npeQuickPhotoActions button{flex:1}}
+
+/* NPE v3.22: easily discoverable NPE Gallery, reusable media and deletion with usage guards. */
+.dashboardPage .npeCmsHeaderActions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.dashboardPage .npeCmsHeaderActions button{min-height:42px}
+.dashboardPage #cmsGalleryCount{font-size:12px}
+.dashboardPage .npeCmsGalleryToolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.dashboardPage .npeCmsGalleryToolbar label,.dashboardPage #cmsQuickPhotoChooser label{display:grid;gap:6px;font-weight:600;font-size:12px}
+.dashboardPage .npeCmsGalleryToolbar input{width:min(80vw,340px)}
+.dashboardPage .npeCmsMedia{align-content:start}
+.dashboardPage .npeCmsMedia strong{font-size:12px}
+.dashboardPage .npeCmsMedia .npeMediaUsage{font-size:11px;color:#416b75}
+.dashboardPage .npeMediaActions{display:flex;gap:6px;flex-wrap:wrap}
+.dashboardPage .npeMediaActions button{flex:1;min-width:0}
+.dashboardPage .npeMediaActions button[disabled]{opacity:.5;cursor:not-allowed}
+.dashboardPage .npeCmsGalleryUpload{border:1px solid #d5e6e8;background:#f7faf9;border-radius:12px;padding:12px;margin:16px 0}
+.dashboardPage .npeCmsGalleryUpload summary{cursor:pointer;font-weight:700;color:#175d68}
+.dashboardPage .npeQuickSourceActions{position:static;background:transparent;padding:8px 0;justify-content:start}
+.dashboardPage .npeQuickSourceActions button{flex:1}
+.dashboardPage .npeQuickPhotoGallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;overflow:auto;max-height:300px;padding:8px 1px}
+.dashboardPage .npeQuickGalleryItem{padding:5px;border:1px solid #d6e6e8;border-radius:11px;background:white;display:grid;gap:5px;text-align:left;min-width:0}
+.dashboardPage .npeQuickGalleryItem:hover,.dashboardPage .npeQuickGalleryItem:focus-visible{border-color:#147887;outline:2px solid #62afa6}
+.dashboardPage .npeQuickGalleryItem img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px}
+.dashboardPage .npeQuickGalleryItem span{font-size:11px;color:#254c56;overflow-wrap:anywhere}
+.dashboardPage #cmsQuickPhotoSelected{display:grid;gap:12px}
+.dashboardPage #cmsQuickPhotoSelected[hidden],.dashboardPage #cmsQuickPhotoChooser[hidden],.dashboardPage #cmsQuickPhotoRightsWrap[hidden]{display:none}
+.dashboardPage .npeQuickPhotoDialog input[readonly]{background:#eff4f5;color:#46626a}
+@media(max-width:600px){.dashboardPage .npeQuickPhotoGallery{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboardPage .npeCmsHeaderActions{width:100%}.dashboardPage .npeCmsHeaderActions button{flex:1}}

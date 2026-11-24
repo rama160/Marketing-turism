@@ -1,3 +1,13 @@
+## Galeri NPE — view, reuse and delete photos (v3.22.0)
+1. Sign in to NPE Studio > Konten & Kampanye > Editor Website. Select the visible Galeri NPE shortcut or tab. A searchable gallery shows all owner-uploaded photos, including unassigned ones.
+2. Tap Ganti Foto on an existing published page or destination spot. The same dialog shows stored Galeri NPE photos and a Dari Galeri HP option. Selecting an existing photo reuses its image ID without re-upload; picking a phone image uses existing compression, preview and rights confirmation.
+3. Identical files are automatically reused by hash rather than triggering Foto sudah ada.
+4. Hapus is disabled for photos currently used in any public page/gallery slot or saved activity draft/publication. Replace all references first, then confirm permanent deletion. An API-level guard enforces the same rule.
+5. Photos published from legacy website source files, third-party credits, campaign libraries and historical booking artifacts are outside this media deletion facility.
+6. No database migration is required. CI and public smoke must pass before deploying the dedicated NPE Worker.
+
+---
+
 ## Fast photo replacement from gallery (v3.21.0)
 From NPE Studio > Konten & Kampanye > Editor Website > Published, tap **Ganti Foto** on a page card to open your phone gallery immediately. You can also open a page and tap **Ganti foto** beside a specific spot (Manta Point, Kelingking, etc.); its location is selected automatically. Pick an image, inspect the preview, optionally edit the photo title and Indonesia/English description, confirm commercial rights, then tap **Simpan & Terbitkan Foto**. No need to open Foto & Media or choose the slot again.
 If you cancel the gallery picker or preview, nothing changes publicly. If upload or publication fails, the dialog shows the error and permits retry. Do not refresh the page while other title/description edits are unsaved; changing a photo alone does not erase those in-progress edits. The separate Foto & Media library remains available for managing reusable images and Add Activity covers. Only the chosen photo changes; existing booking, prices and marketing remain unchanged.

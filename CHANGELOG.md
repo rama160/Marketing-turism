@@ -1,3 +1,16 @@
+## [3.22.0] — 2026-11-24
+### Added
+- A visible Galeri NPE shortcut, searchable owner-photo grid, usage indicators, and confirmed deletion of unused photos.
+- Ganti Foto now supports reusing saved images or choosing new photos from the phone without navigating away.
+- Authenticated photo-deletion endpoint with atomic reference check and dedicated Cloudflare KV cleanup.
+### Fixed
+- Duplicate uploads reuse matching stored photo IDs instead of showing Foto sudah ada.
+- Gallery loads independently from other content editor endpoints.
+### Preserved
+- Active images, bookings, operator rates, quotes, admin login, Meta/AI autopilot and existing external photographer credits.
+
+---
+
 ## [3.21.0] — 2026-11-24
 ### Improved
 - Published page and individual spot "Ganti Foto" now open the native photo gallery immediately, without an intermediate Website/Media editor.

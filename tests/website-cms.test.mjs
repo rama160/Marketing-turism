@@ -148,7 +148,7 @@ test("owner photo replacement updates gallery credit rather than misattributing 
  assert.match(client,/owner confirmed usage rights/);
 });
 
-test("ganti foto goes straight to phone gallery instead of a second CMS editor",async()=>{
+test("ganti foto offers saved NPE photos or phone gallery in the same dialog",async()=>{
  const {readFileSync}=await import("node:fs");
  const html=readFileSync("public/dashboard.html","utf8");
  const js=readFileSync("public/app.js","utf8");
@@ -164,7 +164,7 @@ test("ganti foto goes straight to phone gallery instead of a second CMS editor",
  assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsEditPhoto\)/);
  assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsQuickPhoto\)/);
  assert.match(js,/beginCmsQuickPhoto\(slot\);\s*\};\s*\$\("#cmsPageSave"\)/);
- assert.match(js,/picker\.click\(\); \/\/ synchronous user gesture/);
+ assert.match(js,/picker\.click\(\); \/\/ native file picker called directly by user gesture/);
  assert.match(js,/quickPhotoDialog\.showModal\(\)/);
  assert.match(js,/async function uploadCmsWebsitePhoto\(/);
  assert.match(js,/if\(!cmsQuickPhotoMediaId\)/);
@@ -179,8 +179,100 @@ test("photo publishing is opt-in and does not navigate or change bookings",async
  const {readFileSync}=await import("node:fs");
  const js=readFileSync("public/app.js","utf8");
  const directFlow=js.slice(js.indexOf('$("#cmsQuickPhotoSave").onclick'),js.indexOf("function cmsCurrentPhoto("));
- assert.match(directFlow,/if\(!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
+ assert.match(directFlow,/if\(cmsQuickPhotoSource&&!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
  assert.match(directFlow,/owner_confirmed:true/);
  assert.match(js,/form\.append\("rights_confirmed","true"\)/);
  assert.doesNotMatch(directFlow,/admin\/bookings|admin\/rates|window\.location|location\.href/);
+});
+
+test("NPE Gallery displays saved photos and allows picking a stored photo or phone image",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync("public/dashboard.html","utf8");
+ const script=readFileSync("public/app.js","utf8");
+ assert.match(html,/id="cmsOpenGallery"/);
+ assert.match(html,/id="cmsGalleryStatus"/);
+ assert.match(html,/id="cmsGallerySearch"/);
+ assert.match(html,/id="cmsQuickPhotoGallery"/);
+ assert.match(html,/id="cmsQuickPickExisting"/);
+ assert.match(html,/id="cmsQuickPickPhone"/);
+ assert.match(html,/id="cmsQuickPhotoReuseNote"/);
+ assert.match(script,/function drawCmsQuickGallery/);
+ assert.match(script,/data-quick-existing/);
+ assert.match(script,/cmsQuickPhotoMediaId=m\.id/);
+ assert.match(script,/picker\.click\(\); \/\/ native file picker called directly by user gesture/);
+ assert.match(script,/async function refreshNpeGallery/);
+ assert.match(script,/if\(name==="media"\)void refreshNpeGallery\(\)/);
+});
+test("photo gallery deletion is confirmed and disabled for photos in use",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const script=readFileSync("public/app.js","utf8");
+ assert.match(script,/m\.usage_count>0\?'disabled/);
+ assert.match(script,/async function deleteNpeMedia/);
+ assert.match(script,/window\.confirm\("Hapus foto/);
+ assert.match(script,/admin\/website\/media\/"\+id,"DELETE",\{owner_confirmed:true\}/);
+ const server=readFileSync("src/worker.mjs","utf8");
+ assert.match(server,/if\(method!=="DELETE"\)return bad/);
+ assert.match(server,/await deleteWebsiteMedia\(db,env,websiteMediaDelete\[1\],await parse\(req\)\)/);
+});
+test("website media usage counts include both page slots and all activity drafts and publications",async()=>{
+ const {listWebsiteMedia}=await import("../src/website-cms.mjs");
+ const id="12345678-1234-4234-9234-123456789abc",free="87654321-4321-4321-9321-cba987654321";
+ const fake={prepare(sql){
+  if(sql.includes("SELECT id,title,alt_id"))return {all:async()=>({results:[
+    {id,title:"Busy",alt_id:"A",alt_en:"A",bytes:10000,created_at:"2026-11-24"},
+    {id:free,title:"Free",alt_id:"B",alt_en:"B",bytes:10000,created_at:"2026-11-24"}
+   ]})};
+  assert.match(sql,/website_photo_slots/);
+  assert.match(sql,/website_gallery_photo_slots/);
+  assert.match(sql,/json_extract\(draft_json/);
+  assert.match(sql,/json_extract\(published_json/);
+  return {all:async()=>({results:[{media_id:id,used:3}]})};
+ }};
+ const r=await listWebsiteMedia(fake);
+ assert.equal(r.items[0].usage_count,3);
+ assert.equal(r.items[1].usage_count,0);
+});
+test("owner deletion rejects references and requires explicit confirmation",async()=>{
+ const {deleteWebsiteMedia}=await import("../src/website-cms.mjs");
+ const id="12345678-1234-4234-9234-123456789abc";
+ let changes=0,kvDeleted=0,executedSQL="";
+ const fake={prepare(sql){
+  if(sql.startsWith("SELECT id,title FROM website_media"))return {bind:()=>({first:async()=>({id,title:"Busy"})})};
+  if(sql.startsWith("DELETE FROM website_media")){executedSQL=sql;return {bind:()=>({run:async()=>({meta:{changes}})})};}
+  throw Error("Unexpected SQL");
+ }};
+ const env={PHOTO_KV:{delete:async()=>{kvDeleted++;}}};
+ const withoutConsent=await deleteWebsiteMedia(fake,env,id,{owner_confirmed:false});
+ assert.equal(withoutConsent.status,403);
+ const inUse=await deleteWebsiteMedia(fake,env,id,{owner_confirmed:true});
+ assert.equal(inUse.status,409);
+ assert.equal(kvDeleted,0);
+ assert.match(executedSQL,/NOT EXISTS \(SELECT 1 FROM website_photo_slots/);
+ assert.match(executedSQL,/NOT EXISTS \(SELECT 1 FROM website_gallery_photo_slots/);
+ assert.match(executedSQL,/json_extract\(draft_json/);
+ assert.match(executedSQL,/json_extract\(published_json/);
+ changes=1;
+ const removed=await deleteWebsiteMedia(fake,env,id,{owner_confirmed:true});
+ assert.equal(removed.status,200);
+ assert.equal((await removed.json()).deleted,true);
+ assert.equal(kvDeleted,1);
+});
+test("identical website photo upload returns existing image instead of throwing 409",async()=>{
+ const {storeWebsiteMedia}=await import("../src/website-cms.mjs");
+ const b=new Uint8Array(12000);b.set([255,216,255],0);b.set([255,217],11998);
+ const form=new FormData();
+ form.append("file",new Blob([b],{type:"image/jpeg"}),"same.jpg");
+ form.append("title","Same photo");
+ form.append("alt_id","Foto sama");form.append("alt_en","Same photo");
+ form.append("rights_confirmed","true");
+ const id="12345678-1234-4234-9234-123456789abc";
+ const fake={prepare(sql){assert.match(sql,/WHERE digest/);return {bind:()=>({first:async()=>({id,title:"Existing",alt_id:"Existing ID",alt_en:"Existing EN"})})};}};
+ let uploaded=false;
+ const req=new Request("https://example.com/api/admin/website/media",{method:"POST",body:form});
+ const out=await storeWebsiteMedia(req,{PHOTO_KV:{put:async()=>{uploaded=true;}}},fake);
+ assert.equal(out.status,200);
+ const reply=await out.json();
+ assert.equal(reply.id,id);
+ assert.equal(reply.reused,true);
+ assert.equal(uploaded,false);
 });

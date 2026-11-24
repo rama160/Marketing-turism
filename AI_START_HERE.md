@@ -1,3 +1,12 @@
+## 24 NOV 2026 — NPE GALLERY REUSE & SAFE DELETE v3.22.0
+- Owner reported existing photo hash rejects repeated upload and could not find the NPE photo library. Add always-visible "Galeri NPE" shortcut inside Website Editor and a searchable grid listing all owner-uploaded photos independently of other site-content APIs.
+- Every "Ganti Foto" now opens a single modal with **Galeri NPE** and **Dari Galeri HP**. Picking a stored photo publishes its existing media ID without upload or redundant rights form. New phone photo retains prior preview + required usage-rights attestation. Neither route navigates to the separate editor or alters unsaved copy.
+- Duplicate JPEG digest upload now returns the original media ID with `reused:true` instead of 409 so previously stored photos can be selected; prevents duplicate KV content.
+- New owner-authenticated `DELETE /api/admin/website/media/:id` requires `owner_confirmed:true`, checks no use in any homepage/gallery slot or current activity draft/published snapshot via guarded D1 DELETE; a referenced photo returns 409. Deletes the PHOTO_KV content only after the metadata row is removed. Never delete operator photo library, campaign media, or historic bookings.
+- Admin media listing includes `usage_count`, allowing the UI to disable Hapus while a photo is referenced. Deletion is permanent and explicitly confirmed. No D1 schema migration; existing CMS, public image URLs, booking and AI workflows remain unchanged. Validate CI and live smoke before deploying.
+
+---
+
 ## 24 NOV 2026 — ONE-TAP GANTI FOTO VIA GALERI HP v3.21.0
 - In NPE Studio > Editor Website, "Ganti Foto" buttons on published page cards, image tiles and primary page button now invoke native Android image selection immediately, without navigating to a second Media/Website editor or reselecting a photo slot.
 - After selecting a local photo, the owner sees one preview dialog with editable Indonesian/English alt text, a required commercial usage-rights confirmation, and "Simpan & Terbitkan Foto". The slot is retained from the initial button and cannot be changed by accident.

@@ -118,9 +118,37 @@ export async function archiveWebsiteActivity(db,id,body){
  if(write.meta?.changes!==1)throw Error("Aktivitas tidak ditemukan atau versi berubah");
  return {id,status:"ARCHIVED"};
 }
+// A photo is protected if any public page slot, gallery spot, or saved activity draft/publication uses it.
+const mediaUsageSQL=`SELECT media_id, COUNT(*) AS used FROM (
+ SELECT media_id FROM website_photo_slots
+ UNION ALL SELECT media_id FROM website_gallery_photo_slots
+ UNION ALL SELECT json_extract(draft_json,'$.media_id') AS media_id FROM website_activities
+ UNION ALL SELECT json_extract(published_json,'$.media_id') AS media_id FROM website_activities
+) WHERE media_id IS NOT NULL AND media_id!='' GROUP BY media_id`;
 export async function listWebsiteMedia(db){
- const r=await db.prepare("SELECT id,title,alt_id,alt_en,bytes,created_at FROM website_media ORDER BY created_at DESC LIMIT 200").all();
- return {items:r.results.map(x=>({...x,url:"/photos/website/"+x.id}))};
+ const [media,usage]=await Promise.all([
+  db.prepare("SELECT id,title,alt_id,alt_en,bytes,created_at FROM website_media ORDER BY created_at DESC LIMIT 200").all(),
+  db.prepare(mediaUsageSQL).all()
+ ]);
+ const used=new Map((usage.results||[]).map(r=>[r.media_id,Number(r.used)||0]));
+ return {items:(media.results||[]).map(x=>({...x,url:"/photos/website/"+x.id,usage_count:used.get(x.id)||0}))};
+}
+export async function deleteWebsiteMedia(db,env,id,body){
+ if(!idRE.test(id))return reject("Foto tidak ditemukan",404);
+ if(body?.owner_confirmed!==true)return reject("Penghapusan memerlukan persetujuan pemilik",403);
+ const photo=await db.prepare("SELECT id,title FROM website_media WHERE id=?").bind(id).first();
+ if(!photo)return reject("Foto tidak ditemukan",404);
+ // Use a single guarded DELETE to avoid races with photo assignments between a read and delete.
+ const sql=`DELETE FROM website_media WHERE id=?
+ AND NOT EXISTS (SELECT 1 FROM website_photo_slots WHERE media_id=?)
+ AND NOT EXISTS (SELECT 1 FROM website_gallery_photo_slots WHERE media_id=?)
+ AND NOT EXISTS (SELECT 1 FROM website_activities WHERE json_extract(draft_json,'$.media_id')=? OR json_extract(published_json,'$.media_id')=?)`;
+ const write=await db.prepare(sql).bind(id,id,id,id,id).run();
+ if(write.meta?.changes!==1)return reject("Foto masih digunakan di website atau draft aktivitas. Ganti foto di semua bagian terlebih dahulu.",409);
+ // Metadata is already removed; an eventual KV cleanup failure must not resurrect a broken image reference.
+ let storage_cleaned=true;
+ try{await env.PHOTO_KV?.delete(mediaKey(id));}catch(_){storage_cleaned=false;}
+ return jsonReply({id,deleted:true,storage_cleaned});
 }
 export async function storeWebsiteMedia(request,env,db){
  if(!env.PHOTO_KV)return reject("Penyimpanan foto Cloudflare tidak tersedia",503);
@@ -134,13 +162,17 @@ export async function storeWebsiteMedia(request,env,db){
  const bytes=new Uint8Array(await file.arrayBuffer());
  if(!binaryJpeg(bytes))return reject("Format berkas JPG tidak valid");
  const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(x=>x.toString(16).padStart(2,"0")).join("");
- if(await db.prepare("SELECT id FROM website_media WHERE digest=?").bind(digest).first())return reject("Foto sudah ada",409);
+ // A previously uploaded identical image is reusable: return it instead of rejecting an upload.
+ const existing=await db.prepare("SELECT id,title,alt_id,alt_en FROM website_media WHERE digest=?").bind(digest).first();
+ if(existing)return jsonReply({...existing,url:"/photos/website/"+existing.id,reused:true});
  const id=crypto.randomUUID();
  try{await env.PHOTO_KV.put(mediaKey(id),bytes.buffer);}catch(_){return reject("Gagal menyimpan foto",503);}
  try{
   await db.prepare("INSERT INTO website_media(id,title,alt_id,alt_en,digest,bytes,rights_confirmed) VALUES(?,?,?,?,?,?,1)").bind(id,title,altId,altEn,digest,bytes.length).run();
  }catch(_){
   try{await env.PHOTO_KV.delete(mediaKey(id));}catch(_){}
+  const reused=await db.prepare("SELECT id,title,alt_id,alt_en FROM website_media WHERE digest=?").bind(digest).first();
+  if(reused)return jsonReply({...reused,url:"/photos/website/"+reused.id,reused:true});
   return reject("Gagal mencatat foto. Periksa kembali",409);
  }
  return jsonReply({id,url:"/photos/website/"+id,title,alt_id:altId,alt_en:altEn},201);
