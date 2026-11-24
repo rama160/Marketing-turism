@@ -23,7 +23,13 @@
       "/robots.txt",
       "/sitemap.xml",
       "/en/experiences/*",
-      "/id/experiences/*"
+      "/id/experiences/*",
+      "/",
+      "/index.html",
+      "/snorkeling.html",
+      "/island-tour.html",
+      "/west-tour.html",
+      "/east-tour.html"
     ]
   },
   "vars": {
