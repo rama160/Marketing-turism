@@ -61,6 +61,12 @@ if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest 
 const dashboard=await get("/dashboard.html");
 const app=await get("/app.js");
 const guestScript=await get("/guest.js"),dashboardStyles=await get("/dashboard.css");
+// Dedicated Published-first owner editor and visible optional price must be in deployed assets.
+if(!dashboard.includes('data-cms-view="published"')||!dashboard.includes('id="cmsPublishedList"')||
+ !dashboard.includes('id="cmsDraftList"')||!dashboard.includes('id="cmsPageFields"')||
+ !dashboard.includes('name="price_amount" type="number"')||!dashboard.includes('id="cmsClearPrice"')||
+ !dashboard.includes('id="cmsPublishFromEditor"')||!app.includes('function cmsSaveDraft')||
+ !app.includes('function renderCmsPageFields'))throw Error("Published-first edit website workspace / optional price UI missing from live deployment");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
 if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
