@@ -16,6 +16,11 @@ async function loadWebsitePublic(){
    img.src=slot.url;
    img.alt=currentLanguage()==="en"?slot.alt_en:slot.alt_id;
    img.removeAttribute("data-photo-slug");
+   // Original Wikimedia attribution must not be displayed for a different owner-uploaded image.
+   const caption=img.closest("figure")?.querySelector("figcaption");
+   if(caption){caption.dataset.npeOwnerPhoto="true";caption.textContent=currentLanguage()==="en"
+    ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
+    :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";} 
   });
   publicActivities=activities.items||[];
   drawPublicActivities();
@@ -46,9 +51,14 @@ function drawPublicActivities(){
 window.addEventListener("npe:language",()=>{
  const lang=currentLanguage()==="en"?"en":"id";
  document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
-  // Updates existing selected image alt text in the new language without fetching API again.
+  // Updated alt text and owner-upload credits follow the selected language.
   const row=window.__npeWebsiteSlots?.get(img.dataset.npeSlot);
-  if(row)img.alt=lang==="en"?row.alt_en:row.alt_id;
+  if(!row)return;
+  img.alt=lang==="en"?row.alt_en:row.alt_id;
+  const caption=img.closest("figure")?.querySelector("figcaption[data-npe-owner-photo]");
+  if(caption)caption.textContent=lang==="en"
+   ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
+   :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";
  });
  drawPublicActivities();
 });
