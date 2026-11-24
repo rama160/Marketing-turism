@@ -171,7 +171,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.29.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.30.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});

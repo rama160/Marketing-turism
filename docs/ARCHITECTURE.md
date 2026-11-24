@@ -1,3 +1,8 @@
+## Current production architecture synchronization (v3.30.0 — 2026-11-24)
+The tourism service has a single Cloudflare Worker (`src/worker.mjs`), dedicated D1 database, PHOTO_KV and Cloudflare static assets. Public HTML pages are maintained in `public/`; `public/language.js` is the original bilingual map, `public/website-content.js` renders CMS activity cards and local photo slots, and the build derives `site-editor-defaults.json` from these sources (not an independent content authority). The Worker's `/sitemap.xml` and `/robots.txt` handlers are authoritative: do not deploy second static versions. Activity SSR pages provide separate localized, indexable URLs using canonical, hreflang and WebPage JSON-LD. The dashboard is a separate protected HTML and controller: `dashboard.html`, `app.js`, `dashboard.css`. Marketing media and website media use distinct metadata/prefixes; owner photo assets and local licensed public photo fallbacks must remain separate. All workflow release checks track `package.json` version. No production data migration was needed in this synchronization.
+
+---
+
 ## v3.29.0 — Photo source chooser and owner categories
 Photo selection opens the existing dialog with two sources only; saved gallery is expanded on demand, and phone upload accepts optional title and rights confirmation with generated bilingual alt text. Standalone upload captures form before await and keeps saved photos available without resetting unrelated editor state. Dashboard HTML is no-store and assets are versioned. Website-only custom categories persist in the idempotent CMS migration, use authenticated list/create endpoints, and are verified on save/publish; detail categories inherit the parent. Existing booking categories and data remain isolated.
 

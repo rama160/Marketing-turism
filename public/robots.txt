@@ -1,4 +1,0 @@
-User-agent: *
-Disallow: /api/
-Allow: /
-Sitemap: https://marketing-turism-agent.finchat-ai-gateway.workers.dev/sitemap.xml

@@ -1,3 +1,13 @@
+## Mainline maintenance & source alignment (v3.30.0, 24 November 2026)
+**Use only `main`; do not create a branch or PR for maintenance unless the owner authorizes it.** The current deployed dashboard is NPE Studio and website CMS, no other Worker. GitHub CI tests the latest source and a separate live smoke validates deployed Worker health version.
+- `npm run ci` must pass before deployment; `node scripts/smoke.mjs` must pass after. The smoke version must equal package version and Worker `/api/health`; dashboard scripts and CSS use matching cache-busted versions.
+- Worker `/robots.txt` and `/sitemap.xml` are authoritative dynamic responses. Never add second static public/robots.txt or public/sitemap.xml, and never precache them in guest service worker; sitemap enumerates published bilingual activity pages and legacy public pages.
+- Preserve existing local licensed photo fallback images and `public/photos/manifest.json`, all D1 migration history, PHOTO_KV, owner gallery media, routes and uploaded content; these files are not unused garbage.
+- Production Worker isolation remains protected by `scripts/preflight.mjs`. Never modify Spenva Worker, Meta permissions, operator rates, owner login, booking/quotes/payment or guest lead guards as an effect of repository cleanup.
+- If smoke fails, inspect error first and make the smallest source fix; a green deploy workflow alone does not establish live functional success.
+
+---
+
 ## Galeri NPE — view, reuse and delete photos (v3.22.0)
 1. Sign in to NPE Studio > Konten & Kampanye > Editor Website. Select the visible Galeri NPE shortcut or tab. A searchable gallery shows all owner-uploaded photos, including unassigned ones.
 2. Tap Ganti Foto on an existing published page or destination spot. The same dialog shows stored Galeri NPE photos and a Dari Galeri HP option. Selecting an existing photo reuses its image ID without re-upload; picking a phone image uses existing compression, preview and rights confirmation.

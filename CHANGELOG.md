@@ -1,3 +1,13 @@
+## [3.30.0] — 2026-11-24
+- Mainline-only repository synchronization; no new branch or PR.
+- Fix live smoke version regression (expected v3.22 vs actual v3.29).
+- Bring Worker health, package, dashboard badge, JS/CSS query versions and guest service-worker cache into release alignment.
+- Eliminate redundant static robots.txt and sitemap.xml (Worker already owns both dynamic routes) and remove dynamic responses from offline precache.
+- Add direct release consistency regression tests, update README to latest production architecture, preserve working CMS, 9 published activities, photo library and existing booking/marketing integration gates.
+- All existing local licensed JPGs, D1 migrations, historical release notes and production data are retained.
+
+---
+
 ## [3.29.0] — 2026-11-24
 - Simplify activity photo chooser to Galeri NPE or Galeri HP, optional photo title and rights only.
 - Fix asynchronous form reset after upload and preserve saved media.

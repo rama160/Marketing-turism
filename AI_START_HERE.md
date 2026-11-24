@@ -1,3 +1,14 @@
+## 2026-11-24 — Production-source synchronization, v3.30.0
+**Source of truth: current website on Cloudflare, branch: main only. No new branches or PRs for this maintenance.**
+- Resolved a reproducible version mismatch: Worker/package were 3.29.0, but live smoke still demanded 3.22.0 and therefore every deployed release reported false failure.
+- Aligned package, Worker health, NPE Studio visual badge, cache-busted dashboard CSS/JS, public CMS script URLs and PWA cache with release 3.30.0.
+- The Worker is canonical for /robots.txt and /sitemap.xml (published CMS activities included). Removed redundant static duplicates, excluded dynamic URLs from service worker cache and updated tests to assert the actual Worker route instead.
+- README now describes present-day site, billing/booking restrictions and architecture instead of asserting historical v3.8.0 as current.
+- Hardened consistency test to prevent future version drift. Historical CHANGELOG and archived D1 migration files remain intentionally preserved; active local attribution photos remain in use and are not trash.
+- Keep current published copy, D1 records, Cloudflare bindings, owner photo assignments, login sessions, marketing approval/Meta gates and guest booking behavior unchanged.
+
+---
+
 ## 24 NOV 2026 — NPE GALLERY REUSE & SAFE DELETE v3.22.0
 - Owner reported existing photo hash rejects repeated upload and could not find the NPE photo library. Add always-visible "Galeri NPE" shortcut inside Website Editor and a searchable grid listing all owner-uploaded photos independently of other site-content APIs.
 - Every "Ganti Foto" now opens a single modal with **Galeri NPE** and **Dari Galeri HP**. Picking a stored photo publishes its existing media ID without upload or redundant rights form. New phone photo retains prior preview + required usage-rights attestation. Neither route navigates to the separate editor or alters unsaved copy.

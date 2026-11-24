@@ -27,10 +27,18 @@ test("separate public activity pages retain guarded marketing disclosures",()=>{
  assert.match(sea,/konfirmasi/);
 });
 test("public marketing resources never promise unattended booking",()=>{
- const robots=read("robots.txt"),site=read("sitemap.xml"),home=read("index.html");
- assert.match(robots,/Disallow: \/api\//);
- assert.match(site,/snorkeling\.html/);
- assert.match(site,/island-tour\.html/);
+ const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
+ const cms=readFileSync(new URL("../src/website-cms.mjs",import.meta.url),"utf8");
+ const wrangler=readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8");
+ const home=read("index.html");
+ assert.match(worker,/path==="\/robots\.txt"/);
+ assert.match(worker,/Disallow: \/api\//);
+ assert.match(worker,/path==="\/sitemap\.xml"/);
+ assert.match(cms,/renderWebsiteSitemap/);
+ assert.match(cms,/snorkeling\.html/);
+ assert.match(cms,/island-tour\.html/);
+ assert.match(cms,/en\/experiences\//);
+ assert.match(wrangler,/\/sitemap\.xml/);
  assert.match(home,/index, follow/);
  assert.doesNotMatch(home,/BANK_ACCOUNT_NUMBER|api_key|secret_key/);
 });
@@ -134,7 +142,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v26/);
+ assert.match(read("service-worker.js"),/public-v27/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -322,7 +330,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v26/);
+ assert.match(sw,/marketing-turism-public-v27/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -339,7 +347,7 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v26/);
+ assert.match(read("service-worker.js"),/public-v27/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{
@@ -387,4 +395,12 @@ test("growth acquisition dashboard is owner-only, source credited, click-trackin
   assert.match(contents,/<meta name="robots" content="index, follow"/);
   assert.doesNotMatch(contents,/noindex, follow/);
  }
+});
+
+test("only the Worker serves canonical robots and sitemap; static duplicate files stay removed",()=>{
+ const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
+ const sw=read("service-worker.js");
+ assert.match(worker,/path==="\\/robots\\.txt"/);
+ assert.match(worker,/path==="\\/sitemap\\.xml"/);
+ assert.doesNotMatch(sw,/"\\/robots\\.txt"|"\\/sitemap\\.xml"/);
 });
