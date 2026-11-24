@@ -390,7 +390,7 @@ export async function renderWebsiteSitemap(db,origin){
  const basic=staticPaths.map(p=>"<url><loc>"+xmlEsc(origin+p)+"</loc></url>");
  const dynamic=items.flatMap(i=>["en","id"].map(lang=>{
   const url=origin+"/"+lang+"/experiences/"+i.slug;
-  const updated=typeof i.published_at==="string"&&/^\\d{4}-\\d{2}-\\d{2}/.test(i.published_at)?"<lastmod>"+i.published_at.slice(0,10)+"</lastmod>":"";
+  const updated=typeof i.published_at==="string"&&/^\d{4}-\d{2}-\d{2}/.test(i.published_at)?"<lastmod>"+i.published_at.slice(0,10)+"</lastmod>":"";
   const langs=["en","id"].map(l=>'<xhtml:link rel="alternate" hreflang="'+l+'" href="'+xmlEsc(origin+"/"+l+"/experiences/"+i.slug)+'"/>').join("");
   return "<url><loc>"+xmlEsc(url)+"</loc>"+updated+langs+"</url>";
  }));
