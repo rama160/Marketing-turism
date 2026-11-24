@@ -139,3 +139,11 @@ test("each destination's gallery photo uses an isolated slot while the five home
  assert.ok(queries.some(x=>x.startsWith("INSERT INTO website_photo_slots(")));
  await assert.rejects(()=>updateWebsiteSlot(fake,{slot:"not-a-real-photo-slot",media_id:id,owner_confirmed:true}),/valid/);
 });
+
+test("owner photo replacement updates gallery credit rather than misattributing original Commons photographer",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const client=readFileSync("public/website-content.js","utf8");
+ assert.match(client,/data-npe-owner-photo/);
+ assert.match(client,/caption\.textContent/);
+ assert.match(client,/owner confirmed usage rights/);
+});
