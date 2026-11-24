@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateWebsiteDraft,renderExperiencePage,renderWebsiteSitemap,renderEnglishTourPage,englishTourKeys,publishWebsiteActivity} from "../src/website-cms.mjs";
+import {validateWebsiteDraft,renderExperiencePage,renderWebsiteSitemap,renderEnglishTourPage,englishTourKeys,publishWebsiteActivity,legacyTourRoute,renderLegacyTourPage} from "../src/website-cms.mjs";
 const draft={
  slug:"nusa-lembongan-island-tour",category:"ISLAND_TOUR",
  title_en:"Nusa Lembongan Island Tour",title_id:"Tur Pulau Nusa Lembongan",
@@ -479,7 +479,7 @@ test("photo chooser shows only two sources, no photo descriptions and cache-safe
  assert.match(html,/id="cmsActivityMedia" hidden/);
  assert.match(html,/id="cmsAddCategory"/);
  assert.match(js,/admin\/website\/categories/);
- assert.match(html,/src="\/app\.js\?v=3\.32\.0"/);
+ assert.match(html,/src="\/app\.js\?v=3\.33\.0"/);
  assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
 });
 
@@ -558,4 +558,41 @@ test("English SEO tour SSR reflects owner-approved CMS copy without duplicating 
  const unsafe=renderEnglishTourPage("east","https://example.com",{"eastPage.lead":"<script>alert(1)</script>"});
  assert.doesNotMatch(unsafe,/<script>alert\(1\)<\/script>/);
  assert.match(unsafe,/&lt;script&gt;/);
+});
+
+test("legacy CMS SSR retains original markup and escapes published text",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const page=legacyTourRoute("/west-tour");
+ assert.equal(page.canonical,"/west-tour.html");
+ assert.equal(legacyTourRoute("/index.html").canonical,"/");
+ assert.equal(legacyTourRoute("/dashboard.html"),null);
+ const html=renderLegacyTourPage(readFileSync("public/west-tour.html","utf8"),page,"https://example.com",{"westPage.title":"Wisata Barat Baru","westPage.lead":"Lihat <script>alert(1)</script>"},[{slug:"new-stop",parent_activity:"static:west",title_id:"Spot Baru"}]);
+ assert.match(html,/<title>Wisata Barat Baru \| Nusa Penida Experiences<\/title>/);
+ assert.match(html,/data-npe-default="Wisata Barat Nusa Penida">Wisata Barat Baru/);
+ assert.match(html,/Lihat &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+ assert.match(html,/https:\/\/example.com\/west-tour.html/);
+ assert.match(html,/https:\/\/example.com\/en\/tours\/west/);
+ assert.match(html,/href="\/id\/experiences\/new-stop"/);
+ assert.match(html,/Wikimedia Commons/);
+ assert.doesNotMatch(html,/<script>alert\(1\)<\/script>/);
+});
+test("legacy route binds only generated non-HTML source and protects internal paths",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const {readFileSync}=await import("node:fs");
+ const env={ASSETS:{fetch:async req=>{
+  assert.equal(new URL(req.url).pathname,"/__npe_templates/index.txt");
+  return new Response(readFileSync("public/index.html","utf8"));
+ }}};
+ const res=await worker.fetch(new Request("https://example.com/"),env,{});
+ assert.equal(res.status,200);
+ assert.match(await res.text(),/data-action="lead_enquiry"/);
+ const alias=await worker.fetch(new Request("https://example.com/west-tour?utm_source=facebook"),env,{});
+ assert.equal(alias.status,301);
+ assert.equal(alias.headers.get("location"),"https://example.com/west-tour.html?utm_source=facebook");
+ assert.equal((await worker.fetch(new Request("https://example.com/__npe_templates/index.txt"),env,{})).status,404);
+});
+test("dynamic SEO pages have public WhatsApp tracking",()=>{
+ for(const html of [renderEnglishTourPage("west","https://example.com"),renderExperiencePage({...draft,photo_url:"/photos/website/123"},"id","https://example.com")]){
+  assert.match(html,/data-whatsapp-chat/);assert.match(html,/website-content\.js\?v=/);
+ }
 });

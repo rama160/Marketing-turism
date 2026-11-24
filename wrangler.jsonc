@@ -25,7 +25,23 @@
       "/en/experiences/*",
       "/id/experiences/*",
       "/en/tours",
-      "/en/tours/*"
+      "/en/tours/*",
+      "/",
+      "/index.html",
+      "/__npe_templates",
+      "/__npe_templates/*",
+      "/snorkeling",
+      "/snorkeling.html",
+      "/snorkeling/",
+      "/island-tour",
+      "/island-tour.html",
+      "/island-tour/",
+      "/west-tour",
+      "/west-tour.html",
+      "/west-tour/",
+      "/east-tour",
+      "/east-tour.html",
+      "/east-tour/"
     ]
   },
   "vars": {

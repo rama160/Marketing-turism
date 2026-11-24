@@ -12,8 +12,10 @@ const locale=vm.runInNewContext(source.slice(localeStart,localeEnd)+"\n({english
 const decode=text=>text.replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&rsquo;/g,"’").replace(/&ndash;/g,"–");
 const plain=html=>decode(html.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim());
 const manifest={version:1,generated_by:"scripts/build.mjs",id:{},en:{},photos:{}};
+await mkdir("public/__npe_templates",{recursive:true});
 for(const page of pages){
  const html=await readFile("public/"+page,"utf8");
+ await writeFile("public/__npe_templates/"+page.replace(/\.html$/, ".txt"),html);
  // All data-copy attributes are the canonical public-editable source nodes.
  for(const match of html.matchAll(/<([a-z][\w:-]*)\b[^>]*\bdata-copy="([^"]+)"[^>]*>([\s\S]*?)<\/\1>/gi)){
   const key=match[2],id=plain(match[3]);

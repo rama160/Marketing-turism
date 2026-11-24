@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,renderEnglishTourPage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,renderEnglishTourPage,findPublishedExperience,renderWebsiteSitemap,legacyTourRoute,renderLegacyTourPage} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -171,7 +171,29 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.32.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.33.0",db:!!db,ai:!!env.AI});
+
+ // Generated non-HTML assets avoid Cloudflare Assets canonical redirect recursion.
+ if(path==="/__npe_templates"||path.startsWith("/__npe_templates/"))return new Response("Not found",{status:404,headers:{"cache-control":"no-store","x-robots-tag":"noindex"}});
+ const legacy=legacyTourRoute(path);
+ if(legacy&&(method==="GET"||method==="HEAD")){
+  if(path!==legacy.canonical){const target=new URL(req.url);target.pathname=legacy.canonical;return Response.redirect(target,301);}
+  if(!env.ASSETS)return new Response("Website temporarily unavailable",{status:503});
+  const asset=await env.ASSETS.fetch(new Request(new URL("/__npe_templates/"+legacy.file+".txt",u.origin),{method:"GET"}));
+  if(!asset.ok)return new Response("Website temporarily unavailable",{status:503,headers:{"cache-control":"no-store","retry-after":"60"}});
+  let copy={},items=[];
+  if(db){const results=await Promise.allSettled([publicSiteContent(db,"id"),publicWebsiteActivities(db)]);
+   if(results[0].status==="fulfilled")copy=results[0].value.items;
+   if(results[1].status==="fulfilled")items=results[1].value.items;
+  }
+  const html=renderLegacyTourPage(await asset.text(),legacy,u.origin,copy,items,env.GOOGLE_SITE_VERIFICATION||"");
+  const headers=new Headers(asset.headers);
+  for(const name of ["content-length","content-encoding","etag","last-modified","content-range","accept-ranges"])headers.delete(name);
+  headers.set("content-type","text/html; charset=utf-8");headers.set("cache-control","no-cache");headers.set("x-content-type-options","nosniff");
+  headers.set("referrer-policy","strict-origin-when-cross-origin");headers.set("x-frame-options","DENY");
+  headers.set("content-security-policy","default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://raw.githubusercontent.com blob:; form-action 'self'; base-uri 'self'; frame-ancestors 'none'");
+  return new Response(method==="HEAD"?null:html,{headers});
+ }
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});

@@ -1,3 +1,11 @@
+## NPE v3.33.0 — legacy SEO, attribution and crawl audit (24 Nov 2026)
+- Five original Indonesian pages use Worker-first exact routes and build-generated non-HTML templates via ASSETS; this replaces the historical v3.31 redirect experiment. Do not fetch public HTML URLs from within the Worker. The build generates templates from the same five public HTML files; no duplicated checked-in content. Internal template URLs return 404. Existing .html canonicals remain stable; clean aliases redirect once to those canonicals, preserving query parameters.
+- Render owner-published D1 text and metadata on the server, with escaping, original Indonesian fallback for the existing language picker, related published links, and no changes to bookings, operator rates, gallery, legal approvals or marketing gates. D1 failure uses original source text.
+- Optional public GOOGLE_SITE_VERIFICATION variable supports homepage meta verification; no invented token or claim of Search Console ownership.
+- Existing aggregate WhatsApp click collector is shared by original and all dynamic SEO pages, with no duplicate listener or additional personal data. Clicks are not confirmed bookings.
+- Live smoke checks every sitemap URL for direct HTTP 200 and matching canonical/hreflang, and checks generated source is not public. CI and live deployment must be verified separately.
+- External outstanding: GSC ownership/indexation, real Core Web Vitals, GA4/conversion reconciliation, domain decision, genuine reviews, photo rights, and final legal policy. No first-page guarantee.
+
 ## [3.32.0] — 2026-11-24 — NPE audited website improvements
 - Aligned five original page meta titles/descriptions, social OG previews and WebPage schema.
 - Added 18 factual bilingual FAQ entries across the homepage and four tour pages; clear operator/booking expectations and expired form disclosures updated.

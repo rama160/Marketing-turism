@@ -62,7 +62,7 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
  assert.ok(styles.includes(".dashCompactShortcuts"));
  assert.ok(styles.includes(".dashPaneNav"));
- assert.ok(page.includes('src="/app.js?v=3.32.0"'));
+ assert.ok(page.includes('src="/app.js?v=3.33.0"'));
  assert.ok(!page.includes('id="leadForm"'));
  assert.ok(!page.includes('class="hero premiumHero"'));
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-tab",name\)/);
@@ -85,12 +85,12 @@ test("Android installed agent goes to dashboard; public service worker never cac
  assert.ok(!sw.includes('"/app.js"'));
  assert.ok(!sw.includes('"/dashboard.html"'));
  assert.ok(!sw.includes('"/api/'));
- assert.ok(sw.includes("marketing-turism-public-v29"));
+ assert.ok(sw.includes("marketing-turism-public-v33"));
 });
 
 test("separating website does not change critical routes, operator prices, or manual approvals",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
- assert.ok(worker.includes('version:"3.32.0"'));
+ assert.ok(worker.includes('version:"3.33.0"'));
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }
@@ -107,14 +107,14 @@ test("repository release identity and guest assets stay aligned with current pro
  const smoke=readFileSync(new URL("../scripts/smoke.mjs",import.meta.url),"utf8");
  const dashboard=file("dashboard.html");
  const sw=file("service-worker.js");
- assert.equal(pkg.version,"3.32.0");
+ assert.equal(pkg.version,"3.33.0");
  assert.ok(worker.includes('version:"'+pkg.version+'"'));
  assert.ok(smoke.includes('health.version!=="'+pkg.version+'"'));
  assert.ok(dashboard.includes('/app.js?v='+pkg.version+'"'));
  assert.ok(dashboard.includes('/dashboard.css?v='+pkg.version+'"'));
  assert.ok(dashboard.includes("NPE STUDIO"));
- assert.ok(dashboard.includes("v3.32"));
- assert.ok(sw.includes("marketing-turism-public-v29"));
+ assert.ok(dashboard.includes("v3.33"));
+ assert.ok(sw.includes("marketing-turism-public-v33"));
  for(const fileName of ["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"]){
   assert.ok(file(fileName).includes('website-content.js?v='+pkg.version),fileName+" uses stale CMS script");
  }

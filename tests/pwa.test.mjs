@@ -142,7 +142,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v29/);
+ assert.match(read("service-worker.js"),/public-v33/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -330,7 +330,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v29/);
+ assert.match(sw,/marketing-turism-public-v33/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -347,7 +347,7 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v29/);
+ assert.match(read("service-worker.js"),/public-v33/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{
@@ -386,9 +386,11 @@ test("growth acquisition dashboard is owner-only, source credited, click-trackin
  assert.match(script,/OSM_PUBLIC_BUSINESSES/);
  assert.match(script,/OpenStreetMap contributors/);
  assert.match(script,/No|tidak|belum/);
- assert.match(lang,/a\[data-whatsapp-chat\]/);
- assert.match(lang,/\/api\/public\/intent/);
- assert.match(lang,/navigator\.sendBeacon/);
+ const tracking=read("website-content.js");
+ assert.match(tracking,/a\[data-whatsapp-chat\]/);
+ assert.match(tracking,/\/api\/public\/intent/);
+ assert.match(tracking,/navigator\.sendBeacon/);
+ assert.doesNotMatch(lang,/navigator\.sendBeacon/);
  assert.match(privacy,/tidak menyimpan IP/);
  for(const path of ["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"]){
   const contents=read(path);
@@ -436,7 +438,7 @@ test("guest tour SEO exposes bilingual useful FAQs without claims of unverified 
  assert.match(css,/\.npeFaqGrid/);
 });
 
-test("English tour translations use stable independent URLs, never Worker-first static asset rewrites",()=>{
+test("English and Indonesian tour URLs use explicit routes and isolated non-HTML source assets",()=>{
  const wrangler=JSON.parse(readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8"));
  assert.ok(wrangler.assets.run_worker_first.includes("/en/tours"));
  assert.ok(wrangler.assets.run_worker_first.includes("/en/tours/*"));
@@ -447,6 +449,7 @@ test("English tour translations use stable independent URLs, never Worker-first 
   assert.match(page,/hreflang="id"/);
   assert.match(page,/class="npeEnglishLink"/);
  }
- assert.ok(!wrangler.assets.run_worker_first.includes("/"));
- assert.ok(!wrangler.assets.run_worker_first.includes("/index.html"));
+ assert.ok(wrangler.assets.run_worker_first.includes("/"));
+ assert.ok(wrangler.assets.run_worker_first.includes("/index.html"));
+ assert.ok(wrangler.assets.run_worker_first.includes("/__npe_templates/*"));
 });

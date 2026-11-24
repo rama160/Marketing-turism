@@ -3,3 +3,6 @@ dist/
 .wrangler/
 .dev.vars
 .env*
+
+public/__npe_templates/
+public/site-editor-defaults.json
