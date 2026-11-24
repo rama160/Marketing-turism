@@ -1,3 +1,12 @@
+## Using the populated Published website editor (v3.20.0)
+Open NPE Studio > Konten & Kampanye > Editor Website > Published. Five original public pages must appear with current title, description, price label and image. They remain visible when site_content has zero owner edits.
+Select Edit isi lengkap on a page. Current live-source Indonesian/English text is populated automatically, including destination gallery details. Search by section label or edit several columns directly; select Simpan & Terbitkan Perubahan. Only changed content is persisted; untouched text remains unchanged. Select the other language to edit separately.
+Under Foto yang sedang tayang choose Ganti foto for one specific slot. Upload a commercially permitted image using Foto & Media; confirm slot before publication. Other pictures and rights credits remain intact.
+Dynamic activities are separate: only previously published dynamic activities appear as activity cards. Historic original public pages are edited in the legacy CMS instead of being duplicated as blank activity rows.
+The deployment build creates public/site-editor-defaults.json from canonical HTML and language.js. Run CI, validate nonempty snapshot and 18 photo slots, apply additive migration 0024 before updating dedicated NPE Worker, then run live smoke including protected admin access and guest booking functionality.
+
+---
+
 ## NPE Published Website Editor v3.19.0
 1. NPE Studio > Konten & Kampanye > Editor Website opens Published with published activities and five pre-existing pages.
 2. Published activity > Edit semua elemen opens bilingual titles, details, cover, numeric public price, unit and SEO. Save Draft preserves the previous public version until Publish.
