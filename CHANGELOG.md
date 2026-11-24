@@ -1,3 +1,13 @@
+## [3.21.0] — 2026-11-24
+### Improved
+- Published page and individual spot "Ganti Foto" now open the native photo gallery immediately, without an intermediate Website/Media editor.
+- Single preview with bilingual alt text, usage-rights confirmation, and targeted Save & Publish.
+- Existing media upload/compression and authenticated publication reused; after publication refresh only photo previews and preserve unsaved page copy.
+### Unchanged
+- Cloudflare D1 schema, owner authentication, booking/quote/rate flows, public SEO text, marketing automations, and Media Library management.
+
+---
+
 ## [3.20.0] — 2026-11-24
 ### Fixed
 - Published website editor preloads actual text, both translations and original media even with an empty site_content table.
