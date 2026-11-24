@@ -181,6 +181,6 @@ test("photo publishing is opt-in and does not navigate or change bookings",async
  const directFlow=js.slice(js.indexOf('$("#cmsQuickPhotoSave").onclick'),js.indexOf("function cmsCurrentPhoto("));
  assert.match(directFlow,/if\(!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
  assert.match(directFlow,/owner_confirmed:true/);
- assert.match(directFlow,/rights_confirmed","true"/);
+ assert.match(js,/form\.append\("rights_confirmed","true"\)/);
  assert.doesNotMatch(directFlow,/admin\/bookings|admin\/rates|window\.location|location\.href/);
 });
