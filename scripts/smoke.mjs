@@ -26,6 +26,22 @@ await get("/robots.txt");const websiteSitemap=await get("/sitemap.xml");
 if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
 const websiteCatalog=JSON.parse(await get("/api/public/website/activities"));
 if(!Array.isArray(websiteCatalog.items))throw Error("Public CMS activity catalog unavailable");
+// SEO crawlers must get metadata and published activity links before JavaScript executes.
+if(!landingMarkup.includes('application/ld+json')||!landingMarkup.includes('BreadcrumbList'))throw Error("Homepage SEO schema not server-rendered");
+if(!websiteSitemap.includes('xmlns:xhtml')||!websiteSitemap.includes('hreflang="en"'))throw Error("Bilingual sitemap links missing");
+if(websiteCatalog.items.length){
+ const parent=websiteCatalog.items.find(x=>x.slug&&!x.parent_activity);
+ if(parent&&!landingMarkup.includes('/id/experiences/'+parent.slug))throw Error("Homepage missing published crawlable experience links");
+ const sample=websiteCatalog.items.find(x=>x.slug&&x.photo_url);
+ if(sample){
+  const details=await get("/en/experiences/"+sample.slug);
+  if(!details.includes('BreadcrumbList')||!details.includes('og:image')||!details.includes('hreflang="id"'))throw Error("Experience search metadata absent");
+ }
+}
+for(const html of [snorkeling,west,east]){
+ if(!html.includes('application/ld+json')||!html.includes('og:image'))throw Error("Original tour SEO not server-rendered");
+}
+
 const websiteSlots=JSON.parse(await get("/api/public/website/slots"));
 if(!Array.isArray(websiteSlots.items))throw Error("Public CMS photo slots unavailable");
 await get("/api/admin/website/activities",401);
