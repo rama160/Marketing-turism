@@ -1,3 +1,13 @@
+## 24 NOV 2026 — NPE CMS FRIENDLY PUBLISHED EDITOR v3.19.0
+- Visible optional selling-price field for Add Activity; empty price saves with no public price displayed. Published activities and pages have one-click contextual edits, rather than hiding price under SEO.
+- Dashboard Website now has four views: Published, Draft, Halaman Website (grouped existing homepage/West/East/Snorkeling/Island Tour content), and Foto & Media. Activity editor has preview and Save Draft / Save & Publish actions.
+- Numeric selling price is IDR integer or blank with unit person/car/group/ticket and optional "Mulai dari". Amount generates bilingual labels. Unverified price can save as a draft but cannot be published; supplier net and historical quotes never change.
+- Published activity editing preserves URL and public snapshot until owner publishes. Existing legacy pages can edit configured text/price and website photo slots. Non-CMS hardcoded decorations remain unchanged.
+- No schema changes. Reuse current D1 tables, PHOTO_KV, version history, SEO routes, owner session, WhatsApp, booking and AI flows.
+- Require CI and live smoke including Published UI, optional price and admin boundaries. Deploy only dedicated NPE Worker preserving bindings and existing migration guard.
+
+---
+
 ## 24 NOV 2026 — WEBSITE CMS & ADD ACTIVITY v3.18.0 (pending deployment)
 - Public site retains all original guest pages and old operator booking pathways. Additions occur in a standalone `src/website-cms.mjs`, existing `src/worker.mjs`, dashboard and public presentation.
 - Existing `site_content` handles static text; new `website_activities` stores versioned draft/public snapshot (no auto publication), `website_media` metadata, `website_photo_slots` existing-page imagery; audit events use existing audit_log. New additive migration: `database/migrations/0023_website_cms.sql`.

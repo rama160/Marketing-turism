@@ -250,3 +250,84 @@
 .dashboardPage .npeCmsMedia img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px}
 .dashboardPage .npeCmsMedia small{font-size:11px;overflow-wrap:anywhere}
 @media(max-width:700px){.dashboardPage .npeCmsPanel .formgrid{grid-template-columns:1fr}}
+
+/* NPE Studio v3.19 — approachable owner CMS; no change to sales/booking dashboards. */
+.dashboardPage .npeEditorWorkspace{display:grid;gap:17px;max-width:1210px;margin-inline:auto}
+.dashboardPage .npeEditorHeader{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:8px 0}
+.dashboardPage .npeEditorHeader h3{font-size:clamp(21px,2.2vw,30px);margin:5px 0}
+.dashboardPage .npeEditorHeader .feedback{max-width:680px;margin:0}
+.dashboardPage .npeEditorNav{display:flex;align-items:center;gap:6px;padding:6px;background:#eef4f5;border-radius:14px;overflow:auto;scrollbar-width:thin}
+.dashboardPage .npeEditorNav button{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1;white-space:nowrap;min-height:44px;padding:10px 13px;border:1px solid transparent;background:transparent;color:#355a67;border-radius:10px;font-size:13px;font-weight:700}
+.dashboardPage .npeEditorNav button.current{background:white;border-color:#d5e6e7;color:#0e5866;box-shadow:0 2px 8px #16474e14}
+.dashboardPage .npeEditorNav button span{display:inline-grid;place-items:center;background:#e8f1f3;border-radius:999px;padding:2px 7px;font-size:11px}
+.dashboardPage .npeEditorNotice:empty{display:none}
+.dashboardPage .npeEditorSection{padding:22px;background:white;border:1px solid #e3eaed;border-radius:17px;min-width:0}
+.dashboardPage .npeEditorSection[hidden]{display:none}
+.dashboardPage .npeCmsSectionHeader{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap;margin:0 0 17px}
+.dashboardPage .npeCmsSectionHeader h4{font-size:19px;margin:0 0 5px;color:#174451}
+.dashboardPage .npeCmsSectionHeader .feedback{margin:0;max-width:740px}
+.dashboardPage .npePublishedGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:0 0 28px}
+.dashboardPage .npeCmsPublishedCard{border:1px solid #dbe9eb;border-radius:13px;overflow:hidden;min-width:0;display:grid;grid-template-columns:142px minmax(0,1fr);background:#fff}
+.dashboardPage .npeCmsPublishedImage{height:100%;min-height:178px;background:#eaf1f0;overflow:hidden}
+.dashboardPage .npeCmsPublishedImage img{width:100%;height:100%;object-fit:cover}
+.dashboardPage .npeCmsNoImage{display:grid;place-items:center;height:100%;font-size:13px;color:#687f88}
+.dashboardPage .npeCmsPublishedInfo{display:grid;gap:5px;padding:13px;align-content:center;min-width:0}
+.dashboardPage .npeCmsPublishedInfo small{font-size:11px;color:#67818a}
+.dashboardPage .npeCmsPublishedInfo h4{font-size:15px;line-height:1.35;margin:0}
+.dashboardPage .npeCmsPublishedInfo p{margin:0;font-size:12px;color:#54717a;line-height:1.5}
+.dashboardPage .npeCmsPublishedPrice{font-size:13px;color:#07576d}
+.dashboardPage .npeCmsPublishedPrice span{font-weight:400;color:#7e9399}
+.dashboardPage .npeCmsCardActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.dashboardPage .npeCmsCardActions button,.dashboardPage .npeCmsCardActions a{font-size:11px;padding:8px 10px;min-height:34px}
+.dashboardPage .npeCmsLegacy{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #e0eaeb;border-radius:12px;min-width:0}
+.dashboardPage .npeCmsLegacyIcon{display:grid;place-items:center;background:#e9f5f3;color:#0d6b72;border-radius:11px;width:46px;height:46px;font-size:22px;flex-shrink:0}
+.dashboardPage .npeCmsLegacy div{display:grid;gap:4px;flex:1;min-width:0}
+.dashboardPage .npeCmsLegacy strong{font-size:13px}
+.dashboardPage .npeCmsLegacy small{color:#607c86;font-size:11px}
+.dashboardPage .npeCmsEmpty{grid-column:1/-1;border:1px dashed #c4d9dc;background:#f7fbfb;padding:18px;border-radius:12px;color:#5d7680;font-size:13px}
+.dashboardPage .npeActivityLayout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(235px,.85fr);gap:18px;align-items:start}
+.dashboardPage .npeActivityEditor{display:grid;gap:14px;min-width:0}
+.dashboardPage .npeCmsFieldset{display:grid;gap:12px;border:1px solid #dbe7eb;border-radius:13px;padding:17px 16px;min-width:0}
+.dashboardPage .npeCmsFieldset legend{font-weight:800;font-size:14px;color:#154958;padding:0 7px}
+.dashboardPage .npeCmsFieldset label,.dashboardPage .npeCmsSeo label,.dashboardPage .npeCmsPageField,.dashboardPage .npeCmsMediaUpload label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#35545f}
+.dashboardPage .npeCmsFieldset label.check,.dashboardPage .npeCmsMediaUpload label.check,.dashboardPage .npeCmsVerify{display:flex;align-items:center;font-weight:500;gap:8px}
+.dashboardPage .npeCmsFieldset input:not([type=checkbox]),.dashboardPage .npeCmsFieldset textarea,.dashboardPage .npeCmsFieldset select,.dashboardPage .npeCmsSeo input,.dashboardPage .npeCmsSeo textarea,.dashboardPage .npeCmsPageField textarea,.dashboardPage .npeCmsMediaUpload input:not([type=checkbox]){width:100%;max-width:100%;box-sizing:border-box}
+.dashboardPage .npeCmsFieldset label small{font-size:10px;line-height:1.5;color:#758991;font-weight:400}
+.dashboardPage .npeCms2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.dashboardPage .npeCmsPricePreview{background:#edf7f6;border:1px solid #cde3df;border-radius:10px;padding:11px 13px;font-weight:700;color:#085c6b;font-size:13px}
+.dashboardPage .npeCmsCoverPreview{width:100%;max-height:200px;object-fit:cover;border-radius:10px}
+.dashboardPage .npeCmsSeo{border:1px solid #dbe7eb;border-radius:13px;padding:15px;display:grid;gap:12px}
+.dashboardPage .npeCmsSeo summary,.dashboardPage .npeCmsAdvanced summary{cursor:pointer;color:#19546a;font-weight:700}
+.dashboardPage .npeCmsSeo[open]>*+*{margin-top:13px}
+.dashboardPage .npeCmsStickyActions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;position:sticky;bottom:0;background:#ffffffed;backdrop-filter:blur(8px);padding:13px 0;z-index:3}
+.dashboardPage .npeCmsLivePreview{position:sticky;top:112px;border:1px solid #dae6e8;border-radius:13px;padding:14px;background:#f8fbfb;min-width:0;max-height:calc(100vh - 140px);overflow:auto}
+.dashboardPage .npeCmsLivePreview .eyebrow{font-size:10px}
+.dashboardPage #cmsActivityPreview{background:white;border:1px solid #e4eaed;border-radius:12px;overflow:hidden;margin-top:8px}
+.dashboardPage #cmsActivityPreview>img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.dashboardPage .npeCmsPreviewBody{padding:13px;display:grid;gap:8px}
+.dashboardPage .npeCmsPreviewBody h4{font-size:17px;margin:0}
+.dashboardPage .npeCmsPreviewBody p{font-size:12px;line-height:1.6;margin:0}
+.dashboardPage .npeCmsPageFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 18px}
+.dashboardPage .npeCmsPageField{border:1px solid #e1eced;border-radius:11px;padding:12px;background:#fafcfc}
+.dashboardPage .npeCmsPageField small{color:#638992}
+.dashboardPage .npeCmsAdvanced{margin-top:10px}
+.dashboardPage .npeCmsAdvanced .split{margin-top:14px}
+.dashboardPage .npeCmsMediaUpload{display:grid;gap:12px;margin:14px 0;border:1px solid #e0e9eb;padding:17px;border-radius:13px;background:#f9fbfb}
+.dashboardPage .npeCmsMediaGrid{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));max-height:430px}
+.dashboardPage .npeCmsMedia button{width:100%;font-size:11px}
+.dashboardPage .npeCmsPhotoSlot{display:grid;gap:12px;margin-top:22px;border-top:1px solid #dfebeb;padding-top:20px}
+.dashboardPage .npeCmsPhotoSlot h4{font-size:16px;margin:0}
+@media(max-width:1100px){
+ .dashboardPage .npePublishedGrid{grid-template-columns:1fr}
+ .dashboardPage .npeActivityLayout{grid-template-columns:minmax(0,1.25fr) minmax(220px,.75fr)}
+}
+@media(max-width:720px){
+ .dashboardPage .npeEditorSection{padding:14px}
+ .dashboardPage .npeEditorNav button{flex:none}
+ .dashboardPage .npeCmsPublishedCard{grid-template-columns:112px minmax(0,1fr)}
+ .dashboardPage .npeCmsPublishedImage{min-height:175px}
+ .dashboardPage .npeActivityLayout{grid-template-columns:1fr}
+ .dashboardPage .npeCmsLivePreview{position:static;max-height:none;order:-1}
+ .dashboardPage .npeCms2col,.dashboardPage .npeCmsPageFields{grid-template-columns:1fr}
+ .dashboardPage .npeCmsStickyActions button{flex:1}
+}

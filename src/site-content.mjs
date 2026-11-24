@@ -22,7 +22,7 @@ export const SUPPORTED_LOCALES=["id","en"];
 export function validateSiteEdit(b){
  const key=String(b?.key??""),locale=String(b?.locale??""),value=String(b?.value??"").trim();
  if(!allowed.has(key)||!SUPPORTED_LOCALES.includes(locale))throw Error("Field atau bahasa konten tidak valid");
- if(value.length<2||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus 2–1200 karakter teks biasa tanpa HTML atau kontrol karakter");
+ if((!key.startsWith("price.")&&value.length<2)||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus teks biasa; harga boleh dikosongkan untuk tidak menampilkan harga.");
  if(b.owner_confirmed!==true)throw Error("Persetujuan admin untuk publikasi diperlukan");
  if(!Number.isSafeInteger(b.expected_version)||b.expected_version<0)throw Error("Versi konten tidak valid");
  return {key,locale,value,expectedVersion:b.expected_version};
