@@ -175,7 +175,8 @@ async function route(req,env,ctx){
  if(!db)return bad("D1 database belum aktif",503);
  const legacyPages=new Set(["/","/index.html","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"]);
  if(method==="GET"&&legacyPages.has(path)){
-  const original=await env.ASSETS.fetch(new Request(new URL(path==="/"?"/index.html":path,u.origin),req));
+  if(path==="/index.html")return Response.redirect(u.origin+"/",301);
+  const original=await env.ASSETS.fetch(new Request(new URL(path,u.origin),req));
   if(!original.ok)return original;
   const [copy,published]=await Promise.all([publicSiteContent(db,"id"),publicWebsiteActivities(db)]);
   const body=renderLegacySEOPage(await original.text(),path,u.origin,copy.items,published.items);
