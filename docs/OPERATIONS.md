@@ -1,3 +1,9 @@
+## Fast photo replacement from gallery (v3.21.0)
+From NPE Studio > Konten & Kampanye > Editor Website > Published, tap **Ganti Foto** on a page card to open your phone gallery immediately. You can also open a page and tap **Ganti foto** beside a specific spot (Manta Point, Kelingking, etc.); its location is selected automatically. Pick an image, inspect the preview, optionally edit the photo title and Indonesia/English description, confirm commercial rights, then tap **Simpan & Terbitkan Foto**. No need to open Foto & Media or choose the slot again.
+If you cancel the gallery picker or preview, nothing changes publicly. If upload or publication fails, the dialog shows the error and permits retry. Do not refresh the page while other title/description edits are unsaved; changing a photo alone does not erase those in-progress edits. The separate Foto & Media library remains available for managing reusable images and Add Activity covers. Only the chosen photo changes; existing booking, prices and marketing remain unchanged.
+
+---
+
 ## Using the populated Published website editor (v3.20.0)
 Open NPE Studio > Konten & Kampanye > Editor Website > Published. Five original public pages must appear with current title, description, price label and image. They remain visible when site_content has zero owner edits.
 Select Edit isi lengkap on a page. Current live-source Indonesian/English text is populated automatically, including destination gallery details. Search by section label or edit several columns directly; select Simpan & Terbitkan Perubahan. Only changed content is persisted; untouched text remains unchanged. Select the other language to edit separately.
