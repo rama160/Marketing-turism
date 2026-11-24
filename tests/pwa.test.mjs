@@ -435,3 +435,18 @@ test("guest tour SEO exposes bilingual useful FAQs without claims of unverified 
  assert.match(css,/\[data-npe-lang="en"\]/);
  assert.match(css,/\.npeFaqGrid/);
 });
+
+test("English tour translations use stable independent URLs, never Worker-first static asset rewrites",()=>{
+ const wrangler=JSON.parse(readFileSync(new URL("../wrangler.jsonc",import.meta.url),"utf8"));
+ assert.ok(wrangler.assets.run_worker_first.includes("/en/tours"));
+ assert.ok(wrangler.assets.run_worker_first.includes("/en/tours/*"));
+ const original=["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"];
+ for(const file of original){
+  const page=read(file);
+  assert.match(page,/hreflang="en"/);
+  assert.match(page,/hreflang="id"/);
+  assert.match(page,/class="npeEnglishLink"/);
+ }
+ assert.ok(!wrangler.assets.run_worker_first.includes("/"));
+ assert.ok(!wrangler.assets.run_worker_first.includes("/index.html"));
+});

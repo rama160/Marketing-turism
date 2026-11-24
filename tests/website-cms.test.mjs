@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateWebsiteDraft,renderExperiencePage,renderWebsiteSitemap,publishWebsiteActivity} from "../src/website-cms.mjs";
+import {validateWebsiteDraft,renderExperiencePage,renderWebsiteSitemap,renderEnglishTourPage,englishTourKeys,publishWebsiteActivity} from "../src/website-cms.mjs";
 const draft={
  slug:"nusa-lembongan-island-tour",category:"ISLAND_TOUR",
  title_en:"Nusa Lembongan Island Tour",title_id:"Tur Pulau Nusa Lembongan",
@@ -515,4 +515,30 @@ test("published parent gallery transparently distinguishes optional stops",()=>{
  const id=renderExperiencePage(root,"id","https://example.com",[root,child]);
  assert.match(en,/not every location is included/);
  assert.match(id,/tidak semua lokasi otomatis termasuk/);
+});
+
+test("English tour pages are indexable, reciprocal, truthful, and do not expose owner data",()=>{
+ assert.deepEqual(englishTourKeys,["","west","east","snorkeling","island"]);
+ for(const key of englishTourKeys){
+  const html=renderEnglishTourPage(key,"https://example.com");
+  assert.match(html,/<html lang="en">/);
+  assert.match(html,/hreflang="id"/);
+  assert.match(html,/hreflang="en"/);
+  assert.match(html,/rel="canonical"/);
+  assert.match(html,/application\/ld\+json/);
+  assert.match(html,/npeFaqGrid/);
+  assert.match(html,/Wikimedia Commons/);
+  assert.match(html,/https:\/\/wa\.me\/628561752525/);
+  assert.match(html,/Nusa Lembongan Island Tour/);
+  assert.doesNotMatch(html,/Admin Token|booking database|"reviewCount"|"aggregateRating"/);
+  assert.equal(renderEnglishTourPage(key,"https://example.com"),html);
+ }
+ assert.equal(renderEnglishTourPage("unknown","https://example.com"),null);
+});
+test("English tour sitemap links match exact Indonesian counterparts",async()=>{
+ const db={prepare:()=>({all:async()=>({results:[]})})};
+ const xml=await renderWebsiteSitemap(db,"https://example.com");
+ for(const path of ["/en/tours","/en/tours/snorkeling","/en/tours/island","/en/tours/west","/en/tours/east"])assert.ok(xml.includes("https://example.com"+path),path);
+ assert.match(xml,/hreflang="id"/);
+ assert.match(xml,/hreflang="en"/);
 });

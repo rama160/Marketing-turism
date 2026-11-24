@@ -18,6 +18,12 @@ if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.busines
  if(!landingMarkup.includes('data-action="lead_enquiry"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
 await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
 if(!landingMarkup.includes('npeAboutProcess')||!landingMarkup.includes('npeFaqGrid'))throw Error("Current site missing owner transparency or bilingual FAQ");
+for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"]){
+ const markup=await get(path);
+ if(!markup.includes('<html lang="en">')||!markup.includes('hreflang="id"')||
+ !markup.includes('application/ld+json')||!markup.includes('npeFaqGrid'))throw Error("English SEO landing failed "+path);
+ if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
+}
 const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling Nusa Penida")||!snorkeling.includes("Manta Bay")||!snorkeling.includes("Wikimedia Commons"))throw Error("Snorkeling/gallery missing");
 const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
@@ -173,7 +179,7 @@ const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
 if(!home.includes('id="whatsapp"')||!home.includes('class="wa-floating"')||!home.includes(contact)||!home.includes(catalog))throw Error("Public WhatsApp contact links missing");
 if(!dashboard.includes('id="tab-whatsapp"')||!dashboard.includes('data-tab="whatsapp"'))throw Error("Owner WhatsApp reply workspace missing");
 if(!dashboard.includes("Koneksi otomatis ke inbox WhatsApp")||!dashboard.includes("Tidak ada pengiriman otomatis"))throw Error("WhatsApp connection falsely presented as active");
-if(!langJS.includes('encodeURIComponent(message)')||!langJS.includes('View WhatsApp Catalog'))throw Error("Guest WhatsApp language handling absent");
+if(!langJS.includes('encodeURIComponent(personalized)')||!langJS.includes('View WhatsApp Catalog'))throw Error("Guest WhatsApp language handling absent");
 for(const page of [snorkeling,island,west,east]){
  if(!page.includes('data-whatsapp-chat')||!page.includes(catalog))throw Error("Travel detail WhatsApp contact missing");
 }
