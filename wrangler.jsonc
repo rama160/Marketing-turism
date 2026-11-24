@@ -23,7 +23,9 @@
       "/robots.txt",
       "/sitemap.xml",
       "/en/experiences/*",
-      "/id/experiences/*"
+      "/id/experiences/*",
+      "/en/tours",
+      "/en/tours/*"
     ]
   },
   "vars": {

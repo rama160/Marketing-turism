@@ -383,12 +383,15 @@ const xmlEsc=s=>escapeHTML(s).replace(/&#39;/g,"&apos;").replace(/&quot;/g,"&quo
 export async function renderWebsiteSitemap(db,origin){
  const staticPaths=["/","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"];
  const items=(await publicWebsiteActivities(db)).items;
- const basic=staticPaths.map(p=>"<url><loc>"+xmlEsc(origin+p)+"</loc></url>");
+ const englishPaths=["/en/tours","/en/tours/snorkeling","/en/tours/island","/en/tours/west","/en/tours/east"];
+ const reciprocal=(p,en)=>["id","en"].map((lang,i)=>'<xhtml:link rel="alternate" hreflang="'+lang+'" href="'+xmlEsc(origin+(i===0?p:en))+'"/>').join("");
+ const basic=staticPaths.map((p,i)=>"<url><loc>"+xmlEsc(origin+p)+"</loc>"+reciprocal(p,englishPaths[i])+"</url>");
+ const englishUrls=englishPaths.map((p,i)=>"<url><loc>"+xmlEsc(origin+p)+"</loc>"+reciprocal(staticPaths[i],p)+"</url>");
  const dynamic=items.flatMap(i=>["en","id"].map(lang=>{
   const url=origin+"/"+lang+"/experiences/"+i.slug;
   const updated=typeof i.published_at==="string"&&/^\d{4}-\d{2}-\d{2}/.test(i.published_at)?"<lastmod>"+i.published_at.slice(0,10)+"</lastmod>":"";
   const langs=["en","id"].map(l=>'<xhtml:link rel="alternate" hreflang="'+l+'" href="'+xmlEsc(origin+"/"+l+"/experiences/"+i.slug)+'"/>').join("");
   return "<url><loc>"+xmlEsc(url)+"</loc>"+updated+langs+"</url>";
  }));
- return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'+basic.concat(dynamic).join("")+"</urlset>";
+ return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'+basic.concat(englishUrls,dynamic).join("")+"</urlset>";
 }

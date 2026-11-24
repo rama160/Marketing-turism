@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,renderEnglishTourPage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -175,6 +175,11 @@ async function route(req,env,ctx){
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
+ const englishTour=path.match(/^\/en\/tours(?:\/(west|east|island|snorkeling))?\/?$/);
+ if(englishTour&&method==="GET"){
+  const html=renderEnglishTourPage(englishTour[1]||"",u.origin);
+  return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=600","x-content-type-options":"nosniff"}});
+ }
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
  if(experience&&method==="GET"){
   const published=await findPublishedExperience(db,experience[2]);
