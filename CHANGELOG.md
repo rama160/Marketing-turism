@@ -1,3 +1,17 @@
+## [3.20.0] — 2026-11-24
+### Fixed
+- Published website editor preloads actual text, both translations and original media even with an empty site_content table.
+- Replaces generic Published cards with previews of existing title, excerpt, current retail label and current photo.
+- Owner can edit only selected text fields or many fields without overwriting unmodified content.
+### Added
+- 13 destination gallery-card headings and descriptions use the existing bilingual CMS.
+- New independently editable photo placements for 13 gallery locations via additive D1 migration 0024.
+- Build-generated snapshot derived only from the canonical checked-in guest website, with test and live smoke assertions.
+### Preserved
+- Original rates, quotations, payment approvals, bookings, session security, existing photo credits, Meta automation and other Workers.
+
+---
+
 ## [3.19.0] — 2026-11-24
 ### Improved
 - Mobile-friendly Published, Draft, Halaman Website and Foto & Media workspace inside NPE Studio.
