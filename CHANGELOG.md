@@ -1,3 +1,12 @@
+## [3.31.0] SEO routing stabilization — 2026-11-24
+- Final deployment keeps existing static homepage and legacy tour routes out of Worker-first, avoiding Cloudflare Assets infinite redirects discovered by live smoke.
+- Improves original HTML SEO titles, descriptions, factual Organization/WebPage/BreadcrumbList JSON-LD and image previews.
+- Adds direct homepage links for published Lembongan/fast boat pages and server-rendered related links to bilingual activity pages.
+- Dynamic sitemap includes hreflang alternates and actual publication dates. No invented reviews or ratings.
+- Owner site-content overrides on legacy pages remain client-side; do not claim otherwise. Existing design, booking, session, prices, gallery and social integrations remain unchanged.
+
+---
+
 ## [3.31.0] — 2026-11-24
 - SEO: Serve original tour pages with real HTML metadata and current published CMS copy via existing Cloudflare Worker, without replacing source pages or changing guest designs.
 - Add Organization, WebPage and BreadcrumbList JSON-LD, social sharing preview images, unique titles and useful meta descriptions.
