@@ -31,12 +31,29 @@ export function validateWebsiteDraft(input){
  }
  data.media_id=u16(input.media_id);
  if(data.media_id&&!idRE.test(data.media_id))throw Error("Foto utama tidak valid");
+ // A selling price is optional; it is never the supplier net from the quote engine.
+ // Drafts may contain unverified prices, but publication refuses them.
+ const rawAmount=input.price_amount;
+ data.price_amount=rawAmount===null||rawAmount===undefined||String(rawAmount).trim()===""?null:Number(rawAmount);
+ if(data.price_amount!==null&&(!Number.isSafeInteger(data.price_amount)||data.price_amount<1||data.price_amount>1000000000))
+  throw Error("Harga jual harus berupa rupiah bulat antara Rp1 dan Rp1.000.000.000");
+ data.price_unit=u16(input.price_unit)||"PERSON";
+ if(!["PERSON","CAR","GROUP","TICKET"].includes(data.price_unit))throw Error("Satuan harga tidak valid");
+ data.price_from=input.price_from!==false;
  data.price_label_id=u16(input.price_label_id);
  data.price_label_en=u16(input.price_label_en);
- if((data.price_label_id||data.price_label_en)&&(
- !plain(data.price_label_id,120)||!plain(data.price_label_en,120)||input.price_verified!==true))
-  throw Error("Harga publik harus lengkap di kedua bahasa dan diverifikasi oleh pemilik");
- data.price_verified=input.price_verified===true;
+ const hasLabel=!!(data.price_label_id||data.price_label_en);
+ if(hasLabel&&(!plain(data.price_label_id,120)||!plain(data.price_label_en,120)))
+  throw Error("Label harga harus lengkap dalam bahasa Indonesia dan Inggris");
+ if(data.price_amount!==null){
+  const formatted=new Intl.NumberFormat("id-ID").format(data.price_amount);
+  const idUnit={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"}[data.price_unit];
+  const enUnit={PERSON:"person",CAR:"car",GROUP:"group",TICKET:"ticket"}[data.price_unit];
+  // Numeric price is authoritative: labels are generated so the amount cannot contradict the display.
+  data.price_label_id=(data.price_from?"Mulai ":"")+"Rp"+formatted+"/"+idUnit;
+  data.price_label_en=(data.price_from?"From ":"")+"IDR "+formatted+"/"+enUnit;
+ }
+ data.price_verified=input.price_verified===true&&(data.price_amount!==null||hasLabel);
  data.supplier_confirmed=input.supplier_confirmed===true;
  return data;
 }
@@ -76,6 +93,8 @@ export async function publishWebsiteActivity(db,id,body){
  if(!row)throw Error("Aktivitas tidak ditemukan");
  if(!Number.isSafeInteger(body.expected_version)||row.version!==body.expected_version)throw Error("Versi berubah. Muat ulang sebelum terbit");
  const draft=validateWebsiteDraft(JSON.parse(row.draft_json));
+ if((draft.price_amount!==null||draft.price_label_id||draft.price_label_en)&&!draft.price_verified)
+  throw Error("Harga belum diverifikasi. Centang konfirmasi harga atau kosongkan harga sebelum terbit.");
  if(!draft.supplier_confirmed)throw Error("Konfirmasi cakupan layanan dan operator wajib sebelum terbit");
  if(!draft.media_id)throw Error("Pilih foto utama yang memiliki izin penggunaan sebelum terbit");
  const photo=await db.prepare("SELECT id FROM website_media WHERE id=?").bind(draft.media_id).first();
