@@ -507,3 +507,12 @@ test("published experience SEO has visible child links, image previews and struc
  assert.match(html,/og:image/);
  assert.match(html,/href="\/en\/experiences\/child"/);
 });
+
+test("published parent gallery transparently distinguishes optional stops",()=>{
+ const root={...draft,photo_url:"/photos/website/123"};
+ const child={...root,slug:"extra-stop",parent_activity:"activity:"+root.slug,title_en:"Optional Photo Stop"};
+ const en=renderExperiencePage(root,"en","https://example.com",[root,child]);
+ const id=renderExperiencePage(root,"id","https://example.com",[root,child]);
+ assert.match(en,/not every location is included/);
+ assert.match(id,/tidak semua lokasi otomatis termasuk/);
+});

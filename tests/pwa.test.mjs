@@ -142,7 +142,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v28/);
+ assert.match(read("service-worker.js"),/public-v29/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -330,7 +330,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v28/);
+ assert.match(sw,/marketing-turism-public-v29/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -347,7 +347,7 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v28/);
+ assert.match(read("service-worker.js"),/public-v29/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{
@@ -404,4 +404,34 @@ test("only the Worker serves canonical robots and sitemap; static duplicate file
  assert.ok(worker.includes('path==="/sitemap.xml"'));
  assert.ok(!sw.includes('"/robots.txt"'));
  assert.ok(!sw.includes('"/sitemap.xml"'));
+});
+
+test("guest tour SEO exposes bilingual useful FAQs without claims of unverified availability",()=>{
+ const tours=["index.html","snorkeling.html","island-tour.html","west-tour.html","east-tour.html"];
+ for(const name of tours){
+  const html=read(name);
+  assert.match(html,/class="section npeFaq"/);
+  assert.match(html,/data-npe-lang="en"/);
+  assert.match(html,/data-npe-lang="id"/);
+  assert.match(html,/class="npeFaqItem"/);
+  assert.match(html,/rel="canonical"/);
+  const images=[...html.matchAll(/<img\b[^>]*>/g)].map(x=>x[0]);
+  for(const img of images){assert.match(img,/\bwidth="\d+"/,name);assert.match(img,/\bheight="\d+"/,name);}
+  const seoTitle=html.match(/<title>([^<]*)<\/title>/)?.[1];
+  const ogTitle=html.match(/<meta property="og:title" content="([^"]*)"/)?.[1];
+  assert.equal(ogTitle,seoTitle,name+" OG title differs from search title");
+  const seoDescription=html.match(/<meta name="description" content="([^"]*)"/)?.[1];
+  const ogDescription=html.match(/<meta property="og:description" content="([^"]*)"/)?.[1];
+  assert.equal(ogDescription,seoDescription,name+" OG description differs from search description");
+  assert.doesNotMatch(html,/Formulir publik belum diaktifkan|Formulir guest belum aktif/);
+ }
+ const home=read("index.html");
+ assert.match(home,/npeAboutProcess/);
+ assert.match(home,/mitra operator lokal/);
+ const lang=read("language.js");
+ assert.match(lang,/dataset\.whatsappPackage/);
+ for(const name of tours.filter(n=>n!=="index.html"))assert.match(read(name),/data-whatsapp-package=/);
+ const css=read("styles.css");
+ assert.match(css,/\[data-npe-lang="en"\]/);
+ assert.match(css,/\.npeFaqGrid/);
 });
