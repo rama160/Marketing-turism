@@ -1,3 +1,13 @@
+## FR-46–FR-51 — Published editor shows the existing content (v3.20.0)
+- FR-46 Published displays the five original website pages with actual title, summary, current public price label if any, and existing image, even when D1 editor rows are empty.
+- FR-47 Opening a legacy page loads every supported current Indonesian/English content field from public source plus D1 override; no blank placeholders when default text exists.
+- FR-48 Owner can change a single field, several fields, or all fields. Unchanged values are skipped, and searchable labels help locate parts.
+- FR-49 13 existing destination photo slots can be replaced independently by rights-confirmed owner uploads, preserving other images.
+- FR-50 Destination heading and description are editable by locale using the same site_content allowlist and validation system.
+- FR-51 No destructive default inserts or fake duplicate activities. Existing supplier costs, bookings, approved quotations, login and marketing continue unchanged; CI and live smoke gate release.
+
+---
+
 ## NPE Studio v3.19.0 — Published-first content editor
 - FR-39 Editor opens at Published, with Draft, Halaman Website and Foto & Media views.
 - FR-40 Published dynamic activities can be reopened and all supported title, bilingual description, category, image, selling price, unit, verified flags and SEO fields can be edited without source changes.
