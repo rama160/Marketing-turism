@@ -1021,7 +1021,7 @@ const cmsRead=name=>{const el=cmsField(name);return el?.type==="checkbox"?el.che
 const cmsCategories={SNORKELING:"Snorkeling",ISLAND_TOUR:"Island Tour",TRANSPORT:"Fast Boat / Transport",OTHER:"Aktivitas lainnya"};
 const cmsUnitId={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"};
 const cmsIdPrice=n=>new Intl.NumberFormat("id-ID").format(n);
-const cmsDefaultFields=["slug","category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
+const cmsDefaultFields=["category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
 function cmsView(name){
  if(!["published","drafts","activity","pages","media"].includes(name))return;
  npeCmsView=name;
@@ -1087,14 +1087,14 @@ function cmsSyncParent(){
 }
 $("#cmsParentActivity").addEventListener("change",()=>{cmsSyncParent();refreshActivityPreview();});
 function startWebsiteDetail(parent){
- resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();
+ resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();cmsField("category").disabled=true;
  $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
 }
 function resetWebsiteForm(){
  npeCmsReturn="drafts";npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
- cmsParentOptions();cmsField("parent_activity").disabled=false;
+ cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;
  cmsSet("price_unit","PERSON");cmsSet("price_from",true);
- cmsField("slug").readOnly=false;$("#cmsFormHeading").textContent="Tambah Aktivitas Baru";
+ $("#cmsFormHeading").textContent="Tambah Aktivitas Baru";
  $("#cmsEditingStatus").textContent="Draft Baru";$("#cmsActivityFeedback").textContent="";
  cmsForm.hidden=false;cmsView("activity");
 }
@@ -1107,7 +1107,7 @@ function editWebsiteActivity(id,from="published"){
  if(d.price_amount===null||d.price_amount===undefined)cmsSet("price_amount",cmsParseLegacyPrice(d));
  if(!d.price_unit)cmsSet("price_unit",cmsLegacyUnit(d));
  cmsSet("price_from",d.price_from!==undefined?d.price_from:/^Mulai/i.test(d.price_label_id||""));
- cmsField("slug").readOnly=true;
+ cmsField("category").disabled=!!d.parent_activity;
  $("#cmsFormHeading").textContent="Edit · "+(d.title_id||d.title_en||a.slug);
  $("#cmsEditingStatus").textContent=a.status==="PUBLISHED"?"Published · edit draft":"Draft";
  $("#cmsActivityFeedback").textContent=a.status==="PUBLISHED"?"Perubahan tidak mengganti versi publik sampai Anda menekan Simpan & Publish.":"Simpan perubahan lalu terbitkan ketika sudah siap.";
@@ -1240,7 +1240,7 @@ async function cmsSaveDraft(){
  await loadWebsiteCMS();
  // After the first draft save, keep editing that record instead of accidentally creating the same slug again.
  npeCmsEditing=npeCmsActivities.find(x=>x.id===result.id)||null;
- if(npeCmsEditing){cmsField("slug").readOnly=true;$("#cmsEditingStatus").textContent=npeCmsEditing.status==="PUBLISHED"?"Published · revisi draft":"Draft tersimpan";}
+ if(npeCmsEditing){$("#cmsEditingStatus").textContent=npeCmsEditing.status==="PUBLISHED"?"Published · revisi draft":"Draft tersimpan";}
  return result;
 }
 cmsForm.onsubmit=async e=>{

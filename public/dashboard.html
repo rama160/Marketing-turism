@@ -117,8 +117,7 @@
    <div class="npeCmsSectionHeader"><div><h4 id="cmsFormHeading">Tambah aktivitas</h4><p class="feedback">Kolom bertanda * wajib. Harga dan SEO tambahan boleh dikosongkan.</p></div></div>
    <fieldset class="npeCmsFieldset">
     <legend>1 · Identitas & judul</legend>
-    <label>URL / Slug *<input name="slug" required minlength="3" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nusa-lembongan-island-tour"><small>URL tetap sama setelah aktivitas dibuat agar tautan Google tidak rusak.</small></label>
-    <label>Aktivitas induk<select name="parent_activity" id="cmsParentActivity"><option value="">Aktivitas utama (tampil di beranda)</option></select><small>Pilih induk untuk menambahkan spot, rute, atau detail di halaman aktivitas tersebut.</small></label>
+    <label>Aktivitas induk<select name="parent_activity" id="cmsParentActivity" disabled><option value="">Aktivitas utama (tampil di beranda)</option></select><small>Ditentukan otomatis berdasarkan tombol Tambah Aktivitas atau Tambah Detail yang dipilih.</small></label>
     <label>Kategori *<select name="category"><option value="ISLAND_TOUR">Island Tour</option><option value="SNORKELING">Snorkeling</option><option value="TRANSPORT">Fast Boat / Transport</option><option value="OTHER">Aktivitas lainnya</option></select></label>
     <div class="npeCms2col"><label>Judul (English) *<input name="title_en" required minlength="3" maxlength="150" placeholder="Nusa Lembongan Island Tour"></label><label>Judul (Indonesia) *<input name="title_id" required minlength="3" maxlength="150" placeholder="Tur Pulau Nusa Lembongan"></label></div>
    </fieldset>

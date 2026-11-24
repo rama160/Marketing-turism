@@ -1,3 +1,11 @@
+## [3.24.0] — 2026-11-24
+- Remove manual URL/slug field from the website activity editor.
+- Generate unique SEO-friendly URLs automatically from title and parent context on the server; preserve existing links on edit.
+- Automatically lock the clicked parent for Add Detail and keep Add Activity as a top-level entry.
+- Add regression tests for automatic URL allocation and the form.
+
+---
+
 ## [3.23.0] — 2026-11-24
 - Add activity detail creation for existing tour pages and published dynamic activities, bilingual fields, gallery photo, draft, publish and archive.
 - Show child details only on the parent activity, preserve existing gallery spots and homepage cards, and hide orphaned details.

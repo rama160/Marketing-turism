@@ -1,3 +1,8 @@
+## v3.24.0 — Automatic activity URLs
+New CMS entries allocate a server-generated URL from the English title (Indonesian fallback) and the selected activity context; detail entries prefix the parent identifier. Unique slug insertion retries with numeric suffixes without overwriting another record. Edits preserve the existing database slug regardless of request input. The owner form no longer contains a URL field; Add Activity fixes the parent to the homepage, Add Detail fixes it to the clicked parent and its category. Existing canonical, hreflang and public URLs stay unchanged. No schema migration.
+
+---
+
 ## v3.23.0 — Activity details
 Existing website_activities JSON snapshots store optional parent_activity (static:snorkeling/island/west/east or activity:<published root slug>). No schema migration. Details use existing authenticated draft/publish/archive, bilingual content, media rights and pricing checks. Parent assignment immutable to avoid orphan trees; dynamic parent must be a published top-level activity of matching category. Archived parents hide their details. Public homepage excludes child cards; existing activity galleries and dynamic experience pages display their own details. Existing static spots, bookings, rates and photos remain unchanged.
 

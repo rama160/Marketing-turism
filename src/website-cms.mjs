@@ -20,6 +20,16 @@ const jsonReply=(obj,status=200)=>new Response(JSON.stringify(obj),{status,heade
 const reject=(msg,code=422)=>jsonReply({error:msg},code);
 const binaryJpeg=b=>b.length>=10000&&b.length<=850000&&b[0]===255&&b[1]===216&&b[2]===255&&b.at(-2)===255&&b.at(-1)===217;
 const u16=x=>String(x??"").trim();
+// URL identifiers are allocated on the server only, and never change after creation.
+const slugPart=(value,max)=>u16(value).normalize("NFKD").replace(/\p{Mark}/gu,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,max).replace(/-+$/g,"");
+export function websiteSlugBase(input){
+ const parent=u16(input.parent_activity);
+ const prefix=staticParents.has(parent)?parent.slice(7):parent.startsWith("activity:")?slugPart(parent.slice(9),45):"";
+ const title=slugPart(input.title_en,90)||slugPart(input.title_id,90)||"activity";
+ const segment=title.length>=3?title:"activity-"+title;
+ const joined=prefix&&!segment.startsWith(prefix+"-")?prefix+"-"+segment:segment;
+ return joined.slice(0,90).replace(/-+$/g,"");
+}
 export function validateWebsiteDraft(input){
  if(!input||typeof input!=="object")throw Error("Isi aktivitas tidak valid");
  const slug=u16(input.slug).toLowerCase(),category=u16(input.category);
@@ -93,21 +103,28 @@ export async function publicWebsiteActivities(db){
  return {items:items.filter(a=>!a.parent_activity||staticParents.has(a.parent_activity)||roots.has(a.parent_activity))};
 }
 export async function saveWebsiteActivity(db,b,id=null){
- const data=validateWebsiteDraft(b.draft);
- await verifyParent(db,data);
+ if(!b?.draft||typeof b.draft!=="object")throw Error("Isi aktivitas tidak valid");
  if(!id){
-  const exists=await db.prepare("SELECT id FROM website_activities WHERE slug=?").bind(data.slug).first();
-  if(exists)throw Error("Slug sudah digunakan");
+  const base=websiteSlugBase(b.draft);
+  const data=validateWebsiteDraft({...b.draft,slug:base});
+  await verifyParent(db,data);
   id=crypto.randomUUID();
-  await db.prepare("INSERT INTO website_activities(id,slug,draft_json,status,version) VALUES(?,?,?,'DRAFT',1)").bind(id,data.slug,JSON.stringify(data)).run();
-  return {id,version:1,status:"DRAFT"};
+  // Atomic uniqueness check: parallel saves or identical titles never overwrite an existing activity.
+  for(let attempt=1;attempt<=100;attempt++){
+   const suffix=attempt===1?"":"-"+attempt;
+   const slug=base.slice(0,90-suffix.length).replace(/-+$/g,"")+suffix;
+   const write=await db.prepare("INSERT INTO website_activities(id,slug,draft_json,status,version) VALUES(?,?,?,'DRAFT',1) ON CONFLICT(slug) DO NOTHING").bind(id,slug,JSON.stringify({...data,slug})).run();
+   if(write.meta?.changes===1)return {id,slug,version:1,status:"DRAFT"};
+  }
+  throw Error("URL otomatis belum tersedia. Ubah judul aktivitas lalu coba lagi.");
  }
  if(!idRE.test(id))throw Error("ID aktivitas tidak valid");
  const prev=await db.prepare("SELECT version,slug,draft_json FROM website_activities WHERE id=?").bind(id).first();
  if(!prev)throw Error("Aktivitas tidak ditemukan");
  if(!Number.isSafeInteger(b.expected_version)||prev.version!==b.expected_version)throw Error("Versi telah berubah; muat ulang editor");
- if(data.slug!==prev.slug)throw Error("Slug tidak boleh diganti setelah dibuat untuk menjaga tautan SEO");
  const previous=JSON.parse(prev.draft_json);
+ const data=validateWebsiteDraft({...b.draft,slug:prev.slug});
+ await verifyParent(db,data);
  if((previous.parent_activity||"")!==data.parent_activity)throw Error("Aktivitas induk tidak dapat diubah setelah dibuat");
  if(previous.category!==data.category&&!data.parent_activity) {
   const child=await db.prepare("SELECT id FROM website_activities WHERE json_extract(draft_json,'$.parent_activity')=? OR json_extract(published_json,'$.parent_activity')=? LIMIT 1").bind("activity:"+data.slug,"activity:"+data.slug).first();
@@ -115,7 +132,7 @@ export async function saveWebsiteActivity(db,b,id=null){
  }
  const write=await db.prepare("UPDATE website_activities SET draft_json=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(JSON.stringify(data),id,prev.version).run();
  if(write.meta?.changes!==1)throw Error("Konflik penyimpanan. Muat ulang editor");
- return {id,version:prev.version+1,status:"DRAFT_SAVED"};
+ return {id,slug:prev.slug,version:prev.version+1,status:"DRAFT_SAVED"};
 }
 export async function publishWebsiteActivity(db,id,body){
  if(!idRE.test(id)||body.owner_confirmed!==true)throw Error("Publikasi harus disetujui pemilik");
