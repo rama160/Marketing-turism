@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -171,7 +171,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.21.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.22.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
@@ -280,6 +280,13 @@ async function route(req,env,ctx){
   if(method==="GET")return json(await listWebsiteMedia(db));
   if(method==="POST")return storeWebsiteMedia(req,env,db);
   return bad("Metode tidak diizinkan",405);
+ }
+ const websiteMediaDelete=path.match(/^\/api\/admin\/website\/media\/([0-9a-f-]+)$/);
+ if(websiteMediaDelete){
+  if(method!=="DELETE")return bad("Metode tidak diizinkan",405);
+  const response=await deleteWebsiteMedia(db,env,websiteMediaDelete[1],await parse(req));
+  if(response.status===200)await audit(db,"website_media",websiteMediaDelete[1],"PHOTO_DELETED",{});
+  return response;
  }
  if(path==="/api/admin/website/slots"){
   if(method==="GET")return json(await getWebsiteSlots(db));
