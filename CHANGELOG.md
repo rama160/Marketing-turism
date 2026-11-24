@@ -1,3 +1,11 @@
+## [3.27.0] — 2026-11-24
+- Choose or upload an activity/detail photo directly in the existing editor without repeating title or description fields.
+- Generate photo title and bilingual alt text automatically from the existing content title or file name.
+- Simplify standalone gallery upload to file and rights confirmation; retain saved-photo reuse.
+- Preserve unsaved form fields, publish boundaries, previous media and regression coverage.
+
+---
+
 ## [3.26.0] — 2026-11-24
 - Fix published destination visibility for clean URLs and .html routes.
 - Mark all static tour galleries with explicit parent IDs and decouple activity loading from photo override requests.

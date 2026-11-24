@@ -154,7 +154,7 @@ test("ganti foto offers saved NPE photos or phone gallery in the same dialog",as
  const js=readFileSync("public/app.js","utf8");
  const css=readFileSync("public/dashboard.css","utf8");
  for(const id of ["cmsQuickPhotoFile","cmsQuickPhotoDialog","cmsQuickPhotoPreview",
-   "cmsQuickPhotoTitle","cmsQuickPhotoAltId","cmsQuickPhotoAltEn","cmsQuickPhotoRights",
+   "cmsQuickPhotoMetaNote","cmsQuickPhotoRights",
    "cmsQuickPhotoSave","cmsQuickPhotoCancel"]){
   assert.ok(html.includes('id="'+id+'"'),id+" direct picker control absent");
  }
@@ -376,4 +376,35 @@ test("published destination rendering works with clean URLs, .html, trailing sla
  for(const [page,kind] of [["snorkeling","snorkeling"],["island-tour","island"],["west-tour","west"],["east-tour","east"]]){
   assert.ok(readFileSync("public/"+page+".html","utf8").includes('data-npe-detail-parent="static:'+kind+'"'));
  }
+});
+
+test("photo metadata automatically derives from activity title or filename with bounded safe text",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const {runInNewContext}=await import("node:vm");
+ const js=readFileSync("public/app.js","utf8");
+ const helper=js.slice(js.indexOf("function cmsPhotoMetadata("),js.indexOf("function beginCmsQuickPhoto("));
+ const meta=runInNewContext(helper+'\ncmsPhotoMetadata({name:"IMG_1234.jpg"},"Mangrove Point","Mangrove Point")');
+ assert.equal(meta.title,"Mangrove Point");
+ assert.match(meta.altId,/Foto Mangrove Point/);
+ assert.match(meta.altEn,/Photo of Mangrove Point/);
+ const standalone=runInNewContext(helper+'\ncmsPhotoMetadata({name:"dream_beach.jpg"})');
+ assert.equal(standalone.title,"dream beach");
+ const bounded=runInNewContext(helper+'\ncmsPhotoMetadata({name:"a.jpg"},"<x>"+"a".repeat(200),"b".repeat(200))');
+ assert.ok(bounded.title.length<=120&&bounded.altEn.length<=180);
+ assert.doesNotMatch(bounded.title,/[<>]/);
+});
+test("activity photo picker uses shared dialog and never asks for duplicate descriptions or publishes prematurely",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync("public/dashboard.html","utf8"),js=readFileSync("public/app.js","utf8");
+ assert.match(js,/\$\("#cmsChoosePhoto"\)\.onclick=\(\)=>beginCmsQuickPhoto\("__activity__"\)/);
+ const upload=html.slice(html.indexOf('<form id="cmsMediaUpload"'),html.indexOf("</form>",html.indexOf('<form id="cmsMediaUpload"')));
+ assert.doesNotMatch(upload,/name="(?:title|alt_id|alt_en)"/);
+ assert.match(upload,/name="rights_confirmed"/);
+ const dialog=html.slice(html.indexOf('<dialog id="cmsQuickPhotoDialog"'),html.indexOf("</dialog>"));
+ assert.doesNotMatch(dialog,/id="cmsQuickPhoto(?:Title|AltId|AltEn)"/);
+ const flow=js.slice(js.indexOf("  if(isActivity){\n   // Only bind"),js.indexOf("  const slot=cmsQuickPhotoSlot;",js.indexOf("  if(isActivity){\n   // Only bind")));
+ assert.match(flow,/cmsSet\("media_id",photo.id\)/);
+ assert.match(flow,/refreshActivityPreview\(\)/);
+ assert.match(flow,/return;/);
+ assert.doesNotMatch(flow,/cmsForm\.reset|loadWebsiteCMS|cmsView|admin\/website\/slots|publishWebsiteActivity/);
 });

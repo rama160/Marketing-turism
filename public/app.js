@@ -1254,7 +1254,7 @@ $("#cmsAddActivity").onclick=resetWebsiteForm;
 $("#cmsRefresh").onclick=()=>void loadWebsiteCMS();
 $("#cmsCancelActivity").onclick=()=>{cmsForm.hidden=true;cmsView(npeCmsReturn);};
 $("#cmsBackToList").onclick=()=>{cmsForm.hidden=true;cmsView(npeCmsReturn);};
-$("#cmsChoosePhoto").onclick=()=>{npeCmsPhotoReturn=true;cmsView("media");};
+$("#cmsChoosePhoto").onclick=()=>beginCmsQuickPhoto("__activity__");
 $("#cmsBackFromPhoto").onclick=()=>{npeCmsPhotoReturn=false;cmsView("activity");};
 async function cmsSaveDraft(){
  const fields=Object.fromEntries(cmsDefaultFields.map(k=>[k,cmsRead(k)]));
@@ -1323,14 +1323,11 @@ $("#cmsMediaUpload").onsubmit=async e=>{
  e.preventDefault();const b=e.currentTarget.querySelector("button[type=submit]");b.disabled=true;
  try{
   const raw=new FormData(e.currentTarget),file=raw.get("file");
-  const j=await uploadCmsWebsitePhoto(file,String(raw.get("title")||"").trim(),String(raw.get("alt_id")||"").trim(),String(raw.get("alt_en")||"").trim(),raw.has("rights_confirmed"));
+  const meta=cmsPhotoMetadata(file);
+  const j=await uploadCmsWebsitePhoto(file,meta.title,meta.altId,meta.altEn,raw.has("rights_confirmed"));
   e.currentTarget.reset();await loadWebsiteCMS();
-  if(npeCmsPhotoReturn){
-   cmsSet("media_id",j.id);cmsView("activity");npeCmsPhotoReturn=false;refreshActivityPreview();
-   say("#cmsActivityFeedback","Foto berhasil diunggah dan dipilih. Simpan draft untuk menyimpan perubahan.",true);
-  }else{
-   $("#cmsSlotMedia").value=j.id;say("#cmsMediaFeedback","Foto berhasil diunggah. Sekarang pilih bagian website untuk mengganti foto.",true);
-  }
+  $("#cmsSlotMedia").value=j.id;
+  say("#cmsMediaFeedback","Foto tersimpan di Galeri NPE. Anda dapat memilihnya saat membuat aktivitas atau detail tanpa upload ulang.",true);
  }catch(e){say("#cmsMediaFeedback",e.message);}
  finally{b.disabled=false;}
 };
@@ -1525,15 +1522,27 @@ const cmsPublishedPages=[
 // The current page remains visible and the chosen slot is never reselected manually.
 let cmsQuickPhotoSlot=null,cmsQuickPhotoSource=null,cmsQuickPhotoObjectUrl=null,cmsQuickPhotoMediaId=null,cmsQuickPhotoBusy=false;
 const quickPhotoDialog=$("#cmsQuickPhotoDialog");
+// Photo metadata is derived once; no repeated activity title/description fields.
+function cmsPhotoMetadata(file,titleId="",titleEn=""){
+ const clean=(v,max)=>String(v||"").replace(/[<>\u0000-\u001f\u007f-\u009f]/g," ").replace(/\s+/g," ").trim().slice(0,max).trim();
+ const filename=clean(String(file?.name||"").replace(/\.[^.]+$/,"").replace(/[_-]+/g," "),120);
+ const fallback=filename||"NPE";
+ const id=clean(titleId,120)||clean(titleEn,120)||fallback;
+ const en=clean(titleEn,120)||clean(titleId,120)||fallback;
+ return {title:clean(titleId||titleEn,120)||fallback,altId:clean("Foto "+id+" — Nusa Penida Experiences",180),altEn:clean("Photo of "+en+" — Nusa Penida Experiences",180)};
+}
 function beginCmsQuickPhoto(slot){
  if(!ownerSignedIn){say("#cmsStudioFeedback","Login admin diperlukan untuk mengganti foto.");return;}
- if(!Object.prototype.hasOwnProperty.call(cmsPageSlotLabels,slot)){
+ if(slot!=="__activity__"&&!Object.prototype.hasOwnProperty.call(cmsPageSlotLabels,slot)){
   say("#cmsStudioFeedback","Lokasi foto tidak dikenali. Tidak ada foto yang diubah.");return;
  }
  if(cmsQuickPhotoBusy)return;
  cmsQuickPhotoSlot=slot;
  clearCmsQuickSelection();
- $("#cmsQuickPhotoTarget").textContent="Mengganti: "+cmsPageSlotLabels[slot]+" · pilih dari Galeri NPE atau galeri HP";
+ const activity=slot==="__activity__";
+ $("#cmsQuickPhotoHeading").textContent=activity?"Pilih foto aktivitas":"Ganti Foto";
+ $("#cmsQuickPhotoSave").textContent=activity?"Gunakan Foto":"Simpan & Terbitkan Foto";
+ $("#cmsQuickPhotoTarget").textContent=activity?"Untuk "+(cmsRead("title_id")||cmsRead("title_en")||"aktivitas ini")+" · judul dan deskripsi yang sudah diisi tetap tersimpan di formulir.":"Mengganti: "+cmsPageSlotLabels[slot]+" · pilih dari Galeri NPE atau galeri HP";
  $("#cmsQuickPhotoChooser").hidden=false;
  $("#cmsQuickPhotoSelected").hidden=true;
  $("#cmsQuickPhotoSearch").value="";
@@ -1563,10 +1572,7 @@ function drawCmsQuickGallery(){
   clearCmsQuickSelection();
   cmsQuickPhotoMediaId=m.id;
   $("#cmsQuickPhotoPreview").src=m.url;
-  $("#cmsQuickPhotoTitle").value=m.title;
-  $("#cmsQuickPhotoAltId").value=m.alt_id;
-  $("#cmsQuickPhotoAltEn").value=m.alt_en;
-  for(const id of ["cmsQuickPhotoTitle","cmsQuickPhotoAltId","cmsQuickPhotoAltEn"])$("#"+id).readOnly=true;
+  $("#cmsQuickPhotoMetaNote").textContent=m.title||"Foto tersimpan";
   $("#cmsQuickPhotoRightsWrap").hidden=true;
   $("#cmsQuickPhotoReuseNote").hidden=false;
   $("#cmsQuickPhotoChooser").hidden=true;
@@ -1581,7 +1587,7 @@ function clearCmsQuickSelection(){
  $("#cmsQuickPhotoRightsWrap").hidden=false;
  $("#cmsQuickPhotoReuseNote").hidden=true;
  $("#cmsQuickPhotoFeedback").textContent="";
- for(const id of ["cmsQuickPhotoTitle","cmsQuickPhotoAltId","cmsQuickPhotoAltEn"])$("#"+id).readOnly=false;
+ $("#cmsQuickPhotoMetaNote").textContent="";
 }
 function closeCmsQuickPhoto(){
  if(cmsQuickPhotoBusy)return;
@@ -1619,11 +1625,9 @@ $("#cmsQuickPhotoFile").onchange=event=>{
  clearCmsQuickSelection();
  cmsQuickPhotoSource=file;
  cmsQuickPhotoObjectUrl=URL.createObjectURL(file);
- const label=cmsPageSlotLabels[cmsQuickPhotoSlot];
+ const label=cmsQuickPhotoSlot==="__activity__"?(cmsRead("title_id")||cmsRead("title_en")):cmsPageSlotLabels[cmsQuickPhotoSlot];
  $("#cmsQuickPhotoPreview").src=cmsQuickPhotoObjectUrl;
- $("#cmsQuickPhotoTitle").value=label;
- $("#cmsQuickPhotoAltId").value="Foto "+label+" — Nusa Penida Experiences";
- $("#cmsQuickPhotoAltEn").value="Photo of "+label+" — Nusa Penida Experiences";
+ $("#cmsQuickPhotoMetaNote").textContent="Nama foto otomatis: "+cmsPhotoMetadata(file,label).title;
  $("#cmsQuickPhotoChooser").hidden=true;
  $("#cmsQuickPhotoSelected").hidden=false;
 };
@@ -1646,7 +1650,9 @@ async function uploadCmsWebsitePhoto(file,title,altId,altEn,rightsConfirmed){
 $("#cmsQuickPhotoSave").onclick=async()=>{
  if(cmsQuickPhotoBusy||(!cmsQuickPhotoSource&&!cmsQuickPhotoMediaId)||!cmsQuickPhotoSlot)return;
  if(cmsQuickPhotoSource&&!$("#cmsQuickPhotoRights").checked){say("#cmsQuickPhotoFeedback","Centang konfirmasi hak penggunaan foto terlebih dahulu.");return;}
- const title=$("#cmsQuickPhotoTitle").value.trim(),altId=$("#cmsQuickPhotoAltId").value.trim(),altEn=$("#cmsQuickPhotoAltEn").value.trim();
+ const isActivity=cmsQuickPhotoSlot==="__activity__";
+ const label=cmsPageSlotLabels[cmsQuickPhotoSlot]||"";
+ const {title,altId,altEn}=cmsPhotoMetadata(cmsQuickPhotoSource,isActivity?cmsRead("title_id"):label,isActivity?cmsRead("title_en"):label);
  const button=$("#cmsQuickPhotoSave");cmsQuickPhotoBusy=true;button.disabled=true;
  $("#cmsQuickPhotoCancel").disabled=true;$("#cmsQuickPhotoClose").disabled=true;
  say("#cmsQuickPhotoFeedback","Mengoptimalkan foto dan menyimpan perubahan...",true);
@@ -1655,6 +1661,19 @@ $("#cmsQuickPhotoSave").onclick=async()=>{
   if(!cmsQuickPhotoMediaId){
    const uploaded=await uploadCmsWebsitePhoto(cmsQuickPhotoSource,title,altId,altEn,true);
    cmsQuickPhotoMediaId=uploaded.id;
+   if(!npeCmsMedia.some(m=>m.id===uploaded.id))npeCmsMedia.push({...uploaded,usage_count:0});
+  }
+  if(isActivity){
+   // Only bind the media to the active form; the existing activity save/publish handles persistence.
+   const photo=npeCmsMedia.find(m=>m.id===cmsQuickPhotoMediaId);
+   if(!photo)throw Error("Foto tidak tersedia. Pilih kembali dari Galeri NPE.");
+   const select=$("#cmsActivityMedia");
+   if(!Array.from(select.options).some(o=>o.value===photo.id))select.add(new Option(photo.title,photo.id));
+   cmsSet("media_id",photo.id);
+   refreshActivityPreview();
+   quickPhotoDialog.close();
+   say("#cmsActivityFeedback","Foto dipilih. Semua isi formulir tetap sama; lanjutkan Simpan Draft atau Simpan & Publish.",true);
+   return;
   }
   const slot=cmsQuickPhotoSlot;
   await api("admin/website/slots","POST",{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true});

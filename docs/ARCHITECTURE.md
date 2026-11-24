@@ -1,3 +1,8 @@
+## v3.27.0 — Single-entry activity photo workflow
+The existing quick-photo dialog is reused by the activity/detail editor, retaining the active form and binding only the selected media ID until the normal save/publish. Fresh upload metadata is derived from existing bilingual titles or filename; standalone gallery uploads request only a file and rights confirmation. Saved media reuse does not re-upload or re-attest rights. Static slot replacements retain their explicit publish operation. No schema changes or changes to existing media, content, bookings or prices.
+
+---
+
 ## v3.26.0 — Reliable published destination rendering
 Static activity galleries carry explicit parent identifiers independent of Cloudflare HTML URL normalization. The public renderer also accepts clean, .html and trailing-slash paths, keeps static cards visible, loads published activities independently of photo overrides and refreshes on bfcache restore. Versioned script URLs prevent stale client code on tour pages. Existing published records and media remain untouched. Regression tests execute the renderer on all URL forms with failed photo override requests.
 

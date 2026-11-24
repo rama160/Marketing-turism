@@ -81,9 +81,7 @@
      <div id="cmsQuickPhotoSelected" hidden>
        <img id="cmsQuickPhotoPreview" class="npeQuickPhotoPreview" alt="Pratinjau foto baru">
        <div class="npeQuickPhotoFields">
-         <label>Nama foto<input id="cmsQuickPhotoTitle" type="text" maxlength="120" minlength="2" required></label>
-         <label>Deskripsi foto (Indonesia)<input id="cmsQuickPhotoAltId" type="text" maxlength="180" minlength="2" required></label>
-         <label>Photo description (English)<input id="cmsQuickPhotoAltEn" type="text" maxlength="180" minlength="2" required></label>
+         <p id="cmsQuickPhotoMetaNote" class="feedback"></p>
          <label id="cmsQuickPhotoRightsWrap" class="check"><input id="cmsQuickPhotoRights" type="checkbox"> Saya memiliki izin penggunaan komersial atas foto ini</label>
        </div>
        <p id="cmsQuickPhotoReuseNote" class="feedback" hidden>Foto ini sudah tersimpan di Galeri NPE. Tidak perlu mengunggah ulang.</p>
@@ -141,7 +139,7 @@
    <fieldset class="npeCmsFieldset"><legend>4 · Foto cover</legend>
     <label>Foto utama * (wajib sebelum Publish)<select name="media_id" id="cmsActivityMedia"><option value="">Pilih foto...</option></select></label>
     <img id="cmsActivityImage" class="npeCmsCoverPreview" alt="Pratinjau foto pilihan" hidden>
-    <button type="button" id="cmsChoosePhoto" class="outline small">▧ Pilih atau upload foto</button>
+    <button type="button" id="cmsChoosePhoto" class="outline small">▧ Pilih atau upload foto</button><p class="feedback">Pilih dari Galeri NPE atau HP tanpa meninggalkan formulir. Tidak perlu mengisi kembali nama atau deskripsi foto.</p>
    </fieldset>
    <details class="npeCmsSeo"><summary>5 · SEO Google (otomatis)</summary>
     <p class="feedback">SEO dibuat otomatis dari judul, kategori, ringkasan dan deskripsi dalam kedua bahasa. Tidak perlu mengisi kolom ini untuk menyimpan atau menerbitkan.</p>
@@ -194,8 +192,7 @@
   <details id="cmsMediaUploadDetails" class="npeCmsGalleryUpload"><summary>＋ Upload Foto Baru</summary>
   <form id="cmsMediaUpload" class="npeCmsMediaUpload" enctype="multipart/form-data">
    <label class="wide">Pilih foto<input name="file" type="file" accept="image/*" required></label>
-   <div class="npeCms2col"><label>Nama foto<input name="title" minlength="2" maxlength="120" required></label><label>Deskripsi foto (English)<input name="alt_en" minlength="2" maxlength="180" required></label></div>
-   <label>Deskripsi foto (Indonesia)<input name="alt_id" minlength="2" maxlength="180" required></label>
+   <p class="feedback">Nama foto dibuat otomatis dari nama file. Judul, ringkasan dan deskripsi wisata cukup diisi satu kali saat membuat aktivitas atau detail.</p>
    <label class="check"><input type="checkbox" name="rights_confirmed" required> Saya mempunyai hak pakai komersial atas foto dan izin subjek apabila diperlukan</label>
    <button class="primary" type="submit">＋ Upload Foto</button>
   </form>
