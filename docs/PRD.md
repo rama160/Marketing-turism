@@ -1,3 +1,14 @@
+## NPE Studio v3.19.0 — Published-first content editor
+- FR-39 Editor opens at Published, with Draft, Halaman Website and Foto & Media views.
+- FR-40 Published dynamic activities can be reopened and all supported title, bilingual description, category, image, selling price, unit, verified flags and SEO fields can be edited without source changes.
+- FR-41 Selling price input is visible and numeric IDR, with unit selector; optional blank amount saves and does not generate Rp0.
+- FR-42 Price attestation is required for publication, but not draft saves.
+- FR-43 Save Draft does not change published snapshot; Save & Publish is deliberate and shows feedback.
+- FR-44 Published legacy Home, Snorkeling, Island, West and East provide grouped edit links; static price labels can be cleared and photo slots reassigned.
+- FR-45 Responsive phone editor includes live preview, media chooser and contextual save actions, preserving booking/marketing session and data.
+
+---
+
 ## FR-29–FR-38 — Website CMS & Add Activity (v3.18.0)
 - FR-29 Owner can create activity via Add Activity without GitHub edits, choose category, bilingual title, summary and description, slug, optional SEO title/meta and photo.
 - FR-30 Owner can save unpublished drafts, edit draft after publishing without mutating prior live revision, explicitly publish/archive with stale-version conflict rejection.
