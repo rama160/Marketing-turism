@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,renderLegacySEOPage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -173,19 +173,6 @@ async function route(req,env,ctx){
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
  if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.31.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
- const legacyPages=new Set(["/","/index.html","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"]);
- if(method==="GET"&&legacyPages.has(path)){
-  if(path==="/index.html")return Response.redirect(u.origin+"/",301);
-  const original=await env.ASSETS.fetch(new Request(new URL(path,u.origin),req));
-  if(!original.ok)return original;
-  const [copy,published]=await Promise.all([publicSiteContent(db,"id"),publicWebsiteActivities(db)]);
-  const body=renderLegacySEOPage(await original.text(),path,u.origin,copy.items,published.items);
-  const headers=new Headers(original.headers);
-  headers.set("content-type","text/html; charset=utf-8");
-  headers.set("cache-control","public,max-age=120");
-  headers.set("x-content-type-options","nosniff");
-  return new Response(body,{status:200,headers});
- }
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
