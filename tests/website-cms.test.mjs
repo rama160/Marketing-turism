@@ -398,7 +398,8 @@ test("activity photo picker uses shared dialog and never asks for duplicate desc
  const html=readFileSync("public/dashboard.html","utf8"),js=readFileSync("public/app.js","utf8");
  assert.match(js,/\$\("#cmsChoosePhoto"\)\.onclick=\(\)=>beginCmsQuickPhoto\("__activity__"\)/);
  const upload=html.slice(html.indexOf('<form id="cmsMediaUpload"'),html.indexOf("</form>",html.indexOf('<form id="cmsMediaUpload"')));
- assert.doesNotMatch(upload,/name="(?:title|alt_id|alt_en)"/);
+ assert.doesNotMatch(upload,/name="(?:alt_id|alt_en)"/);
+ assert.match(upload,/name="title"/);
  assert.match(upload,/name="rights_confirmed"/);
  const dialog=html.slice(html.indexOf('<dialog id="cmsQuickPhotoDialog"'),html.indexOf("</dialog>"));
  assert.doesNotMatch(dialog,/id="cmsQuickPhoto(?:Title|AltId|AltEn)"/);
@@ -435,4 +436,49 @@ test("public photo replacement updates both snorkeling covers and distinct spot 
  assert.deepEqual(imgs.map(x=>x.src),["/photos/website/cover","/photos/website/cover","/photos/website/manta","old"]);
  assert.equal(imgs[0].dataset.photoFallbackStage,undefined);
  assert.equal(imgs[3].dataset.photoFallbackStage,"github");
+});
+
+test("standalone upload retains the form reference after awaiting upload",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const {runInNewContext}=await import("node:vm");
+ const js=readFileSync("public/app.js","utf8");
+ const code=js.slice(js.indexOf('$("#cmsMediaUpload").onsubmit='),js.indexOf('$("#cmsPublishSlot").onclick='));
+ let reset=false,selected="",message="";
+ const button={disabled:false},form={querySelector:()=>button,reset(){reset=true;}};
+ const nodes={"#cmsMediaUpload":{},"#cmsSlotMedia":{set value(v){selected=v;}}};
+ const e={currentTarget:form,preventDefault(){}};
+ const context={$:s=>nodes[s],FormData:class{get(k){return k==="file"?{name:"test.jpg"}:"My photo";}has(){return true;}},cmsPhotoMetadata:()=>({title:"My photo",altId:"Foto",altEn:"Photo"}),uploadCmsWebsitePhoto:async()=>{e.currentTarget=null;return {id:"saved"};},npeCmsMedia:[],drawWebsiteCMS(){},refreshNpeGallery:async()=>{},say:(_,v)=>{message=v;}};
+ runInNewContext(code,context);
+ await nodes["#cmsMediaUpload"].onsubmit(e);
+ assert.ok(reset);
+ assert.equal(selected,"saved");
+ assert.match(message,/Foto tersimpan/);
+ assert.equal(button.disabled,false);
+});
+test("manual website category persists independently and is usable in activity validation",async()=>{
+ const {DatabaseSync}=await import("node:sqlite");
+ const {readFileSync}=await import("node:fs");
+ const {createWebsiteCategory,listWebsiteCategories}=await import("../src/website-cms.mjs");
+ const sqlite=new DatabaseSync(":memory:");
+ sqlite.exec(readFileSync("database/migrations/0024_website_gallery_slots.sql","utf8"));
+ const db={prepare(sql){const st=sqlite.prepare(sql);return {bind(...args){return {run:async()=>st.run(...args),first:async()=>st.get(...args)}},all:async()=>({results:st.all()})}}};
+ const category=await createWebsiteCategory(db,{name:"Diving"});
+ assert.equal(category.category,"CUSTOM:Diving");
+ assert.equal((await createWebsiteCategory(db,{name:"diving"})).category,category.category);
+ assert.equal((await listWebsiteCategories(db)).items.length,1);
+ assert.equal(validateWebsiteDraft({...draft,category:category.category}).category,category.category);
+ assert.throws(()=>validateWebsiteDraft({...draft,category:"CUSTOM:<script>"}),/Kategori/);
+ assert.throws(()=>validateWebsiteDraft({...draft,category:category.category,parent_activity:"static:snorkeling"}),/induk/);
+ sqlite.close();
+});
+test("photo chooser shows only two sources, no photo descriptions and cache-safe dashboard assets",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync("public/dashboard.html","utf8"),js=readFileSync("public/app.js","utf8"),headers=readFileSync("public/_headers","utf8");
+ assert.match(html,/id="cmsQuickGalleryPanel" hidden/);
+ assert.match(html,/id="cmsQuickPhotoName"/);
+ assert.match(html,/id="cmsActivityMedia" hidden/);
+ assert.match(html,/id="cmsAddCategory"/);
+ assert.match(js,/admin\/website\/categories/);
+ assert.match(html,/src="\/app\.js\?v=3\.29\.0"/);
+ assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
 });

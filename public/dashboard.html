@@ -6,7 +6,7 @@
 <title>NPE Studio · Agent Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/dashboard.css">
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/dashboard.css?v=3.29.0">
 </head><body class="dashboardPage">
 <a class="skipLink" href="#adminArea">Langsung ke dashboard</a>
 <header class="dashTop"><div class="dashTopInner">
@@ -74,14 +74,14 @@
          <button type="button" id="cmsQuickPickPhone" class="primary">＋ Dari Galeri HP</button>
          <button type="button" id="cmsQuickPickExisting" class="outline">▧ Galeri NPE</button>
        </div>
-       <label>Cari foto tersimpan<input id="cmsQuickPhotoSearch" type="search" placeholder="Cari nama atau destinasi..."></label>
+       <div id="cmsQuickGalleryPanel" hidden><label>Cari foto tersimpan<input id="cmsQuickPhotoSearch" type="search" placeholder="Cari nama atau destinasi..."></label>
        <p id="cmsQuickPhotoGalleryStatus" class="feedback" role="status"></p>
-       <div id="cmsQuickPhotoGallery" class="npeQuickPhotoGallery" aria-label="Foto tersimpan di Galeri NPE"></div>
+       <div id="cmsQuickPhotoGallery" class="npeQuickPhotoGallery" aria-label="Foto tersimpan di Galeri NPE"></div></div>
      </div>
      <div id="cmsQuickPhotoSelected" hidden>
        <img id="cmsQuickPhotoPreview" class="npeQuickPhotoPreview" alt="Pratinjau foto baru">
        <div class="npeQuickPhotoFields">
-         <p id="cmsQuickPhotoMetaNote" class="feedback"></p>
+         <label id="cmsQuickPhotoTitleWrap" hidden>Judul foto (opsional)<input id="cmsQuickPhotoName" maxlength="120"></label><p id="cmsQuickPhotoMetaNote" class="feedback"></p>
          <label id="cmsQuickPhotoRightsWrap" class="check"><input id="cmsQuickPhotoRights" type="checkbox"> Saya memiliki izin penggunaan komersial atas foto ini</label>
        </div>
        <p id="cmsQuickPhotoReuseNote" class="feedback" hidden>Foto ini sudah tersimpan di Galeri NPE. Tidak perlu mengunggah ulang.</p>
@@ -116,7 +116,7 @@
    <fieldset class="npeCmsFieldset">
     <legend>1 · Identitas & judul</legend>
     <label>Aktivitas induk<select name="parent_activity" id="cmsParentActivity" disabled><option value="">Aktivitas utama (tampil di beranda)</option></select><small>Ditentukan otomatis berdasarkan tombol Tambah Aktivitas atau Tambah Detail yang dipilih.</small></label>
-    <label>Kategori *<select name="category"><option value="ISLAND_TOUR">Island Tour</option><option value="SNORKELING">Snorkeling</option><option value="TRANSPORT">Fast Boat / Transport</option><option value="OTHER">Aktivitas lainnya</option></select></label>
+    <label>Kategori *<select name="category"><option value="ISLAND_TOUR">Island Tour</option><option value="SNORKELING">Snorkeling</option><option value="TRANSPORT">Fast Boat / Transport</option><option value="OTHER">Aktivitas lainnya</option></select></label><div id="cmsNewCategoryWrap"><label>Kategori baru<input id="cmsNewCategory" maxlength="60" placeholder="Contoh: Diving"></label><button type="button" class="outline small" id="cmsAddCategory">＋ Tambah kategori</button><p id="cmsCategoryFeedback" class="feedback" role="status"></p></div>
     <div class="npeCms2col"><label>Judul (English) *<input name="title_en" required minlength="3" maxlength="150" placeholder="Nusa Lembongan Island Tour"></label><label>Judul (Indonesia) *<input name="title_id" required minlength="3" maxlength="150" placeholder="Tur Pulau Nusa Lembongan"></label></div>
    </fieldset>
    <fieldset class="npeCmsFieldset"><legend>2 · Konten aktivitas</legend>
@@ -137,7 +137,7 @@
     <button id="cmsClearPrice" type="button" class="outline small">Kosongkan harga</button>
    </fieldset>
    <fieldset class="npeCmsFieldset"><legend>4 · Foto cover</legend>
-    <label>Foto utama * (wajib sebelum Publish)<select name="media_id" id="cmsActivityMedia"><option value="">Pilih foto...</option></select></label>
+    <p>Foto utama * (wajib sebelum Publish)</p><select name="media_id" id="cmsActivityMedia" hidden aria-label="Foto terpilih"><option value="">Pilih foto...</option></select>
     <img id="cmsActivityImage" class="npeCmsCoverPreview" alt="Pratinjau foto pilihan" hidden>
     <button type="button" id="cmsChoosePhoto" class="outline small">▧ Pilih atau upload foto</button><p class="feedback">Pilih dari Galeri NPE atau HP tanpa meninggalkan formulir. Tidak perlu mengisi kembali nama atau deskripsi foto.</p>
    </fieldset>
@@ -192,7 +192,7 @@
   <details id="cmsMediaUploadDetails" class="npeCmsGalleryUpload"><summary>＋ Upload Foto Baru</summary>
   <form id="cmsMediaUpload" class="npeCmsMediaUpload" enctype="multipart/form-data">
    <label class="wide">Pilih foto<input name="file" type="file" accept="image/*" required></label>
-   <p class="feedback">Nama foto dibuat otomatis dari nama file. Judul, ringkasan dan deskripsi wisata cukup diisi satu kali saat membuat aktivitas atau detail.</p>
+   <label>Judul foto (opsional)<input name="title" maxlength="120" placeholder="Otomatis dari nama file"></label><p class="feedback">Deskripsi foto dibuat otomatis. Tidak perlu mengisi deskripsi aktivitas di sini.</p>
    <label class="check"><input type="checkbox" name="rights_confirmed" required> Saya mempunyai hak pakai komersial atas foto dan izin subjek apabila diperlukan</label>
    <button class="primary" type="submit">＋ Upload Foto</button>
   </form>
@@ -343,5 +343,5 @@
 </nav>
 </div></section></main>
 <footer class="dashFooter">Nusa Penida Experiences · Dashboard khusus pemilik · Data tamu hanya dapat diakses setelah autentikasi.</footer>
-<script type="module" src="/app.js"></script>
+<script type="module" src="/app.js?v=3.29.0"></script>
 </body></html>

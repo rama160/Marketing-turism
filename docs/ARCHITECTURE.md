@@ -1,3 +1,8 @@
+## v3.29.0 — Photo source chooser and owner categories
+Photo selection opens the existing dialog with two sources only; saved gallery is expanded on demand, and phone upload accepts optional title and rights confirmation with generated bilingual alt text. Standalone upload captures form before await and keeps saved photos available without resetting unrelated editor state. Dashboard HTML is no-store and assets are versioned. Website-only custom categories persist in the idempotent CMS migration, use authenticated list/create endpoints, and are verified on save/publish; detail categories inherit the parent. Existing booking categories and data remain isolated.
+
+---
+
 ## v3.28.0 — Consistent homepage tour images
 The Snorkeling 3 Spots showcase and main snorkeling package use the existing snorkeling cover slot. Every static West, East and Snorkeling homepage destination thumbnail uses its existing per-destination gallery slot; there are no new database slots or migrations. Original source images remain fallbacks. Homepage mixed-source credits distinguish original and owner replacement images, and replaced image fallback state is cleared. Cover controls are exposed in the corresponding page editor. Regression tests check each mapping and exercise the public replacement handler with multiple uses of one slot.
 
