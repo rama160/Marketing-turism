@@ -400,7 +400,8 @@ test("growth acquisition dashboard is owner-only, source credited, click-trackin
 test("only the Worker serves canonical robots and sitemap; static duplicate files stay removed",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
  const sw=read("service-worker.js");
- assert.match(worker,/path==="\\/robots\\.txt"/);
- assert.match(worker,/path==="\\/sitemap\\.xml"/);
- assert.doesNotMatch(sw,/"\\/robots\\.txt"|"\\/sitemap\\.xml"/);
+ assert.ok(worker.includes('path==="/robots.txt"'));
+ assert.ok(worker.includes('path==="/sitemap.xml"'));
+ assert.ok(!sw.includes('"/robots.txt"'));
+ assert.ok(!sw.includes('"/sitemap.xml"'));
 });

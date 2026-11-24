@@ -119,5 +119,3 @@ test("repository release identity and guest assets stay aligned with current pro
   assert.ok(file(fileName).includes('website-content.js?v='+pkg.version),fileName+" uses stale CMS script");
  }
 });
-
-});
