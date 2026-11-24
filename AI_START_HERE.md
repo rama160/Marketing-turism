@@ -1,3 +1,7 @@
+## IMPORTANT CORRECTION — v3.31.0 final architecture
+**DO NOT route original /, /index.html, /snorkeling.html, /island-tour.html, /west-tour.html, /east-tour.html through Worker-first.** The attempt caused Cloudflare Assets canonical redirect loops and was reverted. The live website uses its original static guest HTML, now enhanced with search metadata, structured data, and permanent internal links. The Worker remains responsible ONLY for /api/*, /photos/*, robots.txt, sitemap.xml and /id|en/experiences/*; published activities are localized SEO pages with related HTML links.
+Historical notes below describe experiments and are not an instruction to re-enable original HTML Worker-first routing. Live smoke and current wrangler.jsonc are definitive. Preserve bookings, original gallery content, owner sessions, existing Meta gates and independent Worker isolation.
+
 ## 2026-11-24 — SEO implementation v3.31.0 on main
 The live original homepage, snorkeling, island tour and West/East pages now use server-side SEO enrichment via the existing Worker. The public HTML remains the canonical visual/editorial source. The Worker reads owner-published site content and activity listings to emit crawled HTML titles, descriptions, social previews, Organization/WebPage/BreadcrumbList graph and real HTML internal links.
 Published dynamic activity detail pages remain bilingual with canonical/hreflang and now also include linked children and related activities. The dynamic sitemap includes id/en alternate links and published dates. No new schema, no duplicate site or CMS.
