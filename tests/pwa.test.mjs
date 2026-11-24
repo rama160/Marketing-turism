@@ -263,7 +263,7 @@ test("official WhatsApp Business contact and catalog links are visible, separate
  assert.match(css,/\.wa-tour-links\{/);
  assert.match(lang,/whatsapp\.heading/);
  assert.match(lang,/\[data-whatsapp-chat\]/);
- assert.match(lang,/encodeURIComponent\(message\)/);
+ assert.match(lang,/encodeURIComponent\(personalized\)/);
  assert.match(lang,/View WhatsApp Catalog/);
  assert.match(app,/\[data-wa-copy\]/);
  assert.match(dashboard,/Koneksi otomatis ke inbox WhatsApp/);
