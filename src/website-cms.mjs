@@ -309,6 +309,57 @@ export async function updateWebsiteSlot(db,b){
  await db.prepare("INSERT INTO "+table+"(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?) ON CONFLICT(slot) DO UPDATE SET media_id=excluded.media_id,alt_id=excluded.alt_id,alt_en=excluded.alt_en,updated_at=CURRENT_TIMESTAMP").bind(b.slot,media.id,media.alt_id,media.alt_en).run();
  return {slot:b.slot,media_id:media.id,url:"/photos/website/"+media.id};
 }
+
+// The five original tour pages remain the single editorial/design source.
+// Enrich their HTML at request time so crawlers see live published CMS metadata
+// and clickable links before any client-side JavaScript runs.
+export function renderLegacySEOPage(html,path,origin,content={},activities=[]){
+ const configs={
+  "/":{key:"hero.title",lead:"hero.description",title:"Nusa Penida Tours, Snorkeling & Lembongan | Nusa Penida Experiences",desc:"Explore Nusa Penida West and East tours, snorkeling, Nusa Lembongan experiences and fast boat ticket booking. Contact our local team for availability."},
+  "/index.html":{key:"hero.title",lead:"hero.description",title:"Nusa Penida Tours, Snorkeling & Lembongan | Nusa Penida Experiences",desc:"Explore Nusa Penida West and East tours, snorkeling, Nusa Lembongan experiences and fast boat ticket booking. Contact our local team for availability."},
+  "/snorkeling.html":{key:"snorkelingPage.title",lead:"snorkelingPage.lead",title:"Nusa Penida Snorkeling Tours | Manta Bay & Manta Point",desc:"Discover Nusa Penida snorkeling at Manta Bay, Manta Point, Crystal Bay and colorful reefs. Ask about private and sharing options and sea conditions."},
+  "/island-tour.html":{key:"islandPage.title",lead:"islandPage.lead",title:"Nusa Penida Island Tour | West & East Island Trips",desc:"Explore West and East Nusa Penida on island tour trips featuring Kelingking, Broken Beach, Diamond Beach, Atuh Beach and other scenic viewpoints."},
+  "/west-tour.html":{key:"westPage.title",lead:"westPage.lead",title:"Nusa Penida West Tour | Kelingking & Broken Beach",desc:"Discover Kelingking Beach, Broken Beach, Angel's Billabong and Crystal Bay on a West Nusa Penida tour. Enquire about schedules and available trips."},
+  "/east-tour.html":{key:"eastPage.title",lead:"eastPage.lead",title:"Nusa Penida East Tour | Diamond Beach & Atuh Beach",desc:"Visit Diamond Beach, Atuh Beach and Rumah Pohon on a scenic East Nusa Penida island tour. Enquire about routes, dates and availability."}
+ };
+ const page=configs[path];if(!page||typeof html!=="string")return html;
+ const canonical=origin+(path==="/index.html"?"/":path);
+ const textOf=k=>typeof content[k]==="string"?content[k].trim():"";
+ const h1=textOf(page.key),lead=textOf(page.lead);
+ const seoTitle=(h1&&path!=="/"&&path!=="/index.html"?h1+" | Nusa Penida Experiences":page.title).slice(0,125);
+ const seoDesc=(lead||page.desc).slice(0,175);
+ const image=origin+(path==="/east-tour.html"?"/photos/diamond-beach":path==="/snorkeling.html"?"/photos/manta-bay":"/photos/kelingking");
+ let output=html.replace(/<title>[\s\S]*?<\/title>/i,"<title>"+escapeHTML(seoTitle)+"</title>");
+ function upsert(pattern,tag){output=pattern.test(output)?output.replace(pattern,tag):output.replace("</head>",tag+"</head>");}
+ upsert(/<meta name="description" content="[^"]*">/i,'<meta name="description" content="'+escapeHTML(seoDesc)+'">');
+ upsert(/<link rel="canonical" href="[^"]*">/i,'<link rel="canonical" href="'+escapeHTML(canonical)+'">');
+ upsert(/<meta property="og:title" content="[^"]*">/i,'<meta property="og:title" content="'+escapeHTML(seoTitle)+'">');
+ upsert(/<meta property="og:description" content="[^"]*">/i,'<meta property="og:description" content="'+escapeHTML(seoDesc)+'">');
+ upsert(/<meta property="og:url" content="[^"]*">/i,'<meta property="og:url" content="'+escapeHTML(canonical)+'">');
+ upsert(/<meta property="og:image" content="[^"]*">/i,'<meta property="og:image" content="'+escapeHTML(image)+'">');
+ const graph={"@context":"https://schema.org","@graph":[
+  {"@type":"Organization","@id":origin+"/#organization",name:"Nusa Penida Experiences",url:origin+"/",logo:origin+"/icon.svg"},
+  {"@type":"WebPage",url:canonical,name:seoTitle,description:seoDesc,inLanguage:"id",isPartOf:{"@type":"WebSite",name:"Nusa Penida Experiences",url:origin+"/"},breadcrumb:{"@id":canonical+"#breadcrumb"}},
+  {"@type":"BreadcrumbList","@id":canonical+"#breadcrumb",itemListElement:[
+   {"@type":"ListItem",position:1,name:"Nusa Penida Experiences",item:origin+"/"},
+   ...(path==="/"||path==="/index.html"?[]:[{"@type":"ListItem",position:2,name:seoTitle,item:canonical}])
+  ]}
+ ]};
+ output=output.replace("</head>",'<meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">'+JSON.stringify(graph).replace(/</g,"\\u003c")+"</script></head>");
+ if(h1&&path!=="/"&&path!=="/index.html"){
+  const matcher=new RegExp('(<h1[^>]*data-copy="'+page.key.replaceAll(".","\\.")+'"[^>]*>)[\\s\\S]*?(<\\/h1>)',"i");
+  output=output.replace(matcher,(_,a,b)=>a+escapeHTML(h1)+b);
+ }
+ const pool=path==="/snorkeling.html"?activities.filter(a=>a.parent_activity==="static:snorkeling"):
+  path==="/west-tour.html"?activities.filter(a=>a.parent_activity==="static:west"):
+  path==="/east-tour.html"?activities.filter(a=>a.parent_activity==="static:east"):
+  path==="/island-tour.html"?activities.filter(a=>a.parent_activity==="static:island"):
+  activities.filter(a=>!a.parent_activity);
+ const links=pool.filter(a=>a.slug&&a.title_id).slice(0,24).map(a=>'<a class="textLink" href="/id/experiences/'+encodeURIComponent(a.slug)+'">'+escapeHTML(a.title_id)+'</a>').join(" · ");
+ if(links)output=output.replace("</main>",'<nav class="section" aria-label="Paket dan destinasi wisata"><h2>Jelajahi pengalaman wisata lainnya</h2><p>'+links+'</p></nav></main>');
+ return output;
+}
+
 export function renderExperiencePage(activity,locale,origin,related=[]){
  const lang=locale==="id"?"id":"en";
  const isEN=lang==="en",p=isEN?"en":"id",title=activity["title_"+p],summary=activity["summary_"+p],desc=activity["description_"+p];
