@@ -12,16 +12,33 @@ async function loadWebsitePhotos(){
   document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
    const slot=slots.get(img.dataset.npeSlot);
    if(!slot)return;
+   img.removeAttribute("data-photo-slug");
+   // Prevent an earlier fallback attempt for the original image from leaking into the replacement.
+   delete img.dataset.photoFallbackStage;
+   delete img.dataset.localPhotoFailed;
    img.src=slot.url;
    img.alt=currentLanguage()==="en"?slot.alt_en:slot.alt_id;
-   img.removeAttribute("data-photo-slug");
    // Original Wikimedia attribution must not be displayed for a different owner-uploaded image.
    const caption=img.closest("figure")?.querySelector("figcaption");
    if(caption){caption.dataset.npeOwnerPhoto="true";caption.textContent=currentLanguage()==="en"
     ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
     :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";} 
   });
+  markHomepagePhotoCredits();
  }catch(_){/* Failed photo override must not prevent displaying published activities. */}
+}
+function markHomepagePhotoCredits(){
+ const slots=window.__npeWebsiteSlots;
+ if(!slots)return;
+ const en=currentLanguage()==="en";
+ document.querySelectorAll(".spot-showcase").forEach(card=>{
+  if(!Array.from(card.querySelectorAll("img[data-npe-slot]")).some(img=>slots.has(img.dataset.npeSlot)))return;
+  const credits=card.querySelector(".photo-credits");
+  if(!credits)return;
+  let note=credits.querySelector("[data-npe-credit-note]");
+  if(!note){note=el("span","");note.setAttribute("data-npe-credit-note","");credits.appendChild(note);}
+  note.textContent=en?" · Credits above refer to original images only; replacements are supplied to Nusa Penida Experiences.":" · Kredit di atas hanya untuk foto asli; foto pengganti disediakan untuk Nusa Penida Experiences.";
+ });
 }
 async function loadWebsiteActivities(){
  try{
@@ -88,7 +105,7 @@ window.addEventListener("npe:language",()=>{
    ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
    :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";
  });
- drawPublicActivities();drawPublicDetails();
+ markHomepagePhotoCredits();drawPublicActivities();drawPublicDetails();
 });
 loadWebsitePublic();
 // Returning from the dashboard via browser history must refresh published details too.

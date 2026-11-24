@@ -1435,6 +1435,7 @@ const cmsPagePhotoSlots={
   "east"
  ],
  "snorkeling": [
+  "snorkeling",
   "snorkeling-manta-bay",
   "snorkeling-manta-point",
   "snorkeling-crystal-bay",
@@ -1445,12 +1446,14 @@ const cmsPagePhotoSlots={
   "island-east"
  ],
  "west": [
+  "west",
   "west-kelingking",
   "west-broken-beach",
   "west-angels-billabong",
   "west-crystal-bay"
  ],
  "east": [
+  "east",
   "east-diamond-beach",
   "east-atuh-beach",
   "east-tree-house"
@@ -1458,7 +1461,7 @@ const cmsPagePhotoSlots={
 };
 const cmsPageSlotLabels={
  "hero": "Banner utama",
- "snorkeling": "Kartu Snorkeling",
+ "snorkeling": "Cover Snorkeling (Paket & 3 Spots)",
  "island": "Kartu Island Tour",
  "west": "Kartu Wisata Barat",
  "east": "Kartu Wisata Timur",

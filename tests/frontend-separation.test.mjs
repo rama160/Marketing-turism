@@ -90,7 +90,7 @@ test("Android installed agent goes to dashboard; public service worker never cac
 
 test("separating website does not change critical routes, operator prices, or manual approvals",()=>{
  const worker=readFileSync(new URL("../src/worker.mjs",import.meta.url),"utf8");
- assert.ok(worker.includes('version:"3.27.0"'));
+ assert.ok(worker.includes('version:"3.28.0"'));
  for(const route of ["/api/public/readiness","/api/public/leads","/api/admin/growth","/api/admin/whatsapp","/api/admin/quotes","/api/admin/bookings"]){
   assert.ok(worker.includes(route),"Lost route "+route);
  }
