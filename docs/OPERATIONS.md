@@ -1,3 +1,11 @@
+## SEO launch and verification: v3.31.0, 24 November 2026
+Canonical published guest routes are '/', '/snorkeling.html', '/island-tour.html', '/west-tour.html', '/east-tour.html' and '/id/experiences/:slug' / '/en/experiences/:slug'. The original routes pass through the existing Worker to add search metadata and links from currently published D1 records. Owner site-content fields update corresponding server-rendered tour page h1/meta descriptions without editing source files. If an activity is archived, its homepage link is omitted on the next render and the activity itself is unavailable.
+Verify GET /sitemap.xml contains live public activities, bilingual alternates and published dates. Verify no dashboard/private API URLs are in the sitemap. Verify /robots.txt, on-page canonical, OG image and breadcrumb JSON-LD. Run npm run ci, then deploy and live smoke. Before domain migration, confirm redirect and canonical rules; do not index an unverified second hostname. After Search Console ownership verification submit /sitemap.xml, inspect key URLs and monitor clicks, queries, indexing and Core Web Vitals. No automated submission without verified Google permission.
+No fictitious reviews, prices, awards or first-page guarantees. Contact details and cancellations remain subject to current operational policy.
+
+---
+
+
 ## Mainline maintenance & source alignment (v3.30.0, 24 November 2026)
 **Use only `main`; do not create a branch or PR for maintenance unless the owner authorizes it.** The current deployed dashboard is NPE Studio and website CMS, no other Worker. GitHub CI tests the latest source and a separate live smoke validates deployed Worker health version.
 - `npm run ci` must pass before deployment; `node scripts/smoke.mjs` must pass after. The smoke version must equal package version and Worker `/api/health`; dashboard scripts and CSS use matching cache-busted versions.
