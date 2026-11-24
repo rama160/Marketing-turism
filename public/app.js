@@ -1153,6 +1153,9 @@ async function cmsSaveDraft(){
  const payload={draft,...(npeCmsEditing?{expected_version:npeCmsEditing.version}:{})};
  const result=await api(path,npeCmsEditing?"PATCH":"POST",payload);
  await loadWebsiteCMS();
+ // After the first draft save, keep editing that record instead of accidentally creating the same slug again.
+ npeCmsEditing=npeCmsActivities.find(x=>x.id===result.id)||null;
+ if(npeCmsEditing){cmsField("slug").readOnly=true;$("#cmsEditingStatus").textContent=npeCmsEditing.status==="PUBLISHED"?"Published · revisi draft":"Draft tersimpan";}
  return result;
 }
 cmsForm.onsubmit=async e=>{
@@ -1177,21 +1180,22 @@ $("#cmsPublishFromEditor").onclick=async()=>{
    say("#cmsActivityFeedback","Draft disimpan. Verifikasi harga atau kosongkan harga sebelum Publish.");return;
   }
   if(!window.confirm("Terbitkan perubahan pada "+saved.draft.title_id+" sekarang?")){say("#cmsActivityFeedback","Draft tersimpan; publikasi dibatalkan.");return;}
-  await cmsPublishActivity(saved.id,true);
-  cmsForm.hidden=true;cmsView("published");
+  const published=await cmsPublishActivity(saved.id,true);
+  if(published){cmsForm.hidden=true;cmsView("published");}
+  else say("#cmsActivityFeedback","Draft tersimpan, namun publikasi belum berhasil. Periksa pesan dan coba lagi.");
  }catch(e){say("#cmsActivityFeedback",e.message);}
  finally{btn.disabled=false;$("#cmsSaveActivity").disabled=false;}
 };
 async function cmsPublishActivity(id,confirmed=false){
  const a=npeCmsActivities.find(x=>x.id===id);if(!a)return;
- if(!a.draft.supplier_confirmed){say("#cmsStudioFeedback","Periksa operator & cakupan aktivitas sebelum Publish.");return;}
- if(!a.draft.media_id){say("#cmsStudioFeedback","Pilih foto utama sebelum Publish.");return;}
- if((a.draft.price_amount||a.draft.price_label_id)&&!a.draft.price_verified){say("#cmsStudioFeedback","Harga belum diverifikasi. Edit aktivitas, atau kosongkan harga sebelum Publish.");return;}
- if(!confirmed&&!window.confirm("Publikasikan "+a.draft.title_id+" ke website publik?"))return;
+ if(!a.draft.supplier_confirmed){say("#cmsStudioFeedback","Periksa operator & cakupan aktivitas sebelum Publish.");return false;}
+ if(!a.draft.media_id){say("#cmsStudioFeedback","Pilih foto utama sebelum Publish.");return false;}
+ if((a.draft.price_amount||a.draft.price_label_id)&&!a.draft.price_verified){say("#cmsStudioFeedback","Harga belum diverifikasi. Edit aktivitas, atau kosongkan harga sebelum Publish.");return false;}
+ if(!confirmed&&!window.confirm("Publikasikan "+a.draft.title_id+" ke website publik?"))return false;
  try{
   await api("admin/website/activities/"+id+"/publish","POST",{expected_version:a.version,owner_confirmed:true});
-  await loadWebsiteCMS();say("#cmsStudioFeedback","Aktivitas berhasil diterbitkan. Anda dapat mengeditnya lagi di Published.",true);
- }catch(e){say("#cmsStudioFeedback","Publikasi gagal: "+e.message);}
+  await loadWebsiteCMS();say("#cmsStudioFeedback","Aktivitas berhasil diterbitkan. Anda dapat mengeditnya lagi di Published.",true);return true;
+ }catch(e){say("#cmsStudioFeedback","Publikasi gagal: "+e.message);return false;}
 }
 async function cmsArchiveActivity(id){
  const a=npeCmsActivities.find(x=>x.id===id);if(!a||!window.confirm("Arsipkan "+a.draft.title_id+" dari website publik?"))return;
