@@ -147,3 +147,40 @@ test("owner photo replacement updates gallery credit rather than misattributing 
  assert.match(client,/caption\.textContent/);
  assert.match(client,/owner confirmed usage rights/);
 });
+
+test("ganti foto goes straight to phone gallery instead of a second CMS editor",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync("public/dashboard.html","utf8");
+ const js=readFileSync("public/app.js","utf8");
+ const css=readFileSync("public/dashboard.css","utf8");
+ for(const id of ["cmsQuickPhotoFile","cmsQuickPhotoDialog","cmsQuickPhotoPreview",
+   "cmsQuickPhotoTitle","cmsQuickPhotoAltId","cmsQuickPhotoAltEn","cmsQuickPhotoRights",
+   "cmsQuickPhotoSave","cmsQuickPhotoCancel"]){
+  assert.ok(html.includes('id="'+id+'"'),id+" direct picker control absent");
+ }
+ assert.match(html,/id="cmsQuickPhotoFile" type="file" accept="image\/\*"/);
+ assert.match(html,/aria-labelledby="cmsQuickPhotoHeading"/);
+ assert.match(css,/\.npeQuickPhotoDialog::backdrop/);
+ assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsEditPhoto\)/);
+ assert.match(js,/beginCmsQuickPhoto\(b\.dataset\.cmsQuickPhoto\)/);
+ assert.match(js,/beginCmsQuickPhoto\(slot\);\s*\};\s*\$\("#cmsPageSave"\)/);
+ assert.match(js,/picker\.click\(\); \/\/ synchronous user gesture/);
+ assert.match(js,/quickPhotoDialog\.showModal\(\)/);
+ assert.match(js,/async function uploadCmsWebsitePhoto\(/);
+ assert.match(js,/if\(!cmsQuickPhotoMediaId\)/);
+ assert.match(js,/await api\("admin\/website\/slots","POST",\{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true\}\)/);
+ // Changing a photo must not run the full page content loader, which would erase unsaved copy edits.
+ const directFlow=js.slice(js.indexOf('$("#cmsQuickPhotoSave").onclick'),js.indexOf('function cmsCurrentPhoto('));
+ assert.doesNotMatch(directFlow,/loadWebsiteCMS\(\)|renderCmsPageFields\(\)|cmsView\("media"\)/);
+ assert.match(directFlow,/drawPublishedPageCards\(\)/);
+ assert.match(directFlow,/renderCmsPagePhotos\(\)/);
+});
+test("photo publishing is opt-in and does not navigate or change bookings",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const js=readFileSync("public/app.js","utf8");
+ const directFlow=js.slice(js.indexOf('$("#cmsQuickPhotoSave").onclick'),js.indexOf("function cmsCurrentPhoto("));
+ assert.match(directFlow,/if\(!\$\("#cmsQuickPhotoRights"\)\.checked\)/);
+ assert.match(directFlow,/owner_confirmed:true/);
+ assert.match(js,/form\.append\("rights_confirmed","true"\)/);
+ assert.doesNotMatch(directFlow,/admin\/bookings|admin\/rates|window\.location|location\.href/);
+});

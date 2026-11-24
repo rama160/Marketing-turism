@@ -1,3 +1,12 @@
+## 24 NOV 2026 — ONE-TAP GANTI FOTO VIA GALERI HP v3.21.0
+- In NPE Studio > Editor Website, "Ganti Foto" buttons on published page cards, image tiles and primary page button now invoke native Android image selection immediately, without navigating to a second Media/Website editor or reselecting a photo slot.
+- After selecting a local photo, the owner sees one preview dialog with editable Indonesian/English alt text, a required commercial usage-rights confirmation, and "Simpan & Terbitkan Foto". The slot is retained from the initial button and cannot be changed by accident.
+- Uses the existing compressOwnerPhoto function, authenticated /api/admin/website/media upload and /api/admin/website/slots publication; no new backend/database/migrations. If the slot publication fails after upload, retry reuses its media ID without duplicating the upload.
+- Refreshes only image metadata and published card thumbnails, not full site-content editors: unsaved title, description and price edits are preserved. Existing Media Library remains available independently for bulk photo management and activity cover selections.
+- Owner login and rights checks remain mandatory; the public site gets only the approved photo slot. Existing operator prices, quotes, bookings, Meta autopost, AI, Cloudflare secrets and older photo credits are not changed.
+
+---
+
 ## 24 NOV 2026 — FIX PUBLISHED WEBSITE CMS EMPTY CONTENT v3.20.0
 - Root cause: production site_content holds only overrides (zero rows), while actual public defaults reside in public HTML and language.js. The admin dashboard has no window.NusaLanguage, so editor fields were empty even though public pages worked.
 - scripts/build.mjs now creates public/site-editor-defaults.json from existing public HTML and ID/EN translations, with no D1 changes or duplicated source copy. Wrangler uploads public/ assets after npm run ci.
