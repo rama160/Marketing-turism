@@ -1246,7 +1246,7 @@ $("#cmsPublishSlot").onclick=async()=>{
  const slot=$("#cmsPhotoSlot").value,media_id=$("#cmsSlotMedia").value;
  if(!media_id){say("#cmsSlotFeedback","Pilih foto yang sudah diupload.");return;}
  if(!window.confirm("Ubah foto "+slot+" pada website publik?"))return;
- try{await api("admin/website/slots","POST",{slot,media_id,owner_confirmed:true});say("#cmsSlotFeedback","Foto berhasil diterbitkan pada halaman website.",true);}
+ try{await api("admin/website/slots","POST",{slot,media_id,owner_confirmed:true});await loadWebsiteCMS();say("#cmsSlotFeedback","Foto berhasil diterbitkan pada halaman website; foto lain tetap sama.",true);}
  catch(e){say("#cmsSlotFeedback",e.message);}
 };
 // Friendly grouped editor for existing published pages, using the original versioned text CMS API.
@@ -1470,18 +1470,37 @@ function cmsPublishedPage(page){
 }
 document.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
 function renderCmsPageFields(){
- const root=$("#cmsPageFields");if(!root||!cmsFields.length)return;
+ const root=$("#cmsPageFields"),notice=$("#cmsPageSummary");
+ if(!root)return;
+ if(!cmsFields.length||!cmsPublishedSnapshot.id?.["hero.title"]){
+  root.innerHTML='<p class="feedback">Memuat konten website yang sudah terbit...</p>';
+  return;
+ }
  const page=$("#cmsPagePicker").value,lang=$("#cmsPageLocale").value,fields=new Map(cmsFields);
  const keys=(cmsPageMap[page]||[]).filter(k=>fields.has(k));
- const original=window.NusaLanguage?.defaults(lang)||{};
+ const missing=keys.filter(k=>!cmsEffectiveValue(k,lang).trim());
+ const labels={home:"Beranda NPE",snorkeling:"Snorkeling Nusa Penida",island:"Island Tour",west:"Wisata Barat",east:"Wisata Timur"};
+ notice.textContent=labels[page]+" · "+keys.length+" bagian isi saat ini berhasil dimuat ("+(lang==="en"?"English":"Bahasa Indonesia")+"). Ubah satu atau beberapa kolom; kolom yang tidak diubah akan tetap sama."+
+  (missing.length?" "+missing.length+" bagian belum mempunyai konten bawaan; dapat diisi melalui editor.":"");
  root.innerHTML=keys.map(k=>{
-  const row=cmsRecords.get(lang+":"+k),value=row?.value??original[k]??"";
-  const label=fields.get(k)||k,isPrice=k.startsWith("price.");
-  return '<label class="npeCmsPageField"><span>'+esc(label)+(isPrice?' <small>· boleh kosong</small>':'')+'</span>'+
-   '<textarea data-cms-page-key="'+esc(k)+'" rows="'+(isPrice?2:label.includes("deskripsi")||label.includes("ringkasan")?3:2)+'" maxlength="1200" placeholder="'+(isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
+  const value=cmsEffectiveValue(k,lang),label=fields.get(k)||k,isPrice=k.startsWith("price.");
+  const rows=isPrice?2:/description|deskripsi|ringkasan|lead|summary/i.test(k+" "+label)?4:2;
+  return '<label class="npeCmsPageField" data-cms-page-field="'+esc(k)+'">'+
+   '<span>'+esc(label)+(isPrice?' <small>· boleh kosong</small>':'')+'</span>'+
+   '<textarea data-cms-page-key="'+esc(k)+'" rows="'+rows+'" maxlength="1200" placeholder="'+
+    (isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
  }).join("");
  $("#cmsPageFeedback").textContent="";
+ renderCmsPagePhotos();filterCmsPageFields();
 }
+function filterCmsPageFields(){
+ const q=$("#cmsPageFilter")?.value?.trim().toLowerCase()||"";
+ $("#cmsPageFields")?.querySelectorAll("[data-cms-page-field]").forEach(el=>{
+  const field=el.querySelector("span")?.textContent?.toLowerCase()||"";
+  el.hidden=Boolean(q&&!field.includes(q)&&!el.dataset.cmsPageField.toLowerCase().includes(q));
+ });
+}
+$("#cmsPageFilter").oninput=filterCmsPageFields;
 $("#cmsPagePicker").onchange=renderCmsPageFields;
 $("#cmsPageLocale").onchange=renderCmsPageFields;
 $("#cmsPagePhoto").onclick=()=>{
@@ -1490,19 +1509,20 @@ $("#cmsPagePhoto").onclick=()=>{
 };
 $("#cmsPageSave").onclick=async()=>{
  const btn=$("#cmsPageSave");btn.disabled=true;
- const lang=$("#cmsPageLocale").value,original=window.NusaLanguage?.defaults(lang)||{};
+ const lang=$("#cmsPageLocale").value;
  let updated=0;
  try{
   for(const el of $("#cmsPageFields").querySelectorAll("[data-cms-page-key]")){
    const key=el.dataset.cmsPageKey,value=el.value.trim(),prev=cmsRecords.get(lang+":"+key);
-   if(value===(prev?.value??original[key]??""))continue;
+   if(value===cmsEffectiveValue(key,lang))continue;
    if(!key.startsWith("price.")&&value.length<2)throw Error("Judul/deskripsi minimal 2 karakter: "+key);
    if(/[<>\u0000-\u001f\u007f]/.test(value)||value.length>1200)throw Error("Konten tidak valid: "+key);
    const saved=await api("admin/site-content","POST",{key,locale:lang,value,expected_version:prev?.version||0,owner_confirmed:true});
    cmsRecords.set(lang+":"+key,saved);updated++;
   }
   window.NusaLanguage?.resetCache();
-  say("#cmsPageFeedback",updated?updated+" elemen berhasil diterbitkan ke website.":"Tidak ada perubahan baru.",true);
+  drawPublishedPageCards();
+  say("#cmsPageFeedback",updated?updated+" bagian berhasil diterbitkan. Bagian lain tetap seperti semula.":"Tidak ada perubahan baru.",true);
  }catch(e){say("#cmsPageFeedback",updated+" elemen tersimpan. "+e.message+" Muat ulang jika ada konflik.");}
  finally{btn.disabled=false;}
 };
