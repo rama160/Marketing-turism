@@ -1,3 +1,12 @@
+## v3.20.0 — Hydrate Published editor from real website copy (24 November 2026)
+Existing guest HTML and language.js are the canonical source of initial content. D1 site_content contains only overrides. Previous editor relied on unavailable window.NusaLanguage in the dashboard, showing blank fields.
+The existing build step now derives public/site-editor-defaults.json from those files with real ID/EN text and approved original photo URLs. This snapshot contains only public marketing text, never credentials, bookings or private operator prices, and is deployed with Cloudflare static assets. Editor resolves displayed value as D1 override if present, otherwise the built source default; intentionally empty price overrides stay empty.
+Published cards show live effective heading, excerpt, price label and cover photo. Editor provides search and editable fields for both languages; saving only modified text uses existing per-field optimistic version checks. Current five original pages remain original pages, not duplicate dynamic activities.
+13 destination-card titles/descriptions use data-copy and the existing versioned site_content API. The new optional website_gallery_photo_slots table holds per-spot photo placement, independently from existing website_photo_slots. Public API returns approved overrides; original file photos remain fallback. Gallery licensing credits remain unchanged.
+Build and live smoke assert an actual nonempty snapshot. Migrations are additive and only the dedicated NPE Worker is deployed, keeping quotation, booking and marketing functions isolated.
+
+---
+
 ## v3.19.0 — Published-first NPE Website Studio (24 November 2026)
 Existing website_activities, website_media, website_photo_slots and site_content stores are reused; no schema migration.
 - Published: live dynamic cards plus five existing public-page entries, each linking to editable CMS content.
