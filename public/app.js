@@ -49,7 +49,7 @@ function changeTab(name){
  const group=NPE_PAGE_GROUP[name]||"home",workspace=NPE_WORKSPACES[group];
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
- if(name==="website"&&ownerSignedIn){void loadSiteEditor();void loadWebsiteCMS();}
+ if(name==="website"&&ownerSignedIn){void loadWebsiteCMS();}
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
  if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
@@ -950,13 +950,26 @@ $("#quickSave").onclick=async()=>{
 };
 
 // Versioned website content editor. All reading and publishing is authenticated on the Worker.
-let cmsRecords=new Map(),cmsFields=[];
+let cmsRecords=new Map(),cmsFields=[],cmsPhotoOverrides=new Map();
+let cmsPublishedSnapshot={id:{},en:{},photos:{}},cmsPublishedSnapshotPromise=null;
+async function loadCmsPublishedSnapshot(){
+ if(cmsPublishedSnapshotPromise)return cmsPublishedSnapshotPromise;
+ cmsPublishedSnapshotPromise=fetch("/site-editor-defaults.json",{cache:"no-store",credentials:"same-origin"})
+  .then(async r=>{
+   if(!r.ok)throw Error("Data awal editor tidak tersedia (HTTP "+r.status+")");
+   const result=await r.json();
+   if(!result?.id?.["hero.title"]||!result?.en?.["hero.title"]||!result?.photos?.hero)throw Error("Isi website belum lengkap pada data awal editor");
+   cmsPublishedSnapshot=result;return result;
+  }).catch(err=>{cmsPublishedSnapshotPromise=null;throw err;});
+ return cmsPublishedSnapshotPromise;
+}
 const cmsId=(key,locale)=>locale+":"+key;
+const cmsDefaultValue=(key,locale)=>cmsPublishedSnapshot?.[locale]?.[key]??window.NusaLanguage?.defaults(locale)?.[key]??"";
+const cmsEffectiveValue=(key,locale)=>cmsRecords.get(cmsId(key,locale))?.value??cmsDefaultValue(key,locale);
 function cmsSelection(){
  const key=$("#cmsKey").value,locale=$("#cmsLocale").value;
  const existing=cmsRecords.get(cmsId(key,locale));
- const fallback=window.NusaLanguage?.defaults(locale)||{};
- return {key,locale,existing,value:existing?.value??fallback[key]??""};
+ return {key,locale,existing,value:cmsEffectiveValue(key,locale)};
 }
 function syncCms(){
  const state=cmsSelection();
@@ -967,6 +980,8 @@ function syncCms(){
 }
 async function loadSiteEditor(){
  try{
+  // Admin site_content stores only overrides; published HTML and translation maps provide initial values.
+  await loadCmsPublishedSnapshot();
   const response=await api("admin/site-content");
   cmsRecords=new Map((response.items||[]).map(x=>[cmsId(x.key,x.locale),x]));
   cmsFields=response.fields||[];
@@ -975,7 +990,8 @@ async function loadSiteEditor(){
   if(cmsFields.some(([key])=>key===previous))keyInput.value=previous;
   syncCms();
   renderCmsPageFields();
- }catch(err){say("#cmsFeedback",err.message);}
+  drawPublishedPageCards();
+ }catch(err){say("#cmsFeedback",err.message);say("#cmsStudioFeedback","Tidak dapat memuat konten website: "+err.message);}
 }
 $("#cmsLocale").onchange=syncCms;
 $("#cmsKey").onchange=syncCms;
@@ -983,7 +999,7 @@ $("#cmsValue").oninput=()=>{$("#cmsPreviewText").textContent=$("#cmsValue").valu
 $("#cmsPreview").onclick=()=>{ $("#cmsPreviewText").textContent=$("#cmsValue").value; say("#cmsFeedback","Pratinjau lokal. Konten belum diterbitkan.",true); };
 $("#cmsPublish").onclick=async()=>{
  const state=cmsSelection(),value=$("#cmsValue").value.trim();
- if(value.length<2||value.length>1200){say("#cmsFeedback","Konten harus 2 sampai 1200 karakter.");return;}
+ if((!state.key.startsWith("price.")&&value.length<2)||value.length>1200){say("#cmsFeedback","Teks minimal 2 karakter; harga boleh kosong.");return;}
  const button=$("#cmsPublish");button.disabled=true;
  try{
   const result=await api("admin/site-content","POST",{key:state.key,locale:state.locale,value,expected_version:state.existing?.version||0,owner_confirmed:true});
@@ -1129,8 +1145,12 @@ function drawWebsiteCMS(){
 async function loadWebsiteCMS(){
  if(!ownerSignedIn)return;
  try{
-  const [acts,media]=await Promise.all([api("admin/website/activities"),api("admin/website/media")]);
-  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];drawWebsiteCMS();
+  const [acts,media,slots]=await Promise.all([
+   api("admin/website/activities"),api("admin/website/media"),api("public/website/slots"),loadSiteEditor()
+  ]);
+  cmsPhotoOverrides=new Map((slots.items||[]).map(x=>[x.slot,x]));
+  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];
+  drawWebsiteCMS();drawPublishedPageCards();renderCmsPagePhotos();
   $("#cmsStudioFeedback").textContent="";
  }catch(e){say("#cmsStudioFeedback","CMS belum siap: "+e.message);}
 }
@@ -1239,7 +1259,8 @@ const cmsPageMap={
 };
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
- cmsView("pages");void loadSiteEditor();
+ $("#cmsPageFilter").value="";
+ cmsView("pages");if(!cmsFields.length)void loadSiteEditor();
 }
 document.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
 function renderCmsPageFields(){
