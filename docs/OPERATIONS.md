@@ -1,3 +1,14 @@
+## NPE Published Website Editor v3.19.0
+1. NPE Studio > Konten & Kampanye > Editor Website opens Published with published activities and five pre-existing pages.
+2. Published activity > Edit semua elemen opens bilingual titles, details, cover, numeric public price, unit and SEO. Save Draft preserves the previous public version until Publish.
+3. Add Activity saves a draft even if the price is empty. Pricing stays hidden on public sites when no amount is set; ask via WhatsApp.
+4. If entering a public price, enter rupiah numeric and unit then attest verification before Publish; never confuse selling price with operator net.
+5. Halaman Website edits legacy page copy and optional static labels. Foto & Media uploads rights-confirmed photos and replaces homepage/tour photo slots.
+6. Save & Publish shows a confirmation; missing provider confirmation/photo or unverified price prevents publication, but drafts remain stored.
+7. Keep deployed NPE Worker isolated and all existing operator rates, quotes, bookings, sessions, Meta schedules and D1 tables untouched. Run CI and external live smoke.
+
+---
+
 ## Website CMS & Add Activity — v3.18.0 (deployment gated)
 1. Open dashboard > Konten & Kampanye > Editor Website > Aktivitas & Foto.
 2. Upload a rights-confirmed JPEG; the existing browser compression can reduce image size to the Cloudflare 850 KB limit.
