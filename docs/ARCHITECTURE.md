@@ -1,3 +1,15 @@
+## v3.19.0 — Published-first NPE Website Studio (24 November 2026)
+Existing website_activities, website_media, website_photo_slots and site_content stores are reused; no schema migration.
+- Published: live dynamic cards plus five existing public-page entries, each linking to editable CMS content.
+- Draft: unpublished, archived and pending revisions.
+- Edit Activity: bilingual title/summary/description, category, fixed slug, cover media, optional numeric selling price and unit, supplier verification and optional SEO, live preview.
+- Halaman Website: grouped editing of existing site_content fields and optional static price fields, retaining advanced single-field revision editing.
+- Media: rights-confirmed photo upload and published photo slot assignment on existing PHOTO_KV.
+Price is positive integer price_amount or null, with price_unit PERSON/CAR/GROUP/TICKET and boolean price_from. Numeric price produces consistent bilingual labels; missing price is allowed and hidden from public. Drafts can contain an unverified amount; publishing requires owner verification for any displayed price and verified service scope plus cover. No supplier net-rate or quote mutation.
+Published_json remains untouched by draft updates. Existing drafts without price_amount continue to work; legacy custom labels are kept unless cleared explicitly. site_content price.* fields now accept empty strings, while normal text still requires content. All admin endpoints remain owner-authenticated.
+
+---
+
 ## v3.18.0 — Dynamic Website CMS & SEO-preserving experiences (24 November 2026)
 The existing `src/site-content.mjs` remains canonical for editable static hero and tour text. New isolated `src/website-cms.mjs` handles **dynamic activity draft, revision, publishing, media, photo slots and public experience page rendering**. No duplicate text editor or pricing engine.
 
