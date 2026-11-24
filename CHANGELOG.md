@@ -1,3 +1,15 @@
+## [3.19.0] — 2026-11-24
+### Improved
+- Mobile-friendly Published, Draft, Halaman Website and Foto & Media workspace inside NPE Studio.
+- Published activity cards are reopenable and all CMS-supported fields are editable.
+- Clear numeric optional selling price in rupiah, with units and preview, outside collapsed SEO; empty amount saves and displays no price badge.
+- Bilingual price labels derived from numeric amount. Unverified prices can save as drafts but cannot publish.
+- Existing public page text and price labels grouped in a friendly editor; photos managed via existing Cloudflare storage.
+### Preserved
+- Operator net, immutable quotes, payment and booking approvals, admin sessions, AI marketing, Cloudflare resources and existing draft version history.
+
+---
+
 ## [3.18.0] — 2026-11-24 (branch implementation; live deployment not yet verified)
 ### Added
 - Website CMS Add Activity form, two-language copy, SEO metadata, owner-approved publication, archive and immutable revisions.
