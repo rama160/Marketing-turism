@@ -84,3 +84,58 @@ test("owner website dashboard includes the published list and a visibly editable
  assert.match(controller,/cmsSaveDraft/);
  assert.doesNotMatch(html,/ADMIN_TOKEN_VALUE/);
 });
+
+
+test("published editor snapshot is populated from the real public pages and translations",async()=>{
+ const {execFileSync}=await import("node:child_process");
+ const {readFileSync}=await import("node:fs");
+ execFileSync(process.execPath,["scripts/build.mjs"],{stdio:"pipe"});
+ const defaults=JSON.parse(readFileSync("public/site-editor-defaults.json","utf8"));
+ assert.match(defaults.id["hero.title"],/Liburan/);
+ assert.match(defaults.en["hero.title"],/Unforgettable/i);
+ assert.match(defaults.id["snorkelingPage.title"],/Snorkeling/);
+ assert.match(defaults.id["westSpot.kelingking.description"],/Tebing/i);
+ assert.match(defaults.id["snorkelingSpot.mantaBay.description"],/manta/i);
+ assert.match(defaults.en["price.snorkeling"],/Rp350,000/);
+ assert.equal(Object.keys(defaults.photos).length,18);
+ assert.match(defaults.photos["west-kelingking"].url,/^\/photos\//);
+ assert.match(defaults.photos["hero"].url,/^\/photos\//);
+ assert.ok(Object.keys(defaults.id).length>=65,"all existing public text including galleries should appear");
+});
+test("published content source uses existing pages, protected draft data is never inserted",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const page=readFileSync("public/dashboard.html","utf8");
+ const js=readFileSync("public/app.js","utf8");
+ const worker=readFileSync("src/site-content.mjs","utf8");
+ const builder=readFileSync("scripts/build.mjs","utf8");
+ assert.match(page,/id="cmsLegacyPublished"/);
+ assert.match(page,/id="cmsPageFields"/);
+ assert.match(page,/id="cmsPagePhotos"/);
+ assert.match(js,/async function loadCmsPublishedSnapshot/);
+ assert.match(js,/cmsEffectiveValue\(key,lang\)/);
+ assert.match(js,/function drawPublishedPageCards/);
+ assert.match(js,/function filterCmsPageFields/);
+ assert.match(js,/function renderCmsPagePhotos/);
+ assert.match(builder,/public\/site-editor-defaults\.json/);
+ assert.match(worker,/westSpot\.kelingking\.description/);
+ assert.doesNotMatch(builder,/admin\/session|ADMIN_TOKEN|booking_id|operator_net/);
+});
+test("each destination's gallery photo uses an isolated slot while the five homepage slots remain",async()=>{
+ const {getWebsiteSlots,updateWebsiteSlot}=await import("../src/website-cms.mjs");
+ const id="12345678-1234-4234-9234-123456789abc";
+ const queries=[];
+ const fake={
+  prepare(sql){queries.push(sql);
+   return {bind(...args){return {first:async()=>({id,alt_id:"Pantai",alt_en:"Beach"}),run:async()=>({meta:{changes:1}})}} ,
+    all:async()=>({results:sql.includes("website_gallery_photo_slots")?[{slot:"west-broken-beach",media_id:id,alt_id:"Pantai",alt_en:"Beach"}]:[]})};
+  }
+ };
+ const slots=await getWebsiteSlots(fake);
+ assert.equal(slots.items.length,1);
+ assert.equal(slots.items[0].slot,"west-broken-beach");
+ await updateWebsiteSlot(fake,{slot:"west-broken-beach",media_id:id,owner_confirmed:true});
+ assert.ok(queries.some(x=>x.startsWith("INSERT INTO website_gallery_photo_slots(")));
+ await updateWebsiteSlot(fake,{slot:"hero",media_id:id,owner_confirmed:true});
+ assert.ok(queries.some(x=>x.startsWith("INSERT INTO website_photo_slots(")));
+ await assert.rejects(()=>updateWebsiteSlot(fake,{slot:"not-a-real-photo-slot",media_id:id,owner_confirmed:true}),/valid/);
+});
