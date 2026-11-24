@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.21.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.22.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -76,6 +76,15 @@ if(!dashboard.includes('id="cmsQuickPhotoFile"')||!dashboard.includes('id="cmsQu
  !app.includes('await api("admin/website/slots","POST",{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true})')||
  !dashboardStyles.includes(".npeQuickPhotoDialog"))
  throw Error("Live direct photo gallery and owner-approved replacement missing");
+// Owner gallery is discoverable; existing-photo selection and safe deletion are present in deployed assets.
+if(!dashboard.includes('id="cmsOpenGallery"')||!dashboard.includes('id="cmsGallerySearch"')||
+ !dashboard.includes('id="cmsQuickPhotoGallery"')||!dashboard.includes('id="cmsQuickPickPhone"')||
+ !dashboard.includes('id="cmsQuickPickExisting"')||!app.includes('async function deleteNpeMedia(')||
+ !app.includes('async function refreshNpeGallery(')||
+ !app.includes('beginCmsQuickPhoto(b.dataset.cmsQuickPhoto)')||
+ !app.includes('data-quick-existing')||!app.includes('admin/website/media/')){
+ throw Error("Gallery reuse/delete or direct photo selection missing from live dashboard");
+}
 const editorManifest=JSON.parse(await get("/site-editor-defaults.json"));
 if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.id?.["westSpot.kelingking.description"]||
@@ -221,4 +230,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.21.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.22.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
