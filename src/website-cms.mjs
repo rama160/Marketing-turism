@@ -30,6 +30,42 @@ export function websiteSlugBase(input){
  const joined=prefix&&!segment.startsWith(prefix+"-")?prefix+"-"+segment:segment;
  return joined.slice(0,90).replace(/-+$/g,"");
 }
+// Textareas accept normal paragraphs, tabs and pasted Windows line endings; HTML and other control bytes remain forbidden.
+const multiline=(x,max)=>x.length>=3&&x.length<=max&&!/[<>\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(x);
+const seoText=x=>u16(x).replace(/[<>\u0000-\u001f\u007f-\u009f]/g," ").replace(/\s+/g," ").trim();
+function seoClip(x,max){
+ if(x.length<=max)return x;
+ const cut=x.slice(0,max-1),space=cut.lastIndexOf(" ");
+ return (space>max*0.6?cut.slice(0,space):cut).replace(/[ ,;:.\-–]+$/,"")+"…";
+}
+export function suggestWebsiteSEO(input){
+ const contexts={
+  SNORKELING:{en:"Snorkeling",id:"Snorkeling"},
+  ISLAND_TOUR:{en:"Island Tour",id:"Wisata Pulau"},
+  TRANSPORT:{en:"Transport",id:"Transportasi"},
+  OTHER:{en:"",id:""}
+ };
+ const staticContext={
+  "static:snorkeling":contexts.SNORKELING,
+  "static:island":contexts.ISLAND_TOUR,
+  "static:west":{en:"West Island Tour",id:"Wisata Barat"},
+  "static:east":{en:"East Island Tour",id:"Wisata Timur"}
+ };
+ const out={};
+ for(const lang of ["en","id"]){
+  const title=seoText(input["title_"+lang]);
+  const summary=seoText(input["summary_"+lang]);
+  const desc=seoText(input["description_"+lang]);
+  const context=(staticContext[input.parent_activity]||contexts[input.category]||contexts.OTHER)[lang];
+  const topic=title&&context&&!title.toLowerCase().includes(context.toLowerCase())?title+" – "+context:title;
+  const brand=" | Nusa Penida Experiences";
+  out["seo_title_"+lang]=topic?seoClip(topic,65-brand.length)+brand:"";
+  const combined=summary&&desc&&!desc.toLowerCase().startsWith(summary.toLowerCase())&&summary.length<110?summary+" "+desc:summary||desc;
+  const snippet=combined||topic;
+  out["seo_description_"+lang]=seoClip(snippet,160);
+ }
+ return out;
+}
 export function validateWebsiteDraft(input){
  if(!input||typeof input!=="object")throw Error("Isi aktivitas tidak valid");
  const slug=u16(input.slug).toLowerCase(),category=u16(input.category);
@@ -44,14 +80,24 @@ export function validateWebsiteDraft(input){
  const data={slug,category,parent_activity};
  for(const field of ["title_id","title_en","summary_id","summary_en","description_id","description_en"]){
   const max=field.startsWith("description_")?3000:field.startsWith("summary_")?300:150;
-  const value=u16(input[field]);
-  if(!plain(value,max)||value.length<3)throw Error(field+" harus teks biasa 3–"+max+" karakter");
+  const isTitle=field.startsWith("title_");
+  const value=u16(input[field]).replace(/\r\n?/g,"\n");
+  if(!(isTitle?plain(value,max)&&value.length>=3:multiline(value,max)))throw Error(field+" harus teks biasa 3–"+max+" karakter");
+
   data[field]=value;
  }
- for(const f of ["seo_title_id","seo_title_en","seo_description_id","seo_description_en"]){
-  const limit=f.startsWith("seo_title")?140:300,value=u16(input[f]);
+ const seoFields=["seo_title_id","seo_title_en","seo_description_id","seo_description_en"];
+ const generated=suggestWebsiteSEO(data);
+ const mode=input.seo_mode|| (seoFields.some(f=>u16(input[f]))?"MANUAL":"AUTO");
+ if(!["AUTO","MANUAL"].includes(mode))throw Error("Mode SEO tidak valid");
+ data.seo_mode=mode;
+ for(const f of seoFields){
+  const limit=f.startsWith("seo_title")?140:300;
+  const raw=mode==="MANUAL"?u16(input[f]):"";
+  // Manual metadata is single line; allow ordinary textarea line breaks but not HTML/control characters.
+  const value=raw.replace(/\r\n?|\n|\t/g," ").replace(/ +/g," ").trim();
   if(value&&!plain(value,limit))throw Error(f+" tidak valid");
-  data[f]=value;
+  data[f]=value||generated[f];
  }
  data.media_id=u16(input.media_id);
  if(data.media_id&&!idRE.test(data.media_id))throw Error("Foto utama tidak valid");

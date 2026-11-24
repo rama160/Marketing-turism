@@ -114,7 +114,7 @@
   <div class="npeCmsSectionHeader"><button type="button" id="cmsBackToList" class="outline small">← Kembali ke daftar</button><span id="cmsEditingStatus" class="npeCmsState">Draft</span></div>
   <div class="npeActivityLayout">
   <form id="cmsActivityForm" class="npeActivityEditor" hidden>
-   <div class="npeCmsSectionHeader"><div><h4 id="cmsFormHeading">Tambah aktivitas</h4><p class="feedback">Kolom bertanda * wajib. Harga dan SEO tambahan boleh dikosongkan.</p></div></div>
+   <div class="npeCmsSectionHeader"><div><h4 id="cmsFormHeading">Tambah aktivitas</h4><p class="feedback">Kolom bertanda * wajib. Deskripsi boleh beberapa paragraf. SEO otomatis dan harga opsional.</p></div></div>
    <fieldset class="npeCmsFieldset">
     <legend>1 · Identitas & judul</legend>
     <label>Aktivitas induk<select name="parent_activity" id="cmsParentActivity" disabled><option value="">Aktivitas utama (tampil di beranda)</option></select><small>Ditentukan otomatis berdasarkan tombol Tambah Aktivitas atau Tambah Detail yang dipilih.</small></label>
@@ -143,11 +143,14 @@
     <img id="cmsActivityImage" class="npeCmsCoverPreview" alt="Pratinjau foto pilihan" hidden>
     <button type="button" id="cmsChoosePhoto" class="outline small">▧ Pilih atau upload foto</button>
    </fieldset>
-   <details class="npeCmsSeo"><summary>5 · SEO Google (opsional)</summary>
-    <p class="feedback">Judul dan deskripsi Google otomatis menggunakan judul dan ringkasan jika dikosongkan.</p>
-    <div class="npeCms2col"><label>SEO Title English<input name="seo_title_en" maxlength="140"></label><label>SEO Title Indonesia<input name="seo_title_id" maxlength="140"></label></div>
-    <label>Meta Description English<textarea name="seo_description_en" maxlength="300" rows="2"></textarea></label>
-    <label>Meta Description Indonesia<textarea name="seo_description_id" maxlength="300" rows="2"></textarea></label>
+   <details class="npeCmsSeo"><summary>5 · SEO Google (otomatis)</summary>
+    <p class="feedback">SEO dibuat otomatis dari judul, kategori, ringkasan dan deskripsi dalam kedua bahasa. Tidak perlu mengisi kolom ini untuk menyimpan atau menerbitkan.</p>
+    <label>Mode SEO<select name="seo_mode" id="cmsSeoMode"><option value="AUTO">Otomatis (direkomendasikan)</option><option value="MANUAL">Edit manual</option></select></label>
+    <button type="button" class="outline small" id="cmsGenerateSeo">Buat / perbarui rekomendasi SEO</button>
+    <p id="cmsSeoFeedback" class="feedback" role="status">Rekomendasi berdasarkan konten, bukan volume pencarian Google.</p>
+    <div class="npeCms2col"><label>SEO Title English<input name="seo_title_en" maxlength="140" readonly></label><label>SEO Title Indonesia<input name="seo_title_id" maxlength="140" readonly></label></div>
+    <label>Meta Description English<textarea name="seo_description_en" maxlength="300" readonly rows="2"></textarea></label>
+    <label>Meta Description Indonesia<textarea name="seo_description_id" maxlength="300" readonly rows="2"></textarea></label>
    </details>
    <label class="check npeCmsVerify"><input name="supplier_confirmed" type="checkbox"> Saya telah memeriksa aktivitas, cakupan layanan dan operator sesuai informasi yang akan ditampilkan.</label>
    <div class="npeCmsStickyActions">
