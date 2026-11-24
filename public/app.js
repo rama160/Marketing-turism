@@ -1085,7 +1085,7 @@ function cmsSyncParent(){
  const cat=sel.selectedOptions[0]?.dataset.category;
  if(cat)cmsSet("category",cat);
 }
-cmsField("parent_activity").addEventListener("change",()=>{cmsSyncParent();refreshActivityPreview();});
+$("#cmsParentActivity").addEventListener("change",()=>{cmsSyncParent();refreshActivityPreview();});
 function startWebsiteDetail(parent){
  resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();
  $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
