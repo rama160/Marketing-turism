@@ -1,3 +1,13 @@
+## [3.31.0] — 2026-11-24
+- SEO: Serve original tour pages with real HTML metadata and current published CMS copy via existing Cloudflare Worker, without replacing source pages or changing guest designs.
+- Add Organization, WebPage and BreadcrumbList JSON-LD, social sharing preview images, unique titles and useful meta descriptions.
+- Expose approved published experience links in server-rendered homepage HTML, plus related links on dynamic detail pages, so search crawlers do not depend solely on JavaScript.
+- Add bilingual sitemap URL alternates and real publication dates; keep original canonical activity URLs.
+- Align versioned scripts, dashboard and offline cache with v3.31.0; enhance CI and deployed live smoke to check SEO behavior.
+- Preserve pricing, booking, owner photo library, Meta marketing gates, WhatsApp and original photo attribution. No invented reviews or rankings; first-page Google ranking cannot be guaranteed.
+
+---
+
 ## [3.30.0] — 2026-11-24
 - Mainline-only repository synchronization; no new branch or PR.
 - Fix live smoke version regression (expected v3.22 vs actual v3.29).
