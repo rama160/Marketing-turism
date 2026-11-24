@@ -291,7 +291,11 @@ async function apply(){
  const message=lang==="en"
   ?"Hello Nusa Penida Experiences, I would like to ask about Island Tours or Snorkeling. Can you help?"
   :"Halo Nusa Penida Experiences, saya ingin informasi Island Tour atau Snorkeling. Bisa bantu?";
- for(const link of document.querySelectorAll("[data-whatsapp-chat]"))link.href="https://wa.me/628561752525?text="+encodeURIComponent(message);
+ for(const link of document.querySelectorAll("[data-whatsapp-chat]")){
+  const selected=link.dataset.whatsappPackage;
+  const personalized=selected?(lang==="en"?"Hello Nusa Penida Experiences, please confirm the route, departure point, availability and inclusions for "+selected+".":"Halo Nusa Penida Experiences, mohon informasi rute, titik keberangkatan, ketersediaan dan fasilitas untuk "+selected+"."):message;
+  link.href="https://wa.me/628561752525?text="+encodeURIComponent(personalized);
+ }
  const translations=await load(lang);
  for(const el of document.querySelectorAll("[data-copy]")){
   const key=el.dataset.copy;
