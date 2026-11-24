@@ -1,3 +1,8 @@
+## v3.26.0 — Reliable published destination rendering
+Static activity galleries carry explicit parent identifiers independent of Cloudflare HTML URL normalization. The public renderer also accepts clean, .html and trailing-slash paths, keeps static cards visible, loads published activities independently of photo overrides and refreshes on bfcache restore. Versioned script URLs prevent stale client code on tour pages. Existing published records and media remain untouched. Regression tests execute the renderer on all URL forms with failed photo override requests.
+
+---
+
 ## v3.25.0 — Multiline content and bilingual SEO
 Website CMS accepts paragraph breaks, CRLF and tabs in summaries/descriptions, retains length limits and HTML/control-byte validation, and preserves normalized paragraphs. Owner editor maps errors to visible field labels. SEO defaults to AUTO: derives localized titles and descriptions from the activity title, category/static parent and actual summary/description, with bounded readable snippets. The authenticated read-only suggestion endpoint supports preview/regeneration. MANUAL mode permits overrides, legacy custom metadata remains manual, and AUTO recomputes on save/publish. No external keyword-volume data or ranking guarantees; no extra provider, database migration, booking or rate changes.
 

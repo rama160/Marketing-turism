@@ -1,3 +1,11 @@
+## [3.26.0] — 2026-11-24
+- Fix published destination visibility for clean URLs and .html routes.
+- Mark all static tour galleries with explicit parent IDs and decouple activity loading from photo override requests.
+- Refresh restored browser pages and invalidate old tour rendering scripts.
+- Preserve existing published records and destination cards.
+
+---
+
 ## [3.25.0] — 2026-11-24
 - Fix rejected multi-paragraph website descriptions and summaries while keeping input safety and limits.
 - Add automatic localized SEO titles and meta descriptions, on-demand suggestions and manual overrides.

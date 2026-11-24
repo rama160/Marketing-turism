@@ -353,3 +353,27 @@ test("SEO automatically uses localized content and activity context, with manual
  assert.equal(validateWebsiteDraft({...input,seo_mode:"AUTO",seo_title_en:"Stale title"}).seo_title_en,result.seo_title_en);
  assert.throws(()=>validateWebsiteDraft({...input,seo_mode:"MANUAL",seo_title_en:"<script>"}),/seo_title_en/);
 });
+
+test("published destination rendering works with clean URLs, .html, trailing slash and a failed photo endpoint",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const {runInNewContext}=await import("node:vm");
+ const code=readFileSync("public/website-content.js","utf8");
+ const item={id:"mangrove",slug:"snorkeling-mangrove-point",parent_activity:"static:snorkeling",title_id:"Mangrove Point",title_en:"Mangrove Point EN",summary_id:"Terumbu karang",description_id:"Ikan tropis",summary_en:"Corals",description_en:"Fish",photo_url:"/photos/website/example"};
+ const makeNode=(tag)=>({tag,dataset:{},children:[],append(...nodes){this.children.push(...nodes)},appendChild(n){this.children.push(n)},matches(s){return tag==="grid"&&s===".scene-grid"},querySelectorAll(){return []},setAttribute(){}});
+ for(const path of ["/snorkeling","/snorkeling.html","/snorkeling/","/snorkeling.html/"]){
+  for(const marked of [true,false]){
+   const grid=makeNode("grid"),listeners={};
+   if(marked)grid.dataset.npeDetailParent="static:snorkeling";
+   const document={documentElement:{lang:"id"},createElement:makeNode,querySelector(s){return s===".scene-grid"?grid:s==="[data-npe-detail-parent]"&&marked?grid:null},querySelectorAll(){return []}};
+   const window={addEventListener(k,v){listeners[k]=v}};
+   const fetch=async url=>url.endsWith("/slots")?{ok:false}:{ok:true,json:async()=>({items:[item]})};
+   const context={document,window,location:{pathname:path},fetch,console};
+   await runInNewContext(code+"\nloadWebsitePublic()",context);
+   assert.ok(grid.children.some(c=>c.dataset.npeDynamicDetail==="mangrove"),path+" "+marked);
+   assert.notEqual(grid.hidden,true);
+  }
+ }
+ for(const [page,kind] of [["snorkeling","snorkeling"],["island-tour","island"],["west-tour","west"],["east-tour","east"]]){
+  assert.ok(readFileSync("public/"+page+".html","utf8").includes('data-npe-detail-parent="static:'+kind+'"'));
+ }
+});

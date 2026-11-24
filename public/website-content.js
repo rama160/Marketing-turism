@@ -2,12 +2,11 @@
 const el=(tag,klass,text)=>{const n=document.createElement(tag);if(klass)n.className=klass;if(text!==undefined)n.textContent=text;return n;};
 let publicActivities=[];
 const currentLanguage=()=>window.NusaLanguage?.language||document.documentElement.lang||"id";
-async function loadWebsitePublic(){
+async function loadWebsitePhotos(){
  try{
-  const [photos,activities]=await Promise.all([
-   fetch("/api/public/website/slots",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("photos");return r.json()}),
-   fetch("/api/public/website/activities",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("activities");return r.json()})
-  ]);
+  const response=await fetch("/api/public/website/slots",{cache:"no-store"});
+  if(!response.ok)throw Error("photos");
+  const photos=await response.json();
   const slots=new Map((photos.items||[]).map(x=>[x.slot,x]));
   window.__npeWebsiteSlots=slots;
   document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
@@ -22,10 +21,18 @@ async function loadWebsitePublic(){
     ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
     :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";} 
   });
+ }catch(_){/* Failed photo override must not prevent displaying published activities. */}
+}
+async function loadWebsiteActivities(){
+ try{
+  const response=await fetch("/api/public/website/activities",{cache:"no-store"});
+  if(!response.ok)throw Error("activities");
+  const activities=await response.json();
   publicActivities=activities.items||[];
   drawPublicActivities();drawPublicDetails();
- }catch(_){/* Existing hand-authored pages remain completely usable. */}
+ }catch(error){console.warn("NPE activities unavailable",error);}
 }
+function loadWebsitePublic(){return Promise.allSettled([loadWebsitePhotos(),loadWebsiteActivities()]);}
 function drawPublicActivities(){
  const root=document.querySelector("#packages .cards");
  if(!root)return;
@@ -49,15 +56,17 @@ function drawPublicActivities(){
  }
 }
 function drawPublicDetails(){
- const staticPaths={"/snorkeling.html":"static:snorkeling","/island-tour.html":"static:island","/west-tour.html":"static:west","/east-tour.html":"static:east"};
+ const staticPaths={"/snorkeling":"static:snorkeling","/island-tour":"static:island","/west-tour":"static:west","/east-tour":"static:east"};
  const section=document.querySelector("[data-npe-detail-parent]");
- const parent=section?.dataset.npeDetailParent||staticPaths[location.pathname];
- const root=section?.querySelector(".scene-grid")||(parent?document.querySelector(".scene-grid"):null);
+ const path=location.pathname.replace(/\/+$/,"").replace(/\.html$/i,"");
+ const parent=section?.dataset.npeDetailParent||staticPaths[path];
+ const root=section?.matches(".scene-grid")?section:section?.querySelector(".scene-grid")||(parent?document.querySelector(".scene-grid"):null);
  if(!parent||!root)return;
  const lang=currentLanguage()==="en"?"en":"id";
  root.querySelectorAll("[data-npe-dynamic-detail]").forEach(n=>n.remove());
  const details=publicActivities.filter(a=>a.parent_activity===parent&&a.photo_url);
- if(section)section.hidden=!details.length;
+ // A static gallery always keeps its original destination cards visible.
+ if(section&&!section.matches(".scene-grid"))section.hidden=!details.length;
  for(const a of details){
   const card=el("article","scene-card");card.dataset.npeDynamicDetail=a.id;
   const figure=el("figure"),img=el("img");img.src=a.photo_url;img.alt=a["title_"+lang];img.loading="lazy";img.decoding="async";
@@ -82,3 +91,5 @@ window.addEventListener("npe:language",()=>{
  drawPublicActivities();drawPublicDetails();
 });
 loadWebsitePublic();
+// Returning from the dashboard via browser history must refresh published details too.
+window.addEventListener("pageshow",event=>{if(event.persisted)void loadWebsitePublic();});
