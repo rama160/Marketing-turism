@@ -64,9 +64,7 @@
  </nav>
  <p class="feedback npeEditorNotice" id="cmsStudioFeedback" role="status"></p>
  <section class="npeEditorSection" data-cms-view="published">
-   <div class="npeCmsSectionHeader"><div><h4>Konten yang sudah Published</h4><p class="feedback">Pilih Edit untuk mengubah semua konten yang dikelola CMS. Versi yang sedang tampil tetap aman sampai diterbitkan ulang.</p></div><button type="button" id="cmsRefresh" class="outline small">↻ Refresh</button></div>
-   <div id="cmsPublishedList" class="npePublishedGrid" aria-live="polite"><p class="feedback">Memuat konten terbit...</p></div>
-   <div class="npeCmsSectionHeader"><div><h4>Halaman utama yang sudah terbit</h4><p class="feedback">Edit judul, deskripsi, label harga dan foto halaman lama tanpa mengubah kode.</p></div></div>
+   <div class="npeCmsSectionHeader"><div><h4>Halaman website yang sudah Published</h4><p class="feedback">Isi yang sedang tampil di website dimuat otomatis. Pilih <strong>Edit isi lengkap</strong> untuk mengubah satu bagian atau banyak bagian sekaligus.</p></div><button type="button" id="cmsRefresh" class="outline small">↻ Refresh</button></div>
    <div class="npePublishedGrid" id="cmsLegacyPublished">
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">⌂</span><div><strong>Beranda NPE</strong><small>Banner, judul dan deskripsi</small></div><button type="button" class="outline small" data-cms-page="home">Edit</button></article>
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">〰</span><div><strong>Snorkeling Nusa Penida</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="snorkeling">Edit</button></article>
@@ -74,6 +72,9 @@
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">◇</span><div><strong>West Island Tour</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="west">Edit</button></article>
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">◇</span><div><strong>East Island Tour</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="east">Edit</button></article>
    </div>
+
+   <div class="npeCmsSectionHeader"><div><h4>Aktivitas tambahan yang sudah Published</h4><p class="feedback">Aktivitas baru yang Anda terbitkan melalui Add Activity akan muncul di bawah ini.</p></div></div>
+   <div id="cmsPublishedList" class="npePublishedGrid" aria-live="polite"><p class="feedback">Memeriksa aktivitas tambahan...</p></div>
  </section>
  <section class="npeEditorSection" data-cms-view="drafts" hidden>
   <div class="npeCmsSectionHeader"><div><h4>Draft & perubahan belum diterbitkan</h4><p class="feedback">Draft dapat disimpan tanpa harga. Jika belum disetujui untuk diterbitkan, aktivitas tidak muncul di website.</p></div></div>
