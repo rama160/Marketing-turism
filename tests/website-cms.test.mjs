@@ -479,6 +479,31 @@ test("photo chooser shows only two sources, no photo descriptions and cache-safe
  assert.match(html,/id="cmsActivityMedia" hidden/);
  assert.match(html,/id="cmsAddCategory"/);
  assert.match(js,/admin\/website\/categories/);
- assert.match(html,/src="\/app\.js\?v=3\.30\.0"/);
+ assert.match(html,/src="\/app\.js\?v=3\.31\.0"/);
  assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
+});
+
+
+test("server-side SEO keeps current NPE content and published activity discovery crawlable",async()=>{
+ const {renderLegacySEOPage}=await import("../src/website-cms.mjs");
+ const source='<html lang="id"><head><title>Old</title><meta name="description" content="Old"></head><body><main><h1 data-copy="westPage.title">Old heading</h1></main></body></html>';
+ const page=renderLegacySEOPage(source,"/west-tour.html","https://example.com",{"westPage.title":"Wisata Barat Nusa Penida","westPage.lead":"Kelingking dan Broken Beach."},[]);
+ assert.match(page,/Wisata Barat Nusa Penida/);
+ assert.match(page,/Kelingking dan Broken Beach/);
+ assert.match(page,/application\/ld\+json/);
+ assert.match(page,/BreadcrumbList/);
+ assert.match(page,/og:image/);
+ const roots=[{slug:"nusa-lembongan-island-tour",title_id:"Wisata Nusa Lembongan",title_en:"Nusa Lembongan Tour"}];
+ const home=renderLegacySEOPage(source,"/","https://example.com",{},roots);
+ assert.match(home,/href="\/id\/experiences\/nusa-lembongan-island-tour"/);
+ const unsafe=renderLegacySEOPage(source,"/west-tour.html","https://example.com",{"westPage.title":"<img src=x onerror=alert(1)>"},[]);
+ assert.doesNotMatch(unsafe,/<img src=x/);
+ assert.match(unsafe,/&lt;img/);
+});
+test("published experience SEO has visible child links, image previews and structured breadcrumbs",()=>{
+ const a={...draft,photo_url:"/photos/website/123"};
+ const html=renderExperiencePage(a,"en","https://example.com",[a,{...a,slug:"child",parent_activity:"activity:"+a.slug,title_en:"Scenic Destination"}]);
+ assert.match(html,/BreadcrumbList/);
+ assert.match(html,/og:image/);
+ assert.match(html,/href="\/en\/experiences\/child"/);
 });
