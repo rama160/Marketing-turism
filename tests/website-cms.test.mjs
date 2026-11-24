@@ -542,3 +542,20 @@ test("English tour sitemap links match exact Indonesian counterparts",async()=>{
  assert.match(xml,/hreflang="id"/);
  assert.match(xml,/hreflang="en"/);
 });
+
+test("English SEO tour SSR reflects owner-approved CMS copy without duplicating site data",()=>{
+ const initial=renderEnglishTourPage("west","https://example.com");
+ const updated=renderEnglishTourPage("west","https://example.com",{
+  "westPage.title":"West Coast Adventures",
+  "westPage.lead":"Beautiful cliffs with local guides.",
+  "westPage.description":"The verified operator will confirm our scenic route."
+ });
+ assert.notEqual(initial,updated);
+ assert.match(updated,/West Coast Adventures/);
+ assert.match(updated,/Beautiful cliffs with local guides/);
+ assert.match(updated,/The verified operator will confirm/);
+ assert.match(updated,/Nusa Penida West Tour|West Nusa Penida Tour/);
+ const unsafe=renderEnglishTourPage("east","https://example.com",{"eastPage.lead":"<script>alert(1)</script>"});
+ assert.doesNotMatch(unsafe,/<script>alert\(1\)<\/script>/);
+ assert.match(unsafe,/&lt;script&gt;/);
+});

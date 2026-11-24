@@ -319,9 +319,21 @@ const englishTourPages={
  "island":{id:"/island-tour.html",title:"Nusa Penida Island Tour | Compare West & East Routes",h1:"Nusa Penida Island Tours: West or East?",summary:"Compare West Nusa Penida cliffs and East Nusa Penida beaches before choosing a private or available sharing tour.",description:"The West route may feature Kelingking, Broken Beach, Angel's Billabong and Crystal Bay. The East route highlights Diamond Beach, Atuh Beach and Rumah Pohon viewpoints. We can arrange private trips for solo travelers or groups, subject to covering vehicle and operator costs. Sharing arrangements depend on local operator availability. Snorkeling and island touring are planned for separate days.",photo:"diamond-beach",credit:"Stryn",source:"https://commons.wikimedia.org/wiki/File:Diamond_Beach_in_Nusa_Penida%2C_Bali.jpg",highlights:["West: cliffs, iconic rock arches and Crystal Bay","East: beaches, viewpoints and limestone scenery","Private or available sharing arrangements"],questions:[["How many guests are permitted in one car?","Up to seven, only where the vehicle has verified safe seating."],["Is lunch included?","Lunch and other additions depend on the confirmed quote, not automatically included."],["Can I book a private trip alone?","Yes, subject to a quote that covers fixed vehicle costs."]]}
 };
 export const englishTourKeys=Object.freeze(Object.keys(englishTourPages));
-export function renderEnglishTourPage(key,origin){
- const page=englishTourPages[key];
- if(!page)return null;
+export function renderEnglishTourPage(key,origin,siteCopy={}){
+ const fallback=englishTourPages[key];
+ if(!fallback)return null;
+ const page={...fallback};
+ const cmsKeys={
+  "":{summary:"hero.description",description:"hero.description"},
+  west:{h1:"westPage.title",summary:"westPage.lead",description:"westPage.description"},
+  east:{h1:"eastPage.title",summary:"eastPage.lead",description:"eastPage.description"},
+  snorkeling:{h1:"snorkelingPage.title",summary:"snorkelingPage.lead",description:"snorkelingPage.description"},
+  island:{h1:"islandPage.title",summary:"islandPage.lead",description:"islandPage.description"}
+ };
+ for(const [field,copyKey] of Object.entries(cmsKeys[key])){
+  const value=siteCopy[copyKey];
+  if(typeof value==="string"&&value.trim())page[field]=value.trim().slice(0,1200);
+ }
  const route="/en/tours"+(key?"/"+key:"");
  const canonical=origin+route,indonesian=origin+page.id;
  const crumb=key?{ "@type":"BreadcrumbList","@id":canonical+"#breadcrumb",itemListElement:[{"@type":"ListItem",position:1,name:"Nusa Penida Experiences",item:origin+"/"},{"@type":"ListItem",position:2,name:page.h1,item:canonical}]}:null;

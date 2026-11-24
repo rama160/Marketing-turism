@@ -177,7 +177,8 @@ async function route(req,env,ctx){
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
  const englishTour=path.match(/^\/en\/tours(?:\/(west|east|island|snorkeling))?\/?$/);
  if(englishTour&&method==="GET"){
-  const html=renderEnglishTourPage(englishTour[1]||"",u.origin);
+  const seoCopy=await publicSiteContent(db,"en");
+  const html=renderEnglishTourPage(englishTour[1]||"",u.origin,seoCopy.items);
   return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=600","x-content-type-options":"nosniff"}});
  }
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
