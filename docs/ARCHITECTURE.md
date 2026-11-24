@@ -1,3 +1,8 @@
+## v3.28.0 — Consistent homepage tour images
+The Snorkeling 3 Spots showcase and main snorkeling package use the existing snorkeling cover slot. Every static West, East and Snorkeling homepage destination thumbnail uses its existing per-destination gallery slot; there are no new database slots or migrations. Original source images remain fallbacks. Homepage mixed-source credits distinguish original and owner replacement images, and replaced image fallback state is cleared. Cover controls are exposed in the corresponding page editor. Regression tests check each mapping and exercise the public replacement handler with multiple uses of one slot.
+
+---
+
 ## v3.27.0 — Single-entry activity photo workflow
 The existing quick-photo dialog is reused by the activity/detail editor, retaining the active form and binding only the selected media ID until the normal save/publish. Fresh upload metadata is derived from existing bilingual titles or filename; standalone gallery uploads request only a file and rights confirmation. Saved media reuse does not re-upload or re-attest rights. Static slot replacements retain their explicit publish operation. No schema changes or changes to existing media, content, bookings or prices.
 

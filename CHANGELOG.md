@@ -1,3 +1,11 @@
+## [3.28.0] — 2026-11-24
+- Synchronize the Snorkeling 3 Spots homepage cover with the existing snorkeling package photo.
+- Synchronize all original homepage destination thumbnails with their corresponding destination editor photos.
+- Expose cover controls inside the tour page editor, refresh image fallback state, and clarify mixed photo credits.
+- Preserve existing photos and database assignments; no migration.
+
+---
+
 ## [3.27.0] — 2026-11-24
 - Choose or upload an activity/detail photo directly in the existing editor without repeating title or description fields.
 - Generate photo title and bilingual alt text automatically from the existing content title or file name.

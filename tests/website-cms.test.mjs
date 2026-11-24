@@ -408,3 +408,31 @@ test("activity photo picker uses shared dialog and never asks for duplicate desc
  assert.match(flow,/return;/);
  assert.doesNotMatch(flow,/cmsForm\.reset|loadWebsiteCMS|cmsView|admin\/website\/slots|publishWebsiteActivity/);
 });
+
+test("every homepage tour cover and destination thumbnail uses its corresponding CMS photo slot",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync("public/index.html","utf8");
+ const expected={west:["west","west-kelingking","west-broken-beach","west-angels-billabong","west-crystal-bay"],east:["east","east-diamond-beach","east-atuh-beach","east-tree-house","east-atuh-beach"],sea:["snorkeling","snorkeling-manta-bay","snorkeling-manta-point","snorkeling-gamat-bay","snorkeling-crystal-bay"]};
+ for(const [group,slots] of Object.entries(expected)){
+  const card=html.match(new RegExp('<article class="spot-showcase '+group+'-showcase">[\\s\\S]*?<\\/article>'))[0];
+  const imgs=[...card.matchAll(/<img\b[^>]*>/g)].map(m=>m[0]);
+  assert.deepEqual(imgs.map(img=>img.match(/data-npe-slot="([^"]+)"/)?.[1]),slots);
+ }
+ assert.equal([...html.matchAll(/data-npe-slot="snorkeling"/g)].length,2);
+ const js=readFileSync("public/app.js","utf8");
+ assert.match(js,/"snorkeling": \[\s*"snorkeling",\s*"snorkeling-manta-bay"/);
+ assert.match(js,/Cover Snorkeling \(Paket & 3 Spots\)/);
+});
+test("public photo replacement updates both snorkeling covers and distinct spot images",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const {runInNewContext}=await import("node:vm");
+ const js=readFileSync("public/website-content.js","utf8");
+ const helper=js.slice(0,js.indexOf("async function loadWebsiteActivities"));
+ const imgs=["snorkeling","snorkeling","snorkeling-manta-point","west-crystal-bay"].map(slot=>({dataset:{npeSlot:slot,photoFallbackStage:"github",localPhotoFailed:"1"},src:"old",alt:"old",removeAttribute(){},closest(){return null}}));
+ const slots=[{slot:"snorkeling",url:"/photos/website/cover",alt_id:"Snorkeling",alt_en:"Snorkeling"},{slot:"snorkeling-manta-point",url:"/photos/website/manta",alt_id:"Manta Point",alt_en:"Manta Point"}];
+ const context={document:{documentElement:{lang:"id"},querySelectorAll(s){return s==="img[data-npe-slot]"?imgs:[]}},window:{},fetch:async()=>({ok:true,json:async()=>({items:slots})})};
+ await runInNewContext(helper+"\nloadWebsitePhotos()",context);
+ assert.deepEqual(imgs.map(x=>x.src),["/photos/website/cover","/photos/website/cover","/photos/website/manta","old"]);
+ assert.equal(imgs[0].dataset.photoFallbackStage,undefined);
+ assert.equal(imgs[3].dataset.photoFallbackStage,"github");
+});
