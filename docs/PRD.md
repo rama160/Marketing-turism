@@ -1,3 +1,12 @@
+## FR-53–FR-57 — NPE Gallery reuse and deletion (v3.22.0)
+- FR-53 A visible Galeri NPE shortcut and tab list owner-uploaded photos in a searchable grid independently of other CMS endpoints.
+- FR-54 Every Ganti Foto offers both saved Galeri NPE images and new images from the phone without asking again for the location.
+- FR-55 Identical media uploads return the original saved media ID instead of blocking the user with a 409 duplicate message.
+- FR-56 Hapus requires explicit confirmation and works only if a photo is not referenced by existing webpage slots, gallery spots, and any saved activity draft/publication.
+- FR-57 Authenticated deletion affects only the website's dedicated media library, preserving old tour photos, SEO, booking/rates/quotes, Meta integrations and operator media.
+
+---
+
 ## FR-52 — Direct "Ganti Foto" to device gallery (v3.21.0)
 - Given an authenticated owner views the Published cards or page photo tiles, tapping "Ganti Foto" must open the native image selection immediately, not a second CMS Editor/Media tab.
 - The selected exact photo slot must remain bound throughout preview and publication, with no second location selection.
