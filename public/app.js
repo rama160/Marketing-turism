@@ -1251,12 +1251,218 @@ $("#cmsPublishSlot").onclick=async()=>{
 };
 // Friendly grouped editor for existing published pages, using the original versioned text CMS API.
 const cmsPageMap={
- home:["hero.eyebrow","hero.title","hero.subtitle","hero.description","hero.cta","packages.eyebrow","packages.title","packages.description","regions.eyebrow","regions.title","regions.description","contact.eyebrow","contact.title","contact.description","contact.notice"],
- snorkeling:["snorkeling.title","snorkeling.description","price.snorkeling","snorkelingPage.eyebrow","snorkelingPage.title","snorkelingPage.lead","snorkelingPage.description"],
- island:["island.title","island.description","price.island","islandPage.eyebrow","islandPage.title","islandPage.lead","islandPage.description"],
- west:["west.title","west.description","price.west","westPage.eyebrow","westPage.title","westPage.lead","westPage.description"],
- east:["east.title","east.description","price.east","eastPage.eyebrow","eastPage.title","eastPage.lead","eastPage.description"]
+ "home": [
+  "hero.eyebrow",
+  "hero.title",
+  "hero.subtitle",
+  "hero.description",
+  "hero.cta",
+  "packages.eyebrow",
+  "packages.title",
+  "packages.description",
+  "regions.eyebrow",
+  "regions.title",
+  "regions.description",
+  "contact.eyebrow",
+  "contact.title",
+  "contact.description",
+  "contact.notice",
+  "sea.title",
+  "sea.description",
+  "whatsapp.eyebrow",
+  "whatsapp.heading",
+  "whatsapp.description",
+  "whatsapp.disclaimer"
+ ],
+ "snorkeling": [
+  "snorkeling.title",
+  "snorkeling.description",
+  "price.snorkeling",
+  "snorkelingPage.eyebrow",
+  "snorkelingPage.title",
+  "snorkelingPage.lead",
+  "snorkelingPage.description",
+  "snorkelingSpot.mantaBay.title",
+  "snorkelingSpot.mantaBay.description",
+  "snorkelingSpot.mantaPoint.title",
+  "snorkelingSpot.mantaPoint.description",
+  "snorkelingSpot.crystalBay.title",
+  "snorkelingSpot.crystalBay.description",
+  "snorkelingSpot.gamatBay.title",
+  "snorkelingSpot.gamatBay.description"
+ ],
+ "island": [
+  "island.title",
+  "island.description",
+  "price.island",
+  "islandPage.eyebrow",
+  "islandPage.title",
+  "islandPage.lead",
+  "islandPage.description",
+  "islandSpot.west.title",
+  "islandSpot.west.description",
+  "islandSpot.east.title",
+  "islandSpot.east.description"
+ ],
+ "west": [
+  "west.title",
+  "west.description",
+  "price.west",
+  "westPage.eyebrow",
+  "westPage.title",
+  "westPage.lead",
+  "westPage.description",
+  "westSpot.kelingking.title",
+  "westSpot.kelingking.description",
+  "westSpot.brokenBeach.title",
+  "westSpot.brokenBeach.description",
+  "westSpot.angelsBillabong.title",
+  "westSpot.angelsBillabong.description",
+  "westSpot.crystalBay.title",
+  "westSpot.crystalBay.description"
+ ],
+ "east": [
+  "east.title",
+  "east.description",
+  "price.east",
+  "eastPage.eyebrow",
+  "eastPage.title",
+  "eastPage.lead",
+  "eastPage.description",
+  "eastSpot.diamondBeach.title",
+  "eastSpot.diamondBeach.description",
+  "eastSpot.atuhBeach.title",
+  "eastSpot.atuhBeach.description",
+  "eastSpot.treeHouse.title",
+  "eastSpot.treeHouse.description"
+ ]
 };
+const cmsPagePhotoSlots={
+ "home": [
+  "hero",
+  "snorkeling",
+  "island",
+  "west",
+  "east"
+ ],
+ "snorkeling": [
+  "snorkeling-manta-bay",
+  "snorkeling-manta-point",
+  "snorkeling-crystal-bay",
+  "snorkeling-gamat-bay"
+ ],
+ "island": [
+  "island-west",
+  "island-east"
+ ],
+ "west": [
+  "west-kelingking",
+  "west-broken-beach",
+  "west-angels-billabong",
+  "west-crystal-bay"
+ ],
+ "east": [
+  "east-diamond-beach",
+  "east-atuh-beach",
+  "east-tree-house"
+ ]
+};
+const cmsPageSlotLabels={
+ "hero": "Banner utama",
+ "snorkeling": "Kartu Snorkeling",
+ "island": "Kartu Island Tour",
+ "west": "Kartu Wisata Barat",
+ "east": "Kartu Wisata Timur",
+ "snorkeling-manta-bay": "Manta Bay",
+ "snorkeling-manta-point": "Manta Point",
+ "snorkeling-crystal-bay": "Crystal Bay",
+ "snorkeling-gamat-bay": "Gamat Bay",
+ "island-west": "Island Tour · Barat",
+ "island-east": "Island Tour · Timur",
+ "west-kelingking": "Kelingking Beach",
+ "west-broken-beach": "Broken Beach",
+ "west-angels-billabong": "Angel’s Billabong",
+ "west-crystal-bay": "Crystal Bay",
+ "east-diamond-beach": "Diamond Beach",
+ "east-atuh-beach": "Atuh Beach",
+ "east-tree-house": "Rumah Pohon"
+};
+const cmsPublishedPages=[
+ [
+  "home",
+  "Beranda NPE",
+  "hero.title",
+  "hero.description",
+  "hero",
+  "/"
+ ],
+ [
+  "snorkeling",
+  "Snorkeling Nusa Penida",
+  "snorkelingPage.title",
+  "snorkelingPage.lead",
+  "snorkeling",
+  "/snorkeling.html"
+ ],
+ [
+  "island",
+  "Island Tour Nusa Penida",
+  "islandPage.title",
+  "islandPage.lead",
+  "island",
+  "/island-tour.html"
+ ],
+ [
+  "west",
+  "West Island Tour",
+  "westPage.title",
+  "westPage.lead",
+  "west",
+  "/west-tour.html"
+ ],
+ [
+  "east",
+  "East Island Tour",
+  "eastPage.title",
+  "eastPage.lead",
+  "east",
+  "/east-tour.html"
+ ]
+];
+function cmsCurrentPhoto(slot){
+ const overridden=cmsPhotoOverrides.get(slot),fallback=cmsPublishedSnapshot.photos?.[slot];
+ return overridden?.url?{url:overridden.url,alt:overridden.alt_id||slot}:fallback||null;
+}
+function drawPublishedPageCards(){
+ const container=$("#cmsLegacyPublished");if(!container||!cmsPublishedSnapshot.id?.["hero.title"])return;
+ container.innerHTML=cmsPublishedPages.map(([id,label,titleKey,summaryKey,slot,url])=>{
+  const name=cmsEffectiveValue(titleKey,"id")||label,desc=cmsEffectiveValue(summaryKey,"id");
+  const photo=cmsCurrentPhoto(slot),price=cmsEffectiveValue("price."+id,"id");
+  return '<article class="npeCmsPublishedCard npeLegacyPublishedCard">'+
+   '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto</div>')+'</div>'+
+   '<div class="npeCmsPublishedInfo"><small>Halaman publik · Terbit</small><h4>'+esc(name)+'</h4><p>'+esc(desc.slice(0,180))+'</p>'+
+   (price?'<strong class="npeCmsPublishedPrice">'+esc(price)+'</strong>':'')+
+   '<div class="npeCmsCardActions"><button type="button" class="primary small" data-cms-page="'+esc(id)+'">✎ Edit isi lengkap</button>'+
+   '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Lihat ↗</a></div></div></article>';
+ }).join("");
+ container.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
+}
+function renderCmsPagePhotos(){
+ const root=$("#cmsPagePhotos");if(!root)return;
+ const page=$("#cmsPagePicker").value;
+ const slots=cmsPagePhotoSlots[page]||[];
+ root.innerHTML=slots.map(slot=>{
+  const photo=cmsCurrentPhoto(slot);
+  return '<article class="npeCmsPhotoTile">'+
+   (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersedia</div>')+
+   '<div><strong>'+esc(cmsPageSlotLabels[slot]||slot)+'</strong>'+
+   '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'">Ganti foto</button></div></article>';
+ }).join("");
+ root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>{
+  $("#cmsPhotoSlot").value=b.dataset.cmsEditPhoto;npeCmsPhotoReturn=false;cmsView("media");
+  say("#cmsMediaFeedback","Ganti foto untuk "+(cmsPageSlotLabels[b.dataset.cmsEditPhoto]||b.dataset.cmsEditPhoto)+". Foto lain tidak berubah.",true);
+ });
+}
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
  $("#cmsPageFilter").value="";
