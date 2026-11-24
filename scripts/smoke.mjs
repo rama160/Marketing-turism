@@ -231,7 +231,7 @@ if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+d
 // Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
 if(!dashboard.includes('id="tab-growth"')||!dashboard.includes('id="growthResearch"')||
  !dashboard.includes('data-tab="growth"')||!app.includes('admin/growth')||
- !app.includes("function renderGrowth")||!langJS.includes("/api/public/intent"))
+ !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.33.0")).includes("/api/public/intent"))
  throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
 if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
  throw Error("Customer acquisition mobile styling absent");
