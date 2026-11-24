@@ -63,6 +63,22 @@
   <button type="button" data-cms-view-button="media" aria-pressed="false">▧ Foto & Media</button>
  </nav>
  <p class="feedback npeEditorNotice" id="cmsStudioFeedback" role="status"></p>
+ <!-- Direct photo replacement: the file chooser opens from the exact photo button, without Media editor navigation. -->
+ <input id="cmsQuickPhotoFile" type="file" accept="image/*" hidden aria-label="Pilih foto dari galeri">
+ <dialog id="cmsQuickPhotoDialog" class="npeQuickPhotoDialog" aria-labelledby="cmsQuickPhotoHeading">
+   <div class="npeQuickPhotoDialogBody">
+     <div class="npeCmsSectionHeader"><div><h4 id="cmsQuickPhotoHeading">Ganti Foto</h4><p id="cmsQuickPhotoTarget" class="feedback"></p></div><button type="button" id="cmsQuickPhotoClose" class="outline small" aria-label="Tutup">✕</button></div>
+     <img id="cmsQuickPhotoPreview" class="npeQuickPhotoPreview" alt="Pratinjau foto baru">
+     <div class="npeQuickPhotoFields">
+       <label>Nama foto<input id="cmsQuickPhotoTitle" type="text" maxlength="120" minlength="2" required></label>
+       <label>Deskripsi foto (Indonesia)<input id="cmsQuickPhotoAltId" type="text" maxlength="180" minlength="2" required></label>
+       <label>Photo description (English)<input id="cmsQuickPhotoAltEn" type="text" maxlength="180" minlength="2" required></label>
+       <label class="check"><input id="cmsQuickPhotoRights" type="checkbox"> Saya memiliki izin penggunaan komersial atas foto ini</label>
+     </div>
+     <p id="cmsQuickPhotoFeedback" class="feedback" role="status" aria-live="polite"></p>
+     <div class="npeQuickPhotoActions"><button type="button" id="cmsQuickPhotoCancel" class="outline">Batal</button><button type="button" id="cmsQuickPhotoSave" class="primary">Simpan & Terbitkan Foto</button></div>
+   </div>
+ </dialog>
  <section class="npeEditorSection" data-cms-view="published">
    <div class="npeCmsSectionHeader"><div><h4>Halaman website yang sudah Published</h4><p class="feedback">Isi yang sedang tampil di website dimuat otomatis. Pilih <strong>Edit isi lengkap</strong> untuk mengubah satu bagian atau banyak bagian sekaligus.</p></div><button type="button" id="cmsRefresh" class="outline small">↻ Refresh</button></div>
    <div class="npePublishedGrid" id="cmsLegacyPublished">
