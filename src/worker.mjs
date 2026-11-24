@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,renderLegacySEOPage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -171,15 +171,27 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.30.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.31.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
+ const legacyPages=new Set(["/","/index.html","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"]);
+ if(method==="GET"&&legacyPages.has(path)){
+  const original=await env.ASSETS.fetch(new Request(new URL(path==="/"?"/index.html":path,u.origin),req));
+  if(!original.ok)return original;
+  const [copy,published]=await Promise.all([publicSiteContent(db,"id"),publicWebsiteActivities(db)]);
+  const body=renderLegacySEOPage(await original.text(),path,u.origin,copy.items,published.items);
+  const headers=new Headers(original.headers);
+  headers.set("content-type","text/html; charset=utf-8");
+  headers.set("cache-control","public,max-age=120");
+  headers.set("x-content-type-options","nosniff");
+  return new Response(body,{status:200,headers});
+ }
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
  if(experience&&method==="GET"){
   const published=await findPublishedExperience(db,experience[2]);
   if(!published)return new Response("Experience not found",{status:404,headers:{"cache-control":"no-store"}});
-  return new Response(renderExperiencePage(published,experience[1],u.origin),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
+  return new Response(renderExperiencePage(published,experience[1],u.origin,(await publicWebsiteActivities(db)).items),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
  }
  if(path==="/api/public/website/activities"&&method==="GET")return json(await publicWebsiteActivities(db));
  if(path==="/api/public/website/slots"&&method==="GET")return json(await getWebsiteSlots(db));
