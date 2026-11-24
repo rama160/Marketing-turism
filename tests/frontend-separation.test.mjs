@@ -44,9 +44,10 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.ok(page.includes('id="dashPriorities"'));
  assert.ok(page.includes('id="tab-analytics"'));
  assert.ok(page.includes('id="dashAnalyticsStats"'));
- for(const name of ["growth","campaigns","whatsapp","operators","rates","quotes","market","website","marketing"]){
+ for(const name of ["growth","campaigns","whatsapp","operators","rates","quotes","market","marketing"]){
   assert.ok(script.includes(name+':["')||script.includes(name+':["'),"Missing compact subpage configuration for "+name);
  }
+ assert.ok(page.includes('id="cmsWebsiteNav"')&&page.includes('data-cms-view="published"'),"Website has its own Published-first navigator");
  assert.ok(script.includes('split.classList.add("dashCompactSplit")'),"Required forms need compact split navigation");
  assert.ok(script.includes("container.appendChild(wrap)"),"Original form elements must be moved, not replaced");
  assert.ok(script.includes('wrappers.forEach((el,i)=>el.hidden=i!==index)'),"Only selected subpage should be visible");
