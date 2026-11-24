@@ -346,3 +346,18 @@
 .dashboardPage .npeLegacyPublishedCard .npeCmsPublishedImage{min-height:195px}
 .dashboardPage #cmsPageSummary{padding:12px 14px;border-radius:10px;background:#eaf6f3;color:#1f6063;margin:0 0 12px}
 @media(max-width:720px){.dashboardPage .npeCmsPagePhotos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* v3.21: direct Android gallery -> preview -> publish a single photo without navigating away. */
+.dashboardPage .npeQuickPhotoDialog{border:0;border-radius:17px;width:min(94vw,540px);max-height:min(91dvh,820px);overflow:auto;padding:0;box-shadow:0 26px 90px #022a3561;color:#234852;background:#fff}
+.dashboardPage .npeQuickPhotoDialog::backdrop{background:rgba(3,24,34,.72);backdrop-filter:blur(4px)}
+.dashboardPage .npeQuickPhotoDialogBody{display:grid;gap:14px;padding:19px}
+.dashboardPage .npeQuickPhotoDialog .npeCmsSectionHeader{margin-bottom:0}
+.dashboardPage .npeQuickPhotoPreview{display:block;width:100%;max-height:340px;aspect-ratio:16/9;object-fit:contain;border:1px solid #d5e6e8;border-radius:11px;background:#f3f7f8}
+.dashboardPage .npeQuickPhotoFields{display:grid;gap:10px}
+.dashboardPage .npeQuickPhotoFields label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#375863}
+.dashboardPage .npeQuickPhotoFields input:not([type=checkbox]){width:100%;box-sizing:border-box;max-width:100%}
+.dashboardPage .npeQuickPhotoFields label.check{display:flex;align-items:flex-start;gap:10px;font-weight:500;line-height:1.5}
+.dashboardPage .npeQuickPhotoFields label.check input{flex:none;margin-top:4px}
+.dashboardPage .npeQuickPhotoActions{display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:-19px;background:#fffffff5;padding:12px 0 4px}
+.dashboardPage .npeQuickPhotoActions button{min-height:42px}
+@media(max-width:600px){.dashboardPage .npeQuickPhotoDialogBody{padding:13px}.dashboardPage .npeQuickPhotoActions button{flex:1}}
