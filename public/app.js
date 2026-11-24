@@ -1021,7 +1021,7 @@ const cmsRead=name=>{const el=cmsField(name);return el?.type==="checkbox"?el.che
 const cmsCategories={SNORKELING:"Snorkeling",ISLAND_TOUR:"Island Tour",TRANSPORT:"Fast Boat / Transport",OTHER:"Aktivitas lainnya"};
 const cmsUnitId={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"};
 const cmsIdPrice=n=>new Intl.NumberFormat("id-ID").format(n);
-const cmsDefaultFields=["slug","category","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
+const cmsDefaultFields=["slug","category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
 function cmsView(name){
  if(!["published","drafts","activity","pages","media"].includes(name))return;
  npeCmsView=name;
@@ -1072,8 +1072,27 @@ function cmsLegacyUnit(p){
  const x=p?.price_label_id||"";
  return /mobil/i.test(x)?"CAR":/grup/i.test(x)?"GROUP":/tiket/i.test(x)?"TICKET":"PERSON";
 }
+const cmsStaticParents=[["static:snorkeling","Snorkeling","SNORKELING"],["static:island","Island Tour","ISLAND_TOUR"],["static:west","West Tour","ISLAND_TOUR"],["static:east","East Tour","ISLAND_TOUR"]];
+function cmsParentOptions(selected=""){
+ const options=[...cmsStaticParents,...npeCmsActivities.filter(a=>a.status==="PUBLISHED"&&a.published&&!a.published.parent_activity&&a.id!==npeCmsEditing?.id).map(a=>["activity:"+a.slug,a.published.title_id,a.published.category])];
+ const sel=cmsField("parent_activity");
+ sel.innerHTML='<option value="">Aktivitas utama (beranda)</option>'+options.map(([key,label,cat])=>'<option value="'+esc(key)+'" data-category="'+esc(cat)+'">'+esc(label)+'</option>').join("");
+ if(selected&&!options.some(x=>x[0]===selected))sel.add(new Option("Induk tidak aktif · "+selected,selected));
+ sel.value=selected;
+}
+function cmsSyncParent(){
+ const sel=cmsField("parent_activity");
+ const cat=sel.selectedOptions[0]?.dataset.category;
+ if(cat)cmsSet("category",cat);
+}
+$("#cmsParentActivity").addEventListener("change",()=>{cmsSyncParent();refreshActivityPreview();});
+function startWebsiteDetail(parent){
+ resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();
+ $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
+}
 function resetWebsiteForm(){
  npeCmsReturn="drafts";npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
+ cmsParentOptions();cmsField("parent_activity").disabled=false;
  cmsSet("price_unit","PERSON");cmsSet("price_from",true);
  cmsField("slug").readOnly=false;$("#cmsFormHeading").textContent="Tambah Aktivitas Baru";
  $("#cmsEditingStatus").textContent="Draft Baru";$("#cmsActivityFeedback").textContent="";
@@ -1083,6 +1102,7 @@ function editWebsiteActivity(id,from="published"){
  const a=npeCmsActivities.find(x=>x.id===id);if(!a)return;
  npeCmsReturn=from;npeCmsEditing=a;npeCmsPriceCleared=false;cmsForm.reset();
  const d=a.draft||a.published||{};
+ cmsParentOptions(d.parent_activity||"");cmsField("parent_activity").disabled=true;
  for(const [k,v] of Object.entries(d))cmsSet(k,v);
  if(d.price_amount===null||d.price_amount===undefined)cmsSet("price_amount",cmsParseLegacyPrice(d));
  if(!d.price_unit)cmsSet("price_unit",cmsLegacyUnit(d));
@@ -1098,14 +1118,16 @@ function cmsActivityCard(a,isPublished){
  const img=npeCmsMedia.find(x=>x.id===d.media_id);
  const name=d.title_id||d.title_en||a.slug;
  const price=d.price_verified?(d.price_label_id||""):"";
+ const parent=d.parent_activity? (cmsStaticParents.find(x=>x[0]===d.parent_activity)?.[1]||npeCmsActivities.find(x=>"activity:"+x.slug===d.parent_activity)?.published?.title_id||d.parent_activity):"";
  const badge=isPublished?(a.pending_changes?"Published · Ada revisi draft":"Published"):(a.status==="ARCHIVED"?"Arsip":"Draft");
  return '<article class="npeCmsPublishedCard">'+
   '<div class="npeCmsPublishedImage">'+(img?'<img src="'+esc(img.url)+'" loading="lazy" alt="'+esc(img.alt_id)+'">':'<div class="npeCmsNoImage">▧ Foto</div>')+'</div>'+
-  '<div class="npeCmsPublishedInfo"><small>'+esc(cmsCategories[d.category]||d.category||"Aktivitas")+' · '+esc(badge)+'</small><h4>'+esc(name)+'</h4>'+
+  '<div class="npeCmsPublishedInfo"><small>'+esc(cmsCategories[d.category]||d.category||"Aktivitas")+' · '+esc(badge)+(parent?' · Detail: '+esc(parent):'')+'</small><h4>'+esc(name)+'</h4>'+
   '<p>'+esc((d.summary_id||d.summary_en||"").slice(0,170))+'</p>'+
   '<strong class="npeCmsPublishedPrice">'+(price?esc(price):'<span>Harga belum ditampilkan</span>')+'</strong>'+
   '<div class="npeCmsCardActions">'+
   '<button class="primary small" data-cms-edit="'+esc(a.id)+'" data-source="'+(isPublished?"published":"drafts")+'">✎ Edit semua elemen</button>'+
+  (isPublished&&!d.parent_activity?'<button type="button" class="outline small" data-cms-add-detail="activity:'+esc(a.slug)+'">+ Tambah Detail</button>':'')+
   (isPublished?'<a class="outline small" target="_blank" rel="noopener" href="/id/experiences/'+encodeURIComponent(a.slug)+'">↗ Lihat</a>':'')+
   ((a.status==="DRAFT"||a.pending_changes||a.status==="ARCHIVED")?'<button class="outline small" data-cms-publish="'+esc(a.id)+'">Publish</button>':'')+
   (isPublished?'<button class="outline small" data-cms-archive="'+esc(a.id)+'">Arsipkan</button>':'')+
@@ -1120,6 +1142,7 @@ function drawWebsiteCMS(){
  $("#cmsDraftList").innerHTML=drafts.length?drafts.map(a=>cmsActivityCard(a,false)).join(""):'<div class="npeCmsEmpty">Belum ada draft. Tekan <strong>Add Activity</strong> untuk membuat aktivitas baru.</div>';
  for(const root of [$("#cmsPublishedList"),$("#cmsDraftList")]){
   root.querySelectorAll("[data-cms-edit]").forEach(b=>b.onclick=()=>editWebsiteActivity(b.dataset.cmsEdit,b.dataset.source));
+  root.querySelectorAll("[data-cms-add-detail]").forEach(b=>b.onclick=()=>startWebsiteDetail(b.dataset.cmsAddDetail));
   root.querySelectorAll("[data-cms-publish]").forEach(b=>b.onclick=()=>cmsPublishActivity(b.dataset.cmsPublish));
   root.querySelectorAll("[data-cms-archive]").forEach(b=>b.onclick=()=>cmsArchiveActivity(b.dataset.cmsArchive));
  }
@@ -1130,6 +1153,7 @@ function drawWebsiteCMS(){
   if(npeCmsMedia.some(m=>m.id===old))input.value=old;
  }
  renderNpeMediaGallery();
+ renderCmsPageDetails();
  refreshActivityPreview();
 }
 function renderNpeMediaGallery(){
@@ -1634,17 +1658,32 @@ function drawPublishedPageCards(){
    '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto</div>')+'</div>'+
    '<div class="npeCmsPublishedInfo"><small>Halaman publik · Terbit</small><h4>'+esc(name)+'</h4><p>'+esc(desc.slice(0,180))+'</p>'+
    (price?'<strong class="npeCmsPublishedPrice">'+esc(price)+'</strong>':'')+
+   (id!=="home"?'<button type="button" class="outline small" data-cms-add-detail="static:'+esc(id)+'">+ Tambah Detail</button>':'')+
    '<div class="npeCmsCardActions"><button type="button" class="primary small" data-cms-page="'+esc(id)+'">✎ Edit isi lengkap</button>'+ 
    '<button type="button" class="outline small" data-cms-quick-photo="'+esc(slot)+'">▧ Ganti Foto</button>'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Lihat ↗</a></div></div></article>';
  }).join("");
  container.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
+ container.querySelectorAll("[data-cms-add-detail]").forEach(b=>b.onclick=()=>startWebsiteDetail(b.dataset.cmsAddDetail));
  container.querySelectorAll("[data-cms-quick-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsQuickPhoto));
+}
+function renderCmsPageDetails(){
+ const page=$("#cmsPagePicker").value,parent="static:"+page,section=$("#cmsPageDetails");
+ section.hidden=!cmsStaticParents.some(x=>x[0]===parent);
+ if(section.hidden)return;
+ $("#cmsAddPageDetail").onclick=()=>startWebsiteDetail(parent);
+ const root=$("#cmsPageDetailList");
+ const children=npeCmsActivities.filter(a=>a.draft?.parent_activity===parent||a.published?.parent_activity===parent);
+ root.innerHTML=children.length?children.map(a=>cmsActivityCard(a,a.status==="PUBLISHED"&&!!a.published)).join(""):'<p class="feedback">Belum ada detail tambahan. Tekan Tambah Detail.</p>';
+ root.querySelectorAll("[data-cms-edit]").forEach(b=>b.onclick=()=>editWebsiteActivity(b.dataset.cmsEdit,"pages"));
+ root.querySelectorAll("[data-cms-publish]").forEach(b=>b.onclick=()=>cmsPublishActivity(b.dataset.cmsPublish));
+ root.querySelectorAll("[data-cms-archive]").forEach(b=>b.onclick=()=>cmsArchiveActivity(b.dataset.cmsArchive));
 }
 function renderCmsPagePhotos(){
  const root=$("#cmsPagePhotos");if(!root)return;
  const page=$("#cmsPagePicker").value;
  const slots=cmsPagePhotoSlots[page]||[];
+ renderCmsPageDetails();
  root.innerHTML=slots.map(slot=>{
   const photo=cmsCurrentPhoto(slot);
   return '<article class="npeCmsPhotoTile">'+

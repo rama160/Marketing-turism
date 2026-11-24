@@ -1,3 +1,8 @@
+## v3.23.0 — Activity details
+Existing website_activities JSON snapshots store optional parent_activity (static:snorkeling/island/west/east or activity:<published root slug>). No schema migration. Details use existing authenticated draft/publish/archive, bilingual content, media rights and pricing checks. Parent assignment immutable to avoid orphan trees; dynamic parent must be a published top-level activity of matching category. Archived parents hide their details. Public homepage excludes child cards; existing activity galleries and dynamic experience pages display their own details. Existing static spots, bookings, rates and photos remain unchanged.
+
+---
+
 ## v3.22.0 — NPE Gallery: reuse, locate and delete unused photos
 The Website Editor exposes a prominent Galeri NPE shortcut as well as its Gallery tab. Media metadata stays in existing `website_media`; binary images remain in `PHOTO_KV` under `website-media/v1/{id}`. A searchable grid displays stored images and a usage count computed from `website_photo_slots`, `website_gallery_photo_slots`, `website_activities.draft_json` and `published_json`. Existing static/third-party photos are not imported as owned assets.
 The Ganti Foto dialog presents owner-uploaded images for reuse and a native phone upload option. Selecting existing media IDs bypasses image upload and creates only the existing authenticated photo-slot association. Phone uploads reuse the JPEG compression and photo usage-rights approval. A SHA-256 match returns an existing file ID (`reused:true`) instead of a failed 409 upload.

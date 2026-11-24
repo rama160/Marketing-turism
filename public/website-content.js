@@ -23,7 +23,7 @@ async function loadWebsitePublic(){
     :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";} 
   });
   publicActivities=activities.items||[];
-  drawPublicActivities();
+  drawPublicActivities();drawPublicDetails();
  }catch(_){/* Existing hand-authored pages remain completely usable. */}
 }
 function drawPublicActivities(){
@@ -32,7 +32,7 @@ function drawPublicActivities(){
  root.querySelectorAll("[data-npe-dynamic-activity]").forEach(node=>node.remove());
  const lang=currentLanguage()==="en"?"en":"id";
  for(const activity of publicActivities){
-  if(!activity.photo_url)continue;
+  if(!activity.photo_url||activity.parent_activity)continue;
   const card=el("article","package ocean");card.setAttribute("data-npe-dynamic-activity",activity.id);
   const art=el("div","packageArt");
   const img=el("img","package-cover-image");img.src=activity.photo_url;img.loading="lazy";img.decoding="async";
@@ -48,6 +48,25 @@ function drawPublicActivities(){
   inner.appendChild(a);card.append(art,inner);root.appendChild(card);
  }
 }
+function drawPublicDetails(){
+ const staticPaths={"/snorkeling.html":"static:snorkeling","/island-tour.html":"static:island","/west-tour.html":"static:west","/east-tour.html":"static:east"};
+ const section=document.querySelector("[data-npe-detail-parent]");
+ const parent=section?.dataset.npeDetailParent||staticPaths[location.pathname];
+ const root=section?.querySelector(".scene-grid")||(parent?document.querySelector(".scene-grid"):null);
+ if(!parent||!root)return;
+ const lang=currentLanguage()==="en"?"en":"id";
+ root.querySelectorAll("[data-npe-dynamic-detail]").forEach(n=>n.remove());
+ const details=publicActivities.filter(a=>a.parent_activity===parent&&a.photo_url);
+ if(section)section.hidden=!details.length;
+ for(const a of details){
+  const card=el("article","scene-card");card.dataset.npeDynamicDetail=a.id;
+  const figure=el("figure"),img=el("img");img.src=a.photo_url;img.alt=a["title_"+lang];img.loading="lazy";img.decoding="async";
+  figure.append(img);const body=el("div","scene-body");
+  body.append(el("h2","",a["title_"+lang]),el("p","",a["summary_"+lang]),el("p","",a["description_"+lang]));
+  if(a.price_verified&&a["price_label_"+lang])body.append(el("strong","",a["price_label_"+lang]));
+  const link=el("a","textLink",lang==="en"?"View details →":"Lihat detail →");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);body.append(link);card.append(figure,body);root.append(card);
+ }
+}
 window.addEventListener("npe:language",()=>{
  const lang=currentLanguage()==="en"?"en":"id";
  document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
@@ -60,6 +79,6 @@ window.addEventListener("npe:language",()=>{
    ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
    :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";
  });
- drawPublicActivities();
+ drawPublicActivities();drawPublicDetails();
 });
 loadWebsitePublic();

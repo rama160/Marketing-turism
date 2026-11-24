@@ -276,3 +276,16 @@ test("identical website photo upload returns existing image instead of throwing 
  assert.equal(reply.reused,true);
  assert.equal(uploaded,false);
 });
+
+test("activity details support each existing tour and dynamic published parents",()=>{
+ for(const [parent,category] of [["static:snorkeling","SNORKELING"],["static:island","ISLAND_TOUR"],["static:west","ISLAND_TOUR"],["static:east","ISLAND_TOUR"],["activity:lembongan","ISLAND_TOUR"]])assert.equal(validateWebsiteDraft({...draft,parent_activity:parent,category}).parent_activity,parent);
+ assert.throws(()=>validateWebsiteDraft({...draft,parent_activity:"static:snorkeling"}),/induk/);
+ assert.throws(()=>validateWebsiteDraft({...draft,parent_activity:"activity:"+draft.slug}),/induk/);
+ assert.throws(()=>validateWebsiteDraft({...draft,parent_activity:"unknown"}),/induk/);
+});
+test("details do not leak from archived dynamic parents",async()=>{
+ const {publicWebsiteActivities}=await import("../src/website-cms.mjs");
+ const rows=[{id:"1",published_json:JSON.stringify({...draft,slug:"mangrove-point",category:"SNORKELING",parent_activity:"static:snorkeling"})},{id:"2",published_json:JSON.stringify({...draft,slug:"hidden-detail",parent_activity:"activity:archived-parent"})}];
+ const fake={prepare:()=>({all:async()=>({results:rows})})};
+ assert.deepEqual((await publicWebsiteActivities(fake)).items.map(x=>x.slug),["mangrove-point"]);
+});
