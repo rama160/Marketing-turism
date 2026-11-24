@@ -1,3 +1,10 @@
+## [3.23.0] — 2026-11-24
+- Add activity detail creation for existing tour pages and published dynamic activities, bilingual fields, gallery photo, draft, publish and archive.
+- Show child details only on the parent activity, preserve existing gallery spots and homepage cards, and hide orphaned details.
+- Reuse existing CMS data and authentication; no migration or changes to pricing/booking.
+
+---
+
 ## [3.22.0] — 2026-11-24
 ### Added
 - A visible Galeri NPE shortcut, searchable owner-photo grid, usage indicators, and confirmed deletion of unused photos.

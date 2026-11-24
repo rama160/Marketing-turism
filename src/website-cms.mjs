@@ -12,6 +12,7 @@ const galleryPhotoSlots=new Set([
  "east-diamond-beach","east-atuh-beach","east-tree-house"
 ]);
 const validSlots=new Set([...legacyPhotoSlots,...galleryPhotoSlots]);
+const staticParents=new Map([["static:snorkeling","SNORKELING"],["static:island","ISLAND_TOUR"],["static:west","ISLAND_TOUR"],["static:east","ISLAND_TOUR"]]);
 const validCategories=new Set(["SNORKELING","ISLAND_TOUR","TRANSPORT","OTHER"]);
 const plain=(x,max=1500)=>typeof x==="string"&&x.trim().length>0&&x.trim().length<=max&&!/[<>\u0000-\u001f\u007f]/.test(x);
 const escapeHTML=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -24,7 +25,13 @@ export function validateWebsiteDraft(input){
  const slug=u16(input.slug).toLowerCase(),category=u16(input.category);
  if(slug.length<3||slug.length>90||!slugRE.test(slug))throw Error("Slug gunakan huruf kecil, angka, dan tanda hubung (3–90 karakter)");
  if(!validCategories.has(category))throw Error("Kategori aktivitas tidak valid");
- const data={slug,category};
+ const parent_activity=u16(input.parent_activity);
+ if(parent_activity){
+  const staticCategory=staticParents.get(parent_activity);
+  const dynamicSlug=parent_activity.startsWith("activity:")?parent_activity.slice(9):"";
+  if(staticCategory?staticCategory!==category:(!slugRE.test(dynamicSlug)||dynamicSlug===slug||dynamicSlug.length>90))throw Error("Aktivitas induk tidak valid atau kategori berbeda");
+ }
+ const data={slug,category,parent_activity};
  for(const field of ["title_id","title_en","summary_id","summary_en","description_id","description_en"]){
   const max=field.startsWith("description_")?3000:field.startsWith("summary_")?300:150;
   const value=u16(input[field]);
@@ -64,6 +71,13 @@ export function validateWebsiteDraft(input){
  data.supplier_confirmed=input.supplier_confirmed===true;
  return data;
 }
+async function verifyParent(db,data){
+ if(!data.parent_activity||staticParents.has(data.parent_activity))return;
+ const parent=await db.prepare("SELECT published_json FROM website_activities WHERE slug=? AND status='PUBLISHED' AND published_json IS NOT NULL").bind(data.parent_activity.slice(9)).first();
+ if(!parent)throw Error("Aktivitas induk belum diterbitkan");
+ const a=JSON.parse(parent.published_json);
+ if(a.parent_activity||a.category!==data.category)throw Error("Induk harus aktivitas utama dengan kategori yang sama");
+}
 function publicValue(row){
  const a=JSON.parse(row.published_json);
  return {id:row.id,...a,photo_url:a.media_id?"/photos/website/"+a.media_id:null,published_at:row.published_at};
@@ -74,10 +88,13 @@ export async function listWebsiteActivities(db){
 }
 export async function publicWebsiteActivities(db){
  const r=await db.prepare("SELECT id,published_json,published_at FROM website_activities WHERE status='PUBLISHED' AND published_json IS NOT NULL ORDER BY published_at DESC LIMIT 100").all();
- return {items:r.results.map(publicValue)};
+ const items=r.results.map(publicValue);
+ const roots=new Set(items.filter(a=>!a.parent_activity).map(a=>"activity:"+a.slug));
+ return {items:items.filter(a=>!a.parent_activity||staticParents.has(a.parent_activity)||roots.has(a.parent_activity))};
 }
 export async function saveWebsiteActivity(db,b,id=null){
  const data=validateWebsiteDraft(b.draft);
+ await verifyParent(db,data);
  if(!id){
   const exists=await db.prepare("SELECT id FROM website_activities WHERE slug=?").bind(data.slug).first();
   if(exists)throw Error("Slug sudah digunakan");
@@ -86,10 +103,16 @@ export async function saveWebsiteActivity(db,b,id=null){
   return {id,version:1,status:"DRAFT"};
  }
  if(!idRE.test(id))throw Error("ID aktivitas tidak valid");
- const prev=await db.prepare("SELECT version,slug FROM website_activities WHERE id=?").bind(id).first();
+ const prev=await db.prepare("SELECT version,slug,draft_json FROM website_activities WHERE id=?").bind(id).first();
  if(!prev)throw Error("Aktivitas tidak ditemukan");
  if(!Number.isSafeInteger(b.expected_version)||prev.version!==b.expected_version)throw Error("Versi telah berubah; muat ulang editor");
  if(data.slug!==prev.slug)throw Error("Slug tidak boleh diganti setelah dibuat untuk menjaga tautan SEO");
+ const previous=JSON.parse(prev.draft_json);
+ if((previous.parent_activity||"")!==data.parent_activity)throw Error("Aktivitas induk tidak dapat diubah setelah dibuat");
+ if(previous.category!==data.category&&!data.parent_activity) {
+  const child=await db.prepare("SELECT id FROM website_activities WHERE json_extract(draft_json,'$.parent_activity')=? OR json_extract(published_json,'$.parent_activity')=? LIMIT 1").bind("activity:"+data.slug,"activity:"+data.slug).first();
+  if(child)throw Error("Kategori induk tidak dapat diubah selama masih memiliki detail");
+ }
  const write=await db.prepare("UPDATE website_activities SET draft_json=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(JSON.stringify(data),id,prev.version).run();
  if(write.meta?.changes!==1)throw Error("Konflik penyimpanan. Muat ulang editor");
  return {id,version:prev.version+1,status:"DRAFT_SAVED"};
@@ -100,6 +123,7 @@ export async function publishWebsiteActivity(db,id,body){
  if(!row)throw Error("Aktivitas tidak ditemukan");
  if(!Number.isSafeInteger(body.expected_version)||row.version!==body.expected_version)throw Error("Versi berubah. Muat ulang sebelum terbit");
  const draft=validateWebsiteDraft(JSON.parse(row.draft_json));
+ await verifyParent(db,draft);
  if((draft.price_amount!==null||draft.price_label_id||draft.price_label_en)&&!draft.price_verified)
   throw Error("Harga belum diverifikasi. Centang konfirmasi harga atau kosongkan harga sebelum terbit.");
  if(!draft.supplier_confirmed)throw Error("Konfirmasi cakupan layanan dan operator wajib sebelum terbit");
@@ -210,12 +234,17 @@ export function renderExperiencePage(activity,locale,origin){
  const en=origin+"/en/experiences/"+activity.slug,id=origin+"/id/experiences/"+activity.slug;
  const message=encodeURIComponent((isEN?"Hello, I would like details about ":"Halo, saya ingin info tentang ")+title+".");
  const schema=JSON.stringify({"@context":"https://schema.org","@type":"WebPage",name:seoTitle,description:seoDesc,url:root,isPartOf:{"@type":"WebSite",name:"Nusa Penida Experiences",url:origin}}).replace(/</g,"\\u003c");
- return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><link rel="stylesheet" href="/styles.css"><script type="application/ld+json">'+schema+'</script></head><body><header class="top"><a class="brand" href="/"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'" alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div></section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer></body></html>';
+ return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><link rel="stylesheet" href="/styles.css"><script type="application/ld+json">'+schema+'</script></head><body><header class="top"><a class="brand" href="/"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'" alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div>'+(!activity.parent_activity?'<section data-npe-detail-parent="activity:'+escapeHTML(activity.slug)+'" hidden><h2 class="gallery-heading">'+(isEN?"Explore the destinations":"Jelajahi destinasi")+'</h2><div class="scene-grid"></div></section>':"")+'</section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer><script type="module" src="/website-content.js"></script></body></html>';
 }
 export async function findPublishedExperience(db,slug){
  if(!slugRE.test(slug))return null;
  const row=await db.prepare("SELECT id,published_json,published_at FROM website_activities WHERE slug=? AND status='PUBLISHED' AND published_json IS NOT NULL").bind(slug).first();
- return row?publicValue(row):null;
+ if(!row)return null;
+ const a=publicValue(row);
+ if(a.parent_activity&&!staticParents.has(a.parent_activity)){
+  try{await verifyParent(db,a);}catch{return null;}
+ }
+ return a;
 }
 const xmlEsc=s=>escapeHTML(s).replace(/&#39;/g,"&apos;").replace(/&quot;/g,"&quot;");
 export async function renderWebsiteSitemap(db,origin){

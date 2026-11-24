@@ -118,6 +118,7 @@
    <fieldset class="npeCmsFieldset">
     <legend>1 · Identitas & judul</legend>
     <label>URL / Slug *<input name="slug" required minlength="3" maxlength="90" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="nusa-lembongan-island-tour"><small>URL tetap sama setelah aktivitas dibuat agar tautan Google tidak rusak.</small></label>
+    <label>Aktivitas induk<select name="parent_activity" id="cmsParentActivity"><option value="">Aktivitas utama (tampil di beranda)</option></select><small>Pilih induk untuk menambahkan spot, rute, atau detail di halaman aktivitas tersebut.</small></label>
     <label>Kategori *<select name="category"><option value="ISLAND_TOUR">Island Tour</option><option value="SNORKELING">Snorkeling</option><option value="TRANSPORT">Fast Boat / Transport</option><option value="OTHER">Aktivitas lainnya</option></select></label>
     <div class="npeCms2col"><label>Judul (English) *<input name="title_en" required minlength="3" maxlength="150" placeholder="Nusa Lembongan Island Tour"></label><label>Judul (Indonesia) *<input name="title_id" required minlength="3" maxlength="150" placeholder="Tur Pulau Nusa Lembongan"></label></div>
    </fieldset>
@@ -171,6 +172,7 @@
   <div id="cmsPageFields" class="npeCmsPageFields"></div>
   <h4 class="npeCmsPhotosTitle">Foto yang sedang tayang</h4><p class="feedback">Setiap foto dapat diganti secara terpisah tanpa mengubah foto lainnya.</p>
   <div id="cmsPagePhotos" class="npeCmsPagePhotos"></div>
+  <section id="cmsPageDetails" hidden><div class="npeCmsSectionHeader"><h4>Detail aktivitas / destinasi tambahan</h4><button type="button" id="cmsAddPageDetail" class="primary small">+ Tambah Detail</button></div><div id="cmsPageDetailList" class="npePublishedGrid"></div></section>
   <div class="npeCmsStickyActions"><button type="button" id="cmsPageSave" class="primary">Simpan & Terbitkan Perubahan</button><button type="button" id="cmsPagePhoto" class="outline">▧ Ganti Foto</button></div><p id="cmsPageFeedback" role="status" class="feedback"></p>
   <details class="npeCmsAdvanced"><summary>Editor lanjutan · pilih satu bagian teks</summary>
    <div class="split">
