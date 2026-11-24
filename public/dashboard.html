@@ -11,7 +11,7 @@
 <a class="skipLink" href="#adminArea">Langsung ke dashboard</a>
 <header class="dashTop"><div class="dashTopInner">
  <div class="dashBrand"><img src="/icon.svg" width="45" height="45" alt="" loading="eager"><div><strong>Nusa Penida Experiences</strong><small>Agent workspace · Penida &amp; Lembongan</small></div></div>
- <div class="dashTopActions"><span class="dashVersion">NPE STUDIO <span aria-hidden="true">●</span> v3.19</span><a class="outline small dashWebsiteLink" href="/?view=website" target="_blank" rel="noopener noreferrer">↗ Lihat Website</a></div>
+ <div class="dashTopActions"><span class="dashVersion">NPE STUDIO <span aria-hidden="true">●</span> v3.20</span><a class="outline small dashWebsiteLink" href="/?view=website" target="_blank" rel="noopener noreferrer">↗ Lihat Website</a></div>
 </div></header>
 <main class="dashboardMain"><section id="adminArea" class="admin shell"><div class="adminHeading"><div><span class="eyebrow">NPE STUDIO <span class="dashHeadingDivider">/</span> <span id="dashWorkspaceName">Beranda</span></span><h2 id="dashHeadingTitle">Overview</h2><p id="dashHeadingDescription">Pantau peluang dan pekerjaan penting tanpa membuka halaman panjang.</p></div><div class="dashboardHeadingActions"><button id="lock" class="outline small" hidden>Keluar</button></div></div><div id="unlockPanel" class="panel login"><h3>Masuk sebagai pemilik agen</h3><p>Masukkan admin token sekali untuk menghubungkan perangkat ini. Login tetap aktif saat refresh atau aplikasi ditutup; gunakan tombol Keluar untuk mengakhiri sesi. Jangan bagikan admin token.</p><label>Admin token<input id="adminToken" type="password" autocomplete="off" placeholder="Cloudflare secret ADMIN_TOKEN"></label><button id="unlock" class="primary">Hubungkan dashboard</button><p id="loginMessage" class="feedback"></p></div>
 <div id="adminContent" hidden>
@@ -64,9 +64,7 @@
  </nav>
  <p class="feedback npeEditorNotice" id="cmsStudioFeedback" role="status"></p>
  <section class="npeEditorSection" data-cms-view="published">
-   <div class="npeCmsSectionHeader"><div><h4>Konten yang sudah Published</h4><p class="feedback">Pilih Edit untuk mengubah semua konten yang dikelola CMS. Versi yang sedang tampil tetap aman sampai diterbitkan ulang.</p></div><button type="button" id="cmsRefresh" class="outline small">↻ Refresh</button></div>
-   <div id="cmsPublishedList" class="npePublishedGrid" aria-live="polite"><p class="feedback">Memuat konten terbit...</p></div>
-   <div class="npeCmsSectionHeader"><div><h4>Halaman utama yang sudah terbit</h4><p class="feedback">Edit judul, deskripsi, label harga dan foto halaman lama tanpa mengubah kode.</p></div></div>
+   <div class="npeCmsSectionHeader"><div><h4>Halaman website yang sudah Published</h4><p class="feedback">Isi yang sedang tampil di website dimuat otomatis. Pilih <strong>Edit isi lengkap</strong> untuk mengubah satu bagian atau banyak bagian sekaligus.</p></div><button type="button" id="cmsRefresh" class="outline small">↻ Refresh</button></div>
    <div class="npePublishedGrid" id="cmsLegacyPublished">
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">⌂</span><div><strong>Beranda NPE</strong><small>Banner, judul dan deskripsi</small></div><button type="button" class="outline small" data-cms-page="home">Edit</button></article>
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">〰</span><div><strong>Snorkeling Nusa Penida</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="snorkeling">Edit</button></article>
@@ -74,6 +72,9 @@
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">◇</span><div><strong>West Island Tour</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="west">Edit</button></article>
      <article class="npeCmsLegacy"><span class="npeCmsLegacyIcon">◇</span><div><strong>East Island Tour</strong><small>Foto, deskripsi dan harga</small></div><button type="button" class="outline small" data-cms-page="east">Edit</button></article>
    </div>
+
+   <div class="npeCmsSectionHeader"><div><h4>Aktivitas tambahan yang sudah Published</h4><p class="feedback">Aktivitas baru yang Anda terbitkan melalui Add Activity akan muncul di bawah ini.</p></div></div>
+   <div id="cmsPublishedList" class="npePublishedGrid" aria-live="polite"><p class="feedback">Memeriksa aktivitas tambahan...</p></div>
  </section>
  <section class="npeEditorSection" data-cms-view="drafts" hidden>
   <div class="npeCmsSectionHeader"><div><h4>Draft & perubahan belum diterbitkan</h4><p class="feedback">Draft dapat disimpan tanpa harga. Jika belum disetujui untuk diterbitkan, aktivitas tidak muncul di website.</p></div></div>
@@ -134,9 +135,12 @@
   </div>
  </section>
  <section class="npeEditorSection" data-cms-view="pages" hidden>
-  <div class="npeCmsSectionHeader"><div><h4>Edit halaman website terbit</h4><p class="feedback">Ubah seluruh elemen teks yang sudah terhubung ke editor CMS. Harga di bagian ini juga boleh dikosongkan.</p></div></div>
-  <div class="npeCms2col"><label>Halaman<select id="cmsPagePicker"><option value="home">Beranda</option><option value="snorkeling">Snorkeling Nusa Penida</option><option value="island">Nusa Penida Island Tour</option><option value="west">West Tour</option><option value="east">East Tour</option></select></label><label>Bahasa<select id="cmsPageLocale"><option value="id">Bahasa Indonesia</option><option value="en">English</option></select></label></div>
+  <div class="npeCmsSectionHeader"><div><h4>Edit halaman website terbit</h4><p class="feedback">Semua isi utama website yang sudah tayang ditampilkan otomatis. Edit satu kolom atau banyak kolom; bagian yang tidak diubah tetap sama.</p></div></div>
+  <p class="feedback" id="cmsPageSummary">Memuat konten yang sedang tayang di website...</p><div class="npeCms2col"><label>Halaman<select id="cmsPagePicker"><option value="home">Beranda</option><option value="snorkeling">Snorkeling Nusa Penida</option><option value="island">Nusa Penida Island Tour</option><option value="west">West Tour</option><option value="east">East Tour</option><option value="snorkeling-manta-bay">Snorkeling · Manta Bay</option><option value="snorkeling-manta-point">Snorkeling · Manta Point</option><option value="snorkeling-crystal-bay">Snorkeling · Crystal Bay</option><option value="snorkeling-gamat-bay">Snorkeling · Gamat Bay</option><option value="island-west">Island Tour · Wisata Barat</option><option value="island-east">Island Tour · Wisata Timur</option><option value="west-kelingking">West · Kelingking Beach</option><option value="west-broken-beach">West · Broken Beach</option><option value="west-angels-billabong">West · Angel’s Billabong</option><option value="west-crystal-bay">West · Crystal Bay</option><option value="east-diamond-beach">East · Diamond Beach</option><option value="east-atuh-beach">East · Atuh Beach</option><option value="east-tree-house">East · Rumah Pohon</option></select></label><label>Bahasa<select id="cmsPageLocale"><option value="id">Bahasa Indonesia</option><option value="en">English</option></select></label></div>
+  <label class="npeCmsPageFilterLabel">Cari bagian yang ingin diedit<input id="cmsPageFilter" type="search" placeholder="Contoh: harga, judul, Manta Bay, Kelingking..."></label>
   <div id="cmsPageFields" class="npeCmsPageFields"></div>
+  <h4 class="npeCmsPhotosTitle">Foto yang sedang tayang</h4><p class="feedback">Setiap foto dapat diganti secara terpisah tanpa mengubah foto lainnya.</p>
+  <div id="cmsPagePhotos" class="npeCmsPagePhotos"></div>
   <div class="npeCmsStickyActions"><button type="button" id="cmsPageSave" class="primary">Simpan & Terbitkan Perubahan</button><button type="button" id="cmsPagePhoto" class="outline">▧ Ganti Foto</button></div><p id="cmsPageFeedback" role="status" class="feedback"></p>
   <details class="npeCmsAdvanced"><summary>Editor lanjutan · pilih satu bagian teks</summary>
    <div class="split">

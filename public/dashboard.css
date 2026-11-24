@@ -331,3 +331,18 @@
  .dashboardPage .npeCms2col,.dashboardPage .npeCmsPageFields{grid-template-columns:1fr}
  .dashboardPage .npeCmsStickyActions button{flex:1}
 }
+
+/* v3.20: published content is a populated, searchable editor with independent photo previews. */
+.dashboardPage .npeCmsPageFilterLabel{display:grid;gap:8px;font-size:12px;font-weight:700;color:#284e59;margin:15px 0}
+.dashboardPage .npeCmsPageFilterLabel input{width:100%;max-width:100%;box-sizing:border-box}
+.dashboardPage .npeCmsPageField[hidden]{display:none!important}
+.dashboardPage .npeCmsPhotosTitle{font-size:16px;margin:24px 0 8px}
+.dashboardPage .npeCmsPagePhotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:15px}
+.dashboardPage .npeCmsPhotoTile{border:1px solid #d9e6e9;border-radius:13px;overflow:hidden;display:grid;background:white}
+.dashboardPage .npeCmsPhotoTile>img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.dashboardPage .npeCmsPhotoTile>div:not(.npeCmsNoImage){padding:10px;display:grid;gap:9px}
+.dashboardPage .npeCmsPhotoTile strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.dashboardPage .npeCmsPhotoTile button{font-size:11px}
+.dashboardPage .npeLegacyPublishedCard .npeCmsPublishedImage{min-height:195px}
+.dashboardPage #cmsPageSummary{padding:12px 14px;border-radius:10px;background:#eaf6f3;color:#1f6063;margin:0 0 12px}
+@media(max-width:720px){.dashboardPage .npeCmsPagePhotos{grid-template-columns:repeat(2,minmax(0,1fr))}}

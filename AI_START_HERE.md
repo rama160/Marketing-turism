@@ -1,3 +1,12 @@
+## 24 NOV 2026 — FIX PUBLISHED WEBSITE CMS EMPTY CONTENT v3.20.0
+- Root cause: production site_content holds only overrides (zero rows), while actual public defaults reside in public HTML and language.js. The admin dashboard has no window.NusaLanguage, so editor fields were empty even though public pages worked.
+- scripts/build.mjs now creates public/site-editor-defaults.json from existing public HTML and ID/EN translations, with no D1 changes or duplicated source copy. Wrangler uploads public/ assets after npm run ci.
+- Published now displays true title, excerpt, price and photo on five original pages; editor loads true defaults plus D1 overrides (including intentionally blank prices). Only modified fields are saved, so owner can change one or many independently.
+- Existing 13 destination-card headings/descriptions now data-copy fields; per-spot photos have 13 optional slots using additive D1 migration 0024_website_gallery_slots.sql, without touching the original five photo slots.
+- Existing operator rate tables, historical quotations, leads, bookings, admin sessions, Meta/AI autopost, WhatsApp and other Workers are unchanged. Only approved image overrides appear publicly; original credited photos remain fallback. Verify CI and live smoke.
+
+---
+
 ## 24 NOV 2026 — NPE CMS FRIENDLY PUBLISHED EDITOR v3.19.0
 - Visible optional selling-price field for Add Activity; empty price saves with no public price displayed. Published activities and pages have one-click contextual edits, rather than hiding price under SEO.
 - Dashboard Website now has four views: Published, Draft, Halaman Website (grouped existing homepage/West/East/Snorkeling/Island Tour content), and Foto & Media. Activity editor has preview and Save Draft / Save & Publish actions.

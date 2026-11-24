@@ -49,7 +49,7 @@ function changeTab(name){
  const group=NPE_PAGE_GROUP[name]||"home",workspace=NPE_WORKSPACES[group];
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
- if(name==="website"&&ownerSignedIn){void loadSiteEditor();void loadWebsiteCMS();}
+ if(name==="website"&&ownerSignedIn){void loadWebsiteCMS();}
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
  if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
@@ -950,13 +950,26 @@ $("#quickSave").onclick=async()=>{
 };
 
 // Versioned website content editor. All reading and publishing is authenticated on the Worker.
-let cmsRecords=new Map(),cmsFields=[];
+let cmsRecords=new Map(),cmsFields=[],cmsPhotoOverrides=new Map();
+let cmsPublishedSnapshot={id:{},en:{},photos:{}},cmsPublishedSnapshotPromise=null;
+async function loadCmsPublishedSnapshot(){
+ if(cmsPublishedSnapshotPromise)return cmsPublishedSnapshotPromise;
+ cmsPublishedSnapshotPromise=fetch("/site-editor-defaults.json",{cache:"no-store",credentials:"same-origin"})
+  .then(async r=>{
+   if(!r.ok)throw Error("Data awal editor tidak tersedia (HTTP "+r.status+")");
+   const result=await r.json();
+   if(!result?.id?.["hero.title"]||!result?.en?.["hero.title"]||!result?.photos?.hero)throw Error("Isi website belum lengkap pada data awal editor");
+   cmsPublishedSnapshot=result;return result;
+  }).catch(err=>{cmsPublishedSnapshotPromise=null;throw err;});
+ return cmsPublishedSnapshotPromise;
+}
 const cmsId=(key,locale)=>locale+":"+key;
+const cmsDefaultValue=(key,locale)=>cmsPublishedSnapshot?.[locale]?.[key]??window.NusaLanguage?.defaults(locale)?.[key]??"";
+const cmsEffectiveValue=(key,locale)=>cmsRecords.get(cmsId(key,locale))?.value??cmsDefaultValue(key,locale);
 function cmsSelection(){
  const key=$("#cmsKey").value,locale=$("#cmsLocale").value;
  const existing=cmsRecords.get(cmsId(key,locale));
- const fallback=window.NusaLanguage?.defaults(locale)||{};
- return {key,locale,existing,value:existing?.value??fallback[key]??""};
+ return {key,locale,existing,value:cmsEffectiveValue(key,locale)};
 }
 function syncCms(){
  const state=cmsSelection();
@@ -967,6 +980,8 @@ function syncCms(){
 }
 async function loadSiteEditor(){
  try{
+  // Admin site_content stores only overrides; published HTML and translation maps provide initial values.
+  await loadCmsPublishedSnapshot();
   const response=await api("admin/site-content");
   cmsRecords=new Map((response.items||[]).map(x=>[cmsId(x.key,x.locale),x]));
   cmsFields=response.fields||[];
@@ -975,7 +990,8 @@ async function loadSiteEditor(){
   if(cmsFields.some(([key])=>key===previous))keyInput.value=previous;
   syncCms();
   renderCmsPageFields();
- }catch(err){say("#cmsFeedback",err.message);}
+  drawPublishedPageCards();
+ }catch(err){say("#cmsFeedback",err.message);say("#cmsStudioFeedback","Tidak dapat memuat konten website: "+err.message);}
 }
 $("#cmsLocale").onchange=syncCms;
 $("#cmsKey").onchange=syncCms;
@@ -983,7 +999,7 @@ $("#cmsValue").oninput=()=>{$("#cmsPreviewText").textContent=$("#cmsValue").valu
 $("#cmsPreview").onclick=()=>{ $("#cmsPreviewText").textContent=$("#cmsValue").value; say("#cmsFeedback","Pratinjau lokal. Konten belum diterbitkan.",true); };
 $("#cmsPublish").onclick=async()=>{
  const state=cmsSelection(),value=$("#cmsValue").value.trim();
- if(value.length<2||value.length>1200){say("#cmsFeedback","Konten harus 2 sampai 1200 karakter.");return;}
+ if((!state.key.startsWith("price.")&&value.length<2)||value.length>1200){say("#cmsFeedback","Teks minimal 2 karakter; harga boleh kosong.");return;}
  const button=$("#cmsPublish");button.disabled=true;
  try{
   const result=await api("admin/site-content","POST",{key:state.key,locale:state.locale,value,expected_version:state.existing?.version||0,owner_confirmed:true});
@@ -1129,8 +1145,12 @@ function drawWebsiteCMS(){
 async function loadWebsiteCMS(){
  if(!ownerSignedIn)return;
  try{
-  const [acts,media]=await Promise.all([api("admin/website/activities"),api("admin/website/media")]);
-  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];drawWebsiteCMS();
+  const [acts,media,slots]=await Promise.all([
+   api("admin/website/activities"),api("admin/website/media"),api("public/website/slots"),loadSiteEditor()
+  ]);
+  cmsPhotoOverrides=new Map((slots.items||[]).map(x=>[x.slot,x]));
+  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];
+  drawWebsiteCMS();drawPublishedPageCards();renderCmsPagePhotos();
   $("#cmsStudioFeedback").textContent="";
  }catch(e){say("#cmsStudioFeedback","CMS belum siap: "+e.message);}
 }
@@ -1226,35 +1246,261 @@ $("#cmsPublishSlot").onclick=async()=>{
  const slot=$("#cmsPhotoSlot").value,media_id=$("#cmsSlotMedia").value;
  if(!media_id){say("#cmsSlotFeedback","Pilih foto yang sudah diupload.");return;}
  if(!window.confirm("Ubah foto "+slot+" pada website publik?"))return;
- try{await api("admin/website/slots","POST",{slot,media_id,owner_confirmed:true});say("#cmsSlotFeedback","Foto berhasil diterbitkan pada halaman website.",true);}
+ try{await api("admin/website/slots","POST",{slot,media_id,owner_confirmed:true});await loadWebsiteCMS();say("#cmsSlotFeedback","Foto berhasil diterbitkan pada halaman website; foto lain tetap sama.",true);}
  catch(e){say("#cmsSlotFeedback",e.message);}
 };
 // Friendly grouped editor for existing published pages, using the original versioned text CMS API.
 const cmsPageMap={
- home:["hero.eyebrow","hero.title","hero.subtitle","hero.description","hero.cta","packages.eyebrow","packages.title","packages.description","regions.eyebrow","regions.title","regions.description","contact.eyebrow","contact.title","contact.description","contact.notice"],
- snorkeling:["snorkeling.title","snorkeling.description","price.snorkeling","snorkelingPage.eyebrow","snorkelingPage.title","snorkelingPage.lead","snorkelingPage.description"],
- island:["island.title","island.description","price.island","islandPage.eyebrow","islandPage.title","islandPage.lead","islandPage.description"],
- west:["west.title","west.description","price.west","westPage.eyebrow","westPage.title","westPage.lead","westPage.description"],
- east:["east.title","east.description","price.east","eastPage.eyebrow","eastPage.title","eastPage.lead","eastPage.description"]
+ "home": [
+  "hero.eyebrow",
+  "hero.title",
+  "hero.subtitle",
+  "hero.description",
+  "hero.cta",
+  "packages.eyebrow",
+  "packages.title",
+  "packages.description",
+  "regions.eyebrow",
+  "regions.title",
+  "regions.description",
+  "contact.eyebrow",
+  "contact.title",
+  "contact.description",
+  "contact.notice",
+  "sea.title",
+  "sea.description",
+  "whatsapp.eyebrow",
+  "whatsapp.heading",
+  "whatsapp.description",
+  "whatsapp.disclaimer"
+ ],
+ "snorkeling": [
+  "snorkeling.title",
+  "snorkeling.description",
+  "price.snorkeling",
+  "snorkelingPage.eyebrow",
+  "snorkelingPage.title",
+  "snorkelingPage.lead",
+  "snorkelingPage.description",
+  "snorkelingSpot.mantaBay.title",
+  "snorkelingSpot.mantaBay.description",
+  "snorkelingSpot.mantaPoint.title",
+  "snorkelingSpot.mantaPoint.description",
+  "snorkelingSpot.crystalBay.title",
+  "snorkelingSpot.crystalBay.description",
+  "snorkelingSpot.gamatBay.title",
+  "snorkelingSpot.gamatBay.description"
+ ],
+ "island": [
+  "island.title",
+  "island.description",
+  "price.island",
+  "islandPage.eyebrow",
+  "islandPage.title",
+  "islandPage.lead",
+  "islandPage.description",
+  "islandSpot.west.title",
+  "islandSpot.west.description",
+  "islandSpot.east.title",
+  "islandSpot.east.description"
+ ],
+ "west": [
+  "west.title",
+  "west.description",
+  "price.west",
+  "westPage.eyebrow",
+  "westPage.title",
+  "westPage.lead",
+  "westPage.description",
+  "westSpot.kelingking.title",
+  "westSpot.kelingking.description",
+  "westSpot.brokenBeach.title",
+  "westSpot.brokenBeach.description",
+  "westSpot.angelsBillabong.title",
+  "westSpot.angelsBillabong.description",
+  "westSpot.crystalBay.title",
+  "westSpot.crystalBay.description"
+ ],
+ "east": [
+  "east.title",
+  "east.description",
+  "price.east",
+  "eastPage.eyebrow",
+  "eastPage.title",
+  "eastPage.lead",
+  "eastPage.description",
+  "eastSpot.diamondBeach.title",
+  "eastSpot.diamondBeach.description",
+  "eastSpot.atuhBeach.title",
+  "eastSpot.atuhBeach.description",
+  "eastSpot.treeHouse.title",
+  "eastSpot.treeHouse.description"
+ ]
 };
+const cmsPagePhotoSlots={
+ "home": [
+  "hero",
+  "snorkeling",
+  "island",
+  "west",
+  "east"
+ ],
+ "snorkeling": [
+  "snorkeling-manta-bay",
+  "snorkeling-manta-point",
+  "snorkeling-crystal-bay",
+  "snorkeling-gamat-bay"
+ ],
+ "island": [
+  "island-west",
+  "island-east"
+ ],
+ "west": [
+  "west-kelingking",
+  "west-broken-beach",
+  "west-angels-billabong",
+  "west-crystal-bay"
+ ],
+ "east": [
+  "east-diamond-beach",
+  "east-atuh-beach",
+  "east-tree-house"
+ ]
+};
+const cmsPageSlotLabels={
+ "hero": "Banner utama",
+ "snorkeling": "Kartu Snorkeling",
+ "island": "Kartu Island Tour",
+ "west": "Kartu Wisata Barat",
+ "east": "Kartu Wisata Timur",
+ "snorkeling-manta-bay": "Manta Bay",
+ "snorkeling-manta-point": "Manta Point",
+ "snorkeling-crystal-bay": "Crystal Bay",
+ "snorkeling-gamat-bay": "Gamat Bay",
+ "island-west": "Island Tour · Barat",
+ "island-east": "Island Tour · Timur",
+ "west-kelingking": "Kelingking Beach",
+ "west-broken-beach": "Broken Beach",
+ "west-angels-billabong": "Angel’s Billabong",
+ "west-crystal-bay": "Crystal Bay",
+ "east-diamond-beach": "Diamond Beach",
+ "east-atuh-beach": "Atuh Beach",
+ "east-tree-house": "Rumah Pohon"
+};
+const cmsPublishedPages=[
+ [
+  "home",
+  "Beranda NPE",
+  "hero.title",
+  "hero.description",
+  "hero",
+  "/"
+ ],
+ [
+  "snorkeling",
+  "Snorkeling Nusa Penida",
+  "snorkelingPage.title",
+  "snorkelingPage.lead",
+  "snorkeling",
+  "/snorkeling.html"
+ ],
+ [
+  "island",
+  "Island Tour Nusa Penida",
+  "islandPage.title",
+  "islandPage.lead",
+  "island",
+  "/island-tour.html"
+ ],
+ [
+  "west",
+  "West Island Tour",
+  "westPage.title",
+  "westPage.lead",
+  "west",
+  "/west-tour.html"
+ ],
+ [
+  "east",
+  "East Island Tour",
+  "eastPage.title",
+  "eastPage.lead",
+  "east",
+  "/east-tour.html"
+ ]
+];
+function cmsCurrentPhoto(slot){
+ const overridden=cmsPhotoOverrides.get(slot),fallback=cmsPublishedSnapshot.photos?.[slot];
+ return overridden?.url?{url:overridden.url,alt:overridden.alt_id||slot}:fallback||null;
+}
+function drawPublishedPageCards(){
+ const container=$("#cmsLegacyPublished");if(!container||!cmsPublishedSnapshot.id?.["hero.title"])return;
+ container.innerHTML=cmsPublishedPages.map(([id,label,titleKey,summaryKey,slot,url])=>{
+  const name=cmsEffectiveValue(titleKey,"id")||label,desc=cmsEffectiveValue(summaryKey,"id");
+  const photo=cmsCurrentPhoto(slot),price=cmsEffectiveValue("price."+id,"id");
+  return '<article class="npeCmsPublishedCard npeLegacyPublishedCard">'+
+   '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto</div>')+'</div>'+
+   '<div class="npeCmsPublishedInfo"><small>Halaman publik · Terbit</small><h4>'+esc(name)+'</h4><p>'+esc(desc.slice(0,180))+'</p>'+
+   (price?'<strong class="npeCmsPublishedPrice">'+esc(price)+'</strong>':'')+
+   '<div class="npeCmsCardActions"><button type="button" class="primary small" data-cms-page="'+esc(id)+'">✎ Edit isi lengkap</button>'+
+   '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Lihat ↗</a></div></div></article>';
+ }).join("");
+ container.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
+}
+function renderCmsPagePhotos(){
+ const root=$("#cmsPagePhotos");if(!root)return;
+ const page=$("#cmsPagePicker").value;
+ const slots=cmsPagePhotoSlots[page]||[];
+ root.innerHTML=slots.map(slot=>{
+  const photo=cmsCurrentPhoto(slot);
+  return '<article class="npeCmsPhotoTile">'+
+   (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersedia</div>')+
+   '<div><strong>'+esc(cmsPageSlotLabels[slot]||slot)+'</strong>'+
+   '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'">Ganti foto</button></div></article>';
+ }).join("");
+ root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>{
+  $("#cmsPhotoSlot").value=b.dataset.cmsEditPhoto;npeCmsPhotoReturn=false;cmsView("media");
+  say("#cmsMediaFeedback","Ganti foto untuk "+(cmsPageSlotLabels[b.dataset.cmsEditPhoto]||b.dataset.cmsEditPhoto)+". Foto lain tidak berubah.",true);
+ });
+}
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
- cmsView("pages");void loadSiteEditor();
+ $("#cmsPageFilter").value="";
+ cmsView("pages");if(!cmsFields.length)void loadSiteEditor();
 }
 document.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
 function renderCmsPageFields(){
- const root=$("#cmsPageFields");if(!root||!cmsFields.length)return;
+ const root=$("#cmsPageFields"),notice=$("#cmsPageSummary");
+ if(!root)return;
+ if(!cmsFields.length||!cmsPublishedSnapshot.id?.["hero.title"]){
+  root.innerHTML='<p class="feedback">Memuat konten website yang sudah terbit...</p>';
+  return;
+ }
  const page=$("#cmsPagePicker").value,lang=$("#cmsPageLocale").value,fields=new Map(cmsFields);
  const keys=(cmsPageMap[page]||[]).filter(k=>fields.has(k));
- const original=window.NusaLanguage?.defaults(lang)||{};
+ const missing=keys.filter(k=>!cmsEffectiveValue(k,lang).trim());
+ const labels={home:"Beranda NPE",snorkeling:"Snorkeling Nusa Penida",island:"Island Tour",west:"Wisata Barat",east:"Wisata Timur"};
+ notice.textContent=labels[page]+" · "+keys.length+" bagian isi saat ini berhasil dimuat ("+(lang==="en"?"English":"Bahasa Indonesia")+"). Ubah satu atau beberapa kolom; kolom yang tidak diubah akan tetap sama."+
+  (missing.length?" "+missing.length+" bagian belum mempunyai konten bawaan; dapat diisi melalui editor.":"");
  root.innerHTML=keys.map(k=>{
-  const row=cmsRecords.get(lang+":"+k),value=row?.value??original[k]??"";
-  const label=fields.get(k)||k,isPrice=k.startsWith("price.");
-  return '<label class="npeCmsPageField"><span>'+esc(label)+(isPrice?' <small>· boleh kosong</small>':'')+'</span>'+
-   '<textarea data-cms-page-key="'+esc(k)+'" rows="'+(isPrice?2:label.includes("deskripsi")||label.includes("ringkasan")?3:2)+'" maxlength="1200" placeholder="'+(isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
+  const value=cmsEffectiveValue(k,lang),label=fields.get(k)||k,isPrice=k.startsWith("price.");
+  const rows=isPrice?2:/description|deskripsi|ringkasan|lead|summary/i.test(k+" "+label)?4:2;
+  return '<label class="npeCmsPageField" data-cms-page-field="'+esc(k)+'">'+
+   '<span>'+esc(label)+(isPrice?' <small>· boleh kosong</small>':'')+'</span>'+
+   '<textarea data-cms-page-key="'+esc(k)+'" rows="'+rows+'" maxlength="1200" placeholder="'+
+    (isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
  }).join("");
  $("#cmsPageFeedback").textContent="";
+ renderCmsPagePhotos();filterCmsPageFields();
 }
+function filterCmsPageFields(){
+ const q=$("#cmsPageFilter")?.value?.trim().toLowerCase()||"";
+ $("#cmsPageFields")?.querySelectorAll("[data-cms-page-field]").forEach(el=>{
+  const field=el.querySelector("span")?.textContent?.toLowerCase()||"";
+  el.hidden=Boolean(q&&!field.includes(q)&&!el.dataset.cmsPageField.toLowerCase().includes(q));
+ });
+}
+$("#cmsPageFilter").oninput=filterCmsPageFields;
 $("#cmsPagePicker").onchange=renderCmsPageFields;
 $("#cmsPageLocale").onchange=renderCmsPageFields;
 $("#cmsPagePhoto").onclick=()=>{
@@ -1263,19 +1509,20 @@ $("#cmsPagePhoto").onclick=()=>{
 };
 $("#cmsPageSave").onclick=async()=>{
  const btn=$("#cmsPageSave");btn.disabled=true;
- const lang=$("#cmsPageLocale").value,original=window.NusaLanguage?.defaults(lang)||{};
+ const lang=$("#cmsPageLocale").value;
  let updated=0;
  try{
   for(const el of $("#cmsPageFields").querySelectorAll("[data-cms-page-key]")){
    const key=el.dataset.cmsPageKey,value=el.value.trim(),prev=cmsRecords.get(lang+":"+key);
-   if(value===(prev?.value??original[key]??""))continue;
+   if(value===cmsEffectiveValue(key,lang))continue;
    if(!key.startsWith("price.")&&value.length<2)throw Error("Judul/deskripsi minimal 2 karakter: "+key);
    if(/[<>\u0000-\u001f\u007f]/.test(value)||value.length>1200)throw Error("Konten tidak valid: "+key);
    const saved=await api("admin/site-content","POST",{key,locale:lang,value,expected_version:prev?.version||0,owner_confirmed:true});
    cmsRecords.set(lang+":"+key,saved);updated++;
   }
   window.NusaLanguage?.resetCache();
-  say("#cmsPageFeedback",updated?updated+" elemen berhasil diterbitkan ke website.":"Tidak ada perubahan baru.",true);
+  drawPublishedPageCards();
+  say("#cmsPageFeedback",updated?updated+" bagian berhasil diterbitkan. Bagian lain tetap seperti semula.":"Tidak ada perubahan baru.",true);
  }catch(e){say("#cmsPageFeedback",updated+" elemen tersimpan. "+e.message+" Muat ulang jika ada konflik.");}
  finally{btn.disabled=false;}
 };

@@ -40,7 +40,9 @@ jobs:
       - name: Apply isolated additive Website CMS migration
         # Older migrations were already applied to production outside Wrangler migration bookkeeping.
         # Never replay historical ALTER TABLE migrations against a live D1 database.
-        run: npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0023_website_cms.sql
+        run: |
+          npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0023_website_cms.sql
+          npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0024_website_gallery_slots.sql
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
