@@ -1,3 +1,13 @@
+## FR-52 — Direct "Ganti Foto" to device gallery (v3.21.0)
+- Given an authenticated owner views the Published cards or page photo tiles, tapping "Ganti Foto" must open the native image selection immediately, not a second CMS Editor/Media tab.
+- The selected exact photo slot must remain bound throughout preview and publication, with no second location selection.
+- Owner reviews image, can edit title and ID/EN alt text, and must confirm rights before a single Save & Publish action.
+- Cancel or failure leaves public photo unchanged; photo may be retried after an upload failure without duplicate media.
+- Existing unsaved title, price and description fields must not be discarded when a photo is changed.
+- Uploaded photo is compressed and published through current authenticated media/slot APIs; existing booking and price data, published SEO copy, other photos and AI marketing are not modified.
+
+---
+
 ## FR-46–FR-51 — Published editor shows the existing content (v3.20.0)
 - FR-46 Published displays the five original website pages with actual title, summary, current public price label if any, and existing image, even when D1 editor rows are empty.
 - FR-47 Opening a legacy page loads every supported current Indonesian/English content field from public source plus D1 override; no blank placeholders when default text exists.
