@@ -1030,6 +1030,7 @@ function cmsView(name){
   const on=b.dataset.cmsViewButton===name;b.classList.toggle("current",on);b.setAttribute("aria-pressed",String(on));
  });
  $("#cmsStudioFeedback").textContent="";
+ if(name==="media")void refreshNpeGallery();
  if(name==="pages"&&!cmsFields.length)void loadSiteEditor();
  if(name==="pages")renderCmsPageFields();
  if(name==="activity")refreshActivityPreview();
@@ -1170,10 +1171,17 @@ async function deleteNpeMedia(id){
   say("#cmsMediaFeedback",deleted.storage_cleaned?"Foto berhasil dihapus dari Galeri NPE.":"Foto dihapus dari galeri; pembersihan penyimpanan perlu diperiksa.",true);
  }catch(e){say("#cmsMediaFeedback","Gagal menghapus: "+e.message);renderNpeMediaGallery();}
 }
+async function refreshNpeGallery(){
+ if(!ownerSignedIn)return;
+ try{
+  const r=await api("admin/website/media");
+  npeCmsMedia=r.items||[];
+  renderNpeMediaGallery();
+ }catch(e){say("#cmsMediaFeedback","Tidak dapat memuat Galeri NPE: "+e.message);}
+}
 $("#cmsGallerySearch").oninput=renderNpeMediaGallery;
 $("#cmsOpenGallery").onclick=()=>{
  npeCmsPhotoReturn=false;cmsView("media");
- if(ownerSignedIn)void loadWebsiteCMS();
 };
 async function loadWebsiteCMS(){
  if(!ownerSignedIn)return;
