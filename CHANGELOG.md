@@ -1,3 +1,16 @@
+## [3.32.0] — 2026-11-24 — NPE audited website improvements
+- Aligned five original page meta titles/descriptions, social OG previews and WebPage schema.
+- Added 18 factual bilingual FAQ entries across the homepage and four tour pages; clear operator/booking expectations and expired form disclosures updated.
+- Dimensioned photos in original pages and JS-created CMS experience cards to reduce layout instability.
+- Added package-contextual WhatsApp enquiry links without changing the primary contact or consent handling.
+- Added five independently indexable English SEO pages to the existing Worker (home, West, East, snorkeling, island), with reciprocal Indonesian/English hreflang, canonical URLs, original licensed photo attributions and in-page FAQ.
+- Extended dynamic sitemap to all published bilingual experiences plus English tours, with no duplicated backend or Google-indexable admin routes.
+- Updated D1 Published SEO titles for Boat Ticket and Nusa Lembongan; maintained original details and media.
+- Regression tests, build and deployed smoke checks verify SEO, public routes, booking security and media.
+- Remaining items requiring actual external integrations or human verification: GSC, real search positions, PageSpeed/Lighthouse, first-party analytics, authentic reviews, finalized cancellation/legal content, domain decision.
+
+---
+
 ## [3.31.0] SEO routing stabilization — 2026-11-24
 - Final deployment keeps existing static homepage and legacy tour routes out of Worker-first, avoiding Cloudflare Assets infinite redirects discovered by live smoke.
 - Improves original HTML SEO titles, descriptions, factual Organization/WebPage/BreadcrumbList JSON-LD and image previews.

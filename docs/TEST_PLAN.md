@@ -1,3 +1,10 @@
+## 2026-11-24 — v3.32.0 SEO and guest acceptance additions
+- Confirm all 5 Indonesian pages return 200 without redirect loops; canonical, OG title/description, page schema, image dimensions, bilingual FAQ and package-specific WhatsApp.
+- Confirm `/en/tours`, `/en/tours/west`, `/en/tours/east`, `/en/tours/snorkeling`, `/en/tours/island` return 200 and expose real HTML language, unique canonical, reciprocal hreflang, credited image, FAQ and public booking CTA.
+- Verify /sitemap.xml includes 5 originals, 5 English alternatives and both locales for each published activity. Verify /dashboard.html and all admin APIs are absent and continue to require authentication.
+- Verify live smoke success and D1/PUBLIC_LEADS_ENABLED guard; do not test payment submission or manipulate actual guest records. Verify local photo gateway retains author credits and no fictitious ratings.
+- Unautomatable without external login: Search Console property/index status, Google impressions/rank, GA4 goal tracking, real reviews, legal/regulatory approval, and mobile LCP/INP/CLS.
+
 # Test and Release Plan — v3.0.0
 ## CI automatable
 1. Syntax-check Worker, pricing module and UI.
