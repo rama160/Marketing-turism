@@ -1,3 +1,8 @@
+## v3.25.0 — Multiline content and bilingual SEO
+Website CMS accepts paragraph breaks, CRLF and tabs in summaries/descriptions, retains length limits and HTML/control-byte validation, and preserves normalized paragraphs. Owner editor maps errors to visible field labels. SEO defaults to AUTO: derives localized titles and descriptions from the activity title, category/static parent and actual summary/description, with bounded readable snippets. The authenticated read-only suggestion endpoint supports preview/regeneration. MANUAL mode permits overrides, legacy custom metadata remains manual, and AUTO recomputes on save/publish. No external keyword-volume data or ranking guarantees; no extra provider, database migration, booking or rate changes.
+
+---
+
 ## v3.24.0 — Automatic activity URLs
 New CMS entries allocate a server-generated URL from the English title (Indonesian fallback) and the selected activity context; detail entries prefix the parent identifier. Unique slug insertion retries with numeric suffixes without overwriting another record. Edits preserve the existing database slug regardless of request input. The owner form no longer contains a URL field; Add Activity fixes the parent to the homepage, Add Detail fixes it to the clicked parent and its category. Existing canonical, hreflang and public URLs stay unchanged. No schema migration.
 

@@ -328,3 +328,28 @@ test("dashboard has no editable URL field and captures parent from clicked actio
  assert.doesNotMatch(js,/cmsField\("slug"\)/);
  assert.match(js,/resetWebsiteForm\(\);cmsParentOptions\(parent\);cmsSyncParent\(\)/);
 });
+
+test("activity descriptions allow pasted paragraphs, tabs and CRLF, reject HTML and unsafe controls",()=>{
+ const content="Mangrove Point menyuguhkan terumbu karang.\r\n\r\nNikmati ikan tropis dan arus laut.\tIkuti pemandu.";
+ const result=validateWebsiteDraft({...draft,description_id:content,description_en:"First paragraph.\n\nSecond paragraph.",summary_id:"Baris pertama.\nBaris kedua."});
+ assert.equal(result.description_id,content.replace(/\r\n/g,"\n"));
+ assert.equal(result.description_en,"First paragraph.\n\nSecond paragraph.");
+ assert.throws(()=>validateWebsiteDraft({...draft,description_id:"<script>alert(1)</script>"}),/description_id/);
+ assert.throws(()=>validateWebsiteDraft({...draft,description_id:"Valid\u0000 invalid"}),/description_id/);
+ assert.throws(()=>validateWebsiteDraft({...draft,description_id:"x".repeat(3001)}),/description_id/);
+});
+test("SEO automatically uses localized content and activity context, with manual override",async()=>{
+ const {suggestWebsiteSEO}=await import("../src/website-cms.mjs");
+ const input={...draft,slug:"snorkeling-mangrove-point",category:"SNORKELING",parent_activity:"static:snorkeling",title_id:"Mangrove Point",title_en:"Mangrove Point",summary_en:"Explore colorful coral gardens.",summary_id:"Jelajahi terumbu karang berwarna.",description_en:"See tropical fish and coral in Nusa Lembongan.",description_id:"Lihat ikan tropis dan karang di Nusa Lembongan."};
+ const result=validateWebsiteDraft(input);
+ assert.equal(result.seo_mode,"AUTO");
+ assert.match(result.seo_title_en,/Mangrove Point – Snorkeling/);
+ assert.match(result.seo_description_id,/terumbu karang/);
+ assert.match(result.seo_description_en,/coral gardens/);
+ assert.ok(result.seo_title_en.length<=65);
+ assert.ok(result.seo_description_id.length<=160);
+ assert.equal(result.seo_title_en,suggestWebsiteSEO(input).seo_title_en);
+ assert.equal(validateWebsiteDraft({...input,seo_mode:"MANUAL",seo_title_en:"Custom title"}).seo_title_en,"Custom title");
+ assert.equal(validateWebsiteDraft({...input,seo_mode:"AUTO",seo_title_en:"Stale title"}).seo_title_en,result.seo_title_en);
+ assert.throws(()=>validateWebsiteDraft({...input,seo_mode:"MANUAL",seo_title_en:"<script>"}),/seo_title_en/);
+});

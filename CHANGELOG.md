@@ -1,3 +1,11 @@
+## [3.25.0] — 2026-11-24
+- Fix rejected multi-paragraph website descriptions and summaries while keeping input safety and limits.
+- Add automatic localized SEO titles and meta descriptions, on-demand suggestions and manual overrides.
+- Show validation errors using the corresponding field label and focus the affected field.
+- Add regression tests; no migration or provider costs.
+
+---
+
 ## [3.24.0] — 2026-11-24
 - Remove manual URL/slug field from the website activity editor.
 - Generate unique SEO-friendly URLs automatically from title and parent context on the server; preserve existing links on edit.

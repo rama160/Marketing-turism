@@ -1021,7 +1021,7 @@ const cmsRead=name=>{const el=cmsField(name);return el?.type==="checkbox"?el.che
 const cmsCategories={SNORKELING:"Snorkeling",ISLAND_TOUR:"Island Tour",TRANSPORT:"Fast Boat / Transport",OTHER:"Aktivitas lainnya"};
 const cmsUnitId={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"};
 const cmsIdPrice=n=>new Intl.NumberFormat("id-ID").format(n);
-const cmsDefaultFields=["category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
+const cmsDefaultFields=["category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_mode","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
 function cmsView(name){
  if(!["published","drafts","activity","pages","media"].includes(name))return;
  npeCmsView=name;
@@ -1039,6 +1039,35 @@ function cmsView(name){
 document.querySelectorAll("[data-cms-view-button]").forEach(b=>b.addEventListener("click",()=>{
  npeCmsPhotoReturn=false;cmsView(b.dataset.cmsViewButton);
 }));
+const cmsSeoFields=["seo_title_en","seo_title_id","seo_description_en","seo_description_id"];
+function cmsSeoMode(){
+ const auto=cmsRead("seo_mode")!=="MANUAL";
+ for(const k of cmsSeoFields)cmsField(k).readOnly=auto;
+}
+$("#cmsSeoMode").addEventListener("change",cmsSeoMode);
+$("#cmsGenerateSeo").onclick=async()=>{
+ const button=$("#cmsGenerateSeo");button.disabled=true;
+ const currentForm=npeCmsEditing?.id||null;
+ try{
+  const fields=Object.fromEntries(["category","parent_activity","title_en","title_id","summary_en","summary_id","description_en","description_id"].map(k=>[k,cmsRead(k)]));
+  if(!fields.title_en||!fields.title_id)throw Error("Isi judul Indonesia dan English terlebih dahulu.");
+  if(cmsRead("seo_mode")==="MANUAL"&&!window.confirm("Ganti SEO manual dengan rekomendasi baru?"))return;
+  const result=await api("admin/website/seo","POST",fields);
+  if((npeCmsEditing?.id||null)!==currentForm||Object.entries(fields).some(([k,v])=>cmsRead(k)!==v))return;
+  for(const k of cmsSeoFields)cmsSet(k,result.items[k]);
+  say("#cmsSeoFeedback","Rekomendasi SEO diperbarui dari konten saat ini.",true);
+ }catch(e){say("#cmsSeoFeedback",e.message);}
+ finally{button.disabled=false;}
+};
+function cmsReportError(error){
+ const labels={title_id:"Judul (Indonesia)",title_en:"Judul (English)",summary_id:"Ringkasan (Indonesia)",summary_en:"Ringkasan (English)",description_id:"Deskripsi lengkap (Indonesia)",description_en:"Deskripsi lengkap (English)",seo_title_id:"SEO Title Indonesia",seo_title_en:"SEO Title English",seo_description_id:"Meta Description Indonesia",seo_description_en:"Meta Description English"};
+ const message=String(error?.message||error);
+ const key=Object.keys(labels).find(k=>message.startsWith(k+" "));
+ if(key){
+  say("#cmsActivityFeedback",message.replace(key,labels[key]));
+  const field=cmsField(key);if(field){const details=field.closest("details");if(details)details.open=true;field.focus();field.scrollIntoView({block:"center"});}
+ }else say("#cmsActivityFeedback",message);
+}
 function cmsPricePreview(){
  const amount=Number(cmsRead("price_amount")),raw=cmsRead("price_amount");
  const unit=cmsUnitId[cmsRead("price_unit")]||"orang";
@@ -1092,6 +1121,7 @@ function startWebsiteDetail(parent){
 }
 function resetWebsiteForm(){
  npeCmsReturn="drafts";npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
+ cmsSet("seo_mode","AUTO");cmsSeoMode();
  cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;
  cmsSet("price_unit","PERSON");cmsSet("price_from",true);
  $("#cmsFormHeading").textContent="Tambah Aktivitas Baru";
@@ -1104,6 +1134,7 @@ function editWebsiteActivity(id,from="published"){
  const d=a.draft||a.published||{};
  cmsParentOptions(d.parent_activity||"");cmsField("parent_activity").disabled=true;
  for(const [k,v] of Object.entries(d))cmsSet(k,v);
+ cmsSet("seo_mode",d.seo_mode||(cmsSeoFields.some(k=>d[k])?"MANUAL":"AUTO"));cmsSeoMode();
  if(d.price_amount===null||d.price_amount===undefined)cmsSet("price_amount",cmsParseLegacyPrice(d));
  if(!d.price_unit)cmsSet("price_unit",cmsLegacyUnit(d));
  cmsSet("price_from",d.price_from!==undefined?d.price_from:/^Mulai/i.test(d.price_label_id||""));
@@ -1229,6 +1260,7 @@ async function cmsSaveDraft(){
  const fields=Object.fromEntries(cmsDefaultFields.map(k=>[k,cmsRead(k)]));
  // Labels are derived from the numeric price. Clearing the numeric field also removes any old label.
  const draft={...fields,price_label_en:"",price_label_id:""};
+ if(draft.seo_mode==="AUTO")for(const k of cmsSeoFields)draft[k]="";
  if(npeCmsEditing&&!npeCmsPriceCleared&&!draft.price_amount){
   // Preserve historical custom selling labels if no numeric amount can be inferred.
   const d=npeCmsEditing.draft;
@@ -1240,7 +1272,7 @@ async function cmsSaveDraft(){
  await loadWebsiteCMS();
  // After the first draft save, keep editing that record instead of accidentally creating the same slug again.
  npeCmsEditing=npeCmsActivities.find(x=>x.id===result.id)||null;
- if(npeCmsEditing){$("#cmsEditingStatus").textContent=npeCmsEditing.status==="PUBLISHED"?"Published · revisi draft":"Draft tersimpan";}
+ if(npeCmsEditing){for(const k of cmsSeoFields)cmsSet(k,npeCmsEditing.draft[k]);$("#cmsEditingStatus").textContent=npeCmsEditing.status==="PUBLISHED"?"Published · revisi draft":"Draft tersimpan";}
  return result;
 }
 cmsForm.onsubmit=async e=>{
@@ -1248,7 +1280,7 @@ cmsForm.onsubmit=async e=>{
  try{
   await cmsSaveDraft();cmsForm.hidden=true;cmsView("drafts");
   say("#cmsStudioFeedback","Draft tersimpan. Harga boleh kosong; publik tidak berubah sebelum Publish.",true);
- }catch(e){say("#cmsActivityFeedback",e.message);}
+ }catch(e){cmsReportError(e);}
  finally{b.disabled=false;}
 };
 $("#cmsPublishFromEditor").onclick=async()=>{
@@ -1268,7 +1300,7 @@ $("#cmsPublishFromEditor").onclick=async()=>{
   const published=await cmsPublishActivity(saved.id,true);
   if(published){cmsForm.hidden=true;cmsView("published");}
   else say("#cmsActivityFeedback","Draft tersimpan, namun publikasi belum berhasil. Periksa pesan dan coba lagi.");
- }catch(e){say("#cmsActivityFeedback",e.message);}
+ }catch(e){cmsReportError(e);}
  finally{btn.disabled=false;$("#cmsSaveActivity").disabled=false;}
 };
 async function cmsPublishActivity(id,confirmed=false){
