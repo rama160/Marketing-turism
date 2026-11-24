@@ -22,7 +22,7 @@ for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snor
  const markup=await get(path);
  if(!markup.includes('<html lang="en">')||!markup.includes('hreflang="id"')||
  !markup.includes('application/ld+json')||!markup.includes('npeFaqGrid'))throw Error("English SEO landing failed "+path);
- if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
+
 }
 const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling Nusa Penida")||!snorkeling.includes("Manta Bay")||!snorkeling.includes("Wikimedia Commons"))throw Error("Snorkeling/gallery missing");
 const island=await get("/island-tour.html");
@@ -31,6 +31,7 @@ if(![snorkeling,island,west,east].every(page=>page.includes("npeFaqGrid")&&page.
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
 if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
 await get("/robots.txt");const websiteSitemap=await get("/sitemap.xml");
+for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"])if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
 if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
 const websiteCatalog=JSON.parse(await get("/api/public/website/activities"));
 if(!Array.isArray(websiteCatalog.items))throw Error("Public CMS activity catalog unavailable");
