@@ -67,12 +67,12 @@ if(!dashboard.includes('data-cms-view="published"')||!dashboard.includes('id="cm
  !dashboard.includes('name="price_amount" type="number"')||!dashboard.includes('id="cmsClearPrice"')||
  !dashboard.includes('id="cmsPublishFromEditor"')||!app.includes('function cmsSaveDraft')||
  !app.includes('function renderCmsPageFields'))throw Error("Published-first edit website workspace / optional price UI missing from live deployment");
-// Photo replacement must immediately open the native gallery, without switching to the Media tab.
+// Photo replacement must allow saved photos or the native phone gallery in one dialog.
 if(!dashboard.includes('id="cmsQuickPhotoFile"')||!dashboard.includes('id="cmsQuickPhotoDialog"')||
  !dashboard.includes('id="cmsQuickPhotoRights"')||!dashboard.includes('id="cmsQuickPhotoSave"')||
  !app.includes("beginCmsQuickPhoto(b.dataset.cmsEditPhoto)")||
  !app.includes("beginCmsQuickPhoto(b.dataset.cmsQuickPhoto)")||
- !app.includes('picker.click(); // synchronous user gesture')||
+ !app.includes('picker.click(); // native file picker called directly by user gesture')||
  !app.includes('await api("admin/website/slots","POST",{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true})')||
  !dashboardStyles.includes(".npeQuickPhotoDialog"))
  throw Error("Live direct photo gallery and owner-approved replacement missing");
