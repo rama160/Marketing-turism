@@ -62,7 +62,7 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
  assert.ok(styles.includes(".dashCompactShortcuts"));
  assert.ok(styles.includes(".dashPaneNav"));
- assert.ok(page.includes('src="/app.js"'));
+ assert.ok(page.includes('src="/app.js?v=3.29.0"'));
  assert.ok(!page.includes('id="leadForm"'));
  assert.ok(!page.includes('class="hero premiumHero"'));
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-tab",name\)/);
