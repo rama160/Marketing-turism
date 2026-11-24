@@ -1,3 +1,11 @@
+## 2026-11-24 — SEO implementation v3.31.0 on main
+The live original homepage, snorkeling, island tour and West/East pages now use server-side SEO enrichment via the existing Worker. The public HTML remains the canonical visual/editorial source. The Worker reads owner-published site content and activity listings to emit crawled HTML titles, descriptions, social previews, Organization/WebPage/BreadcrumbList graph and real HTML internal links.
+Published dynamic activity detail pages remain bilingual with canonical/hreflang and now also include linked children and related activities. The dynamic sitemap includes id/en alternate links and published dates. No new schema, no duplicate site or CMS.
+Do not create PRs or extra branches for this work. Keep current binding isolation, business prices, booking, consent, media ownership, existing marketing publication approvals and legal disclosures unchanged. Search Console ownership, indexing and Google rankings cannot be verified from code alone. Do not claim page-one ranking.
+
+---
+
+
 ## 2026-11-24 — Production-source synchronization, v3.30.0
 **Source of truth: current website on Cloudflare, branch: main only. No new branches or PRs for this maintenance.**
 - Resolved a reproducible version mismatch: Worker/package were 3.29.0, but live smoke still demanded 3.22.0 and therefore every deployed release reported false failure.
