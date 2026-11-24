@@ -1,3 +1,5 @@
+> **Verified SEO architecture, v3.31.0 (24 Nov 2026):** Cloudflare serves the original five public HTML documents directly to avoid asset redirect loops. Each static source now has unique search titles/descriptions, factual Organization/WebPage/BreadcrumbList structured data, Open Graph imagery, and high-intent internal links to live NPE tour/boat pages. Published dynamic activity routes retain server-rendered localized SEO, hreflang, image previews, related destinations and bilingual sitemap entries. The previous plan to route all public HTML through Worker-first was rolled back after live smoke detected redirect loops. Google search ranking and indexing are not guaranteed. No user data or bookings modified.
+
 # Nusa Penida Experiences (NPE) — Tourism Website & AI Marketing Agent
 
 **Status (24 November 2026): v3.30.0 source of truth = `main`.** The production tourism Cloudflare Worker is `marketing-turism-agent`, served at `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/`. Owner dashboard: `/dashboard.html`. No feature branches are required for this synchronized mainline release.
