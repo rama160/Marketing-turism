@@ -1,3 +1,11 @@
+## [3.29.0] — 2026-11-24
+- Simplify activity photo chooser to Galeri NPE or Galeri HP, optional photo title and rights only.
+- Fix asynchronous form reset after upload and preserve saved media.
+- Add persistent manual website activity categories and parent inheritance.
+- Prevent stale dashboard asset caching with versioned assets and no-store HTML; allow local blob previews.
+
+---
+
 ## [3.28.0] — 2026-11-24
 - Synchronize the Snorkeling 3 Spots homepage cover with the existing snorkeling package photo.
 - Synchronize all original homepage destination thumbnails with their corresponding destination editor photos.

@@ -2,4 +2,13 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://raw.githubusercontent.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://raw.githubusercontent.com blob:; form-action 'self'; base-uri 'self'; frame-ancestors 'none'
+
+/dashboard
+  Cache-Control: no-store
+/dashboard.html
+  Cache-Control: no-store
+/app.js
+  Cache-Control: no-cache, must-revalidate
+/dashboard.css
+  Cache-Control: no-cache, must-revalidate

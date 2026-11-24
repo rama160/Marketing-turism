@@ -1018,9 +1018,32 @@ const cmsForm=$("#cmsActivityForm");
 const cmsField=name=>cmsForm.elements.namedItem(name);
 const cmsSet=(name,value)=>{const el=cmsField(name);if(!el)return;if(el.type==="checkbox")el.checked=value===true;else el.value=value??"";};
 const cmsRead=name=>{const el=cmsField(name);return el?.type==="checkbox"?el.checked:el?.value?.trim()??"";};
+const cmsCategoryLabel=key=>cmsCategories[key]||(key?.startsWith("CUSTOM:")?key.slice(7):key)||"Aktivitas";
 const cmsCategories={SNORKELING:"Snorkeling",ISLAND_TOUR:"Island Tour",TRANSPORT:"Fast Boat / Transport",OTHER:"Aktivitas lainnya"};
 const cmsUnitId={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"};
 const cmsIdPrice=n=>new Intl.NumberFormat("id-ID").format(n);
+let cmsCustomCategories=[];
+function renderCmsCategories(selected){
+ const sel=cmsField("category");
+ if(!sel)return;
+ const value=selected??sel.value;
+ const keys=[...Object.keys(cmsCategories),...cmsCustomCategories.map(x=>x.category)];
+ if(value?.startsWith("CUSTOM:")&&!keys.includes(value))keys.push(value);
+ sel.innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(cmsCategoryLabel(k))+'</option>').join("");
+ sel.value=keys.includes(value)?value:"ISLAND_TOUR";
+}
+$("#cmsAddCategory").onclick=async()=>{
+ const input=$("#cmsNewCategory"),name=input.value.trim();
+ if(!name){input.focus();return;}
+ const button=$("#cmsAddCategory");button.disabled=true;
+ try{
+  const result=await api("admin/website/categories","POST",{name});
+  if(!cmsCustomCategories.some(c=>c.category===result.category))cmsCustomCategories.push(result);
+  renderCmsCategories(result.category);input.value="";
+  say("#cmsCategoryFeedback","Kategori tersimpan dan dapat digunakan kembali.",true);refreshActivityPreview();
+ }catch(e){say("#cmsCategoryFeedback",e.message);}
+ finally{button.disabled=false;}
+};
 const cmsDefaultFields=["category","parent_activity","media_id","title_en","title_id","summary_en","summary_id","description_en","description_id","seo_mode","seo_title_en","seo_title_id","seo_description_en","seo_description_id","price_amount","price_unit","price_from","price_verified","supplier_confirmed"];
 function cmsView(name){
  if(!["published","drafts","activity","pages","media"].includes(name))return;
@@ -1084,7 +1107,7 @@ function refreshActivityPreview(){
  const image=$("#cmsActivityImage");
  image.hidden=!cover;if(cover){image.src=cover.url;image.alt=cover.alt_en;}
  const url=cover?.url||"/photo-unavailable.svg";
- e.innerHTML='<img src="'+esc(url)+'" alt="'+esc(cover?.alt_en||title)+'" loading="lazy"><div class="npeCmsPreviewBody"><small>'+esc(cmsCategories[cmsRead("category")]||"Island Tour")+'</small><h4>'+esc(title)+'</h4><p>'+esc(desc)+'</p>'+
+ e.innerHTML='<img src="'+esc(url)+'" alt="'+esc(cover?.alt_en||title)+'" loading="lazy"><div class="npeCmsPreviewBody"><small>'+esc(cmsCategoryLabel(cmsRead("category")))+'</small><h4>'+esc(title)+'</h4><p>'+esc(desc)+'</p>'+
   (amount&&Number(amount)>0?'<strong>'+esc($("#cmsPricePreview").textContent.split(" · ")[0])+'</strong>':'<small>Harga: Tanya via WhatsApp</small>')+'</div>';
 }
 for(const el of cmsForm.querySelectorAll("input,textarea,select"))el.addEventListener("input",refreshActivityPreview);
@@ -1112,17 +1135,17 @@ function cmsParentOptions(selected=""){
 function cmsSyncParent(){
  const sel=cmsField("parent_activity");
  const cat=sel.selectedOptions[0]?.dataset.category;
- if(cat)cmsSet("category",cat);
+ if(cat)renderCmsCategories(cat);
 }
 $("#cmsParentActivity").addEventListener("change",()=>{cmsSyncParent();refreshActivityPreview();});
 function startWebsiteDetail(parent){
- resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();cmsField("category").disabled=true;
+ resetWebsiteForm();cmsParentOptions(parent);cmsSyncParent();cmsField("category").disabled=true;$("#cmsNewCategoryWrap").hidden=true;
  $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
 }
 function resetWebsiteForm(){
  npeCmsReturn="drafts";npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
  cmsSet("seo_mode","AUTO");cmsSeoMode();
- cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;
+ cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;renderCmsCategories("ISLAND_TOUR");$("#cmsNewCategoryWrap").hidden=false;$("#cmsNewCategory").value="";$("#cmsCategoryFeedback").textContent="";
  cmsSet("price_unit","PERSON");cmsSet("price_from",true);
  $("#cmsFormHeading").textContent="Tambah Aktivitas Baru";
  $("#cmsEditingStatus").textContent="Draft Baru";$("#cmsActivityFeedback").textContent="";
@@ -1133,12 +1156,13 @@ function editWebsiteActivity(id,from="published"){
  npeCmsReturn=from;npeCmsEditing=a;npeCmsPriceCleared=false;cmsForm.reset();
  const d=a.draft||a.published||{};
  cmsParentOptions(d.parent_activity||"");cmsField("parent_activity").disabled=true;
+ renderCmsCategories(d.category);
  for(const [k,v] of Object.entries(d))cmsSet(k,v);
  cmsSet("seo_mode",d.seo_mode||(cmsSeoFields.some(k=>d[k])?"MANUAL":"AUTO"));cmsSeoMode();
  if(d.price_amount===null||d.price_amount===undefined)cmsSet("price_amount",cmsParseLegacyPrice(d));
  if(!d.price_unit)cmsSet("price_unit",cmsLegacyUnit(d));
  cmsSet("price_from",d.price_from!==undefined?d.price_from:/^Mulai/i.test(d.price_label_id||""));
- cmsField("category").disabled=!!d.parent_activity;
+ cmsField("category").disabled=!!d.parent_activity;$("#cmsNewCategoryWrap").hidden=!!d.parent_activity;$("#cmsNewCategory").value="";$("#cmsCategoryFeedback").textContent="";
  $("#cmsFormHeading").textContent="Edit · "+(d.title_id||d.title_en||a.slug);
  $("#cmsEditingStatus").textContent=a.status==="PUBLISHED"?"Published · edit draft":"Draft";
  $("#cmsActivityFeedback").textContent=a.status==="PUBLISHED"?"Perubahan tidak mengganti versi publik sampai Anda menekan Simpan & Publish.":"Simpan perubahan lalu terbitkan ketika sudah siap.";
@@ -1153,7 +1177,7 @@ function cmsActivityCard(a,isPublished){
  const badge=isPublished?(a.pending_changes?"Published · Ada revisi draft":"Published"):(a.status==="ARCHIVED"?"Arsip":"Draft");
  return '<article class="npeCmsPublishedCard">'+
   '<div class="npeCmsPublishedImage">'+(img?'<img src="'+esc(img.url)+'" loading="lazy" alt="'+esc(img.alt_id)+'">':'<div class="npeCmsNoImage">▧ Foto</div>')+'</div>'+
-  '<div class="npeCmsPublishedInfo"><small>'+esc(cmsCategories[d.category]||d.category||"Aktivitas")+' · '+esc(badge)+(parent?' · Detail: '+esc(parent):'')+'</small><h4>'+esc(name)+'</h4>'+
+  '<div class="npeCmsPublishedInfo"><small>'+esc(cmsCategoryLabel(d.category))+' · '+esc(badge)+(parent?' · Detail: '+esc(parent):'')+'</small><h4>'+esc(name)+'</h4>'+
   '<p>'+esc((d.summary_id||d.summary_en||"").slice(0,170))+'</p>'+
   '<strong class="npeCmsPublishedPrice">'+(price?esc(price):'<span>Harga belum ditampilkan</span>')+'</strong>'+
   '<div class="npeCmsCardActions">'+
@@ -1246,6 +1270,7 @@ async function loadWebsiteCMS(){
   ]);
   cmsPhotoOverrides=new Map((slots.items||[]).map(x=>[x.slot,x]));
   npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];
+  try{const categories=await api("admin/website/categories");cmsCustomCategories=categories.items||[];if(npeCmsView==="activity")renderCmsCategories();}catch(_){/* existing categories remain usable */}
   drawWebsiteCMS();drawPublishedPageCards();renderCmsPagePhotos();
   $("#cmsStudioFeedback").textContent="";
  }catch(e){say("#cmsStudioFeedback","CMS belum siap: "+e.message);}
@@ -1320,12 +1345,14 @@ async function cmsArchiveActivity(id){
  catch(e){say("#cmsStudioFeedback",e.message);}
 }
 $("#cmsMediaUpload").onsubmit=async e=>{
- e.preventDefault();const b=e.currentTarget.querySelector("button[type=submit]");b.disabled=true;
+ e.preventDefault();const form=e.currentTarget,b=form.querySelector("button[type=submit]");b.disabled=true;
  try{
-  const raw=new FormData(e.currentTarget),file=raw.get("file");
-  const meta=cmsPhotoMetadata(file);
+  const raw=new FormData(form),file=raw.get("file");
+  const meta=cmsPhotoMetadata(file,String(raw.get("title")||"").trim());
   const j=await uploadCmsWebsitePhoto(file,meta.title,meta.altId,meta.altEn,raw.has("rights_confirmed"));
-  e.currentTarget.reset();await loadWebsiteCMS();
+  form.reset();
+  if(!npeCmsMedia.some(m=>m.id===j.id))npeCmsMedia.push({...j,usage_count:0});
+  drawWebsiteCMS();await refreshNpeGallery();
   $("#cmsSlotMedia").value=j.id;
   say("#cmsMediaFeedback","Foto tersimpan di Galeri NPE. Anda dapat memilihnya saat membuat aktivitas atau detail tanpa upload ulang.",true);
  }catch(e){say("#cmsMediaFeedback",e.message);}
@@ -1548,7 +1575,7 @@ function beginCmsQuickPhoto(slot){
  $("#cmsQuickPhotoTarget").textContent=activity?"Untuk "+(cmsRead("title_id")||cmsRead("title_en")||"aktivitas ini")+" · judul dan deskripsi yang sudah diisi tetap tersimpan di formulir.":"Mengganti: "+cmsPageSlotLabels[slot]+" · pilih dari Galeri NPE atau galeri HP";
  $("#cmsQuickPhotoChooser").hidden=false;
  $("#cmsQuickPhotoSelected").hidden=true;
- $("#cmsQuickPhotoSearch").value="";
+ $("#cmsQuickPhotoSearch").value="";$("#cmsQuickGalleryPanel").hidden=true;
  $("#cmsQuickPhotoGalleryStatus").textContent="Memuat foto yang sudah diunggah...";
  quickPhotoDialog.showModal();
  void refreshCmsQuickGallery();
@@ -1575,7 +1602,7 @@ function drawCmsQuickGallery(){
   clearCmsQuickSelection();
   cmsQuickPhotoMediaId=m.id;
   $("#cmsQuickPhotoPreview").src=m.url;
-  $("#cmsQuickPhotoMetaNote").textContent=m.title||"Foto tersimpan";
+  $("#cmsQuickPhotoMetaNote").textContent=m.title||"Foto tersimpan";$("#cmsQuickPhotoTitleWrap").hidden=true;
   $("#cmsQuickPhotoRightsWrap").hidden=true;
   $("#cmsQuickPhotoReuseNote").hidden=false;
   $("#cmsQuickPhotoChooser").hidden=true;
@@ -1590,7 +1617,7 @@ function clearCmsQuickSelection(){
  $("#cmsQuickPhotoRightsWrap").hidden=false;
  $("#cmsQuickPhotoReuseNote").hidden=true;
  $("#cmsQuickPhotoFeedback").textContent="";
- $("#cmsQuickPhotoMetaNote").textContent="";
+ $("#cmsQuickPhotoMetaNote").textContent="";$("#cmsQuickPhotoName").value="";$("#cmsQuickPhotoTitleWrap").hidden=true;
 }
 function closeCmsQuickPhoto(){
  if(cmsQuickPhotoBusy)return;
@@ -1607,13 +1634,13 @@ $("#cmsQuickPhotoCancel").onclick=closeCmsQuickPhoto;
 $("#cmsQuickPhotoClose").onclick=closeCmsQuickPhoto;
 $("#cmsQuickPhotoBack").onclick=()=>{
  if(cmsQuickPhotoBusy)return;
- clearCmsQuickSelection();
+ clearCmsQuickSelection();$("#cmsQuickGalleryPanel").hidden=true;
  $("#cmsQuickPhotoChooser").hidden=false;
  $("#cmsQuickPhotoSelected").hidden=true;
  void refreshCmsQuickGallery();
 };
 $("#cmsQuickPhotoSearch").oninput=drawCmsQuickGallery;
-$("#cmsQuickPickExisting").onclick=()=>$("#cmsQuickPhotoSearch").focus();
+$("#cmsQuickPickExisting").onclick=()=>{$("#cmsQuickGalleryPanel").hidden=false;$("#cmsQuickPhotoSearch").focus();void refreshCmsQuickGallery();};
 $("#cmsQuickPickPhone").onclick=()=>{
  const picker=$("#cmsQuickPhotoFile");
  picker.value="";
@@ -1630,7 +1657,8 @@ $("#cmsQuickPhotoFile").onchange=event=>{
  cmsQuickPhotoObjectUrl=URL.createObjectURL(file);
  const label=cmsQuickPhotoSlot==="__activity__"?(cmsRead("title_id")||cmsRead("title_en")):cmsPageSlotLabels[cmsQuickPhotoSlot];
  $("#cmsQuickPhotoPreview").src=cmsQuickPhotoObjectUrl;
- $("#cmsQuickPhotoMetaNote").textContent="Nama foto otomatis: "+cmsPhotoMetadata(file,label).title;
+ $("#cmsQuickPhotoName").value=cmsPhotoMetadata(file,label).title;$("#cmsQuickPhotoTitleWrap").hidden=false;
+ $("#cmsQuickPhotoMetaNote").textContent="Deskripsi foto dibuat otomatis." ;
  $("#cmsQuickPhotoChooser").hidden=true;
  $("#cmsQuickPhotoSelected").hidden=false;
 };
@@ -1655,7 +1683,8 @@ $("#cmsQuickPhotoSave").onclick=async()=>{
  if(cmsQuickPhotoSource&&!$("#cmsQuickPhotoRights").checked){say("#cmsQuickPhotoFeedback","Centang konfirmasi hak penggunaan foto terlebih dahulu.");return;}
  const isActivity=cmsQuickPhotoSlot==="__activity__";
  const label=cmsPageSlotLabels[cmsQuickPhotoSlot]||"";
- const {title,altId,altEn}=cmsPhotoMetadata(cmsQuickPhotoSource,isActivity?cmsRead("title_id"):label,isActivity?cmsRead("title_en"):label);
+ const entered=$("#cmsQuickPhotoName").value.trim();
+ const {title,altId,altEn}=cmsPhotoMetadata(cmsQuickPhotoSource,entered||(isActivity?cmsRead("title_id"):label),isActivity?cmsRead("title_en"):entered||label);
  const button=$("#cmsQuickPhotoSave");cmsQuickPhotoBusy=true;button.disabled=true;
  $("#cmsQuickPhotoCancel").disabled=true;$("#cmsQuickPhotoClose").disabled=true;
  say("#cmsQuickPhotoFeedback","Mengoptimalkan foto dan menyimpan perubahan...",true);

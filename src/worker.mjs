@@ -11,7 +11,7 @@ import {servePhoto} from "./photos.mjs";
 import {storeOwnerPhoto,serveOwnerPhoto,listOwnerPhotos,selectOwnerPhoto,resolveCampaignPhoto} from "./photo-library.mjs";
 import {choosePhotoForReview,serveResearchPhoto,topicForCampaign,photoResearchEnabled} from "./photo-research.mjs";
 import {publicSiteContent,adminSiteContent,publishSiteContent} from "./site-content.mjs";
-import {suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
+import {listWebsiteCategories,createWebsiteCategory,suggestWebsiteSEO,listWebsiteActivities,publicWebsiteActivities,saveWebsiteActivity,publishWebsiteActivity,archiveWebsiteActivity,listWebsiteMedia,storeWebsiteMedia,deleteWebsiteMedia,serveWebsiteMedia,getWebsiteSlots,updateWebsiteSlot,renderExperiencePage,findPublishedExperience,renderWebsiteSitemap} from "./website-cms.mjs";
 import {waChallenge,waWebhook,waAdminInbox,waAdminThread,waAdminDraft,waAdminSend} from "./whatsapp.mjs";
 import {researchBuyerQuestions,growthOverview,progressOpportunity,addPartnerOpportunity,recordChatIntent} from "./growth-engine.mjs";
 import {saveGroup,listSavedGroups,changeGroupStatus,addGroupQuestion} from "./group-workflow.mjs";
@@ -171,7 +171,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.28.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.29.0",db:!!db,ai:!!env.AI});
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
@@ -246,6 +246,11 @@ async function route(req,env,ctx){
   const b=await parse(req),result=await waAdminSend(db,env,b);
   if(result.ok)await audit(db,"whatsapp",String(b.client_nonce||""),"OWNER_SUBMITTED_REPLY",{via:"official_cloud_api"});
   return result;
+ }
+ if(path==="/api/admin/website/categories"){
+  if(method==="GET")return json(await listWebsiteCategories(db));
+  if(method==="POST")return json(await createWebsiteCategory(db,await parse(req)),201);
+  return bad("Metode tidak diizinkan",405);
  }
  if(path==="/api/admin/website/seo"){
   if(method!=="POST")return bad("Metode tidak diizinkan",405);

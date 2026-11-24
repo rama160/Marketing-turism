@@ -14,6 +14,24 @@ const galleryPhotoSlots=new Set([
 const validSlots=new Set([...legacyPhotoSlots,...galleryPhotoSlots]);
 const staticParents=new Map([["static:snorkeling","SNORKELING"],["static:island","ISLAND_TOUR"],["static:west","ISLAND_TOUR"],["static:east","ISLAND_TOUR"]]);
 const validCategories=new Set(["SNORKELING","ISLAND_TOUR","TRANSPORT","OTHER"]);
+const customCategoryValid=x=>x.startsWith("CUSTOM:")&&/^[\p{L}\p{N}][\p{L}\p{N} &()'’./-]{1,59}$/u.test(x.slice(7));
+export async function listWebsiteCategories(db){
+ const r=await db.prepare("SELECT category,name FROM website_custom_categories ORDER BY name COLLATE NOCASE").all();
+ return {items:r.results};
+}
+export async function createWebsiteCategory(db,input){
+ const name=String(input?.name||"").trim().replace(/\s+/g," ");
+ const category="CUSTOM:"+name;
+ if(!customCategoryValid(category))throw Error("Nama kategori harus 2–60 karakter berupa teks biasa");
+ if(["snorkeling","island tour","fast boat / transport","aktivitas lainnya","transport","other"].includes(name.toLowerCase()))throw Error("Kategori sudah tersedia");
+ await db.prepare("INSERT INTO website_custom_categories(category,name) VALUES(?,?) ON CONFLICT(name) DO NOTHING").bind(category,name).run();
+ return await db.prepare("SELECT category,name FROM website_custom_categories WHERE name=? COLLATE NOCASE").bind(name).first();
+}
+async function verifyCategory(db,data){
+ if(validCategories.has(data.category))return;
+ const row=await db.prepare("SELECT category FROM website_custom_categories WHERE category=?").bind(data.category).first();
+ if(!row)throw Error("Kategori belum terdaftar. Tambahkan kategori terlebih dahulu.");
+}
 const plain=(x,max=1500)=>typeof x==="string"&&x.trim().length>0&&x.trim().length<=max&&!/[<>\u0000-\u001f\u007f]/.test(x);
 const escapeHTML=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const jsonReply=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
@@ -56,7 +74,7 @@ export function suggestWebsiteSEO(input){
   const title=seoText(input["title_"+lang]);
   const summary=seoText(input["summary_"+lang]);
   const desc=seoText(input["description_"+lang]);
-  const context=(staticContext[input.parent_activity]||contexts[input.category]||contexts.OTHER)[lang];
+  const context=(staticContext[input.parent_activity]||contexts[input.category]||{en:input.category?.startsWith("CUSTOM:")?seoText(input.category.slice(7)):"",id:input.category?.startsWith("CUSTOM:")?seoText(input.category.slice(7)):""})[lang];
   const topic=title&&context&&!title.toLowerCase().includes(context.toLowerCase())?title+" – "+context:title;
   const brand=" | Nusa Penida Experiences";
   out["seo_title_"+lang]=topic?seoClip(topic,65-brand.length)+brand:"";
@@ -70,7 +88,7 @@ export function validateWebsiteDraft(input){
  if(!input||typeof input!=="object")throw Error("Isi aktivitas tidak valid");
  const slug=u16(input.slug).toLowerCase(),category=u16(input.category);
  if(slug.length<3||slug.length>90||!slugRE.test(slug))throw Error("Slug gunakan huruf kecil, angka, dan tanda hubung (3–90 karakter)");
- if(!validCategories.has(category))throw Error("Kategori aktivitas tidak valid");
+ if(!validCategories.has(category)&&!customCategoryValid(category))throw Error("Kategori aktivitas tidak valid");
  const parent_activity=u16(input.parent_activity);
  if(parent_activity){
   const staticCategory=staticParents.get(parent_activity);
@@ -153,6 +171,7 @@ export async function saveWebsiteActivity(db,b,id=null){
  if(!id){
   const base=websiteSlugBase(b.draft);
   const data=validateWebsiteDraft({...b.draft,slug:base});
+  await verifyCategory(db,data);
   await verifyParent(db,data);
   id=crypto.randomUUID();
   // Atomic uniqueness check: parallel saves or identical titles never overwrite an existing activity.
@@ -170,7 +189,8 @@ export async function saveWebsiteActivity(db,b,id=null){
  if(!Number.isSafeInteger(b.expected_version)||prev.version!==b.expected_version)throw Error("Versi telah berubah; muat ulang editor");
  const previous=JSON.parse(prev.draft_json);
  const data=validateWebsiteDraft({...b.draft,slug:prev.slug});
- await verifyParent(db,data);
+ await verifyCategory(db,data);
+  await verifyParent(db,data);
  if((previous.parent_activity||"")!==data.parent_activity)throw Error("Aktivitas induk tidak dapat diubah setelah dibuat");
  if(previous.category!==data.category&&!data.parent_activity) {
   const child=await db.prepare("SELECT id FROM website_activities WHERE json_extract(draft_json,'$.parent_activity')=? OR json_extract(published_json,'$.parent_activity')=? LIMIT 1").bind("activity:"+data.slug,"activity:"+data.slug).first();
@@ -186,6 +206,7 @@ export async function publishWebsiteActivity(db,id,body){
  if(!row)throw Error("Aktivitas tidak ditemukan");
  if(!Number.isSafeInteger(body.expected_version)||row.version!==body.expected_version)throw Error("Versi berubah. Muat ulang sebelum terbit");
  const draft=validateWebsiteDraft(JSON.parse(row.draft_json));
+ await verifyCategory(db,draft);
  await verifyParent(db,draft);
  if((draft.price_amount!==null||draft.price_label_id||draft.price_label_en)&&!draft.price_verified)
   throw Error("Harga belum diverifikasi. Centang konfirmasi harga atau kosongkan harga sebelum terbit.");

@@ -61,7 +61,7 @@ function drawPublicActivities(){
   const art=el("div","packageArt");
   const img=el("img","package-cover-image");img.src=activity.photo_url;img.loading="lazy";img.decoding="async";
   img.alt=activity["title_"+lang];art.appendChild(img);
-  art.appendChild(el("span","",activity.category.replaceAll("_"," ")));
+  art.appendChild(el("span","",activity.category.replace(/^CUSTOM:/,"").replaceAll("_"," ")));
   const inner=el("div","packageInner");
   inner.appendChild(el("span","tag",lang==="en"?"Experience":"Aktivitas Wisata"));
   inner.appendChild(el("h3","",activity["title_"+lang]));
