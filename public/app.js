@@ -1225,13 +1225,8 @@ async function cmsArchiveActivity(id){
 $("#cmsMediaUpload").onsubmit=async e=>{
  e.preventDefault();const b=e.currentTarget.querySelector("button[type=submit]");b.disabled=true;
  try{
-  const raw=new FormData(e.currentTarget),file=raw.get("file"),jpeg=await compressOwnerPhoto(file);
-  const form=new FormData();form.append("file",jpeg,"npe-website-photo.jpg");
-  for(const k of ["title","alt_en","alt_id"])form.append(k,String(raw.get(k)||"").trim());
-  form.append("rights_confirmed",raw.has("rights_confirmed")?"true":"false");
-  const res=await fetch("/api/admin/website/media",{method:"POST",credentials:"same-origin",cache:"no-store",body:form});
-  const j=await res.json();
-  if(!res.ok)throw Error(j.error||"Upload foto gagal");
+  const raw=new FormData(e.currentTarget),file=raw.get("file");
+  const j=await uploadCmsWebsitePhoto(file,String(raw.get("title")||"").trim(),String(raw.get("alt_id")||"").trim(),String(raw.get("alt_en")||"").trim(),raw.has("rights_confirmed"));
   e.currentTarget.reset();await loadWebsiteCMS();
   if(npeCmsPhotoReturn){
    cmsSet("media_id",j.id);cmsView("activity");npeCmsPhotoReturn=false;refreshActivityPreview();
@@ -1429,6 +1424,108 @@ const cmsPublishedPages=[
   "/east-tour.html"
  ]
 ];
+// Direct photo replacement: tapping the picture opens the phone's native image gallery.
+// The current page remains visible and the chosen slot is never reselected manually.
+let cmsQuickPhotoSlot=null,cmsQuickPhotoSource=null,cmsQuickPhotoObjectUrl=null,cmsQuickPhotoMediaId=null,cmsQuickPhotoBusy=false;
+const quickPhotoDialog=$("#cmsQuickPhotoDialog");
+function beginCmsQuickPhoto(slot){
+ if(!ownerSignedIn){say("#cmsStudioFeedback","Login admin diperlukan untuk mengganti foto.");return;}
+ if(!Object.prototype.hasOwnProperty.call(cmsPageSlotLabels,slot)){
+  say("#cmsStudioFeedback","Lokasi foto tidak dikenali. Tidak ada foto yang diubah.");return;
+ }
+ if(cmsQuickPhotoBusy)return;
+ cmsQuickPhotoSlot=slot;
+ cmsQuickPhotoSource=null;
+ cmsQuickPhotoMediaId=null;
+ const picker=$("#cmsQuickPhotoFile");
+ picker.value=""; // selecting the same file after cancel must still trigger change
+ picker.click(); // synchronous user gesture: Android opens its native photo picker
+}
+function closeCmsQuickPhoto(){
+ if(cmsQuickPhotoBusy)return;
+ quickPhotoDialog.close();
+}
+quickPhotoDialog.addEventListener("cancel",event=>{if(cmsQuickPhotoBusy)event.preventDefault();});
+quickPhotoDialog.addEventListener("close",()=>{
+ if(cmsQuickPhotoObjectUrl){URL.revokeObjectURL(cmsQuickPhotoObjectUrl);cmsQuickPhotoObjectUrl=null;}
+ cmsQuickPhotoSource=null;cmsQuickPhotoSlot=null;cmsQuickPhotoMediaId=null;
+ $("#cmsQuickPhotoFile").value="";
+ $("#cmsQuickPhotoRights").checked=false;
+ $("#cmsQuickPhotoFeedback").textContent="";
+});
+$("#cmsQuickPhotoCancel").onclick=closeCmsQuickPhoto;
+$("#cmsQuickPhotoClose").onclick=closeCmsQuickPhoto;
+$("#cmsQuickPhotoFile").onchange=event=>{
+ const file=event.target.files?.[0];
+ if(!file){cmsQuickPhotoSlot=null;return;} // user dismissed the native gallery
+ if(!cmsQuickPhotoSlot)return;
+ if(!file.type.startsWith("image/")){
+  say("#cmsStudioFeedback","Pilih foto JPG, PNG, atau WebP dari galeri.");return;
+ }
+ if(file.size>15000000){say("#cmsStudioFeedback","Ukuran foto maksimum 15 MB.");return;}
+ cmsQuickPhotoSource=file;cmsQuickPhotoMediaId=null;
+ if(cmsQuickPhotoObjectUrl)URL.revokeObjectURL(cmsQuickPhotoObjectUrl);
+ cmsQuickPhotoObjectUrl=URL.createObjectURL(file);
+ const label=cmsPageSlotLabels[cmsQuickPhotoSlot];
+ $("#cmsQuickPhotoPreview").src=cmsQuickPhotoObjectUrl;
+ $("#cmsQuickPhotoTarget").textContent="Mengganti: "+label+" · hanya foto ini yang berubah";
+ $("#cmsQuickPhotoTitle").value=label;
+ $("#cmsQuickPhotoAltId").value="Foto "+label+" — Nusa Penida Experiences";
+ $("#cmsQuickPhotoAltEn").value="Photo of "+label+" — Nusa Penida Experiences";
+ $("#cmsQuickPhotoRights").checked=false;
+ $("#cmsQuickPhotoFeedback").textContent="";
+ quickPhotoDialog.showModal();
+};
+async function uploadCmsWebsitePhoto(file,title,altId,altEn,rightsConfirmed){
+ if(!rightsConfirmed)throw Error("Konfirmasi hak pakai komersial diperlukan.");
+ if(title.length<2||altId.length<2||altEn.length<2||title.length>120||altId.length>180||altEn.length>180)
+  throw Error("Nama dan deskripsi foto harus diisi (minimal 2 karakter).");
+ const jpeg=await compressOwnerPhoto(file);
+ const form=new FormData();
+ form.append("file",jpeg,"npe-website-photo.jpg");
+ form.append("title",title);
+ form.append("alt_id",altId);
+ form.append("alt_en",altEn);
+ form.append("rights_confirmed","true");
+ const res=await fetch("/api/admin/website/media",{method:"POST",credentials:"same-origin",cache:"no-store",body:form});
+ let out;try{out=await res.json();}catch(_){throw Error("Respons server tidak dapat dibaca.");}
+ if(!res.ok)throw Error(out.error||"Unggah foto gagal.");
+ return out;
+}
+$("#cmsQuickPhotoSave").onclick=async()=>{
+ if(cmsQuickPhotoBusy||!cmsQuickPhotoSource||!cmsQuickPhotoSlot)return;
+ if(!$("#cmsQuickPhotoRights").checked){say("#cmsQuickPhotoFeedback","Centang konfirmasi hak penggunaan foto terlebih dahulu.");return;}
+ const title=$("#cmsQuickPhotoTitle").value.trim(),altId=$("#cmsQuickPhotoAltId").value.trim(),altEn=$("#cmsQuickPhotoAltEn").value.trim();
+ const button=$("#cmsQuickPhotoSave");cmsQuickPhotoBusy=true;button.disabled=true;
+ $("#cmsQuickPhotoCancel").disabled=true;$("#cmsQuickPhotoClose").disabled=true;
+ say("#cmsQuickPhotoFeedback","Mengoptimalkan foto dan menyimpan perubahan...",true);
+ try{
+  // Keep uploaded media if the slot update fails, so retry cannot upload a duplicate.
+  if(!cmsQuickPhotoMediaId){
+   const uploaded=await uploadCmsWebsitePhoto(cmsQuickPhotoSource,title,altId,altEn,true);
+   cmsQuickPhotoMediaId=uploaded.id;
+  }
+  const slot=cmsQuickPhotoSlot;
+  await api("admin/website/slots","POST",{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true});
+  // Refresh only image records: do not discard unsaved title/description edits.
+  try{
+   const [photos,media]=await Promise.all([api("public/website/slots"),api("admin/website/media")]);
+   cmsPhotoOverrides=new Map((photos.items||[]).map(x=>[x.slot,x]));
+   npeCmsMedia=media.items||[];
+   drawPublishedPageCards();
+   renderCmsPagePhotos();
+  }catch(_){ /* publication already succeeded; user can refresh to see the image */ }
+  quickPhotoDialog.close();
+  say("#cmsStudioFeedback","Foto "+(cmsPageSlotLabels[slot]||slot)+" berhasil diganti di website publik. Foto lain tidak berubah.",true);
+  say("#cmsPageFeedback","Foto berhasil diganti tanpa meninggalkan editor. Perubahan teks yang belum disimpan tetap ada.",true);
+ }catch(e){say("#cmsQuickPhotoFeedback","Gagal menyimpan foto: "+e.message);}
+ finally{
+  cmsQuickPhotoBusy=false;
+  button.disabled=false;
+  $("#cmsQuickPhotoCancel").disabled=false;
+  $("#cmsQuickPhotoClose").disabled=false;
+ }
+};
 function cmsCurrentPhoto(slot){
  const overridden=cmsPhotoOverrides.get(slot),fallback=cmsPublishedSnapshot.photos?.[slot];
  return overridden?.url?{url:overridden.url,alt:overridden.alt_id||slot}:fallback||null;
@@ -1442,10 +1539,12 @@ function drawPublishedPageCards(){
    '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto</div>')+'</div>'+
    '<div class="npeCmsPublishedInfo"><small>Halaman publik · Terbit</small><h4>'+esc(name)+'</h4><p>'+esc(desc.slice(0,180))+'</p>'+
    (price?'<strong class="npeCmsPublishedPrice">'+esc(price)+'</strong>':'')+
-   '<div class="npeCmsCardActions"><button type="button" class="primary small" data-cms-page="'+esc(id)+'">✎ Edit isi lengkap</button>'+
+   '<div class="npeCmsCardActions"><button type="button" class="primary small" data-cms-page="'+esc(id)+'">✎ Edit isi lengkap</button>'+ 
+   '<button type="button" class="outline small" data-cms-quick-photo="'+esc(slot)+'">▧ Ganti Foto</button>'+
    '<a class="outline small" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Lihat ↗</a></div></div></article>';
  }).join("");
  container.querySelectorAll("[data-cms-page]").forEach(b=>b.onclick=()=>cmsPublishedPage(b.dataset.cmsPage));
+ container.querySelectorAll("[data-cms-quick-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsQuickPhoto));
 }
 function renderCmsPagePhotos(){
  const root=$("#cmsPagePhotos");if(!root)return;
@@ -1458,10 +1557,7 @@ function renderCmsPagePhotos(){
    '<div><strong>'+esc(cmsPageSlotLabels[slot]||slot)+'</strong>'+
    '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'">Ganti foto</button></div></article>';
  }).join("");
- root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>{
-  $("#cmsPhotoSlot").value=b.dataset.cmsEditPhoto;npeCmsPhotoReturn=false;cmsView("media");
-  say("#cmsMediaFeedback","Ganti foto untuk "+(cmsPageSlotLabels[b.dataset.cmsEditPhoto]||b.dataset.cmsEditPhoto)+". Foto lain tidak berubah.",true);
- });
+ root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsEditPhoto));
 }
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
@@ -1504,8 +1600,8 @@ $("#cmsPageFilter").oninput=filterCmsPageFields;
 $("#cmsPagePicker").onchange=renderCmsPageFields;
 $("#cmsPageLocale").onchange=renderCmsPageFields;
 $("#cmsPagePhoto").onclick=()=>{
- $("#cmsPhotoSlot").value=$("#cmsPagePicker").value;
- npeCmsPhotoReturn=false;cmsView("media");
+ const page=$("#cmsPagePicker").value,slot=cmsPublishedPages.find(([id])=>id===page)?.[4]||"hero";
+ beginCmsQuickPhoto(slot);
 };
 $("#cmsPageSave").onclick=async()=>{
  const btn=$("#cmsPageSave");btn.disabled=true;
