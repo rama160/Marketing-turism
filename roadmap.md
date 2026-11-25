@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.0 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.1 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **P0 — baseline Search Console, indexasi dan konversi**.
+- Status: aktif. Fokus saat ini: **P0 — baseline performa pencarian (SEO-003), konversi (SEO-004) dan performa teknis (SEO-005); pemantauan indeks sisanya**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -20,7 +20,7 @@ Sasaran utama: halaman penjualan/panduan NPE yang relevan mencapai 10 posisi org
 
 | KPI | Baseline 26 Nov 2026 | Sasaran kerja (bukan prakiraan) | Bukti |
 |---|---|---|---|
-| Halaman prioritas terindeks | Belum diperoleh dari GSC | Seluruh URL prioritas yang layak terindeks; alasan pengecualian dicatat | URL Inspection / Page indexing |
+| Halaman prioritas terindeks | 10/10 URL yang diperiksa dilaporkan terindeks pada 25 Nov 2026; 28 URL ditemukan via sitemap (bukan 28 terindeks) | Seluruh URL prioritas yang layak terindeks; alasan pengecualian dicatat | URL Inspection / Page indexing |
 | Kueri non-brand dengan posisi rata-rata 1–10 | Belum diketahui | Minimal 3 pasangan kueri–URL prioritas dalam 90 hari evaluasi, lalu 5–10 dalam 180 hari jika realistis | GSC Web, periode 28 hari; minimal 30 impressions per pasangan sebagai ambang evaluasi internal |
 | Impressions dan clicks non-brand | Belum diketahui | Tren meningkat terhadap 28 hari sebelumnya; target angka ditetapkan setelah baseline | GSC export |
 | CTR per kueri–halaman | Belum diketahui | Membaik pada kelompok yang memiliki impressions memadai dan posisi sebanding | GSC |
@@ -47,8 +47,12 @@ Tanggal 26 November 2026, commit aplikasi `23c72839d4d5106794c9b3ac330b72fe5e934
 | Panduan kompetitif existing tours | Implementasi tersedia | Verifikasi fakta produk, kesenjangan konten dan data GSC |
 | GA4, event whatsapp_click/generate_lead | Implementasi consent-based tersedia | Realtime, konfigurasi, tautan GSC dan atribusi belum dibuktikan |
 | PSI mobile | Catatan owner: satu run 100 pada semua kategori, LCP 1,8 s | Hasil lab historis bervariasi; bukan data lapangan atau bukti ranking |
-| Search Console | Belum ada bukti akses/data pada sesi penyusunan roadmap | Prioritas P0 |
-| Keyword, indexasi, backlink, leads, booking organik | Baseline belum diketahui | Dilarang mengarang angka |
+| Search Console | Verifikasi berhasil menurut catatan percakapan 25 Nov 2026 | Tipe property dan akses baca langsung AI belum dikonfirmasi; ekspor performa masih diperlukan |
+| Sitemap dan indexasi awal | Sitemap berhasil dikirim/dibaca; 28 URL ditemukan, 10/10 URL diperiksa dilaporkan terindeks (25 Nov 2026) | Status 18 URL lain dan URL baru belum diketahui; jangan mengulang permintaan indeks 10 halaman tanpa alasan |
+
+| Keyword, backlink, leads, booking organik | Baseline belum diketahui | Dilarang mengarang angka |
+
+Sumber baseline GSC: percakapan proyek tanggal 25 November 2026 (pemilik menyatakan 10 URL diajukan satu per satu; laporan asisten saat itu mencatat seluruh 10 berstatus URL is on Google/Page is indexed, sitemap menemukan 28 URL). Screenshot asli, daftar persis 10 URL, jenis property dan ekspor GSC tidak tersedia dalam sesi koreksi ini. Ini adalah riwayat hasil yang dilaporkan, bukan audit GSC live baru.
 
 Dokumen pendukung tetap `AI_START_HERE.md`, `CHANGELOG.md`, `README.md` dan `docs/TEST_PLAN.md`. Catatan historis bukan instruksi untuk mengulang pekerjaan yang telah lulus.
 
@@ -60,9 +64,9 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-001 | P0 | Konfirmasi property domain GSC `nusapenidaexperiences.com`, kepemilikan dan akses baca | Property benar, pemilik terverifikasi, bukti dari owner/GSC | [ ] |
-| SEO-002 | P0 | Periksa sitemap.xml, URL prioritas, canonical, robots, hreflang, status HTTP dan GSC index coverage | Daftar URL + status, alasan tidak terindeks, prioritas tindakan | [ ] |
-| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [ ] |
+| SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
+| SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [x] Audit awal selesai menurut laporan 25 Nov (10/10); coverage sisanya masuk SEO-020, tidak diasumsikan gagal |
+| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [ ] Berikutnya — perlu data performa aktual |
 | SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [ ] |
 | SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
 
@@ -165,6 +169,13 @@ Pedoman keputusan:
 - **Next action: SEO-001, SEO-002, SEO-003 dan SEO-004**. Periksa property Search Console dan ekspor performa; audit URL publik; uji pengukuran konversi. SEO-005 menyusul.
 - Hambatan: belum tersedia data akun GSC/GA4 dalam sesi ini; bukan bukti bahwa akun tidak terhubung.
 - Review berikut: 3 Desember 2026 sebagai tanggal evaluasi usulan, atau lebih awal ketika pekerjaan dilaksanakan/data diterima. Belum ada penjadwalan otomatis tambahan.
+
+### 2026-11-26 — Koreksi baseline GSC berdasarkan riwayat pekerjaan 25 November
+- SEO-001: verifikasi kepemilikan GSC dilaporkan berhasil; jenis property dan akses langsung AI belum dipastikan.
+- SEO-002: pengiriman sitemap berhasil dan dibaca 25 Nov; 28 URL ditemukan, 0 video. Owner mengajukan indeks 10 halaman satu per satu. Laporan asisten 25 Nov mencatat 10/10 URL diperiksa berstatus URL is on Google/Page is indexed. Tidak menyatakan seluruh 28 URL terindeks. Daftar URL dan screenshot asli belum tersedia pada sesi koreksi.
+- Keputusan: tandai verifikasi dan audit awal selesai berdasarkan riwayat; jangan mengulang permintaan indeks. Pantau sisa coverage dan URL baru secara berkala pada SEO-020 (dan SEO-013 untuk artikel baru).
+- Next action: SEO-003 (baseline Performance/Search results: clicks, impressions, CTR, posisi, queries, pages), SEO-004 (GA4 dan konversi), SEO-005 (baseline performa). Jika data domain baru belum mencukupi, catat dan lanjutkan riset kompetitor/keyword independen SEO-006 serta peta keyword SEO-007 tanpa membuat fitur baru.
+- Bukti: catatan percakapan proyek 25 Nov 2026 dan koreksi owner 26 Nov 2026; bukan akses baru ke akun GSC. Tidak ada perubahan website/DB/publikasi.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

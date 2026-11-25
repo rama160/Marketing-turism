@@ -1,3 +1,6 @@
+## 26 November 2026 — Koreksi baseline SEO roadmap
+- Catat hasil GSC yang dilaporkan dalam percakapan 25 Nov: kepemilikan terverifikasi, sitemap 28 URL ditemukan, 10/10 URL awal dilaporkan terindeks. Tidak mengklaim 28 URL terindeks atau audit live baru; daftar URL asli belum tersedia. Lanjutkan SEO-003/004/005, pantau coverage melalui SEO-020. Dokumentasi saja.
+
 ## 26 November 2026 — Roadmap SEO berbasis hasil
 - Tambah satu roadmap.md sebagai acuan wajib tugas SEO dengan KPI, fase, ID pekerjaan, acceptance criteria, bukti baseline dan siklus evaluasi. Prioritas P0: GSC/indexasi/GA4; konten dan konversi mendahului fitur baru. Hubungkan dari AI_START_HERE dan README.
 - Perubahan dokumentasi saja; tidak mengubah kode, database, harga, publikasi artikel, secrets, kampanye, atau konfigurasi deployment. Baseline ranking dan konversi belum diperoleh.
