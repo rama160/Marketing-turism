@@ -1,3 +1,6 @@
+## Live verification: published CMS cover and prices
+- Align Cloudflare smoke checks with default and owner-customized cover markup, verify the saved bilingual services in order (including an intentionally empty list), and compare price badges to published CMS values. Accept preserved original image markers for owner-replaced photos; existing live image bytes, slot, authorization and SEO checks remain active. No website content, database or secret changes.
+
 ## Article list ordering
 - Apply direct-position ordering to published article lists in both languages using an independent versioned layout record. Article publication/unpublication remains explicit and sitemap URLs stay intact. Add an article back-to-guide/home link.
 

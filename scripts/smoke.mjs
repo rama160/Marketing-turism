@@ -174,13 +174,21 @@ const badBootLine=app.split("\n").some(line=>{
 if(badBootLine)throw Error("Owner dashboard broken singleton selector remains");
 // v3.1.0 live release: actual published brand, locale controls and authenticated CMS.
 const home=await get("/");
-if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!dashboard.includes('id="cmsPublish"')||!dashboard.includes('data-tab="website"')||!home.includes('class="hero premiumHero"')||!home.includes('class="tour-showcase-grid"')||!dashboard.includes('id="quickSave"'))
+if(!home.includes('src="/icon.svg"')||!home.includes('src="/language.js"')||!dashboard.includes('id="cmsPublish"')||!dashboard.includes('data-tab="website"')||!/<section\b[^>]*\bclass="hero premiumHero(?: heroCustomLayout)?"[^>]*>/.test(home)||!home.includes('class="tour-showcase-grid"')||!dashboard.includes('id="quickSave"'))
  throw Error("New logo/language/editor missing on live website");
 // Visitor should see marketing prices, never the owner supplier-net breakdown.
 for(const key of ["price.snorkeling","price.island","price.west","price.east"]){
  if(!home.includes('data-copy="'+key+'"'))throw Error("Photo selling price missing "+key);
 }
-if(!home.includes("Rp350.000/orang")||!home.includes("Rp800.000/mobil"))throw Error("Guest price badge amount or unit missing");
+// Prices are owner-editable, including intentionally blank prices. Verify published values, not old defaults.
+const publishedCopy=JSON.parse(await get("/api/public/site-content?lang=id")).items;
+const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const defaultPrices={"price.snorkeling":"Sharing Rp350.000/orang","price.island":"Mulai Rp800.000/mobil","price.west":"Mulai Rp800.000/mobil","price.east":"Mulai Rp800.000/mobil"};
+for(const [key,fallback] of Object.entries(defaultPrices)){
+ const price=Object.hasOwn(publishedCopy,key)?publishedCopy[key]:fallback;
+ const tag=[...home.matchAll(/<span\b[^>]*\bdata-copy="([^"]+)"[^>]*>([^<]*)<\/span>/g)].find(m=>m[1]===key);
+ if(!tag||tag[2]!==escapeHTML(price))throw Error("Guest price differs from published CMS: "+key);
+}
 if(!home.includes("penawaran mulai dan belum mengikat"))throw Error("Price disclaimer missing");
 for(const [page,path] of [[island,"island-tour"],[west,"west-tour"],[east,"east-tour"],[snorkeling,"snorkeling"]]){
  if(/Rp600\\.000|Rp700\\.000|Hitung Sharing tanpa menebak|margin minimum|keuntungan minimum agen|Tarif net awal/i.test(page))throw Error("Supplier net/margin exposed on "+path);
@@ -197,7 +205,7 @@ for(const [cl,count] of [["heroBackdrop",1],["package-cover-image",2],["spot-cov
 }
 if(home.includes("--spot-photo")||home.includes("--tour-photo"))throw Error("Fragile CSS background photo variables remain live");
 for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","manta-bay"]){
- if(!home.includes('src="/photos/'+slug+'"'))throw Error("Missing HTML source for "+slug);
+ if(!home.includes('src="/photos/'+slug+'"')&&!home.includes('data-npe-original-src="/photos/'+slug+'"'))throw Error("Missing HTML source for "+slug);
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
@@ -367,7 +375,18 @@ for(const lang of ["id","en"]){
  const missing=await fetch(base+index+"/npe-smoke-nonexistent-article-00000000");
  if(missing.status!==404)throw Error("Unpublished article route should be 404");
 }
-if(!landingMarkup.includes('data-copy="hero.highlight1"')||!landingMarkup.includes('data-copy="homeThumb.west-kelingking.title"'))throw Error("Grouped homepage fields missing from live HTML");
+// The structured bilingual cover list replaces the old four fixed fields when published.
+if(Object.hasOwn(publishedCopy,"hero.highlights")){
+ const rows=JSON.parse(publishedCopy["hero.highlights"]);
+ const list=landingMarkup.match(/<div class="heroHighlights heroHighlightsCustom"([^>]*)>([\s\S]*?)<\/div>/);
+ if(!Array.isArray(rows)||!list||!landingMarkup.includes("heroCustomLayout")||
+    (rows.length===0)!==/\bhidden\b/.test(list[1]))throw Error("Published editable cover list missing or visibility incorrect");
+ const rendered=[...list[2].matchAll(/data-hero-label-id="([^"]*)" data-hero-label-en="([^"]*)">([^<]*)<\/span>/g)];
+ if(rendered.length!==rows.length||rows.some((row,i)=>rendered[i][1]!==escapeHTML(row.id.trim())||rendered[i][2]!==escapeHTML(row.en.trim())||rendered[i][3]!==escapeHTML(row.id.trim())))throw Error("Published cover services differ from CMS order or bilingual labels");
+}else{
+ for(let i=1;i<=4;i++)if(!landingMarkup.includes('data-copy="hero.highlight'+i+'"'))throw Error("Default cover service missing "+i);
+}
+if(!landingMarkup.includes('data-copy="homeThumb.west-kelingking.title"'))throw Error("Grouped homepage thumbnail fields missing from live HTML");
 console.log("Verified article discovery and new homepage editable fields");
 
 if(!app.includes("cmsSlotsLoaded")||!app.includes("Promise.allSettled"))throw Error("CMS independent synchronization fix not deployed");
