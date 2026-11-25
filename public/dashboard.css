@@ -390,3 +390,5 @@
 @media(max-width:600px){.dashboardPage .npeQuickPhotoGallery{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboardPage .npeCmsHeaderActions{width:100%}.dashboardPage .npeCmsHeaderActions button{flex:1}}
 
 .dashboardPage .dashBrand img{width:108px;height:66px;object-fit:contain;background:#07344d;padding:5px;border-radius:9px}.dashboardPage .dashBrand strong{display:none}@media(max-width:760px){.dashboardPage .dashBrand img{width:90px;height:56px}}
+
+.cmsPart{grid-column:1/-1}.cmsPart>summary{cursor:pointer;font-weight:700;padding:8px 0}.cmsPart>div{margin-top:12px}.seoEditorCover{width:min(100%,360px);height:auto;border-radius:12px}#seoForm fieldset{min-width:0;border:1px solid #d5e2e5;padding:12px;border-radius:12px}#seoForm fieldset label{display:block;margin:10px 0}

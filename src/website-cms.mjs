@@ -233,6 +233,8 @@ const mediaUsageSQL=`SELECT media_id, COUNT(*) AS used FROM (
  UNION ALL SELECT media_id FROM website_gallery_photo_slots
  UNION ALL SELECT json_extract(draft_json,'$.media_id') AS media_id FROM website_activities
  UNION ALL SELECT json_extract(published_json,'$.media_id') AS media_id FROM website_activities
+ UNION ALL SELECT draft_media_id FROM seo_articles
+ UNION ALL SELECT published_media_id FROM seo_articles
 ) WHERE media_id IS NOT NULL AND media_id!='' GROUP BY media_id`;
 export async function listWebsiteMedia(db){
  const [media,usage]=await Promise.all([
@@ -251,8 +253,9 @@ export async function deleteWebsiteMedia(db,env,id,body){
  const sql=`DELETE FROM website_media WHERE id=?
  AND NOT EXISTS (SELECT 1 FROM website_photo_slots WHERE media_id=?)
  AND NOT EXISTS (SELECT 1 FROM website_gallery_photo_slots WHERE media_id=?)
- AND NOT EXISTS (SELECT 1 FROM website_activities WHERE json_extract(draft_json,'$.media_id')=? OR json_extract(published_json,'$.media_id')=?)`;
- const write=await db.prepare(sql).bind(id,id,id,id,id).run();
+ AND NOT EXISTS (SELECT 1 FROM website_activities WHERE json_extract(draft_json,'$.media_id')=? OR json_extract(published_json,'$.media_id')=?)
+ AND NOT EXISTS (SELECT 1 FROM seo_articles WHERE draft_media_id=? OR published_media_id=?)`;
+ const write=await db.prepare(sql).bind(id,id,id,id,id,id,id).run();
  if(write.meta?.changes!==1)return reject("Foto masih digunakan di website atau draft aktivitas. Ganti foto di semua bagian terlebih dahulu.",409);
  // Metadata is already removed; an eventual KV cleanup failure must not resurrect a broken image reference.
  let storage_cleaned=true;

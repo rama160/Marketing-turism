@@ -1,5 +1,13 @@
 // Canonical server-side allowlist and persistence for the public homepage editor.
 export const CONTENT_FIELDS=Object.freeze([
+ ["hero.whatsapp","Beranda · Tombol WhatsApp"],
+ ["hero.highlight1","Beranda · Keunggulan 1"],
+ ["hero.highlight2","Beranda · Keunggulan 2"],
+ ["hero.highlight3","Beranda · Keunggulan 3"],
+ ["hero.highlight4","Beranda · Keunggulan 4"],
+ ["regions.west.cta","Beranda · Tombol West Tour"],
+ ["regions.east.cta","Beranda · Tombol East Tour"],
+ ["regions.sea.cta","Beranda · Tombol Snorkeling"],
  ["price.snorkeling","Foto · harga Snorkeling Sharing (per orang)"],
  ["price.island","Foto · harga Island Tour (per mobil)"],
  ["price.west","Foto · harga wisata Barat (per mobil)"],

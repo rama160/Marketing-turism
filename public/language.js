@@ -246,6 +246,8 @@ Object.assign(englishText,{
  "WhatsApp Business:":"WhatsApp Business:",
  "Kontak Kami ↗":"Contact Us ↗"
 });
+Object.assign(englishHome,{"hero.whatsapp":"Chat via WhatsApp ↗","hero.highlight1":"West & East Island Tours","hero.highlight2":"Snorkeling & Mantas","hero.highlight3":"Sharing & Private","hero.highlight4":"Explore with local operators","regions.west.cta":"View tour ↗","regions.east.cta":"View tour ↗","regions.sea.cta":"View tour ↗"});
+Object.assign(idDefaults,{"hero.whatsapp":"Chat via WhatsApp ↗","hero.highlight1":"Island Tour Barat & Timur","hero.highlight2":"Snorkeling & Manta","hero.highlight3":"Sharing & Private","hero.highlight4":"Jelajahi bersama operator lokal","regions.west.cta":"Lihat tur ↗","regions.east.cta":"Lihat tur ↗","regions.sea.cta":"Lihat tur ↗"});
 const originalNodes=[];
 const originals={};
 for(const node of document.querySelectorAll("[data-copy]"))originals[node.dataset.copy]=node.dataset.npeDefault??node.textContent.trim();

@@ -40,7 +40,7 @@ const NPE_WORKSPACES={
 };
 const NPE_PAGE_GROUP={
  summary:"home",leads:"sales",quotes:"sales",bookings:"sales",finance:"sales",whatsapp:"sales",
- campaigns:"content",marketing:"content",website:"content",
+ campaigns:"content",marketing:"content",website:"content",articles:"content",
  growth:"growth",market:"growth",analytics:"analytics",
  business:"settings",operators:"settings",rates:"settings"
 };
@@ -50,6 +50,7 @@ function changeTab(name){
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
  if(name==="website"&&ownerSignedIn){void loadWebsiteCMS();}
+ if(name==="articles"&&ownerSignedIn)void loadSeoArticles();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
  if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
@@ -1360,6 +1361,15 @@ const cmsPageMap={
   "hero.subtitle",
   "hero.description",
   "hero.cta",
+  "hero.whatsapp",
+  "hero.highlight1",
+  "hero.highlight2",
+  "hero.highlight3",
+  "hero.highlight4",
+  "regions.west.cta",
+  "regions.east.cta",
+  "regions.sea.cta",
+  "west.title","west.description","east.title","east.description","price.west","price.east","price.snorkeling","price.island","snorkeling.title","snorkeling.description","island.title","island.description",
   "packages.eyebrow",
   "packages.title",
   "packages.description",
@@ -1446,7 +1456,8 @@ const cmsPagePhotoSlots={
   "snorkeling",
   "island",
   "west",
-  "east"
+  "east",
+  "west-kelingking","west-broken-beach","west-angels-billabong","west-crystal-bay","east-diamond-beach","east-atuh-beach","east-tree-house","snorkeling-manta-bay","snorkeling-manta-point","snorkeling-gamat-bay","snorkeling-crystal-bay"
  ],
  "snorkeling": [
   "snorkeling",
@@ -1754,13 +1765,14 @@ function renderCmsPagePhotos(){
  const page=$("#cmsPagePicker").value;
  const slots=cmsPagePhotoSlots[page]||[];
  renderCmsPageDetails();
- root.innerHTML=slots.map(slot=>{
+ const groups=new Map();for(const slot of slots){const group=slot==="hero"?"01 · Foto cover utama":!slot.includes("-")?"02 · Cover kartu wisata (dipakai bersama halaman paket)":"03 · Galeri destinasi / thumbnail";if(!groups.has(group))groups.set(group,[]);groups.get(group).push(slot);}
+ root.innerHTML=[...groups].map(([name,list])=>'<details class="panel cmsPart" open><summary>'+esc(name)+'</summary><div class="npeCmsPagePhotos">'+list.map(slot=>{
   const photo=cmsCurrentPhoto(slot);
   return '<article class="npeCmsPhotoTile">'+
    (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersedia</div>')+
    '<div><strong>'+esc(cmsPageSlotLabels[slot]||slot)+'</strong>'+
    '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'">Ganti foto</button></div></article>';
- }).join("");
+ }).join("")+'</div></details>').join("");
  root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsEditPhoto));
 }
 function cmsPublishedPage(page){
@@ -1782,14 +1794,16 @@ function renderCmsPageFields(){
  const labels={home:"Beranda NPE",snorkeling:"Snorkeling Nusa Penida",island:"Island Tour",west:"Wisata Barat",east:"Wisata Timur"};
  notice.textContent=labels[page]+" · "+keys.length+" bagian isi saat ini berhasil dimuat ("+(lang==="en"?"English":"Bahasa Indonesia")+"). Ubah satu atau beberapa kolom; kolom yang tidak diubah akan tetap sama."+
   (missing.length?" "+missing.length+" bagian belum mempunyai konten bawaan; dapat diisi melalui editor.":"");
- root.innerHTML=keys.map(k=>{
+ const sectionFor=k=>page==="home"?(k.startsWith("hero.")?"01 · Cover / Hero":k.startsWith("packages.")||k.startsWith("island.")||k.startsWith("snorkeling.")||k==="price.island"||k==="price.snorkeling"?"02 · Isi paket wisata":/^(regions|west|east|sea)\.|^price\.(west|east)$/.test(k)?"03 · Kartu destinasi Barat, Timur & Snorkeling":"04 · Kontak & isi lainnya"):/Spot\./.test(k)?"03 · Isi galeri destinasi":k.startsWith("price.")?"02 · Harga":"01 · Cover & isi halaman";
+ const groups=new Map();for(const k of keys){const group=sectionFor(k);if(!groups.has(group))groups.set(group,[]);groups.get(group).push(k);}
+ root.innerHTML=[...groups].sort(([a],[b])=>a.localeCompare(b)).map(([group,groupKeys],i)=>'<details class="panel cmsPart"'+(i===0?" open":"")+'> <summary>'+esc(group)+'</summary><div class="npeCmsPageFields">'+groupKeys.map(k=>{
   const value=cmsEffectiveValue(k,lang),label=fields.get(k)||k,isPrice=k.startsWith("price.");
   const rows=isPrice?2:/description|deskripsi|ringkasan|lead|summary/i.test(k+" "+label)?4:2;
   return '<label class="npeCmsPageField" data-cms-page-field="'+esc(k)+'">'+
    '<span>'+esc(label)+(isPrice?' <small>· boleh kosong</small>':'')+'</span>'+
    '<textarea data-cms-page-key="'+esc(k)+'" rows="'+rows+'" maxlength="1200" placeholder="'+
     (isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
- }).join("");
+ }).join("")+'</div></details>').join("");
  $("#cmsPageFeedback").textContent="";
  renderCmsPagePhotos();filterCmsPageFields();
 }
@@ -1851,3 +1865,54 @@ $("#cmsPageSave").onclick=async()=>{
 // Admin sessions and API responses are never cached by the guest service worker.
 // Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+
+let seoItems=[],seoEditing=null,seoMedia=[];
+const seoForm=$("#seoForm");
+function seoFormPayload(){
+ const data=new FormData(seoForm);
+ return {...Object.fromEntries(data),links:data.getAll("links"),expected_version:seoEditing?.version||0};
+}
+function drawSeoCover(){
+ const id=$("#seoMedia").value,photo=seoMedia.find(p=>p.id===id),root=$("#seoCoverPreview");
+ root.innerHTML=photo?'<img class="seoEditorCover" alt="'+esc(photo.title)+'" src="'+esc(photo.url)+'?npew=480">':"";
+}
+function editSeoArticle(item=null){
+ seoEditing=item;seoForm.reset();seoForm.hidden=false;$("#seoPreviewArea").textContent="";
+ $("#seoMedia").innerHTML='<option value="">Pilih cover</option>'+seoMedia.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title)+'</option>').join("");
+ const draft=item?.draft||{};
+ for(const [key,value] of Object.entries(draft)){
+  if(key==="links")continue;
+  const el=seoForm.elements.namedItem(key);if(el)el.value=value;
+ }
+ for(const input of seoForm.querySelectorAll('[name="links"]'))input.checked=(draft.links||[]).includes(input.value);
+ $("#seoUrl").textContent=item?"URL tetap: /id/articles/"+item.slug+" · /en/articles/"+item.slug:"URL dibuat saat simpan draft.";
+ drawSeoCover();
+}
+async function loadSeoArticles(){
+ if(!ownerSignedIn)return;
+ try{
+  const [r,m]=await Promise.all([api("admin/website/articles"),api("admin/website/media")]);
+  seoItems=r.items||[];seoMedia=m.items||[];
+  $("#seoList").innerHTML=seoItems.length?seoItems.map(a=>'<article class="panel"><small>'+(a.published?"Published · draft dapat diedit":"Draft")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button><button type="button" class="primary small" data-seo-action="publish" data-id="'+esc(a.id)+'">Publish draft</button>'+(a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a><button type="button" class="outline small" data-seo-action="unpublish" data-id="'+esc(a.id)+'">Tarik publikasi</button>':'<button type="button" class="outline small" data-seo-action="delete" data-id="'+esc(a.id)+'">Hapus draft</button>')+'</div></article>').join(""):'<p>Belum ada artikel. Tekan Artikel baru.</p>';
+  $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
+  $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{
+   const a=seoItems.find(x=>x.id===b.dataset.id),action=b.dataset.seoAction;
+   if(!a||!confirm((action==="publish"?"Terbitkan draft ID dan EN yang tersimpan?":action==="unpublish"?"Tarik artikel dari website dan sitemap?":"Hapus draft secara permanen?")))return;
+   b.disabled=true;
+   try{await api("admin/website/articles/"+a.id+"/"+action,"POST",{expected_version:a.version,owner_confirmed:true});seoForm.hidden=true;await loadSeoArticles();say("#seoFeedback","Artikel berhasil diproses.",true);}
+   catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
+  });
+ }catch(e){say("#seoFeedback",e.message);}
+}
+$("#seoNew").onclick=()=>editSeoArticle();
+$("#seoMedia").onchange=drawSeoCover;
+$("#seoCancel").onclick=()=>{seoForm.hidden=true;};
+$("#seoPreview").onclick=()=>{
+ const d=seoFormPayload();
+ $("#seoPreviewArea").innerHTML=["id","en"].map(l=>'<section class="panel"><small>'+l.toUpperCase()+'</small><h2>'+esc(d["title_"+l])+'</h2><p>'+esc(d["summary_"+l])+'</p>'+String(d["body_"+l]||"").split(/\n+/).filter(Boolean).map(s=>s.startsWith("## ")?"<h3>"+esc(s.slice(3))+"</h3>":"<p>"+esc(s)+"</p>").join("")+'<p>SEO title: '+esc(String(d["title_"+l]||"").slice(0,60))+'</p><p>Meta description: '+esc(String(d["summary_"+l]||"").slice(0,160))+'</p></section>').join("");
+};
+seoForm.onsubmit=async e=>{
+ e.preventDefault();const button=seoForm.querySelector('[type="submit"]');button.disabled=true;
+ try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Preview dan Publish secara manual.",true);}
+ catch(err){say("#seoFeedback",err.message);}finally{button.disabled=false;}
+};

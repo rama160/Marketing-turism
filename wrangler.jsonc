@@ -23,6 +23,7 @@
       "/robots.txt",
       "/sitemap.xml",
       "/en/experiences/*",
+      "/id/articles", "/id/articles/*", "/en/articles", "/en/articles/*",
       "/id/experiences/*",
       "/en/tours",
       "/en/tours/*",

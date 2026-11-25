@@ -1,3 +1,4 @@
+import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
@@ -99,7 +100,7 @@ async function route(req,env,ctx){
  const canonicalHost="nusapenidaexperiences.com";
  const oldHost="marketing-turism-agent.finchat-ai-gateway.workers.dev";
  const staticDocument=/^\/(?:dashboard|privacy|terms|cancellation)(?:\.html|\/)?$/.test(path);
- const dynamicDocument=/^\/(?:en\/tours(?:\/(?:west|east|island|snorkeling))?|(?:en|id)\/experiences\/[a-z0-9-]+)\/?$/.test(path);
+ const dynamicDocument=/^\/(?:(?:en|id)\/articles(?:\/[a-z0-9-]+)?|en\/tours(?:\/(?:west|east|island|snorkeling))?|(?:en|id)\/experiences\/[a-z0-9-]+)\/?$/.test(path);
  const legacyPage=legacyTourRoute(path);
  const read=method==="GET"||method==="HEAD";
  if(read&&(u.hostname===oldHost||u.hostname==="www."+canonicalHost||(u.hostname===canonicalHost&&u.protocol==="http:"))&&(legacyPage||dynamicDocument||staticDocument||path==="/sitemap.xml")){
@@ -165,7 +166,10 @@ async function route(req,env,ctx){
  }
  if(!db)return bad("D1 database belum aktif",503);
  if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard\nDisallow: /__npe_templates/\nSitemap: "+(u.hostname===oldHost?"https://"+canonicalHost:u.origin)+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
- if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
+ if(path==="/sitemap.xml"&&method==="GET"){const xml=await renderWebsiteSitemap(db,u.origin),articles=await publishedArticles(db);return new Response(xml.replace("</urlset>",()=>articleSitemap(articles,u.origin)+"</urlset>"),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});}
+ const articlePath=path.match(/^\/(id|en)\/articles(?:\/([a-z0-9-]+))?$/);
+ if(articlePath&&read){const items=await publishedArticles(db,articlePath[2]||null),html=renderArticlePage(items,articlePath[1],u.origin,articlePath[2]||null);return new Response(method==="HEAD"?null:html||"Article not found",{status:html?200:404,headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","content-security-policy":"default-src 'self'; script-src 'self' https://www.googletagmanager.com https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com; base-uri 'self'; frame-ancestors 'none'"}});}
+ if(path==="/api/public/website/articles"&&method==="GET")return json({items:(await publishedArticles(db)).map(a=>({slug:a.slug,photo_url:a.media_id?"/photos/website/"+a.media_id:null}))});
  const englishTour=path.match(/^\/en\/tours(?:\/(west|east|island|snorkeling))?\/?$/);
  if(englishTour&&read){
   const seoCopy=await publicSiteContent(db,"en");
@@ -243,6 +247,15 @@ async function route(req,env,ctx){
   const b=await parse(req),result=await waAdminSend(db,env,b);
   if(result.ok)await audit(db,"whatsapp",String(b.client_nonce||""),"OWNER_SUBMITTED_REPLY",{via:"official_cloud_api"});
   return result;
+ }
+ if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
+ const articleAdmin=path.match(/^\/api\/admin\/website\/articles(?:\/([0-9a-f-]+))?(?:\/(publish|unpublish|delete))?$/);
+ if(articleAdmin){
+  const [,id,action]=articleAdmin;
+  if(!((!id&&method==="POST")||(id&&!action&&method==="PATCH")||(id&&action&&method==="POST")))return bad("Metode tidak diizinkan",405);
+  const raw=await req.text();if(raw.length>64000)return bad("Artikel terlalu besar",413);
+  const b=JSON.parse(raw);
+  return json(action?await articleAction(db,id,b,action):await saveArticle(db,b,id||null));
  }
  if(path==="/api/admin/website/categories"){
   if(method==="GET")return json(await listWebsiteCategories(db));

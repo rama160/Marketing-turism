@@ -26,6 +26,13 @@ if "--responsive-public" in sys.argv:
             value=item.get(field) or ""
             if re.fullmatch(r"/photos/website/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",value):
                 paths.add(value)
+    try:
+        for item in json.loads(fetch("/api/public/website/articles",2_000_000))["items"]:
+            value=item.get("photo_url") or ""
+            if re.fullmatch(r"/photos/website/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",value):
+                paths.add(value)
+    except urllib.error.HTTPError as e:
+        if e.code!=404: raise
     if len(paths)>500: raise ValueError("Too many published images for bounded build")
     def generate(pair):
         key,raw=pair
