@@ -121,9 +121,10 @@ window.addEventListener("npe:language",()=>{
 
 function sortPublicChildren(root,group,keyFor){
  if(!root)return;
- const cfg=readOrder(layoutCopy,group),nodes=[...root.children].filter(n=>keyFor(n));
+ const cfg=readOrder(layoutCopy,group);
  // Preserve default markup/order when no owner configuration exists.
  if(!cfg.order.length&&!cfg.hidden.length)return;
+ const nodes=[...root.children].filter(n=>keyFor(n));
  const map=new Map(nodes.map(n=>[keyFor(n),n]));
  for(const k of orderedKeys([...map.keys()],cfg)){const n=map.get(k);n.hidden=cfg.hidden.includes(k);root.append(n);}
 }

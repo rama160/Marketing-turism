@@ -1,3 +1,6 @@
+## Layout test harness follow-up
+- Exercise real shared ordering module in browser-like VM tests, including native history Back preserving authenticated session. Revalidate layout module and rotate offline static cache. No production content edits.
+
 ## Direct-position content ordering and navigation
 - Add versioned bilingual-independent layout order for homepage package cards, destination cards, thumbnails and static/dynamic detail galleries. Existing published activities can be selected for extra cards and thumbnails; Add Activity/Detail creates new items via existing approval workflow. Hide without deleting data or URLs. Direct position selector for hero and all layout groups; no database migration. Public layout enhancement applies after published activities load. Dashboard tab, CMS view/page, compact pane and article navigation use browser history; remove forced standalone guest redirect; dashboard website link opens same context and public detail pages get Back link. Keep HttpOnly login and explicit logout unchanged. Native Back at the first entry may still exit the app; no fake history trap. Test actual Android navigation and ordering after deployment.
 

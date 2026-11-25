@@ -22,3 +22,6 @@
 
 /guest.js
   Cache-Control: no-cache, must-revalidate
+
+/content-order.mjs
+  Cache-Control: no-cache, must-revalidate

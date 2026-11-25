@@ -147,7 +147,8 @@ test("all large cover images render as genuine img elements with safe mobile fal
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
  const {runInNewContext}=await import("node:vm");
- const html=read("dashboard.html"),app=read("app.js");
+ const html=read("dashboard.html"),app=read("app.js").replace(/^import .*content-order\.mjs";\n/m,"");
+ const layoutModule=await import("../public/content-order.mjs");
  const tabs=[...html.matchAll(/<button data-tab="([^"]+)"/g)].map(x=>x[1]);
  const routes=[...html.matchAll(/data-go-tab="([^"]+)"/g)].map(x=>x[1]);
  const contentNames=[...html.matchAll(/id="tab-([a-z-]+)" class="tabcontent"/g)].map(x=>x[1]);
@@ -209,7 +210,9 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
   },
   addEventListener(){},
  };
- const context={document,window:{NusaLanguage:{defaults:()=>({}),resetCache(){},async apply(){}}},navigator:{},
+ const navListeners={},entries=[null];let historyIndex=0;
+ const history={get state(){return entries[historyIndex]},get length(){return entries.length},replaceState(state){entries[historyIndex]=state;},pushState(state){entries.splice(historyIndex+1);entries.push(state);historyIndex++;},back(){if(historyIndex>0){historyIndex--;navListeners.popstate?.({state:entries[historyIndex]});}}};
+ const context={...layoutModule,history,document,window:{addEventListener(k,v){navListeners[k]=v;},NusaLanguage:{defaults:()=>({}),resetCache(){},async apply(){}}},navigator:{},
   sessionStorage:{getItem:key=>session.get(key)||null,setItem:(key,val)=>session.set(key,val),removeItem:key=>session.delete(key)},
   location:{href:"https://tour.example/",origin:"https://tour.example"},fetch:fakeFetch,Response,URL,
   Intl,Date,Number,Array,Object,Map,String,console,confirm:()=>true,prompt:()=>null};
@@ -232,6 +235,9 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  assert.equal(session.has("tourAdmin"),false,"raw token is never stored");
  assert.equal(hasSession,true,"persistent cookie-backed session should be active");
  assert.ok(get("#stats").innerHTML.includes("Operator"),"live summary cards did not render");
+ tabButtons.find(x=>x.dataset.tab==="bookings").click();
+ tabButtons.find(x=>x.dataset.tab==="rates").click();
+ history.back();assert.equal(get("#tab-bookings").hidden,false);assert.equal(hasSession,true,"Back must not revoke the session");
  await get("#lock").click();
  assert.equal(hasSession,false,"explicit logout revokes persistent session");
  assert.equal(get("#adminContent").hidden,true);

@@ -239,7 +239,7 @@ $("#waSendApproved").onclick=async()=>{
 
 async function enterOwnerDashboard(){
  ownerSignedIn=true;
- $("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;
+ $("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;$("#dashBack").hidden=false;
  const previous=history.state?.npeDashboard;
  navRestoring=true;
  try{changeTab(previous?.tab||sessionStorage.getItem("npe-dashboard-tab")||"summary");if(previous?.tab==="website"){if(previous.page)$("#cmsPagePicker").value=previous.page;cmsView(previous.view==="activity"?"published":previous.view||"published");}}finally{navRestoring=false;}
@@ -252,7 +252,7 @@ $("#lock").onclick=async()=>{
   await api("admin/session/logout","POST",{});
   ownerSignedIn=false;
   sessionStorage.removeItem("tourAdmin");
-  $("#adminContent").hidden=true;$("#unlockPanel").hidden=false;button.hidden=true;
+  $("#adminContent").hidden=true;$("#unlockPanel").hidden=false;button.hidden=true;$("#dashBack").hidden=true;
   $("#adminToken").value="";
   data={operators:[],rates:[],leads:[],quotes:[],bookings:[],finance:{payables:[],changes:[]},campaigns:[],approvedQueue:[],autopilotEnabled:false,ownerPhotos:[],growth:null,market:[]};
   say("#loginMessage","Anda sudah logout. Masukkan admin token untuk login kembali.",true);

@@ -359,7 +359,8 @@ test("SEO automatically uses localized content and activity context, with manual
 test("published destination rendering works with clean URLs, .html, trailing slash and a failed photo endpoint",async()=>{
  const {readFileSync}=await import("node:fs");
  const {runInNewContext}=await import("node:vm");
- const code=readFileSync("public/website-content.js","utf8");
+ const code=readFileSync("public/website-content.js","utf8").replace(/^import .*content-order\.mjs";\n/m,"");
+ const layoutModule=await import("../public/content-order.mjs");
  const item={id:"mangrove",slug:"snorkeling-mangrove-point",parent_activity:"static:snorkeling",title_id:"Mangrove Point",title_en:"Mangrove Point EN",summary_id:"Terumbu karang",description_id:"Ikan tropis",summary_en:"Corals",description_en:"Fish",photo_url:"/photos/website/example"};
  const makeNode=(tag)=>({tag,dataset:{},children:[],append(...nodes){this.children.push(...nodes)},appendChild(n){this.children.push(n)},matches(s){return tag==="grid"&&s===".scene-grid"},querySelectorAll(){return []},setAttribute(){}});
  for(const path of ["/snorkeling","/snorkeling.html","/snorkeling/","/snorkeling.html/"]){
@@ -369,7 +370,7 @@ test("published destination rendering works with clean URLs, .html, trailing sla
    const document={documentElement:{lang:"id"},createElement:makeNode,querySelector(s){return s===".scene-grid"?grid:s==="[data-npe-detail-parent]"&&marked?grid:null},querySelectorAll(){return []}};
    const window={addEventListener(k,v){listeners[k]=v}};
    const fetch=async url=>url.endsWith("/slots")?{ok:false}:{ok:true,json:async()=>({items:[item]})};
-   const context={document,window,location:{pathname:path},fetch,console};
+   const context={...layoutModule,document,window,location:{pathname:path},fetch,console};
    await runInNewContext(code+"\nloadWebsitePublic()",context);
    assert.ok(grid.children.some(c=>c.dataset.npeDynamicDetail==="mangrove"),path+" "+marked);
    assert.notEqual(grid.hidden,true);
@@ -430,7 +431,7 @@ test("public photo replacement updates both snorkeling covers and distinct spot 
  const {readFileSync}=await import("node:fs");
  const {runInNewContext}=await import("node:vm");
  const js=readFileSync("public/website-content.js","utf8");
- const helper=js.slice(0,js.indexOf("async function loadWebsiteActivities"));
+ const helper=js.slice(0,js.indexOf("async function loadWebsiteActivities")).replace(/^import .*content-order\.mjs";\n/m,"");
  const imgs=["snorkeling","snorkeling","snorkeling-manta-point","west-crystal-bay"].map(slot=>({dataset:{npeSlot:slot,photoFallbackStage:"github",localPhotoFailed:"1"},src:"old",alt:"old",removeAttribute(){},closest(){return null}}));
  const slots=[{slot:"snorkeling",url:"/photos/website/cover",alt_id:"Snorkeling",alt_en:"Snorkeling"},{slot:"snorkeling-manta-point",url:"/photos/website/manta",alt_id:"Manta Point",alt_en:"Manta Point"}];
  const context={document:{documentElement:{lang:"id"},querySelectorAll(s){return s==="img[data-npe-slot]"?imgs:[]}},window:{},fetch:async()=>({ok:true,json:async()=>({items:slots})})};
