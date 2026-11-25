@@ -776,3 +776,16 @@ test("owner can publish a bilingual ordered cover list, including fast boat and 
  assert.match(renderLegacyTourPage(base,page,"https://example.com",{"hero.highlights":"[]"}),/heroHighlightsCustom" hidden/);
  assert.match(renderLegacyTourPage(base,page,"https://example.com"),/data-copy="hero.highlight4"/);
 });
+
+
+test("published destination pages link to their actual parent tour in each language",()=>{
+ const origin="https://example.com",parent={...draft,slug:"lembongan",parent_activity:"",title_id:"Wisata Lembongan",title_en:"Lembongan Tour",photo_url:"/photos/website/123"};
+ const child={...parent,slug:"dream-beach",parent_activity:"activity:lembongan",title_id:"Dream Beach",title_en:"Dream Beach"};
+ for(const lang of ["en","id"]){
+  const html=renderExperiencePage(child,lang,origin,[parent,child]);
+  assert.ok(html.includes('data-npe-parent-tour href="/'+lang+'/experiences/lembongan"'));
+  assert.doesNotMatch(renderExperiencePage(child,lang,origin,[child]),/data-npe-parent-tour/);
+  const staticChild={...child,slug:"mangrove",parent_activity:"static:snorkeling"};
+  assert.ok(renderExperiencePage(staticChild,lang,origin,[staticChild]).includes('data-npe-parent-tour href="'+(lang==="en"?"/en/tours/snorkeling":"/snorkeling.html")+'"'));
+ }
+});

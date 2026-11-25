@@ -2,7 +2,7 @@
 (()=>{
  "use strict";
  const ID="G-5232NFPSPV",KEY="npe_analytics_choice_v1",path=location.pathname;
- if(location.hostname!=="nusapenidaexperiences.com"||!(/^\/(?:$|(?:index|snorkeling|island-tour|west-tour|east-tour|privacy|terms|cancellation)(?:\.html)?\/?$|en\/tours(?:\/(?:west|east|island|snorkeling))?\/?$|(?:en|id)\/experiences\/[a-z0-9-]+\/?$)/.test(path)))return;
+ if(location.hostname!=="nusapenidaexperiences.com"||!(/^\/(?:$|(?:index|snorkeling|island-tour|west-tour|east-tour|privacy|terms|cancellation)(?:\.html)?\/?$|en\/tours(?:\/(?:west|east|island|snorkeling))?\/?$|(?:en|id)\/(?:experiences\/[a-z0-9-]+|articles(?:\/[a-z0-9-]+)?)\/?$)/.test(path)))return;
  if((window.matchMedia?.("(display-mode: standalone)")?.matches||navigator.standalone===true)&&path==="/"&&new URL(location.href).searchParams.get("view")!=="website")return;
  let choice=null,started=false;
  try{choice=localStorage.getItem(KEY)}catch(_){}

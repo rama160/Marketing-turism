@@ -24,3 +24,13 @@ test("decline and dashboard do not load GA4",()=>{
  const a=fixture("no");assert.equal(a.scripts.length,0);
  const b=fixture("yes","/dashboard.html");assert.equal(b.scripts.length,0);assert.equal(b.window.npeAnalytics,undefined);
 });
+
+test("article indexes and details use the same consent and privacy protections",()=>{
+ for(const path of ["/en/articles","/id/articles","/en/articles/travel-guide","/id/articles/travel-guide"]){
+  const blocked=fixture("no",path);assert.equal(blocked.scripts.length,0);
+  const a=fixture("yes",path);assert.equal(a.scripts.length,1);
+  a.events.click({target:{closest:()=>({href:"https://wa.me/628561752525?text=private"})}});
+  const out=JSON.stringify(a.window.dataLayer);assert.match(out,/page_view/);assert.match(out,/whatsapp_click/);assert.doesNotMatch(out,/private|example\.com|wa\.me|email=/);
+ }
+ assert.equal(fixture("yes","/en/articles/guide/admin").window.npeAnalytics,undefined);
+});

@@ -1,3 +1,6 @@
+## 26 November 2026 — SEO follow-up during indexing quota limit
+- Roadmap 1.0.4: record quota blocker; independent keyword research/map and conversion/link audit continue. Add consent-based analytics coverage for public article indexes/details; add localized crawlable parent-tour links on published destination pages. Regression and smoke checks extended; no new menu, URLs, DB or content publication. Live results pending verification.
+
 ## 26 November 2026 — Prioritaskan indexasi sisa URL
 - Roadmap 1.0.2: buka kembali SEO-002 atas instruksi owner; daftar 18 URL aktivitas bilingual berdasarkan D1 read-only dan kode sitemap, plus dua indeks artikel kosong yang ditunda. GSC verdict belum diperoleh; lanjut pekerjaan SEO setelah gate indexasi. Tidak ada perubahan kode/DB.
 

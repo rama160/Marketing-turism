@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.3 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.4 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **P0 — SEO-002 lanjutan: selesaikan pemeriksaan dan indexasi URL aktivitas tersisa sebelum SEO-003, sesuai instruksi owner**.
+- Status: aktif. Fokus saat ini: **SEO-002 pengajuan tertahan kuota; lanjut pekerjaan independen SEO-004/006/007/009 sesuai instruksi owner, tanpa fitur baru**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -65,9 +65,9 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
 | SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
-| SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [~] Audit awal selesai (10/10); owner meminta selesaikan pemeriksaan 18 URL aktivitas terlebih dahulu. Lihat checklist lanjutan. Status indeks masing-masing belum dikonfirmasi. |
-| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [ ] Ditunda sampai gate SEO-002 lanjutan selesai sesuai instruksi owner |
-| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [ ] |
+| SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [!] Audit awal selesai (10/10); owner melaporkan Quota exceeded 26 Nov. Jumlah request tambahan dan verdict belum dilaporkan. Lanjutkan saat kuota tersedia. |
+| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Data GSC Performance belum tersedia; independen dari kuota request, minta ekspor saat owner siap |
+| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [~] Gap filter route artikel diperbaiki; CI/deploy dan Realtime akun belum dikonfirmasi |
 | SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
 
 Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan layar yang relevan. Lakukan audit publik yang independen sambil menunggu; jangan mengarang hasil. Tidak perlu membuat integrasi API/dashboard sebelum membuktikan ekspor manual tidak memadai. Setelah perbaikan indexasi, ajukan request indexing hanya untuk URL prioritas baru/berubah secara wajar; bukan berkali-kali setiap hari.
@@ -116,16 +116,16 @@ Indeks artikel tambahan: https://nusapenidaexperiences.com/en/articles dan https
 
 Prosedur owner: buka https://search.google.com/search-console, pilih property NPE, buka URL Inspection; URL is on Google → catat selesai tanpa request ulang. URL is not on Google → Test live URL, periksa crawl/fetch/indexing/canonical; bila layak dan belum pernah diajukan, Request indexing satu kali. Jika gagal, catat alasan untuk koreksi teknis/konten. Request berhasil bukan bukti indexasi. Jika quota habis, lanjut saat tersedia; sitemap yang sukses tidak perlu dikirim ulang tanpa perubahan penting. Periksa hasil setelah waktu wajar (Google menyarankan setidaknya satu minggu sebelum menganggap ada masalah). Sumber: https://support.google.com/webmasters/answer/9012289 dan https://support.google.com/webmasters/answer/7474347.
 
-Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh URL canonical yang layak terindeks atau alasan pengecualian sah yang disetujui owner; baru lanjut SEO-003 sesuai keputusan owner. Google menentukan indexasi; tidak ada jaminan semua URL masuk indeks. Akses akun GSC tidak tersedia bagi AI pada sesi ini; owner melakukan inspeksi/request dan melaporkan hasil. Tidak membuat fitur/cron baru.
+Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh URL canonical yang layak terindeks atau alasan pengecualian sah yang disetujui owner; owner mengizinkan pekerjaan independen dilanjutkan 26 Nov karena quota exceeded; lanjutkan indexasi saat kuota tersedia. Google menentukan indexasi; tidak ada jaminan semua URL masuk indeks. Akses akun GSC tidak tersedia bagi AI pada sesi ini; owner melakukan inspeksi/request dan melaporkan hasil. Tidak membuat fitur/cron baru.
 
 ### Fase 1 — Kata kunci dan halaman penjualan (hari 7–21)
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [ ] |
-| SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [ ] |
+| SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
+| SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
 | SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [ ] |
-| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [ ] |
+| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal ditambahkan; CI/deploy/live smoke dan audit keseluruhan belum dikonfirmasi |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [ ] |
 
 Kandidat awal peta kata kunci (hipotesis, bukan ranking atau volume terukur):
@@ -231,6 +231,27 @@ Pedoman keputusan:
 - Screenshot checklist berisi sepuluh halaman utama ID/EN, semuanya ditandai selesai; catat URL persis di SEO-002. Screenshot bukan tampilan verdict GSC langsung, status terindeks mengikuti laporan owner.
 - D1 read-only diperiksa ulang: 9 aktivitas terbit, 0 artikel terbit. 18 URL bilingual tidak tumpang tindih dengan sepuluh URL pada screenshot; indeks artikel kosong tetap ditunda. [Verify Cloudflare terbaru lulus](https://github.com/rama160/Marketing-turism/actions/runs/45722581500). Fetch sitemap langsung tidak tersedia pada sesi ini.
 - Next: owner memeriksa 18 URL via GSC dan mengirim verdict/request; lanjut SEO-003 hanya setelah gate SEO-002. Tidak ada perubahan aplikasi atau database.
+
+### 2026-11-26 — Quota exceeded; lanjut pekerjaan independen
+- Owner melaporkan batas Request Indexing terlampaui dan mengizinkan melanjutkan pekerjaan lain. SEO-002 BLOCKED untuk pengajuan baru; inspeksi/Performance tidak diasumsikan terblokir. Pertahankan checklist 18 URL; jangan mengarang jumlah request/index tambahan. Lanjut ketika kuota tersedia, tanpa spam request.
+- SEO-003/004: ekspor GSC/Realtime GA4 tetap dibutuhkan untuk baseline. Audit kode menemukan artikel memuat analytics.js tetapi filter pathname menolak /id|en/articles dan detail; perbaiki allowlist untuk route publik saja, tetap opt-in, tanpa PII, dashboard tetap dikecualikan. Tambah regresi consent dan event artikel.
+- SEO-009: renderExperiencePage memiliki tautan parent→child tetapi child tidak punya tautan langsung parent. Tambah tautan HTML lokal kembali ke paket induk yang valid (dynamic published parent atau static tour). Tambah unit dan live smoke checks; tidak mengubah URL, D1, foto, harga atau artikel yang telah terbit. Status release belum terverifikasi saat commit.
+- SEO-006/007: riset awal pencarian web 26 Nov 2026 (bukan SERP Google terlokalisasi, negara/perangkat tidak dikontrol, bukan ranking/volume). Query: Nusa Penida private island tour; Nusa Penida West Tour private; Nusa Penida East Tour; Nusa Penida snorkeling tour sharing private; Nusa Penida Manta Point snorkeling; Nusa Lembongan island tour private; Nusa Lembongan Ceningan 2 day itinerary; Sanur to Nusa Lembongan fast boat; Nusa Lembongan to Gili fast boat; Nusa Penida west vs east tour. Pencarian tambahan: Lembongan local private car dan fast boat routes.
+- Sampel kompetitor dan kebutuhan pengunjung:
+  - West/East/island: https://penidaprivatetour.com/west-tour/ ; https://penidaprivatetour.com/east-tour/ ; https://nusapenidatransport.com/tour/west-nusa-penida-private-driver/ ; https://visitpenida.com/tours/day-trips/east-nusa-penida-day-tour/ — rute, titik jemput, harga berdasarkan grup, fasilitas.
+  - Snorkeling: https://www.snorkelinginbali.com/tours ; https://nusapenidatransport.com/tour/nusa-penida-snorkeling-tour/ ; https://snorkeling.doelrentalpenida.com/package/ ; https://visitpenida.com/tours/snorkeling/private-nusa-penida-snorkeling/ — bedakan Manta Bay/Point, kapasitas, biaya per orang/per kapal, durasi.
+  - Lembongan: https://lembongantrip.com/day-trips/from-mainland/island-tour-from-bali.php ; https://www.thelembongantraveller.com/portfolio-category/island-transport/ ; https://tikolembongantaxi.com/ ; https://arjunlembonganactivities.com/island-tour/ — paket dari pulau vs Bali, transport lokal, itinerary.
+  - Boat: https://sailtix.com/routes/sanur-to-nusa-lembongan ; https://penidaboat.com/routes/sanur-nusa-lembongan ; https://setiafastferry.com/timetable/ ; https://nusalembongan.org/fast-boats/ — arah rute, pelabuhan, check-in, tarif/availability aktual. Jangan menyalin jadwal/harga kompetitor.
+  - Informasional: https://visitpenida.com/guide/west-vs-east-nusa-penida/ ; https://penidaprivatetour.com/nusa-penida-itinerary/ ; https://bali-explorer.com/blog/nusa-lembongan-in-2-days/ ; https://fivepillarexperiences.com/experiences/lembongan-beyond-the-blue/ — itinerary yang menjawab keputusan perjalanan.
+- Audit kode panduan kompetitif NPE: rute ilustratif, biaya yang perlu dikonfirmasi, keselamatan, private/sharing dan titik jemput sudah ada. Gap utama: penawaran nyata yang terverifikasi (harga jual, durasi, kapasitas, inclusions/exclusions). Jangan menulis ulang guide existing hanya karena kompetitor juga membahas topik tersebut. Web fetch live NPE tidak berhasil pada sesi ini, sehingga perbandingan NPE berbasis kode repo, bukan audit visual live.
+- Peta prioritas awal (hipotesis, bukan volume):
+  - /en/tours/west + /west-tour.html → west tour/private west tour; /en/tours/east + /east-tour.html → east tour/private east tour.
+  - /en/tours/island + /island-tour.html → private island tour, west vs east (informasi sudah ada pada halaman ini).
+  - /en/tours/snorkeling + /snorkeling.html → snorkeling tour, Manta Bay/Point, private/sharing. Detail Mangrove Point tidak menggantikan halaman induk.
+  - /en/experiences/nusa-lembongan-island-tour + /id/experiences/nusa-lembongan-island-tour → private Lembongan island tour; detail destinasi target nama tempat dan link kembali ke tur.
+  - /en/experiences/boat-ticket + /id/experiences/boat-ticket → Sanur–Lembongan, arah sebaliknya, Lembongan–Gili sesuai rute yang tersedia. Pertimbangkan artikel rute khusus hanya jika punya nilai tambah.
+  - Calon artikel berbeda intent: Lembongan–Ceningan 2D1N (panduan, bukan klaim paket siap jual), persiapan naik fast boat dari Sanur, memilih private/shared snorkeling. Prioritaskan setelah inventaris dan persetujuan owner; tidak auto-publish.
+- Next: verifikasi CI/deploy/smoke, minta data Performance 28 hari dan GA4 Realtime tanpa PII, konfirmasi penawaran operator sebelum ubah halaman, lanjut checklist indexasi saat kuota tersedia. Tidak ada ranking baru yang diklaim.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

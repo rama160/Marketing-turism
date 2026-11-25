@@ -61,6 +61,15 @@ for(const url of indexedURLs){
  if(response.status!==200)throw Error("Sitemap URL not direct HTTP 200: "+url+" "+response.status);
  const html=await response.text();
  if(!html.includes('rel="canonical" href="'+url+'"')||!html.includes('hreflang="id"')||!html.includes('hreflang="en"'))throw Error("Missing canonical/hreflang: "+url);
+ const match=new URL(url).pathname.match(/^\/(en|id)\/experiences\/([^/]+)$/);
+ const child=match&&websiteCatalog.items.find(a=>a.slug===match[2]&&a.parent_activity);
+ if(child){
+  const lang=match[1],p=child.parent_activity;
+  const staticRoutes={west:"west-tour.html",east:"east-tour.html",island:"island-tour.html",snorkeling:"snorkeling.html"};
+  const key=p.startsWith("static:")?p.slice(7):"";
+  const expected=key?(lang==="en"?"/en/tours/"+key:"/"+staticRoutes[key]):"/"+lang+"/experiences/"+p.slice(9);
+  if(!html.includes('data-npe-parent-tour href="'+expected+'"'))throw Error("Missing localized parent tour link: "+url);
+ }
 }
 if(!Array.isArray(websiteCatalog.items))throw Error("Public CMS activity catalog unavailable");
 // SEO crawlers must get metadata and published activity links before JavaScript executes.
@@ -372,6 +381,7 @@ console.log("Verified competitive decision guides on existing public URLs");
 for(const lang of ["id","en"]){
  const index="/"+lang+"/articles",html=await get(index);
  if(!html.includes('rel="canonical" href="'+base+index+'"')||!websiteSitemap.includes(base+index))throw Error("Article index canonical/sitemap missing "+lang);
+ if(!html.includes('src="/analytics.js"')||!analytics.includes("articles"))throw Error("Article consent analytics not deployed "+lang);
  const missing=await fetch(base+index+"/npe-smoke-nonexistent-article-00000000");
  if(missing.status!==404)throw Error("Unpublished article route should be 404");
 }
