@@ -1038,6 +1038,8 @@ $("#cmsPublish").onclick=async()=>{
 
 // Dynamic website CMS: content editor only. Existing supplier rates, quotes, guest leads and bookings stay isolated.
 let npeCmsActivities=[],npeCmsMedia=[],npeCmsEditing=null,npeCmsView="published",npeCmsReturn="published",npeCmsPhotoReturn=false,npeCmsPriceCleared=false;
+let cmsRegionPlacement=null;
+const cmsRegionPending=new Map();
 const cmsForm=$("#cmsActivityForm");
 const cmsField=name=>cmsForm.elements.namedItem(name);
 const cmsSet=(name,value)=>{const el=cmsField(name);if(!el)return;if(el.type==="checkbox")el.checked=value===true;else el.value=value??"";};
@@ -1168,6 +1170,7 @@ function startWebsiteDetail(parent){
  $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
 }
 function resetWebsiteForm(){
+ cmsRegionPlacement=null;
  npeCmsReturn=npeCmsView==="activity"?"drafts":npeCmsView;npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
  cmsSet("seo_mode","AUTO");cmsSeoMode();
  cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;renderCmsCategories("ISLAND_TOUR");$("#cmsNewCategoryWrap").hidden=false;$("#cmsNewCategory").value="";$("#cmsCategoryFeedback").textContent="";
@@ -1177,6 +1180,7 @@ function resetWebsiteForm(){
  cmsForm.hidden=false;cmsView("activity");
 }
 function editWebsiteActivity(id,from="published"){
+ cmsRegionPlacement=null;
  const a=npeCmsActivities.find(x=>x.id===id);if(!a)return;
  npeCmsReturn=from;npeCmsEditing=a;npeCmsPriceCleared=false;cmsForm.reset();
  const d=a.draft||a.published||{};
@@ -1329,6 +1333,7 @@ async function cmsSaveDraft(){
  const path=npeCmsEditing?"admin/website/activities/"+npeCmsEditing.id:"admin/website/activities";
  const payload={draft,...(npeCmsEditing?{expected_version:npeCmsEditing.version}:{})};
  const result=await api(path,npeCmsEditing?"PATCH":"POST",payload);
+ if(cmsRegionPlacement)cmsRegionPending.set(result.id,cmsRegionPlacement);
  await loadWebsiteCMS();
  // After the first draft save, keep editing that record instead of accidentally creating the same slug again.
  npeCmsEditing=npeCmsActivities.find(x=>x.id===result.id)||null;
@@ -1358,7 +1363,7 @@ $("#cmsPublishFromEditor").onclick=async()=>{
   }
   if(!window.confirm("Terbitkan perubahan pada "+saved.draft.title_id+" sekarang?")){say("#cmsActivityFeedback","Draft tersimpan; publikasi dibatalkan.");return;}
   const published=await cmsPublishActivity(saved.id,true);
-  if(published){cmsForm.hidden=true;cmsView("published");}
+  if(published){cmsForm.hidden=true;cmsView(npeCmsReturn==="pages"?"pages":"published");}
   else say("#cmsActivityFeedback","Draft tersimpan, namun publikasi belum berhasil. Periksa pesan dan coba lagi.");
  }catch(e){cmsReportError(e);}
  finally{btn.disabled=false;$("#cmsSaveActivity").disabled=false;}
@@ -1371,7 +1376,13 @@ async function cmsPublishActivity(id,confirmed=false){
  if(!confirmed&&!window.confirm("Publikasikan "+a.draft.title_id+" ke website publik?"))return false;
  try{
   await api("admin/website/activities/"+id+"/publish","POST",{expected_version:a.version,owner_confirmed:true});
-  await loadWebsiteCMS();say("#cmsStudioFeedback","Aktivitas berhasil diterbitkan. Anda dapat mengeditnya lagi di Published.",true);return true;
+  let placementError="";
+  const target=cmsRegionPending.get(id);
+  if(target){
+   try{await placePublishedRegionItem(target,id);cmsRegionPending.delete(id);}
+   catch(e){placementError=" Aktivitas sudah terbit, tetapi penempatan belum tersimpan: "+e.message+". Gunakan Atur susunan untuk menampilkannya.";}
+  }
+  await loadWebsiteCMS();say("#cmsStudioFeedback","Aktivitas berhasil diterbitkan."+placementError,!placementError);return true;
  }catch(e){say("#cmsStudioFeedback","Publikasi gagal: "+e.message);return false;}
 }
 async function cmsArchiveActivity(id){
@@ -1823,7 +1834,7 @@ function renderCmsPageDetails(){
 function renderCmsPagePhotos(){
  const root=$("#cmsPagePhotos");if(!root)return;
  const page=$("#cmsPagePicker").value;
- const slots=cmsPagePhotoSlots[page]||[];
+ const slots=page==="home"?["hero","island"]:(cmsPagePhotoSlots[page]||[]);
  renderCmsPageDetails();
  renderLayoutEditor();
  const groups=new Map();for(const slot of slots){const group=slot==="hero"?"01 · Foto cover utama":!slot.includes("-")?"02 · Cover kartu wisata (dipakai bersama halaman paket)":"03 · Galeri destinasi / thumbnail";if(!groups.has(group))groups.set(group,[]);groups.get(group).push(slot);}
@@ -1838,6 +1849,7 @@ function renderCmsPagePhotos(){
  const coverMount=$("#cmsHeroCoverPhoto");
  if(page==="home"&&coverMount){const cover=[...root.querySelectorAll("details")].find(el=>el.querySelector('[data-cms-edit-photo="hero"]'));if(cover){coverMount.replaceChildren(cover);cover.open=true;}}
  $("#cmsPagePhoto").hidden=page==="home";
+ refreshRegionCardPreviews();
 }
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
@@ -1869,6 +1881,7 @@ function renderCmsPageFields(){
     (isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
  }).join("")+'</div></details>').join("");
  renderHeroListEditor(page);
+ renderRegionCardsEditor(page);
  $("#cmsPageFeedback").textContent="";
  renderCmsPagePhotos();filterCmsPageFields();
 }
@@ -1877,7 +1890,7 @@ function filterCmsPageFields(){
  $("#cmsPageFields")?.querySelectorAll("[data-cms-page-field]").forEach(el=>{
   const field=el.querySelector("span")?.textContent?.toLowerCase()||"";
   el.hidden=Boolean(q&&!field.includes(q)&&!el.dataset.cmsPageField.toLowerCase().includes(q));
-  if(q&&!el.hidden){const group=el.closest("details");if(group)group.open=true;}
+  if(q&&!el.hidden){for(let group=el.closest("details");group;group=group.parentElement?.closest("details"))group.open=true;}
  });
 }
 $("#cmsPageFilter").oninput=filterCmsPageFields;
@@ -1961,6 +1974,114 @@ function drawHeroListRows(){
 }
 
 
+// Homepage destination workspace: keep the existing CMS fields, photo slots and activity forms.
+const regionStaticCards=[
+ ["west","west","West Tour","static:west"],
+ ["east","east","East Tour","static:east"],
+ ["snorkeling","sea","Snorkeling","static:snorkeling"]
+];
+function regionNavigate(action){
+ if([...$("#cmsPageFields").querySelectorAll("[data-cms-page-key]")].some(el=>el.value.trim()!==cmsEffectiveValue(el.dataset.cmsPageKey,$("#cmsPageLocale").value))&&
+ !confirm("Ada perubahan teks yang belum diterbitkan. Lanjutkan tanpa menyimpannya?"))return;
+ action();
+}
+function openRegionOrder(group){
+ const picker=$("#cmsLayoutGroup");
+ if(![...picker.options].some(x=>x.value===group))return;
+ if(layoutEdit?.dirty&&layoutEdit.group!==group&&!confirm("Batalkan perubahan susunan yang belum disimpan?"))return;
+ if(layoutEdit?.group!==group||!layoutEdit?.dirty){picker.value=group;loadLayoutDraft();}
+ $("#cmsLayoutPanel").open=true;$("#cmsLayoutPanel").scrollIntoView({block:"start"});
+}
+function newRegionItem(group,parent=""){
+ regionNavigate(()=>{
+  if(parent)startWebsiteDetail(parent);else resetWebsiteForm();
+  cmsRegionPlacement=group||null;
+ });
+}
+async function placePublishedRegionItem(group,id){
+ // Read the latest version rather than overwriting a concurrent layout change.
+ const records=(await api("admin/site-content")).items||[];
+ const key=LAYOUT_PREFIX+group,record=records.find(x=>x.key===key&&x.locale==="id");
+ const config=readOrder(record?{[key]:record.value}:{},group),item="activity:"+id;
+ const base=groupItems(group,layoutActivities()).filter(x=>!x.optional).map(x=>x.key);
+ const order=[...new Set([...config.order,...base,item])];
+ const saved=await api("admin/site-content","POST",{key,locale:"id",value:JSON.stringify({order,hidden:config.hidden.filter(k=>k!==item)}),expected_version:record?.version||0,owner_confirmed:true});
+ cmsRecords.set("id:"+key,saved);
+ if(layoutEdit?.group===group&&!layoutEdit.dirty)loadLayoutDraft();
+}
+function regionPhotoTile(slot,label){
+ return '<div class="regionPhotoTile"><img data-region-photo="'+esc(slot)+'" alt="'+esc(label)+'" hidden><button type="button" class="outline small" data-region-photo-edit="'+esc(slot)+'">Ganti foto</button></div>';
+}
+function renderRegionCardsEditor(page){
+ if(page!=="home")return;
+ const root=$("#cmsPageFields");
+ const section=root.querySelector('[data-cms-page-field="regions.title"]')?.closest("details");
+ if(!section)return;
+ section.querySelector("summary").textContent="03 · Destinasi & aktivitas (kartu dan detail)";
+ const intro=document.createElement("div");intro.className="npeCmsPageFields";
+ const cards=document.createElement("div");cards.id="cmsRegionCards";cards.className="regionCardEditorList";
+ const actions=document.createElement("div");actions.className="actions";
+ actions.innerHTML='<button type="button" class="primary small" id="cmsRegionAdd">+ Tambah aktivitas</button><button type="button" class="outline small" id="cmsRegionOrder">Atur posisi / tampilkan kartu</button>';
+ const moveField=(key,to)=>{const field=root.querySelector('[data-cms-page-field="'+key+'"]');if(field)to.append(field);};
+ for(const key of ["regions.eyebrow","regions.title","regions.description"])moveField(key,intro);
+ const original=section.querySelector(".npeCmsPageFields");
+ section.append(intro,actions,cards);
+ for(const [slot,prefix,label,parent] of regionStaticCards){
+  const card=document.createElement("details");card.className="regionEditorCard";card.dataset.regionCard=slot;
+  card.innerHTML='<summary><span data-region-card-title>'+esc(label)+'</span> <small data-region-status></small></summary><div class="regionEditorBody">'+regionPhotoTile(slot,label)+'<div class="npeCmsPageFields" data-region-fields></div><div class="actions"><button type="button" class="outline small" data-region-page="'+esc(slot)+'">Edit halaman & deskripsi lengkap</button><button type="button" class="primary small" data-region-add-detail="'+esc(parent)+'" data-region-placement="thumb:'+esc(slot)+'">+ Tambah detail</button><button type="button" class="outline small" data-region-order="thumb:'+esc(slot)+'">Atur posisi thumbnail</button></div><h5>Thumbnail & detail</h5><div class="regionEditorThumbs" data-region-thumbs></div><div data-region-children></div></div>';
+  cards.append(card);
+  for(const key of [prefix+".title",prefix+".description","regions."+prefix+".cta","price."+slot])moveField(key,card.querySelector("[data-region-fields]"));
+  for(const thumb of groupItems("thumb:"+slot,[])){
+   const key=thumb.key,photoSlot=key.replace(/-second$/,"");
+   const tile=document.createElement("div");tile.className="regionEditorThumb";
+   tile.innerHTML=regionPhotoTile(photoSlot,cmsPageSlotLabels[photoSlot]||key)+'<div data-region-thumb-label></div><button type="button" class="outline small" data-region-page="'+esc(photoSlot)+'">Edit detail</button>';
+   card.querySelector("[data-region-thumbs]").append(tile);
+   moveField("homeThumb."+key+".title",tile.querySelector("[data-region-thumb-label]"));
+  }
+ }
+ const dynamic=document.createElement("div");dynamic.id="cmsRegionDynamicCards";cards.append(dynamic);
+ if(original&&!original.children.length)original.remove();
+ for(const group of [...root.querySelectorAll(":scope > details")]){if(group!==section&&!group.querySelector("[data-cms-page-field]")&&!group.querySelector("#cmsHeroListEditor"))group.remove();}
+ $("#cmsRegionAdd").onclick=()=>newRegionItem("regions");
+ $("#cmsRegionOrder").onclick=()=>openRegionOrder("regions");
+ section.addEventListener("click",event=>{
+  const b=event.target.closest("button");if(!b)return;
+  if(b.dataset.regionPhotoEdit)beginCmsQuickPhoto(b.dataset.regionPhotoEdit);
+  else if(b.dataset.regionPage)regionNavigate(()=>cmsPublishedPage(b.dataset.regionPage));
+  else if(b.dataset.regionAddDetail)newRegionItem(b.dataset.regionPlacement||"",b.dataset.regionAddDetail);
+  else if(b.dataset.regionOrder)openRegionOrder(b.dataset.regionOrder);
+  else if(b.dataset.regionEdit)regionNavigate(()=>editWebsiteActivity(b.dataset.regionEdit,"pages"));
+ });
+ refreshRegionCardPreviews();
+}
+function refreshRegionCardPreviews(){
+ const root=$("#cmsRegionCards");if(!root)return;
+ const lang=$("#cmsPageLocale").value;
+ for(const img of root.querySelectorAll("[data-region-photo]")){
+  const photo=cmsCurrentPhoto(img.dataset.regionPhoto);img.hidden=!photo;
+  if(photo){img.src=photo.url;img.alt=photo.alt||img.dataset.regionPhoto;}
+ }
+ for(const b of root.querySelectorAll("[data-region-photo-edit]"))b.disabled=!cmsSlotsLoaded;
+ const record=cmsRecords.get("id:"+LAYOUT_PREFIX+"regions"),config=readOrder(record?{[LAYOUT_PREFIX+"regions"]:record.value}:{},"regions");
+ const childrenHTML=parent=>npeCmsActivities.filter(a=>a.status==="PUBLISHED"&&a.published?.parent_activity===parent).map(a=>'<div class="regionChildRow"><img loading="lazy" src="/photos/website/'+esc(a.published.media_id)+'" alt=""><strong>'+esc(a.published["title_"+lang])+'</strong><button type="button" class="outline small" data-region-edit="'+esc(a.id)+'">Edit detail</button></div>').join("")||'<p class="feedback">Belum ada detail tambahan.</p>';
+ for(const [slot,prefix,label,parent] of regionStaticCards){
+  const card=root.querySelector('[data-region-card="'+slot+'"]');if(!card)continue;
+  card.querySelector("[data-region-card-title]").textContent=cmsEffectiveValue(prefix+".title",lang)||label;
+  card.querySelector("[data-region-status]").textContent=config.hidden.includes(slot)?"Disembunyikan":"Tampil";
+  card.querySelector("[data-region-children]").innerHTML=cmsActivitiesLoaded?childrenHTML(parent):'<p class="feedback">Memuat detail...</p>';
+ }
+ const dynamic=$("#cmsRegionDynamicCards");if(!dynamic)return;
+ if(!cmsActivitiesLoaded){dynamic.textContent="Memuat aktivitas...";return;}
+ const roots=layoutActivities().filter(a=>!a.parent_activity),map=new Map(roots.map(a=>["activity:"+a.id,a]));
+ const open=new Set([...dynamic.querySelectorAll("details[open]")].map(n=>n.dataset.regionCard));
+ dynamic.innerHTML=orderedKeys([...map.keys()],config).map(key=>{
+  const a=map.get(key),parent="activity:"+a.slug,shown=config.order.includes(key)&&!config.hidden.includes(key);
+  return '<details class="regionEditorCard" data-region-card="'+esc(key)+'" '+(open.has(key)?"open":"")+'><summary>'+esc(a["title_"+lang])+' <small>'+ (shown?"Tampil":"Belum ditampilkan / disembunyikan")+'</small></summary><div class="regionEditorBody"><img class="regionDynamicCover" loading="lazy" src="/photos/website/'+esc(a.media_id)+'" alt=""><p>'+esc(a["summary_"+lang]||"")+'</p><div class="actions"><button type="button" class="primary small" data-region-edit="'+esc(a.id)+'">Edit aktivitas & cover</button><button type="button" class="outline small" data-region-order="regions">Atur posisi / tampilkan</button><button type="button" class="outline small" data-region-add-detail="'+esc(parent)+'">+ Tambah detail</button><button type="button" class="outline small" data-region-order="detail:'+esc(parent)+'">Atur detail & thumbnail</button></div><h5>Detail / thumbnail</h5>'+childrenHTML(parent)+'</div></details>';
+ }).join("");
+ // Mixed static/dynamic ordering is shown in the shared direct-position control.
+ const byKey=new Map(regionStaticCards.map(([key])=>[key,root.querySelector('[data-region-card="'+key+'"]')]));
+ for(const key of orderedKeys([...byKey.keys()],config))root.insertBefore(byKey.get(key),dynamic);
+}
 const layoutLabels={packages:"Paket wisata di beranda",regions:"Kartu destinasi di beranda","thumb:west":"Thumbnail West Tour","thumb:east":"Thumbnail East Tour","thumb:snorkeling":"Thumbnail Snorkeling","detail:static:west":"Detail West Tour","detail:static:east":"Detail East Tour","detail:static:snorkeling":"Detail Snorkeling","detail:static:island":"Detail Island Tour"};
 let layoutEdit=null;
 function layoutActivities(){return npeCmsActivities.filter(x=>x.status==="PUBLISHED"&&x.published).map(x=>({id:x.id,...x.published}));}
@@ -1971,7 +2092,7 @@ function renderLayoutEditor(){
  for(const item of layoutActivities().filter(x=>!x.parent_activity))labels["detail:activity:"+item.slug]="Detail "+item.title_id;
  picker.innerHTML=Object.entries(labels).map(([key,label])=>'<option value="'+esc(key)+'">'+esc(label)+'</option>').join("");
  const page=$("#cmsPagePicker").value,preferred="detail:static:"+page;
- picker.value=Object.hasOwn(labels,old)?old:Object.hasOwn(labels,preferred)?preferred:"packages";
+ picker.value=Object.hasOwn(labels,old)?old:Object.hasOwn(labels,preferred)?preferred:page==="home"?"regions":"packages";
  if(!layoutEdit||layoutEdit.group!==picker.value||!layoutEdit.dirty)loadLayoutDraft();
  else drawLayoutRows();
 }
@@ -2009,7 +2130,7 @@ $("#cmsLayoutSave").onclick=async()=>{
  try{
   if(!confirm("Terbitkan susunan ini dalam kedua bahasa? Item yang disembunyikan tidak dihapus dari database."))return;
   const key=LAYOUT_PREFIX+x.group,result=await api("admin/site-content","POST",{key,locale:"id",value:JSON.stringify({order:x.keys,hidden:[...x.hidden]}),expected_version:x.version,owner_confirmed:true});
-  cmsRecords.set("id:"+key,result);x.version=result.version;x.dirty=false;say("#cmsLayoutFeedback","Susunan terbit. Muat ulang website untuk melihat hasilnya.",true);
+  cmsRecords.set("id:"+key,result);x.version=result.version;x.dirty=false;refreshRegionCardPreviews();say("#cmsLayoutFeedback","Susunan terbit. Muat ulang website untuk melihat hasilnya.",true);
  }catch(err){say("#cmsLayoutFeedback",err.message);}finally{btn.disabled=false;}
 };
 

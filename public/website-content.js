@@ -136,7 +136,20 @@ function addPublicRegionCards(){
   const card=el("article","spot-showcase");card.dataset.layoutAddedRegion=a.id;
   const cover=el("div","spot-cover"),img=el("img","spot-cover-image");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
   const overlay=el("div","spot-overlay"),text=el("div");text.append(el("h3","",a["title_"+lang]),el("p","",a["summary_"+lang]));
-  const link=el("a","spot-link",lang==="en"?"View tour ↗":"Lihat tur ↗");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);overlay.append(text,link);cover.append(img,overlay);card.append(cover);root.append(card);
+  const link=el("a","spot-link",lang==="en"?"View tour ↗":"Lihat tur ↗");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);overlay.append(text,link);cover.append(img,overlay);
+  if(a.price_verified&&a["price_label_"+lang])cover.append(el("span","price-preview",a["price_label_"+lang]));
+  card.append(cover);
+  const thumbs=el("div","spot-thumbs"),children=publicActivities.filter(x=>x.parent_activity==="activity:"+a.slug&&x.photo_url);
+  const detailConfig=readOrder(layoutCopy,"detail:activity:"+a.slug),byKey=new Map(children.map(x=>[activityKey(x.id),x]));
+  for(const key of orderedKeys([...byKey.keys()],detailConfig)){
+   if(detailConfig.hidden.includes(key))continue;
+   const child=byKey.get(key),item=el("a","destination-thumb");item.href="/"+lang+"/experiences/"+encodeURIComponent(child.slug);
+   const thumb=el("img");thumb.loading="lazy";thumb.decoding="async";thumb.width=240;thumb.height=135;thumb.alt=child["title_"+lang];thumb.src=child.photo_url+"?npew=240";
+   item.append(thumb,el("span","",child["title_"+lang]));thumbs.append(item);
+  }
+  if(thumbs.children.length)card.append(thumbs);
+  card.append(el("small","regionOwnerCredit",lang==="en"?"Photos supplied to Nusa Penida Experiences; usage rights confirmed.":"Foto disediakan untuk Nusa Penida Experiences; hak penggunaan dikonfirmasi."));
+  root.append(card);
  }
 }
 function addPublicThumbs(root,group){
@@ -144,7 +157,7 @@ function addPublicThumbs(root,group){
  root.querySelectorAll("[data-layout-added-thumb]").forEach(n=>n.remove());
  const cfg=readOrder(layoutCopy,group),lang=currentLanguage()==="en"?"en":"id";
  for(const a of publicActivities.filter(x=>x.parent_activity==="static:"+group.slice(6)&&x.photo_url&&cfg.order.includes(activityKey(x.id))&&!cfg.hidden.includes(activityKey(x.id)))){
-  const item=el("div","destination-thumb");item.dataset.layoutAddedThumb=a.id;
+  const item=el("a","destination-thumb");item.dataset.layoutAddedThumb=a.id;item.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);
   const img=el("img");img.loading="lazy";img.decoding="async";img.width=240;img.height=135;img.alt=a["title_"+lang];img.src=a.photo_url+"?npew=240";
   item.append(img,el("span","",a["title_"+lang]));root.append(item);
  }

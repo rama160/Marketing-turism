@@ -1,3 +1,6 @@
+## Homepage destination card editor
+- Group homepage destination section copy, static card cover, thumbnail labels and direct photo actions in one editor. Add a main activity or a static detail from the card editor; publication explicitly requested from this workspace appends it to its selected display group using the existing versioned layout API. Dynamic cards show published child thumbnail links and verified prices; order and hide their details with the existing layout control. No schema changes or reset; original static slots and published URLs remain intact. Drafts published in a different session can be placed using the existing layout selector. Photo and activity publication remains owner-confirmed.
+
 ## Article list ordering
 - Apply direct-position ordering to published article lists in both languages using an independent versioned layout record. Article publication/unpublication remains explicit and sitemap URLs stay intact. Add an article back-to-guide/home link.
 

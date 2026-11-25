@@ -35,3 +35,18 @@ test("article positions are independent of activity layout and cannot unpublish 
  assert.throws(()=>validateOrder("articles",{order:[key],hidden:[key]}));
  assert.throws(()=>validateOrder("regions",{order:[key],hidden:[]}));
 });
+
+test("new region activities support published child thumbnails and independent direct ordering",()=>{
+ const id="12345678-1234-4234-9234-123456789abc",key="activity:"+id;
+ const child="22345678-1234-4234-9234-123456789abc",childKey="activity:"+child;
+ const rows=[{id,media_id:id,title_id:"Lembongan",slug:"lembongan"},{id:child,media_id:id,parent_activity:"activity:lembongan",title_id:"Dream Beach"}];
+ assert.deepEqual(groupItems("detail:activity:lembongan",rows).map(x=>x.key),[childKey]);
+ assert.ok(groupItems("regions",rows).some(x=>x.key===key));
+ assert.ok(!groupItems("regions",rows).some(x=>x.key===childKey));
+ assert.deepEqual(validateOrder("detail:activity:lembongan",{order:[childKey],hidden:[]}).order,[childKey]);
+ const app=readFileSync("public/app.js","utf8"),web=readFileSync("public/website-content.js","utf8");
+ assert.match(app,/function renderRegionCardsEditor/);
+ assert.match(app,/function placePublishedRegionItem/);
+ assert.match(app,/cmsRegionPending\.set/);
+ assert.match(web,/readOrder\(layoutCopy,"detail:activity:"\+a.slug\)/);
+});
