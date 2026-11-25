@@ -999,7 +999,7 @@ test("user-picked photo is frozen into approved Meta queue; mismatched/rejected/
  const queued=sqlite.prepare("SELECT * FROM approved_social_queue WHERE campaign_id=?").all(camp.id);
  assert.equal(queued.length,2);
  assert.equal(queued[0].photo_slug,"owner-"+photo.photo_id);
- assert.equal(queued[0].image_url,"https://marketing-turism-agent.finchat-ai-gateway.workers.dev"+photo.url);
+ assert.equal(queued[0].image_url,"https://nusapenidaexperiences.com"+photo.url);
  assert.match(queued[0].caption_snapshot,/owner-supplied image/);
  const changed=await request("/api/admin/campaigns/"+camp.id+"/photo","POST",{photo_id:photo.photo_id,owner_confirmed:true});
  assert.equal(changed.httpStatus,422);

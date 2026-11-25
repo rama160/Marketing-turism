@@ -95,6 +95,31 @@ async function makePrice(db,b){
 }
 async function route(req,env,ctx){
  const u=new URL(req.url),path=u.pathname,method=req.method,db=env.DB;
+ // Only public NPE documents migrate; retain existing API, signed webhook and media URLs.
+ const canonicalHost="nusapenidaexperiences.com";
+ const oldHost="marketing-turism-agent.finchat-ai-gateway.workers.dev";
+ const staticDocument=/^\/(?:dashboard|privacy|terms|cancellation)(?:\.html|\/)?$/.test(path);
+ const dynamicDocument=/^\/(?:en\/tours(?:\/(?:west|east|island|snorkeling))?|(?:en|id)\/experiences\/[a-z0-9-]+)\/?$/.test(path);
+ const legacyPage=legacyTourRoute(path);
+ const read=method==="GET"||method==="HEAD";
+ if(read&&(u.hostname===oldHost||u.hostname==="www."+canonicalHost||(u.hostname===canonicalHost&&u.protocol==="http:"))&&(legacyPage||dynamicDocument||staticDocument||path==="/sitemap.xml")){
+  const target=new URL("https://"+canonicalHost);
+  target.pathname=legacyPage?.canonical||(dynamicDocument?path.replace(/\/$/,""):path);
+  target.search=u.search;
+  return Response.redirect(target,301);
+ }
+ if(read&&dynamicDocument&&path.endsWith("/")){
+  const target=new URL(req.url);target.pathname=path.slice(0,-1);return Response.redirect(target,301);
+ }
+ // Static dashboard/legal routes are explicitly intercepted so old public links migrate.
+ if(read&&staticDocument&&env.ASSETS){
+  const response=await env.ASSETS.fetch(req);
+  if(path.startsWith("/dashboard")){
+   const headers=new Headers(response.headers);headers.set("x-robots-tag","noindex, nofollow");headers.set("cache-control","no-store");
+   return new Response(method==="HEAD"?null:response.body,{status:response.status,statusText:response.statusText,headers});
+  }
+  return response;
+ }
  if(path.startsWith("/photos/research/")){
   if(!db)return bad("D1 database belum aktif",503);
   return serveResearchPhoto(req,env,db);
@@ -111,7 +136,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.34.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.35.0",db:!!db,ai:!!env.AI});
 
  // Generated non-HTML assets avoid Cloudflare Assets canonical redirect recursion.
  if(path==="/__npe_templates"||path.startsWith("/__npe_templates/"))return new Response("Not found",{status:404,headers:{"cache-control":"no-store","x-robots-tag":"noindex"}});
@@ -135,19 +160,19 @@ async function route(req,env,ctx){
   return new Response(method==="HEAD"?null:html,{headers});
  }
  if(!db)return bad("D1 database belum aktif",503);
- if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard.html\nSitemap: "+u.origin+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
+ if(path==="/robots.txt"&&method==="GET")return new Response("User-agent: *\nDisallow: /api/\nDisallow: /dashboard\nDisallow: /__npe_templates/\nSitemap: "+(u.hostname===oldHost?"https://"+canonicalHost:u.origin)+"/sitemap.xml\n",{headers:{"content-type":"text/plain; charset=utf-8","cache-control":"public,max-age=600"}});
  if(path==="/sitemap.xml"&&method==="GET")return new Response(await renderWebsiteSitemap(db,u.origin),{headers:{"content-type":"application/xml; charset=utf-8","cache-control":"public,max-age=600"}});
  const englishTour=path.match(/^\/en\/tours(?:\/(west|east|island|snorkeling))?\/?$/);
- if(englishTour&&method==="GET"){
+ if(englishTour&&read){
   const seoCopy=await publicSiteContent(db,"en");
   const html=renderEnglishTourPage(englishTour[1]||"",u.origin,seoCopy.items);
-  return new Response(html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=600","x-content-type-options":"nosniff"}});
+  return new Response(method==="HEAD"?null:html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=600","x-content-type-options":"nosniff"}});
  }
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
- if(experience&&method==="GET"){
+ if(experience&&read){
   const published=await findPublishedExperience(db,experience[2]);
   if(!published)return new Response("Experience not found",{status:404,headers:{"cache-control":"no-store"}});
-  return new Response(renderExperiencePage(published,experience[1],u.origin,(await publicWebsiteActivities(db)).items),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
+  return new Response(method==="HEAD"?null:renderExperiencePage(published,experience[1],u.origin,(await publicWebsiteActivities(db)).items),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
  }
  if(path==="/api/public/website/activities"&&method==="GET")return json(await publicWebsiteActivities(db));
  if(path==="/api/public/website/slots"&&method==="GET")return json(await getWebsiteSlots(db));

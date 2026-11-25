@@ -33,7 +33,7 @@ Provisional brand name, no trademark clearance yet. Before posting binding price
 Only publish after marketplace partner approval, qualified/safe operator agreements, accurate fixed inclusions, confirmed capacity and legitimate cancellation terms. No invented live inventory or star ratings.
 
 ## Attribution
-For manual social post tracking, create a draft in the admin Campaigns tab, review it, publish from your authorised account, then record the real HTTPS post URL. The dashboard can copy `https://marketing-turism-agent.finchat-ai-gateway.workers.dev/?campaign=<published-campaign-id>`. A lead is attributed only if the public form is legally enabled and the corresponding campaign is marked PUBLISHED.
+For manual social post tracking, create a draft in the admin Campaigns tab, review it, publish from your authorised account, then record the real HTTPS post URL. The dashboard can copy `https://nusapenidaexperiences.com/?campaign=<published-campaign-id>`. A lead is attributed only if the public form is legally enabled and the corresponding campaign is marked PUBLISHED.
 
 ## No cost promises
 No platform can guarantee leads; rankings/reach depend on quality, user interest and channel eligibility. Do not scrape marketplaces against their terms or buy paid ads without explicit budget approval. Social posting via Metricool or other partner requires connecting the owner's accounts and authorisation.

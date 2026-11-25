@@ -1,3 +1,6 @@
+## Domain migration note (v3.35.0)
+The official public origin is https://nusapenidaexperiences.com. See AI_START_HERE.md for migration compatibility and current release rules. Older URL examples below may document historical releases.
+
 ## NPE v3.34.0 — approved logo and manual campaign creation (25 Nov 2026)
 - Owner-approved transparent airplane/cliff/wave wordmark replaces the single existing icon.svg (vector trace of the approved PNG). Public and dashboard headers, all legal/legacy/dynamic tour pages, favicon, PWA and Organization metadata reference it. Dark UI backing is CSS only for contrast. Existing media, social profile images and historical posts are not rewritten.
 - Campaign creation is manual only. Removed the weekly Cloudflare cron and GitHub organic calendar workflow/script, daily recovery and automatic draft replacement after rejection. Legacy prepare-week API returns HTTP 410; rejection records reasons without generating new content. Removed legacy independent idea publication path and kept old records as history. Hourly approved Meta insights collect real metrics only; no automatic successor draft or automatic photo generation. Explicit owner-requested caption helper, manual draft saving, manual licensed-photo search, approved immutable publication queue and analytics remain.

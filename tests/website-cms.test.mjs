@@ -479,7 +479,7 @@ test("photo chooser shows only two sources, no photo descriptions and cache-safe
  assert.match(html,/id="cmsActivityMedia" hidden/);
  assert.match(html,/id="cmsAddCategory"/);
  assert.match(js,/admin\/website\/categories/);
- assert.match(html,/src="\/app\.js\?v=3\.34\.0"/);
+ assert.match(html,/src="\/app\.js\?v=3\.35\.0"/);
  assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
 });
 
@@ -595,4 +595,29 @@ test("dynamic SEO pages have public WhatsApp tracking",()=>{
  for(const html of [renderEnglishTourPage("west","https://example.com"),renderExperiencePage({...draft,photo_url:"/photos/website/123"},"id","https://example.com")]){
   assert.match(html,/data-whatsapp-chat/);assert.match(html,/website-content\.js\?v=/);
  }
+});
+
+test("production migration permanently redirects public documents and preserves query strings without touching APIs",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const old="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
+ const canonical="https://nusapenidaexperiences.com";
+ for(const host of [old,"https://www.nusapenidaexperiences.com","http://nusapenidaexperiences.com"]){
+  for(const [from,to] of [["/","/"],["/index.html?utm_source=facebook","/?utm_source=facebook"],["/west-tour/","/west-tour.html"],["/en/tours/west/","/en/tours/west"],["/id/experiences/boat-ticket?campaign=123","/id/experiences/boat-ticket?campaign=123"],["/dashboard.html","/dashboard.html"],["/sitemap.xml","/sitemap.xml"]]){
+   for(const method of ["GET","HEAD"]){
+    const r=await worker.fetch(new Request(host+from,{method}),{},{});
+    assert.equal(r.status,301,host+from);assert.equal(r.headers.get("location"),canonical+to);
+   }
+  }
+ }
+ const oldApi=await worker.fetch(new Request(old+"/api/health"),{},{});
+ assert.equal(oldApi.status,200);assert.equal(oldApi.headers.get("location"),null);
+ const denied=await worker.fetch(new Request(old+"/api/public/leads",{method:"POST",body:"{}"}),{},{});
+ assert.notEqual(denied.status,301);
+ const alias=await worker.fetch(new Request(canonical+"/en/tours/west/?utm_source=test"),{},{});
+ assert.equal(alias.status,301);assert.equal(alias.headers.get("location"),canonical+"/en/tours/west?utm_source=test");
+});
+test("dashboard responses are explicitly excluded from indexing and caching",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const r=await worker.fetch(new Request("https://nusapenidaexperiences.com/dashboard.html"),{ASSETS:{fetch:async()=>new Response("<html>dashboard</html>")}},{});
+ assert.equal(r.status,200);assert.equal(r.headers.get("x-robots-tag"),"noindex, nofollow");assert.equal(r.headers.get("cache-control"),"no-store");
 });

@@ -7,7 +7,7 @@ import {weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {campaignPhotoBySlug,campaignPhotoForDraft} from "./marketing-media.mjs";
 import {resolveCampaignPhoto} from "./photo-library.mjs";
 const uid=()=>crypto.randomUUID();
-const pageHost="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
+const pageHost="https://nusapenidaexperiences.com";
 const gBase="https://graph.facebook.com/v26.0";
 const channels=new Set(["Facebook","Instagram"]);
 const isoUTC=ms=>new Date(ms).toISOString().slice(0,19).replace("T"," ");
@@ -26,7 +26,7 @@ async function mediaInfo(db,slug){
  const photo=await resolveCampaignPhoto(db,slug);
  if(photo.is_illustrative)throw Error("Foto ilustrasi belum boleh diposting otomatis");
  const rawUrl=(photo.owner_supplied||photo.research_discovered)?
-  "https://marketing-turism-agent.finchat-ai-gateway.workers.dev"+photo.url:
+  "https://nusapenidaexperiences.com"+photo.url:
   "https://raw.githubusercontent.com/rama160/Marketing-turism/main/public/photos/"+slug+".jpg";
  const captionCredit=photo.owner_supplied?"Photo: Nusa Penida Experiences (owner-supplied image).":
   "Photo: "+photo.credit+" / "+photo.license+". Source: "+photo.source+

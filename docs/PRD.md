@@ -1,3 +1,6 @@
+## Domain migration note (v3.35.0)
+The official public origin is https://nusapenidaexperiences.com. See AI_START_HERE.md for migration compatibility and current release rules. Older URL examples below may document historical releases.
+
 ## FR-53–FR-57 — NPE Gallery reuse and deletion (v3.22.0)
 - FR-53 A visible Galeri NPE shortcut and tab list owner-uploaded photos in a searchable grid independently of other CMS endpoints.
 - FR-54 Every Ganti Foto offers both saved Galeri NPE images and new images from the phone without asking again for the location.

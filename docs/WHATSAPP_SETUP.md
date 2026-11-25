@@ -1,3 +1,6 @@
+## Domain migration note (v3.35.0)
+Public website: https://nusapenidaexperiences.com. Existing registered WhatsApp webhook URLs on workers.dev remain supported; do not change a working callback without verification. New callback may use https://nusapenidaexperiences.com/api/webhooks/whatsapp after Meta configuration is verified.
+
 # Panduan Lengkap Menghubungkan WhatsApp Business ke Agen AI — Nusa Penida Experiences
 
 **Bahasa: Indonesia | Pembaruan: 20 Oktober 2026 | Proyek: Marketing-turism | Status: fondasi versi 3.5.0 sudah terpasang, koneksi Meta belum diaktifkan.**

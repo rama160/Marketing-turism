@@ -169,7 +169,7 @@ export async function researchBuyerQuestions(db,env,request=fetch){
   let discovered=0,working=0;
   for(const url of feeds){
    try{
-    const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://marketing-turism-agent.finchat-ai-gateway.workers.dev/)"},
+    const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://nusapenidaexperiences.com/)"},
      signal:AbortSignal.timeout(4500)});
     if(!response.ok)continue;
     const type=response.headers.get("content-type")||"";

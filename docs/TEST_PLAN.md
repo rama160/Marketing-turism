@@ -1,3 +1,6 @@
+## Domain migration note (v3.35.0)
+The official public origin is https://nusapenidaexperiences.com. See AI_START_HERE.md for migration compatibility and current release rules. Older URL examples below may document historical releases.
+
 ## 2026-11-24 — v3.32.0 SEO and guest acceptance additions
 - Confirm all 5 Indonesian pages return 200 without redirect loops; canonical, OG title/description, page schema, image dimensions, bilingual FAQ and package-specific WhatsApp.
 - Confirm `/en/tours`, `/en/tours/west`, `/en/tours/east`, `/en/tours/snorkeling`, `/en/tours/island` return 200 and expose real HTML language, unique canonical, reciprocal hreflang, credited image, FAQ and public booking CTA.

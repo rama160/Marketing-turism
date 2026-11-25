@@ -1,14 +1,25 @@
 // Public smoke test from GitHub Actions; never requires or prints any secret.
-const base=(process.env.SMOKE_URL||"https://marketing-turism-agent.finchat-ai-gateway.workers.dev").replace(/\/$/,"");
+const base=(process.env.SMOKE_URL||"https://nusapenidaexperiences.com").replace(/\/$/,"");
 async function get(path,expectedStatus=200){
  const res=await fetch(base+path,{signal:AbortSignal.timeout(20000)});
  const text=await res.text();
  if(res.status!==expectedStatus)throw Error("SMOKE "+path+": status "+res.status+", expected "+expectedStatus+", body="+text.slice(0,300));
  return text;
 }
+if(base==="https://nusapenidaexperiences.com"){
+ const aliases=["https://marketing-turism-agent.finchat-ai-gateway.workers.dev","https://www.nusapenidaexperiences.com","http://nusapenidaexperiences.com"];
+ for(const host of aliases){
+  for(const path of ["/","/west-tour.html?utm_source=migration","/en/tours/east","/sitemap.xml"]){
+   const r=await fetch(host+path,{redirect:"manual",signal:AbortSignal.timeout(20000)});
+   if(r.status!==301||r.headers.get("location")!==base+path)throw Error("Canonical migration redirect failed: "+host+path+" "+r.status+" "+r.headers.get("location"));
+  }
+ }
+ const oldHealth=await fetch(aliases[0]+"/api/health",{redirect:"manual",signal:AbortSignal.timeout(20000)});
+ if(oldHealth.status!==200)throw Error("Legacy API compatibility lost");
+}
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.34.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.35.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -38,13 +49,14 @@ const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(![snorkeling,island,west,east].every(page=>page.includes("npeFaqGrid")&&page.includes('data-whatsapp-package=')))throw Error("Tour FAQ or contextual WhatsApp CTA missing");
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
 if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
-await get("/robots.txt");const websiteSitemap=await get("/sitemap.xml");
+const robots=await get("/robots.txt");if(!robots.includes("Sitemap: "+base+"/sitemap.xml"))throw Error("Robots sitemap host mismatch");const websiteSitemap=await get("/sitemap.xml");if(websiteSitemap.includes("workers.dev"))throw Error("Legacy host leaked into sitemap");
 for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"])if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
 if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
 const websiteCatalog=JSON.parse(await get("/api/public/website/activities"));
 const indexedURLs=[...websiteSitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
 if(new Set(indexedURLs).size!==indexedURLs.length)throw Error("Duplicate URLs in sitemap");
 for(const url of indexedURLs){
+ if(new URL(url).origin!==base)throw Error("Noncanonical sitemap origin: "+url);
  const response=await fetch(url,{redirect:"manual",signal:AbortSignal.timeout(20000)});
  if(response.status!==200)throw Error("Sitemap URL not direct HTTP 200: "+url+" "+response.status);
  const html=await response.text();
@@ -133,13 +145,13 @@ if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.photos?.hero||!editorManifest.photos?.["west-kelingking"])
  throw Error("Live published content snapshot incomplete: site editor would display blank copy");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
-if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.34.0"')||
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.35.0"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
  !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
  throw Error("Standalone agent dashboard or navigation missing");
 if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
- page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.34.0"')||
+ page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.35.0"')||
  !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
  guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
  throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
@@ -189,7 +201,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v34"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v35"))throw Error("PWA asset cache did not bump");
 // Guest contact: primary click-to-chat must not be confused with public catalog.
 const number="628561752525";
 const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
@@ -231,7 +243,7 @@ if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+d
 // Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
 if(!dashboard.includes('id="tab-growth"')||!dashboard.includes('id="growthResearch"')||
  !dashboard.includes('data-tab="growth"')||!app.includes('admin/growth')||
- !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.34.0")).includes("/api/public/intent"))
+ !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.35.0")).includes("/api/public/intent"))
  throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
 if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
  throw Error("Customer acquisition mobile styling absent");
@@ -271,4 +283,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.34.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.35.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");

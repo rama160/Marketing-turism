@@ -1,3 +1,6 @@
+## Domain migration note (v3.35.0)
+The official public origin is https://nusapenidaexperiences.com. See AI_START_HERE.md for migration compatibility and current release rules. Older URL examples below may document historical releases.
+
 ## NPE website post-audit & SEO v3.32.0 — 24 Nov 2026
 **Production:** `main`, version `3.32.0`; no branches. Static Indonesian legacy routes remain direct ASSETS routes. Worker-first only for `/api/*`, `/photos/*`, `/robots.txt`, `/sitemap.xml`, localized published activities and English `/en/tours` routes. NEVER enable Worker-first over '/', '/index.html' or original HTML pages due to previous redirect loops.
 **Content changes:** 18 FAQ items ID/EN (home 4; snorkeling 4; island 4; west 3; east 3), consistent meta/OG/schema, dimensioned images, contextual WhatsApp enquiry and transparent owner/operator role. Published Boat Ticket and Lembongan SEO titles updated directly in D1, without altering their actual product or supplier data.

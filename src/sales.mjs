@@ -37,7 +37,7 @@ export function marketingWeekStart(dateString){
 }
 export function weeklyDrafts(dateString){
  const monday=marketingWeekStart(dateString);
- const site="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
+ const site="https://nusapenidaexperiences.com";
  const ideas=[
   {activity_id:"ISLAND_TOUR_CAR",platform:"Instagram",lang:"en",caption:"Not every island escape needs a packed itinerary. ✨ Imagine Kelingking's dramatic cliffs and the deep-blue coastline of West Nusa Penida. Explore the route and ask us about suitable local operators and travel dates. Every arrangement, activity and price requires confirmation. "+site+"/west-tour.html #NusaPenida #KelingkingBeach"},
   {activity_id:"SNORKELING_3_SPOTS",platform:"Facebook",lang:"id",caption:"Bayangkan menjelajah keindahan bawah laut Nusa Penida. 🐠 Snorkeling Sharing atau Private? Keduanya menawarkan pengalaman berbeda. Tanyakan rute, kondisi laut, dan pilihan operator lokal sebelum menentukan perjalanan. Melihat manta tidak dapat dijamin. Info: "+site+"/snorkeling.html #SnorkelingNusaPenida"},
@@ -89,7 +89,7 @@ export function replacementCampaignCaption({activity_id,platform,revision,reason
  const index=(revision-1)%texts.length;
  const language=revision%2===0?"en":"id";
  const wording=texts[index][language==="en"?1:0];
- const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+(activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":index%2?"east-tour.html":"west-tour.html");
+ const link="https://nusapenidaexperiences.com/"+(activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":index%2?"east-tour.html":"west-tour.html");
  const platformSource=String(platform||"").toLowerCase().replace(/[^a-z]/g,"");
  const tracked=link+"?utm_source="+platformSource+"&utm_medium=organic";
  const invite=platform==="Instagram"?(language==="en"?

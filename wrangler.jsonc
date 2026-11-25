@@ -41,7 +41,19 @@
       "/west-tour/",
       "/east-tour",
       "/east-tour.html",
-      "/east-tour/"
+      "/east-tour/",
+      "/dashboard",
+      "/dashboard.html",
+      "/dashboard/",
+      "/privacy",
+      "/privacy.html",
+      "/privacy/",
+      "/terms",
+      "/terms.html",
+      "/terms/",
+      "/cancellation",
+      "/cancellation.html",
+      "/cancellation/"
     ]
   },
   "vars": {
