@@ -646,7 +646,7 @@ test("LCP preload matches owner photo and hero credit is not misattributed",()=>
 test("website JPEG uses a bounded one-day browser cache and no longer uses a one-hour cache",async()=>{
  const {serveWebsiteMedia}=await import("../src/website-cms.mjs");
  const id="09380b3a-33a6-4429-adfd-703d2e213ab1";
- const bytes=new Uint8Array(12000);bytes[0]=255;bytes[1]=216;bytes[11998]=255;bytes[11999]=217;
+ const bytes=new Uint8Array(12000);bytes.set([255,216,255],0);bytes.set([255,217],11998);
  const db={prepare(){return {bind(){return {first:async()=>({id})}}}}};
  const env={PHOTO_KV:{get:async()=>bytes.buffer}};
  const request=new Request("https://example.com/photos/website/"+id);
