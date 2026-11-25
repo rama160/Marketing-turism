@@ -255,3 +255,6 @@ html[lang="id"] [data-npe-lang="en"],html[lang="en"] [data-npe-lang="id"]{displa
 
 /* NPE approved transparent wordmark, contrast on the existing light navigation. */
 .top .brandLogo{width:122px;height:76px;object-fit:contain;background:#07344d;border-radius:9px;padding:5px;filter:none;flex:none}.top .brand:has(.brandLogo)>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}@media(max-width:760px){.top .brandLogo{width:105px;height:65px}}
+
+/* Optional analytics controls */
+.npeAnalyticsNotice{position:fixed;bottom:12px;left:12px;z-index:80;width:min(360px,calc(100% - 24px));box-sizing:border-box;padding:14px;border:1px solid #bdd4d8;border-radius:12px;background:#fff;color:#12343c;box-shadow:0 5px 20px #07344d25;font-size:13px;line-height:1.45}.npeAnalyticsNotice p{margin:0 0 8px}.npeAnalyticsNotice button,.npeAnalyticsSettings{font:inherit;cursor:pointer;padding:8px 12px;border:1px solid #0b5966;border-radius:7px;background:white;color:#0b5966;margin:3px}.npeAnalyticsNotice button:hover,.npeAnalyticsSettings:hover{background:#e6f2f3}.npeAnalyticsNotice[hidden]{display:none}.npeAnalyticsSettings{display:block;margin:8px auto}

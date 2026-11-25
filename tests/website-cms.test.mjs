@@ -479,7 +479,7 @@ test("photo chooser shows only two sources, no photo descriptions and cache-safe
  assert.match(html,/id="cmsActivityMedia" hidden/);
  assert.match(html,/id="cmsAddCategory"/);
  assert.match(js,/admin\/website\/categories/);
- assert.match(html,/src="\/app\.js\?v=3\.35\.0"/);
+ assert.match(html,/src="\/app\.js\?v=3\.36\.0"/);
  assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
 });
 
@@ -621,3 +621,5 @@ test("dashboard responses are explicitly excluded from indexing and caching",asy
  const r=await worker.fetch(new Request("https://nusapenidaexperiences.com/dashboard.html"),{ASSETS:{fetch:async()=>new Response("<html>dashboard</html>")}},{});
  assert.equal(r.status,200);assert.equal(r.headers.get("x-robots-tag"),"noindex, nofollow");assert.equal(r.headers.get("cache-control"),"no-store");
 });
+
+test("public GA4 is consistently included but not on admin",async()=>{const {readFileSync}=await import("node:fs");for(const name of ["index","snorkeling","island-tour","west-tour","east-tour","privacy","terms","cancellation"])assert.match(readFileSync("public/"+name+".html","utf8"),/analytics\.js\?v=3\.36\.0/);assert.doesNotMatch(readFileSync("public/dashboard.html","utf8"),/analytics\.js/);assert.match(renderEnglishTourPage("west","https://example.com"),/analytics\.js/);assert.match(renderExperiencePage({...draft,photo_url:"/photos/website/123"},"id","https://example.com"),/analytics\.js/);});

@@ -49,6 +49,7 @@ function initPublicGuestForm(){
   submit.disabled=true;
   try{
    const result=await publicAPI("leads","POST",body);
+   try{window.npeAnalytics?.lead(body.activity_id);}catch(_){}
    say("#leadFeedback","Permintaan diterima. Nomor referensi: "+result.reference+" · belum merupakan konfirmasi booking.",true);
    form.reset();updateGuestVariants();
    window.turnstile?.reset?.();

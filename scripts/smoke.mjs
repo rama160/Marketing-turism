@@ -19,7 +19,7 @@ if(base==="https://nusapenidaexperiences.com"){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.35.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.36.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -145,13 +145,13 @@ if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.photos?.hero||!editorManifest.photos?.["west-kelingking"])
  throw Error("Live published content snapshot incomplete: site editor would display blank copy");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
-if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.35.0"')||
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.36.0"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
  !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
  throw Error("Standalone agent dashboard or navigation missing");
 if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
- page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.35.0"')||
+ page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.36.0"')||
  !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
  guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
  throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
@@ -201,7 +201,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v35"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v36"))throw Error("PWA asset cache did not bump");
 // Guest contact: primary click-to-chat must not be confused with public catalog.
 const number="628561752525";
 const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
@@ -243,7 +243,7 @@ if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+d
 // Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
 if(!dashboard.includes('id="tab-growth"')||!dashboard.includes('id="growthResearch"')||
  !dashboard.includes('data-tab="growth"')||!app.includes('admin/growth')||
- !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.35.0")).includes("/api/public/intent"))
+ !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.36.0")).includes("/api/public/intent"))
  throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
 if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
  throw Error("Customer acquisition mobile styling absent");
@@ -283,4 +283,8 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.35.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.36.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+
+const analytics=await get("/analytics.js");if(!analytics.includes("G-5232NFPSPV")||!analytics.includes("generate_lead")||!analytics.includes("whatsapp_click"))throw Error("GA4 asset missing");
+for(const path of ["/","/en/tours/snorkeling","/privacy.html"]){const page=await get(path);if(!page.includes('/analytics.js?v=3.36.0'))throw Error("GA4 missing "+path);}
+if((await get("/dashboard.html")).includes('/analytics.js'))throw Error("GA4 must not load on dashboard");
