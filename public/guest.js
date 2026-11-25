@@ -23,8 +23,47 @@ async function publicAPI(path,method="GET",body){
  if(!response.ok)throw Error(value.error||"Server "+response.status);
  return value;
 }
+// Delay the third-party challenge until the enquiry form is actually needed.
+function prepareGuestChallenge(form){
+ const widget=form.querySelector(".cf-turnstile");
+ if(!widget)return {ensure:()=>{},reset:()=>{}};
+ let pending=false,widgetId=null,observer=null;
+ const message=(en,id)=>say("#leadFeedback",document.documentElement.lang==="en"?en:id);
+ function ensure(){
+  if(pending||widgetId!==null)return;
+  observer?.disconnect();
+  pending=true;
+  const script=document.createElement("script");
+  script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  script.async=true;
+  const failed=()=>{
+   pending=false;script.remove();
+   message("Verification could not load. Tap a form field to retry or contact us on WhatsApp.","Verifikasi tidak dapat dimuat. Sentuh kolom formulir untuk mencoba lagi atau hubungi WhatsApp.");
+  };
+  script.onerror=failed;
+  script.onload=()=>{
+   try{
+    if(!window.turnstile?.render)throw Error("Verification unavailable");
+    widgetId=window.turnstile.render(widget,{sitekey:widget.dataset.sitekey,action:widget.dataset.action,
+     callback:()=>message("Verification complete. You can send your enquiry.","Verifikasi selesai. Anda dapat mengirim permintaan."),
+     "expired-callback":()=>message("Verification expired. Please verify again.","Verifikasi kedaluwarsa. Silakan verifikasi kembali."),
+     "error-callback":()=>message("Verification failed. Retry the challenge or contact us on WhatsApp.","Verifikasi gagal. Coba kembali atau hubungi WhatsApp.")});
+    pending=false;
+   }catch{failed();}
+  };
+  document.head.appendChild(script);
+ }
+ form.addEventListener("focusin",ensure);
+ form.addEventListener("pointerdown",ensure);
+ if("IntersectionObserver" in window){
+  observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))ensure();},{rootMargin:"200px"});
+  observer.observe(form);
+ }
+ return {ensure,reset:()=>{if(widgetId!==null)window.turnstile?.reset?.(widgetId);}};
+}
 function initPublicGuestForm(){
  const form=$("#leadForm");if(!form)return;
+ const challenge=prepareGuestChallenge(form);
  form.addEventListener("change",event=>{if(["activity_id","booking_mode"].includes(event.target.name))updateGuestVariants()});
  updateGuestVariants();
  const witaDay=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
@@ -45,6 +84,7 @@ function initPublicGuestForm(){
   event.preventDefault();const submit=$("#leadSubmit");
   if(submit.disabled)return;
   const body=Object.fromEntries(new FormData(form));
+  if(!body["cf-turnstile-response"]){challenge.ensure();say("#leadFeedback",document.documentElement.lang==="en"?"Please complete the anti-bot verification first.":"Lengkapi verifikasi anti-bot terlebih dahulu.");return;}
   body.guests=Number(body.guests);body.consent=form.elements.consent.checked;body.website=body.website||"";
   submit.disabled=true;
   try{
@@ -52,8 +92,8 @@ function initPublicGuestForm(){
    try{window.npeAnalytics?.lead(body.activity_id);}catch(_){}
    say("#leadFeedback","Permintaan diterima. Nomor referensi: "+result.reference+" · belum merupakan konfirmasi booking.",true);
    form.reset();updateGuestVariants();
-   window.turnstile?.reset?.();
-  }catch(e){say("#leadFeedback",e.message+" — Silakan hubungi agen melalui WhatsApp resmi.");window.turnstile?.reset?.();}
+   challenge.reset();
+  }catch(e){say("#leadFeedback",e.message+" — Silakan hubungi agen melalui WhatsApp resmi.");challenge.reset();}
   finally{submit.disabled=false;}
  });
 }

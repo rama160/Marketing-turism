@@ -19,3 +19,6 @@
   Cache-Control: no-cache, must-revalidate
 /service-worker.js
   Cache-Control: no-cache, must-revalidate
+
+/guest.js
+  Cache-Control: no-cache, must-revalidate

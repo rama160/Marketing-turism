@@ -341,3 +341,7 @@ if(!/script-src [^;]*https:\/\/static\.cloudflareinsights\.com/.test(photoPolicy
 if(/'unsafe-inline'|'unsafe-eval'/.test(photoPolicy))throw Error("Public CSP weakened");
 if(!(await get("/styles.css")).includes(".eyebrow{letter-spacing:2px;font-weight:800;color:#255c66;"))throw Error("Contrast fix missing");
 console.log("Verified public analytics CSP and contrast CSS");
+
+if(/<script[^>]*src="https:\/\/challenges\.cloudflare\.com\/turnstile/.test(landingMarkup))throw Error("Eager Turnstile script still on homepage");
+if(!guestScript.includes("function prepareGuestChallenge")||!guestScript.includes('if(!body["cf-turnstile-response"])'))throw Error("Deferred challenge or token guard missing");
+console.log("Verified deferred Turnstile and guest token guard");

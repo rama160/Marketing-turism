@@ -124,3 +124,21 @@ test("public guest script does not install the admin PWA",()=>{
  assert.doesNotMatch(file("guest.js"),/navigator\.serviceWorker\.register\(/);
  assert.match(file("app.js"),/navigator\.serviceWorker\.register\(/);
 });
+test("guest challenge loads on demand, renders once, and keeps the token gate",async()=>{
+ const {runInNewContext}=await import("node:vm");
+ const guest=file("guest.js"),page=file("index.html");
+ assert.doesNotMatch(page,/<script[^>]*src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
+ const source=guest.slice(guest.indexOf("function prepareGuestChallenge("),guest.indexOf("function initPublicGuestForm("));
+ const listeners={},scripts=[],renders=[],resets=[];
+ const widget={dataset:{sitekey:"site",action:"lead_enquiry"}};
+ const form={querySelector:()=>widget,addEventListener:(name,fn)=>listeners[name]=fn};
+ const window={turnstile:{render:(el,options)=>{renders.push({el,options});return "widget-1";},reset:id=>resets.push(id)}};
+ const challenge=runInNewContext(source+"\nprepareGuestChallenge(form)",{form,window,document:{documentElement:{lang:"en"},createElement:()=>({remove(){}}),head:{appendChild:s=>scripts.push(s)}},say(){}});
+ assert.equal(scripts.length,0);
+ listeners.focusin();listeners.pointerdown();assert.equal(scripts.length,1);
+ assert.match(scripts[0].src,/render=explicit$/);
+ scripts[0].onload();assert.equal(renders.length,1);assert.equal(renders[0].options.action,"lead_enquiry");
+ challenge.ensure();assert.equal(scripts.length,1);challenge.reset();assert.deepEqual(resets,["widget-1"]);
+ assert.match(guest,/if\(!body\["cf-turnstile-response"\]\)\{challenge.ensure\(\);/);
+ assert.ok(guest.indexOf('if(!body["cf-turnstile-response"])')<guest.indexOf('publicAPI("leads","POST"'));
+});
