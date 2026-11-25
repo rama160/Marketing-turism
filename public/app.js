@@ -411,7 +411,7 @@ function renderOwnerPhotos(){
   ' · '+esc((p.bytes/1024).toFixed(0))+' KB · '+esc(p.queued_posts)+' posting terkait</small></div></div>'
  ).join(""):'<p class="feedback">Belum ada foto milik Anda. Tekan + Add Foto untuk menambahkan.</p>';
 }
-async function compressOwnerPhoto(file){
+async function compressOwnerPhoto(file,profile="default"){
  if(!file||file.size>15000000)throw Error("Foto sumber maksimum 15 MB");
  let bitmap;
  try{bitmap=await createImageBitmap(file);}
@@ -420,19 +420,28 @@ async function compressOwnerPhoto(file){
   let scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
   if(!bitmap.width||!bitmap.height||bitmap.width*bitmap.height>50000000)throw Error("Resolusi foto terlalu besar");
   const canvas=document.createElement("canvas");
-  for(const maxEdge of [1600,1400,1200,1000]){
+  const article=profile==="article";
+  let best=null;
+  for(const maxEdge of article?[1600,1400,1200]:[1600,1400,1200,1000]){
    scale=Math.min(1,maxEdge/Math.max(bitmap.width,bitmap.height));
    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
    const context=canvas.getContext("2d");
    if(!context)throw Error("Browser tidak mendukung kompresi foto");
+   if(article){context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);context.imageSmoothingEnabled=true;context.imageSmoothingQuality="high";}
    context.drawImage(bitmap,0,0,canvas.width,canvas.height);
-   for(const q of [0.86,0.74,0.62,0.50]){
+   for(const q of article?[0.90,0.86,0.82,0.78]:[0.86,0.74,0.62,0.50]){
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",q));
-    if(blob&&blob.size>=10000&&blob.size<=850000)return blob;
+    if(blob&&blob.size>=10000&&blob.size<=850000){
+     if(!article||blob.size<=300000)return blob;
+     // Preserve the highest-resolution/highest-quality valid fallback instead of forcing a tiny image.
+     if(!best)best=blob;
+    }
    }
+   if(article&&Math.max(bitmap.width,bitmap.height)<=maxEdge&&maxEdge===1200)break;
   }
-  throw Error("Foto terlalu kompleks untuk batas gratis 850 KB. Pilih foto lain.");
+  if(best)return best;
+  throw Error("Foto tidak memenuhi batas 10–850 KB dengan kualitas yang layak. Pilih foto lain.");
  }finally{bitmap.close?.();}
 }
 $("#ownerPhotoForm").onsubmit=async e=>{
@@ -1727,11 +1736,11 @@ $("#cmsQuickPhotoFile").onchange=event=>{
  $("#cmsQuickPhotoChooser").hidden=true;
  $("#cmsQuickPhotoSelected").hidden=false;
 };
-async function uploadCmsWebsitePhoto(file,title,altId,altEn,rightsConfirmed){
+async function uploadCmsWebsitePhoto(file,title,altId,altEn,rightsConfirmed,profile="default"){
  if(!rightsConfirmed)throw Error("Konfirmasi hak pakai komersial diperlukan.");
  if(title.length<2||altId.length<2||altEn.length<2||title.length>120||altId.length>180||altEn.length>180)
   throw Error("Nama dan deskripsi foto harus diisi (minimal 2 karakter).");
- const jpeg=await compressOwnerPhoto(file);
+ const jpeg=await compressOwnerPhoto(file,profile);
  const form=new FormData();
  form.append("file",jpeg,"npe-website-photo.jpg");
  form.append("title",title);
@@ -1741,7 +1750,7 @@ async function uploadCmsWebsitePhoto(file,title,altId,altEn,rightsConfirmed){
  const res=await fetch("/api/admin/website/media",{method:"POST",credentials:"same-origin",cache:"no-store",body:form});
  let out;try{out=await res.json();}catch(_){throw Error("Respons server tidak dapat dibaca.");}
  if(!res.ok)throw Error(out.error||"Unggah foto gagal.");
- return out;
+ return {...out,compressed_bytes:jpeg.size};
 }
 $("#cmsQuickPhotoSave").onclick=async()=>{
  if(cmsQuickPhotoBusy||(!cmsQuickPhotoSource&&!cmsQuickPhotoMediaId)||!cmsQuickPhotoSlot)return;
@@ -2160,7 +2169,7 @@ $("#cmsLayoutSave").onclick=async()=>{
 // Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
 
-let seoItems=[],seoEditing=null,seoMedia=[],seoOrder=[],seoOrderVersion=0;
+let seoItems=[],seoEditing=null,seoMedia=[],seoOrder=[],seoOrderVersion=0,seoCoverBusy=false,seoEditorGeneration=0;
 const seoForm=$("#seoForm");
 function seoFormPayload(){
  const data=new FormData(seoForm);
@@ -2168,11 +2177,15 @@ function seoFormPayload(){
 }
 function drawSeoCover(){
  const id=$("#seoMedia").value,photo=seoMedia.find(p=>p.id===id),root=$("#seoCoverPreview");
- root.innerHTML=photo?'<img class="seoEditorCover" alt="'+esc(photo.title)+'" src="'+esc(photo.url)+'?npew=480">':"";
+ root.innerHTML=id?'<img class="seoEditorCover" alt="'+esc(photo?.title||"Foto cover artikel")+'" src="'+esc(photo?.url||"/photos/website/"+id)+'?npew=480">':"<p>Belum ada cover.</p>";
+ $("#seoCoverRemove").disabled=!id||seoCoverBusy;
 }
 function editSeoArticle(item=null){
+ if(seoCoverBusy)return;
+ seoEditorGeneration++;
  seoEditing=item;seoForm.reset();seoForm.hidden=false;recordDashboardNav({article:item?.id||"new"});$("#seoPreviewArea").textContent="";
- $("#seoMedia").innerHTML='<option value="">Pilih cover</option>'+seoMedia.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title)+'</option>').join("");
+ $("#seoMedia").value="";
+ say("#seoCoverFeedback","Pilih foto dari perangkat, konfirmasi hak, lalu Upload. Simpan draft untuk menerapkan cover.",true);
  const draft=item?.draft||{};
  for(const [key,value] of Object.entries(draft)){
   if(key==="links")continue;
@@ -2217,14 +2230,15 @@ function drawSeoList(){
  const btn=(action,label,a,primary=false)=>'<button type="button" class="'+(primary?"primary":"outline")+' small" data-seo-action="'+action+'" data-id="'+esc(a.id)+'">'+label+'</button>';
  $("#seoList").innerHTML=visible.map(a=>'<article class="panel"><small>'+esc(a.review_state==="APPROVED"?"Disetujui":a.review_state==="REJECTED"?"Ditolak":a.review_state==="PUBLISHED"?"Published":"Draft")+(a.published?" · versi terbit tersedia":"")+(a.research?" · Riset otomatis":"")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button>'+
  (a.review_state==="DRAFT"?btn("approve","Setujui",a,true)+btn("reject","Tolak",a):a.review_state==="APPROVED"?btn("publish","Publish",a,true)+btn("reject","Tolak draft",a):"")+
- (a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a>'+btn("unpublish","Tarik publikasi",a):btn("delete","Hapus draft",a))+'</div></article>').join("")||'<p>Belum ada artikel pada daftar ini.</p>';
+ (a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a>'+btn("unpublish","Tarik publikasi",a)+btn("delete","Hapus artikel",a):btn("delete","Hapus artikel",a))+'</div></article>').join("")||'<p>Belum ada artikel pada daftar ini.</p>';
  $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
  $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{
   const a=seoItems.find(x=>x.id===b.dataset.id),action=b.dataset.seoAction;
   const messages={approve:"Setujui draft ID dan EN yang tersimpan? Pastikan fakta dan cover benar.",reject:"Tolak draft ini? Versi publik lama (jika ada) tetap tayang.",publish:"Publish versi draft yang disetujui?",unpublish:"Tarik artikel dari website dan sitemap?",delete:"Hapus draft secara permanen?"};
-  if(!a||!confirm(messages[action]))return;
+  if(seoCoverBusy||!a)return;
+  if(!confirm(action==="delete"&&a.published?"Hapus permanen artikel terbit ID/EN, termasuk draft? URL lama tidak lagi tersedia dan artikel keluar dari sitemap. Jika hanya ingin menyembunyikan, pilih Tarik publikasi.":messages[action]))return;
   b.disabled=true;
-  try{await api("admin/website/articles/"+a.id+"/"+action,"POST",{expected_version:a.version,owner_confirmed:true});seoForm.hidden=true;recordDashboardNav({article:undefined});if(action==="approve")$("#seoFilter").value="approved";if(action==="publish")$("#seoFilter").value="published";await loadSeoArticles();say("#seoFeedback",action==="approve"?"Draft disetujui. Publish tetap manual.":"Artikel berhasil diproses.",true);}
+  try{await api("admin/website/articles/"+a.id+"/"+action,"POST",{expected_version:a.version,owner_confirmed:true,confirm_published_delete:action==="delete"&&!!a.published});seoForm.hidden=true;recordDashboardNav({article:undefined});if(action==="approve")$("#seoFilter").value="approved";if(action==="publish")$("#seoFilter").value="published";await loadSeoArticles();say("#seoFeedback",action==="approve"?"Draft disetujui. Publish tetap manual.":"Artikel berhasil diproses.",true);}
   catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
  });
 }
@@ -2235,14 +2249,41 @@ $("#seoResearch").onclick=async()=>{
  catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
 };
 $("#seoNew").onclick=()=>editSeoArticle();
-$("#seoMedia").onchange=drawSeoCover;
-$("#seoCancel").onclick=()=>{seoForm.hidden=true;recordDashboardNav({article:undefined});};
+$("#seoCoverFile").onchange=()=>{
+ const file=$("#seoCoverFile").files?.[0];
+ if(file)say("#seoCoverFeedback",file.name+" · "+Math.ceil(file.size/1024)+" KB. Konfirmasi hak dan tekan Upload.",true);
+};
+$("#seoCoverRemove").onclick=()=>{
+ if(seoCoverBusy)return;
+ $("#seoMedia").value="";$("#seoCoverFile").value="";$("#seoCoverRights").checked=false;
+ drawSeoCover();say("#seoCoverFeedback","Cover dilepas dari draft. Simpan untuk menerapkan; versi terbit tidak berubah.",true);
+};
+$("#seoCoverUpload").onclick=async()=>{
+ if(seoCoverBusy)return;
+ const file=$("#seoCoverFile").files?.[0];
+ if(!file){say("#seoCoverFeedback","Pilih foto dari perangkat terlebih dahulu.");return;}
+ if(!$("#seoCoverRights").checked){say("#seoCoverFeedback","Konfirmasi hak penggunaan foto terlebih dahulu.");return;}
+ const generation=seoEditorGeneration,button=$("#seoCoverUpload"),save=seoForm.querySelector('[type="submit"]');
+ seoCoverBusy=true;button.disabled=true;save.disabled=true;$("#seoCoverFile").disabled=true;$("#seoCoverRemove").disabled=true;
+ say("#seoCoverFeedback","Mengoptimalkan dan mengunggah salinan foto ...",true);
+ try{
+  const titleId=seoForm.elements.namedItem("title_id").value.trim().slice(0,120)||"Foto artikel NPE";
+  const titleEn=seoForm.elements.namedItem("title_en").value.trim().slice(0,180)||"NPE article cover";
+  const photo=await uploadCmsWebsitePhoto(file,titleId,titleId,titleEn,true,"article");
+  if(!seoMedia.some(p=>p.id===photo.id))seoMedia.push(photo);
+  if(generation!==seoEditorGeneration)return;
+  $("#seoMedia").value=photo.id;$("#seoCoverFile").value="";$("#seoCoverRights").checked=false;
+  say("#seoCoverFeedback","Foto siap: "+Math.ceil(file.size/1024)+" KB → "+Math.ceil(photo.compressed_bytes/1024)+" KB. Simpan draft untuk menerapkan.",true);
+ }catch(e){say("#seoCoverFeedback",e.message);}
+ finally{seoCoverBusy=false;button.disabled=false;save.disabled=false;$("#seoCoverFile").disabled=false;drawSeoCover();}
+};
+$("#seoCancel").onclick=()=>{if(seoCoverBusy)return;seoEditorGeneration++;seoForm.hidden=true;recordDashboardNav({article:undefined});};
 $("#seoPreview").onclick=()=>{
  const d=seoFormPayload();
  $("#seoPreviewArea").innerHTML=["id","en"].map(l=>'<section class="panel"><small>'+l.toUpperCase()+'</small><h2>'+esc(d["title_"+l])+'</h2><p>'+esc(d["summary_"+l])+'</p>'+String(d["body_"+l]||"").split(/\n+/).filter(Boolean).map(s=>s.startsWith("## ")?"<h3>"+esc(s.slice(3))+"</h3>":"<p>"+esc(s)+"</p>").join("")+'<p>SEO title: '+esc(String(d["title_"+l]||"").slice(0,60))+'</p><p>Meta description: '+esc(String(d["summary_"+l]||"").slice(0,160))+'</p></section>').join("");
 };
 seoForm.onsubmit=async e=>{
- e.preventDefault();const button=seoForm.querySelector('[type="submit"]');button.disabled=true;
+ e.preventDefault();if(seoCoverBusy)return;if($("#seoCoverFile").files?.length){say("#seoCoverFeedback","Upload foto terpilih terlebih dahulu atau kosongkan pilihan file.");return;}const button=seoForm.querySelector('[type="submit"]');button.disabled=true;
  try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Perubahan membatalkan persetujuan lama. Setujui dahulu, lalu Publish manual.",true);}
  catch(err){say("#seoFeedback",err.message);}finally{button.disabled=false;}
 };

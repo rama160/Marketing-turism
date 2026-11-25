@@ -47,6 +47,16 @@ test("article lifecycle keeps live snapshot isolated and prevents referenced cov
   assert.equal((await publishedArticles(db)).length,0);
   await articleAction(db,row.id,{expected_version:6,owner_confirmed:true},"delete");
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM seo_articles").get().n,0);
+  const second=await saveArticle(db,draft);
+  await articleAction(db,second.id,{expected_version:1,owner_confirmed:true},"approve");
+  await articleAction(db,second.id,{expected_version:2,owner_confirmed:true},"publish");
+  await assert.rejects(()=>articleAction(db,second.id,{expected_version:3,owner_confirmed:true},"delete"));
+  await assert.rejects(()=>articleAction(db,second.id,{expected_version:2,owner_confirmed:true,confirm_published_delete:true},"delete"));
+  await articleAction(db,second.id,{expected_version:3,owner_confirmed:true,confirm_published_delete:true},"delete");
+  assert.equal((await publishedArticles(db,second.slug)).length,0);
+  assert.doesNotMatch(articleSitemap(await publishedArticles(db),"https://example.com"),new RegExp(second.slug));
+  assert.equal(renderArticlePage(await publishedArticles(db),"id","https://example.com",second.slug),null);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM website_media").get().n,1);
  }finally{sqlite.close();}
 });
 test("homepage CMS contains separately editable hero and all twelve thumbnail labels",async()=>{
@@ -74,4 +84,19 @@ test("weekly independent research makes a private draft only, with real evidence
   assert.equal(items.length,1);assert.equal(items[0].review_state,"DRAFT");assert.ok(items[0].research.sources.length);assert.equal(items[0].draft.media_id,"");
   assert.equal((await generateResearchArticle(db,env,options)).status,"WEEK_LIMIT");assert.equal(calls,1);
  }finally{sqlite.close();}
+});
+
+test("article editor uses device file only and quality-prioritized browser compression",async()=>{
+ const {readFileSync}=await import("node:fs");const vm=await import("node:vm");
+ const html=readFileSync("public/dashboard.html","utf8"),app=readFileSync("public/app.js","utf8");
+ assert.match(html,/<input type="hidden" name="media_id" id="seoMedia">/);
+ assert.match(html,/id="seoCoverFile" type="file"/);
+ assert.doesNotMatch(html,/<select name="media_id" id="seoMedia"/);
+ assert.match(app,/confirm_published_delete:action==="delete"/);
+ const from=app.indexOf("async function compressOwnerPhoto("),to=app.indexOf('$("#ownerPhotoForm").onsubmit',from);
+ let closed=0,calls=[];
+ const canvas={getContext:()=>({fillRect(){},drawImage(){}}),toBlob(cb,type,q){calls.push({width:this.width,height:this.height,q});cb({size:q>=0.86?350000:250000});}};
+ const compress=vm.runInNewContext(app.slice(from,to)+"\ncompressOwnerPhoto",{createImageBitmap:async()=>({width:4000,height:3000,close(){closed++;}}),document:{createElement:()=>canvas},Promise,Math});
+ const result=await compress({size:3000000},"article");
+ assert.equal(result.size,250000);assert.deepEqual(calls.map(x=>x.q),[0.9,0.86,0.82]);assert.equal(calls[0].width,1600);assert.equal(calls[0].height,1200);assert.equal(closed,1);
 });

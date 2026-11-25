@@ -69,15 +69,15 @@ export async function articleAction(db,id,input,action){
   const stored=JSON.parse(current.draft_json);
   if(stored._review!=="APPROVED")throw Error("Setujui versi draft ini sebelum Publish.");
   const draft=validateArticle(stored);
-  if(!draft.media_id)throw Error("Pilih foto cover dari Galeri NPE sebelum publikasi");
+  if(!draft.media_id)throw Error("Upload foto cover dari perangkat sebelum publikasi");
   const updated=await db.prepare("UPDATE seo_articles SET published_json=?,draft_json=?,published_media_id=draft_media_id,published_at=COALESCE(published_at,CURRENT_TIMESTAMP),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(JSON.stringify(draft),JSON.stringify({...stored,_review:"PUBLISHED"}),id,input.expected_version).run();
   if(updated.meta?.changes!==1)throw Error("Artikel berubah. Muat ulang.");
   return {id,action};
  }else if(action==="unpublish")sql="UPDATE seo_articles SET published_json=NULL,published_media_id=NULL,published_at=NULL,draft_json=json_set(draft_json,'$._review','DRAFT'),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?";
- else if(action==="delete")sql="DELETE FROM seo_articles WHERE id=? AND version=? AND published_json IS NULL";
+ else if(action==="delete")sql=input.confirm_published_delete===true?"DELETE FROM seo_articles WHERE id=? AND version=?":"DELETE FROM seo_articles WHERE id=? AND version=? AND published_json IS NULL";
  else throw Error("Aksi tidak valid");
  const r=await db.prepare(sql).bind(id,input.expected_version).run();
- if(r.meta?.changes!==1)throw Error("Artikel berubah; untuk menghapus, tarik publikasi terlebih dahulu.");
+ if(r.meta?.changes!==1)throw Error("Artikel berubah atau konfirmasi hapus artikel terbit belum diberikan. Muat ulang.");
  return {id,action};
 }
 export async function publishedArticles(db,slug=null){

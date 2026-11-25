@@ -5,6 +5,10 @@
 ## 26 November 2026 — Automated editorial research (draft only)
 - Owner explicitly authorizes independent SEO article drafts, not social campaigns or automatic publishing. Reuse daily Worker cron with one research attempt per UTC week and review backlog cap of two. Aggregate existing public Reddit topic signals (not keyword volume), choose uncovered topic, retrieve a fixed Wikimedia source and existing product context; Workers AI generates ID/EN text. Failed source/AI/validation creates no article. Evidence shown in editor; owner selects cover, checks facts, edits, approves current version and explicitly publishes. Reject retains history; edit resets approval; public snapshots isolated. Existing direct-position ordering remains. No new menu, paid API, or new cron. CI/deploy/live scheduled research not yet verified.
 
+## 26 November 2026 — Device-only article covers and permanent delete
+- Owner requests direct device upload, not gallery selection or external image retrieval. Keep existing cover if unchanged; upload a new one using existing authenticated media storage, rights confirmation and a quality-prioritized article compression profile (max 1600 px, preserve ratio, JPEG 0.90–0.78, target ≤300 KB, fallback ≤850 KB); original device file unchanged. Existing gallery/other photo flows unchanged. Cover-only scope, no body-gallery feature. Save draft applies replacement/removal; approval resets as before.
+- Add direct permanent delete for draft/rejected/approved/published articles. Published deletion requires explicit extra confirmation and current version; public ID/EN routes return 404, sitemap/list omit record after cache refresh. Shared photos not automatically deleted. No production article deleted by implementation. Tests added; release/live verification pending.
+
 ---
 
 ## Homepage destination card editor

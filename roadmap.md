@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.5 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.6 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -257,6 +257,11 @@ Pedoman keputusan:
 - Owner menyetujui automasi riset dan pembuatan draft artikel saja; bukan publikasi. Gunakan CMS existing, riset topik dari pertanyaan publik agregat dan sumber Wikimedia live serta inventaris produk; tidak mengklaim volume/ranking. Hindari duplikasi topik dan halaman penjualan. 1 percobaan per minggu UTC, batas backlog 2 draft, daily cron existing; sumber/AI gagal maka tidak membuat artikel. Tidak ada pembelian layanan baru; pemakaian Workers AI mengikuti kuota akun.
 - Workflow: Draft → edit/preview, tolak atau setujui → Publish manual; edit membatalkan approval sebelumnya, versi publik tidak berubah sampai publish. Cover dipilih owner. Urutan artikel terbit dapat dipindahkan langsung. Tidak mempublikasikan artikel saat implementasi.
 - Bukti: kode dan regression tests; status release dan hasil riset live belum diverifikasi. SEO-002 masih tertahan quota; SEO-003 butuh data GSC, SEO-008 butuh fakta penawaran.
+
+### 2026-11-26 — SEO-012: upload foto perangkat dan hapus artikel
+- Sesuai permintaan owner, cover artikel hanya dipilih dari perangkat dan diunggah langsung dari editor. Gunakan kompresi browser yang memprioritaskan kualitas, max 1600 px, rasio asli, JPEG 0,90–0,78, target 300 KB, fallback maksimal 850 KB, file asli tidak disentuh. Tidak mencari/mengambil gambar eksternal, tidak menambah menu/layanan. Cover existing tetap; tidak mencakup galeri gambar isi artikel. Hak pakai wajib dikonfirmasi.
+- Hapus artikel permanen pada semua status; untuk published wajib konfirmasi spesifik, version guard, keluarkan dari daftar dan sitemap, URL ID/EN 404; gambar bersama tetap aman. Tidak menghapus artikel aktual. Perubahan cover tetap draft hingga approval dan publish ulang.
+- Status: kode dan regression tests ditambahkan, CI/deploy/live belum dikonfirmasi. SEO-002 masih tertahan kuota, tidak mengubah prioritas SEO lainnya.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
