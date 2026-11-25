@@ -1,6 +1,11 @@
 // Public-only CMS enhancements: no admin token, no operator rates and no guest personal data.
 const el=(tag,klass,text)=>{const n=document.createElement(tag);if(klass)n.className=klass;if(text!==undefined)n.textContent=text;return n;};
 let publicActivities=[];
+function responsiveSource(img,url){
+ if(!/^\/photos\/(?:website\/[0-9a-f]{8}-[0-9a-f-]{27,36}|[a-z-]+)$/.test(url))return;
+ img.sizes=img.sizes||"(max-width: 700px) 100vw, 50vw";
+ img.srcset=[240,480,800,1200].map(w=>url+"?npew="+w+" "+w+"w").join(", ");
+}
 const currentLanguage=()=>window.NusaLanguage?.language||document.documentElement.lang||"id";
 async function loadWebsitePhotos(){
  try{
@@ -20,6 +25,7 @@ async function loadWebsitePhotos(){
    delete img.dataset.photoFallbackStage;
    delete img.dataset.localPhotoFailed;
    img.alt=currentLanguage()==="en"?slot.alt_en:slot.alt_id;
+   responsiveSource(img,slot.url);
    img.src=slot.url;
    // Original Wikimedia attribution must not be displayed for a different owner-uploaded image.
    const caption=img.closest("figure")?.querySelector("figcaption");
@@ -62,7 +68,7 @@ function drawPublicActivities(){
   if(!activity.photo_url||activity.parent_activity)continue;
   const card=el("article","package ocean");card.setAttribute("data-npe-dynamic-activity",activity.id);
   const art=el("div","packageArt");
-  const img=el("img","package-cover-image");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.src=activity.photo_url;
+  const img=el("img","package-cover-image");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;responsiveSource(img,activity.photo_url);img.src=activity.photo_url;
   img.alt=activity["title_"+lang];art.appendChild(img);
   art.appendChild(el("span","",activity.category.replace(/^CUSTOM:/,"").replaceAll("_"," ")));
   const inner=el("div","packageInner");
@@ -89,7 +95,7 @@ function drawPublicDetails(){
  if(section&&!section.matches(".scene-grid"))section.hidden=!details.length;
  for(const a of details){
   const card=el("article","scene-card");card.dataset.npeDynamicDetail=a.id;
-  const figure=el("figure"),img=el("img");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];img.src=a.photo_url;
+  const figure=el("figure"),img=el("img");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
   figure.append(img);const body=el("div","scene-body");
   body.append(el("h2","",a["title_"+lang]),el("p","",a["summary_"+lang]),el("p","",a["description_"+lang]));
   if(a.price_verified&&a["price_label_"+lang])body.append(el("strong","",a["price_label_"+lang]));

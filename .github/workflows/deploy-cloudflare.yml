@@ -47,6 +47,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Generate public responsive WebP assets (no paid transform service)
+        run: |
+          python3 -m pip install Pillow
+          python3 scripts/optimize-photos.py --responsive-public
       - name: Deploy Worker + assets
         run: npx --yes wrangler@4 deploy
         env:

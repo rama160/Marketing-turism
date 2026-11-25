@@ -319,7 +319,7 @@ for(const html of [landingMarkup,snorkeling,west,east,island]){
   if(figure[0].includes('data-npe-rendered-photo="true"')&&figure[0].includes("<figcaption")&&!figure[0].includes('data-npe-owner-photo="true"'))throw Error("Missing owner photo credit");
  }
 }
-if(heroSlot&&!landingMarkup.includes('<link rel="preload" as="image" href="'+heroSlot.url+'" fetchpriority="high">'))throw Error("LCP preload not matching published hero");
+if(heroSlot&&!landingMarkup.includes('<link rel="preload" as="image" href="'+heroSlot.url+'" fetchpriority="high" imagesrcset="'))throw Error("LCP preload not matching published hero");
 if((await get("/guest.js")).includes('navigator.serviceWorker.register('))throw Error("Public browsing must not precache admin PWA");
 console.log("Verified CMS gallery credits, final hero preload and public PWA separation");
 
@@ -329,3 +329,10 @@ if(heroSlot){
 }
 if(!/<input name="website"[^>]*aria-label="[^"]+"/.test(landingMarkup))throw Error("Honeypot accessible name missing");
 console.log("Verified public image cache policy and labelled honeypot");
+
+for(const path of ["/photos/kelingking",...(heroSlot?[heroSlot.url]:[])]){
+ const variant=await fetch(base+path+"?npew=240",{signal:AbortSignal.timeout(20000)});
+ const bytes=new Uint8Array(await variant.arrayBuffer());
+ if(!variant.ok||!variant.headers.get("content-type")?.startsWith("image/webp")||String.fromCharCode(...bytes.slice(8,12))!=="WEBP")throw Error("Responsive variant missing "+path);
+}
+console.log("Responsive WebP confirmed for static and CMS hero");

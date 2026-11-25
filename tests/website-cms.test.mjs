@@ -640,7 +640,7 @@ test("LCP preload matches owner photo and hero credit is not misattributed",()=>
  const media_id="09380b3a-33a6-4429-adfd-703d2e213ab1",url="/photos/website/"+media_id;
  const html='<html><head><link rel="stylesheet" href="/styles.css"></head><body><main><img data-npe-slot="hero" src="/photos/kelingking" alt="Kelingking" fetchpriority="high"><small class="heroCredit">Wikimedia Commons</small></main></body></html>';
  const result=renderLegacyTourPage(html,legacyTourRoute("/"),"https://example.com",{},[],"",[{slot:"hero",media_id,url,alt_id:"NPE",alt_en:"NPE"}]);
- assert.ok(result.includes('<link rel="preload" as="image" href="'+url+'" fetchpriority="high">'));
+ assert.ok(result.includes('<link rel="preload" as="image" href="'+url+'" fetchpriority="high" imagesrcset="'));
  assert.ok(result.includes('src="'+url+'"'));assert.doesNotMatch(result,/Wikimedia Commons/);
 });
 test("website JPEG uses a bounded one-day browser cache and no longer uses a one-hour cache",async()=>{
@@ -661,7 +661,19 @@ test("website JPEG uses a bounded one-day browser cache and no longer uses a one
 test("dynamic gallery image priority is set before source and honeypot has accessible name",async()=>{
  const {readFileSync}=await import("node:fs");
  const code=readFileSync("public/website-content.js","utf8");
- assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;img\.src=activity\.photo_url/);
- assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;img\.alt=a\["title_"\+lang\];img\.src=a\.photo_url/);
+ assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;responsiveSource\(img,activity\.photo_url\);img\.src=activity\.photo_url/);
+ assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;img\.alt=a\["title_"\+lang\];responsiveSource\(img,a\.photo_url\);img\.src=a\.photo_url/);
  assert.match(readFileSync("public/index.html","utf8"),/<input name="website"[^>]*aria-label="[^"]+"/);
+});
+test("responsive sizes distinguish homepage thumbnails and hero, retain original fallback",async()=>{
+ const {addResponsivePhotos,readResponsivePhoto}=await import("../src/photos.mjs");
+ const html=addResponsivePhotos('<img data-npe-slot="hero" src="/photos/kelingking"><img data-npe-slot="west-atuh-beach" src="/photos/atuh-beach"><img src="https://example.com/x.jpg">',true);
+ assert.match(html,/src="\/photos\/kelingking" srcset="\/photos\/kelingking\?npew=240 240w/);
+ assert.match(html,/sizes="\(max-width: 700px\) 800px, 100vw"/);
+ assert.match(html,/sizes="\(max-width: 700px\) 28vw, 140px"/);
+ assert.match(html,/<img src="https:\/\/example.com\/x.jpg">/);
+ const bytes=new Uint8Array(24);bytes.set([82,73,70,70],0);bytes.set([87,69,66,80],8);
+ const env={ASSETS:{fetch:async req=>{assert.match(req.url,/kelingking-240\.webp$/);return new Response(bytes,{headers:{"content-type":"image/webp"}})}}};
+ assert.equal((await readResponsivePhoto(new Request("https://example.com/photos/kelingking?npew=240"),env,"kelingking")).headers.get("content-type"),"image/webp");
+ assert.equal(await readResponsivePhoto(new Request("https://example.com/photos/kelingking?npew=999"),env,"kelingking"),null);
 });

@@ -4,6 +4,7 @@ function recoverPhoto(img){
  if(!(img instanceof HTMLImageElement))return;
  const current=new URL(img.currentSrc||img.src,location.href);
  const phase=img.dataset.photoFallbackStage||"";
+ if(img.hasAttribute("srcset")){img.removeAttribute("srcset");img.removeAttribute("sizes");const original=new URL(img.src,location.href);original.searchParams.delete("npew");img.src=original.href;return;}
  if(/^\/photos\/(?:website|owner|research)\/[0-9a-f-]{36}$/.test(current.pathname)){
   if(phase!=="retry"){
    img.dataset.photoFallbackStage="retry";

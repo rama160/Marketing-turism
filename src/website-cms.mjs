@@ -1,3 +1,4 @@
+import {readResponsivePhoto,addResponsivePhotos} from "./photos.mjs";
 // Independent website content publishing. Never mutate operator rates, quote snapshots or bookings.
 // Website photos use the existing PHOTO_KV binding but a separate key prefix and metadata table.
 const emailWhatsApp="628561752525";
@@ -290,6 +291,7 @@ export async function serveWebsiteMedia(request,env,db){
  const id=new URL(request.url).pathname.slice("/photos/website/".length);
  if(!idRE.test(id))return reject("Foto tidak ditemukan",404);
  if(!(await db.prepare("SELECT id FROM website_media WHERE id=?").bind(id).first()))return reject("Foto tidak ditemukan",404);
+ const responsive=await readResponsivePhoto(request,env,id);if(responsive)return responsive;
  const raw=await env.PHOTO_KV?.get(mediaKey(id),"arrayBuffer");
  if(!raw||!binaryJpeg(new Uint8Array(raw)))return reject("Foto tidak tersedia",503);
  return new Response(request.method==="HEAD"?null:raw,{headers:{"content-type":"image/jpeg","content-length":String(raw.byteLength),"cache-control":"public,max-age=86400","x-content-type-options":"nosniff"}});
@@ -374,13 +376,13 @@ export function renderLegacyTourPage(html,page,origin,copy={},activities=[],veri
  const related=activities.filter(a=>page.key?a.parent_activity==="static:"+page.key:!a.parent_activity);
  const links=related.filter(a=>slugRE.test(a.slug)&&!body.includes('href="/id/experiences/'+a.slug+'"')).map(a=>'<a class="textLink" href="/id/experiences/'+a.slug+'">'+escapeHTML(a.title_id)+'</a>');
  if(links.length)body=body.replace("</main>",()=>'<nav class="section" aria-label="Pengalaman wisata terkait"><h2>Jelajahi pengalaman lainnya</h2><p>'+links.join(" · ")+"</p></nav></main>");
- const rendered=applyPublishedPhotoSlots(head+body,photoSlots,"id");
+ const rendered=addResponsivePhotos(applyPublishedPhotoSlots(head+body,photoSlots,"id"),page.canonical==="/");
  // The preload points at the exact final image, not the template's original.
  if(page.canonical==="/"){
   const hero=rendered.match(/<img\b[^>]*data-npe-slot="hero"[^>]*>/i)?.[0]||"";
   const source=hero.match(/\ssrc="([^"]+)"/)?.[1];
   if(source&&/^\/photos\/(?:website\/[a-f0-9-]{36}|kelingking)$/.test(source)){
-   const preloaded=rendered.replace(/(<link rel="stylesheet" href="\/styles\.css">)/i,()=>'<link rel="preload" as="image" href="'+source+'" fetchpriority="high"><link rel="stylesheet" href="/styles.css">');
+   const preloaded=rendered.replace(/(<link rel="stylesheet" href="\/styles\.css">)/i,()=>'<link rel="preload" as="image" href="'+source+'" fetchpriority="high" imagesrcset="'+hero.match(/\ssrcset="([^"]+)"/)?.[1]+'" imagesizes="'+hero.match(/\ssizes="([^"]+)"/)?.[1]+'"><link rel="stylesheet" href="/styles.css">');
    if(hero.includes('data-npe-rendered-photo="true"'))return preloaded.replace(/<small class="heroCredit">[\s\S]*?<\/small>/i,()=>'<small class="heroCredit">Foto disediakan untuk Nusa Penida Experiences; hak penggunaan dikonfirmasi.</small>');
    return preloaded;
   }
