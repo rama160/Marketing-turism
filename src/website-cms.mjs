@@ -292,7 +292,7 @@ export async function serveWebsiteMedia(request,env,db){
  if(!(await db.prepare("SELECT id FROM website_media WHERE id=?").bind(id).first()))return reject("Foto tidak ditemukan",404);
  const raw=await env.PHOTO_KV?.get(mediaKey(id),"arrayBuffer");
  if(!raw||!binaryJpeg(new Uint8Array(raw)))return reject("Foto tidak tersedia",503);
- return new Response(request.method==="HEAD"?null:raw,{headers:{"content-type":"image/jpeg","content-length":String(raw.byteLength),"cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}});
+ return new Response(request.method==="HEAD"?null:raw,{headers:{"content-type":"image/jpeg","content-length":String(raw.byteLength),"cache-control":"public,max-age=86400","x-content-type-options":"nosniff"}});
 }
 export async function getWebsiteSlots(db){
  const [legacy,gallery]=await Promise.all([

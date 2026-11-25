@@ -643,3 +643,25 @@ test("LCP preload matches owner photo and hero credit is not misattributed",()=>
  assert.ok(result.includes('<link rel="preload" as="image" href="'+url+'" fetchpriority="high">'));
  assert.ok(result.includes('src="'+url+'"'));assert.doesNotMatch(result,/Wikimedia Commons/);
 });
+test("website JPEG uses a bounded one-day browser cache and no longer uses a one-hour cache",async()=>{
+ const {serveWebsiteMedia}=await import("../src/website-cms.mjs");
+ const id="09380b3a-33a6-4429-adfd-703d2e213ab1";
+ const bytes=new Uint8Array(12000);bytes[0]=255;bytes[1]=216;bytes[11998]=255;bytes[11999]=217;
+ const db={prepare(){return {bind(){return {first:async()=>({id})}}}}};
+ const env={PHOTO_KV:{get:async()=>bytes.buffer}};
+ const request=new Request("https://example.com/photos/website/"+id);
+ const response=await serveWebsiteMedia(request,env,db);
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get("cache-control"),"public,max-age=86400");
+ assert.equal(response.headers.get("content-type"),"image/jpeg");
+ assert.equal((await response.arrayBuffer()).byteLength,bytes.length);
+ const missing=await serveWebsiteMedia(request,env,{prepare(){return {bind(){return {first:async()=>null}}}}});
+ assert.equal(missing.status,404);
+});
+test("dynamic gallery image priority is set before source and honeypot has accessible name",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const code=readFileSync("public/website-content.js","utf8");
+ assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;img\.src=activity\.photo_url/);
+ assert.match(code,/img\.loading="lazy";img\.decoding="async";img\.width=1200;img\.height=675;img\.alt=a\["title_"\+lang\];img\.src=a\.photo_url/);
+ assert.match(readFileSync("public/index.html","utf8"),/<input name="website"[^>]*aria-label="[^"]+"/);
+});

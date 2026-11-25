@@ -322,3 +322,10 @@ for(const html of [landingMarkup,snorkeling,west,east,island]){
 if(heroSlot&&!landingMarkup.includes('<link rel="preload" as="image" href="'+heroSlot.url+'" fetchpriority="high">'))throw Error("LCP preload not matching published hero");
 if((await get("/guest.js")).includes('navigator.serviceWorker.register('))throw Error("Public browsing must not precache admin PWA");
 console.log("Verified CMS gallery credits, final hero preload and public PWA separation");
+
+if(heroSlot){
+ const image=await fetch(base+heroSlot.url,{signal:AbortSignal.timeout(20000)});
+ if(image.status!==200||!/\bmax-age=86400\b/.test(image.headers.get("cache-control")||""))throw Error("Published hero cache policy not deployed");
+}
+if(!/<input name="website"[^>]*aria-label="[^"]+"/.test(landingMarkup))throw Error("Honeypot accessible name missing");
+console.log("Verified public image cache policy and labelled honeypot");
