@@ -323,7 +323,29 @@ export function legacyTourRoute(path){
  const canonical=path==="/index.html"?"/":path==="/"||path.endsWith(".html")?path:path.replace(/\/+$/,"")+".html";
  return Object.hasOwn(legacyTours,canonical)?{...legacyTours[canonical],canonical}:null;
 }
-export function renderLegacyTourPage(html,page,origin,copy={},activities=[],verification=""){
+// Render owner-selected photographs in the first HTML response so the browser
+// discovers the final LCP resource immediately instead of downloading two images.
+// URLs must be same-origin CMS media; no raw user HTML or foreign URLs.
+export function applyPublishedPhotoSlots(html,rows=[],lang="id"){
+ const slots=new Map(rows.filter(row=>validSlots.has(row.slot)&&idRE.test(row.media_id)&&row.url==="/photos/website/"+row.media_id).map(row=>[row.slot,row]));
+ const replace=tag=>{
+  const slot=tag.match(/\bdata-npe-slot="([^"]+)"/)?.[1],row=slots.get(slot);
+  if(!row)return tag;
+  return tag.replace(/\bsrc="([^"]+)"/,(_all,original)=>'src="'+row.url+'" data-npe-original-src="'+escapeHTML(original)+'" data-npe-rendered-photo="true"')
+   .replace(/\balt="[^"]*"/,()=> 'alt="'+escapeHTML(lang==="en"?row.alt_en:row.alt_id)+'"');
+ };
+ // Attribute owner photographs correctly before browser JS executes.
+ const credit=lang==="en"?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights.":"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";
+ html=html.replace(/<figure\b[^>]*>[\s\S]*?<\/figure>/gi,figure=>{
+  const updated=figure.replace(/<img\b[^>]*>/gi,replace);
+  return updated.includes('data-npe-rendered-photo="true"')?updated.replace(/<figcaption\b[^>]*>[\s\S]*?<\/figcaption>/i,()=>'<figcaption data-npe-owner-photo="true">'+credit+'</figcaption>'):updated;
+ });
+ // Do not re-rewrite photos already replaced inside figures.
+ html=html.replace(/<img\b[^>]*>/gi,tag=>tag.includes('data-npe-rendered-photo="true"')?tag:replace(tag));
+ return html;
+}
+
+export function renderLegacyTourPage(html,page,origin,copy={},activities=[],verification="",photoSlots=[]){
  const canonical=origin+page.canonical,alternate=origin+"/en/tours"+(page.key?"/"+page.key:"");
  const title=typeof copy[page.title]==="string"&&copy[page.title].trim()?seoClip(copy[page.title],39)+" | Nusa Penida Experiences":null;
  const description=typeof copy[page.summary]==="string"&&copy[page.summary].trim()?seoClip(copy[page.summary],160):null;
@@ -352,7 +374,7 @@ export function renderLegacyTourPage(html,page,origin,copy={},activities=[],veri
  const related=activities.filter(a=>page.key?a.parent_activity==="static:"+page.key:!a.parent_activity);
  const links=related.filter(a=>slugRE.test(a.slug)&&!body.includes('href="/id/experiences/'+a.slug+'"')).map(a=>'<a class="textLink" href="/id/experiences/'+a.slug+'">'+escapeHTML(a.title_id)+'</a>');
  if(links.length)body=body.replace("</main>",()=>'<nav class="section" aria-label="Pengalaman wisata terkait"><h2>Jelajahi pengalaman lainnya</h2><p>'+links.join(" · ")+"</p></nav></main>");
- return head+body;
+ return applyPublishedPhotoSlots(head+body,photoSlots,"id");
 }
 
 const englishTourPages={

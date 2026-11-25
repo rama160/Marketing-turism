@@ -12,3 +12,10 @@
   Cache-Control: no-cache, must-revalidate
 /dashboard.css
   Cache-Control: no-cache, must-revalidate
+
+/website-content.js
+  Cache-Control: no-cache, must-revalidate
+/photo-loader.js
+  Cache-Control: no-cache, must-revalidate
+/service-worker.js
+  Cache-Control: no-cache, must-revalidate

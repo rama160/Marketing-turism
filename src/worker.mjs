@@ -149,12 +149,13 @@ async function route(req,env,ctx){
   if(!env.ASSETS)return new Response("Website temporarily unavailable",{status:503});
   const asset=await env.ASSETS.fetch(new Request(new URL("/__npe_templates/"+legacy.file+".txt",u.origin),{method:"GET"}));
   if(!asset.ok)return new Response("Website temporarily unavailable",{status:503,headers:{"cache-control":"no-store","retry-after":"60"}});
-  let copy={},items=[];
-  if(db){const results=await Promise.allSettled([publicSiteContent(db,"id"),publicWebsiteActivities(db)]);
+  let copy={},items=[],photoSlots=[];
+  if(db){const results=await Promise.allSettled([publicSiteContent(db,"id"),publicWebsiteActivities(db),getWebsiteSlots(db)]);
    if(results[0].status==="fulfilled")copy=results[0].value.items;
    if(results[1].status==="fulfilled")items=results[1].value.items;
+   if(results[2].status==="fulfilled")photoSlots=results[2].value.items;
   }
-  const html=renderLegacyTourPage(await asset.text(),legacy,u.origin,copy,items,env.GOOGLE_SITE_VERIFICATION||"");
+  const html=renderLegacyTourPage(await asset.text(),legacy,u.origin,copy,items,env.GOOGLE_SITE_VERIFICATION||"",photoSlots);
   const headers=new Headers(asset.headers);
   for(const name of ["content-length","content-encoding","etag","last-modified","content-range","accept-ranges"])headers.delete(name);
   headers.set("content-type","text/html; charset=utf-8");headers.set("cache-control","no-cache");headers.set("x-content-type-options","nosniff");

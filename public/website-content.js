@@ -12,6 +12,8 @@ async function loadWebsitePhotos(){
   document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
    const slot=slots.get(img.dataset.npeSlot);
    if(!slot)return;
+   const alreadyRendered=img.getAttribute?.("src")===slot.url&&img.dataset.npeRenderedPhoto==="true";
+   if(alreadyRendered){img.alt=currentLanguage()==="en"?slot.alt_en:slot.alt_id;return;}
    if(img.getAttribute?.("src")===slot.url&&img.naturalWidth>0)return;
    img.removeAttribute("data-photo-slug");
    // Prevent an earlier fallback attempt for the original image from leaking into the replacement.

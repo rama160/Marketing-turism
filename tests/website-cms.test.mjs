@@ -623,3 +623,16 @@ test("dashboard responses are explicitly excluded from indexing and caching",asy
 });
 
 test("public GA4 is consistently included but not on admin",async()=>{const {readFileSync}=await import("node:fs");for(const name of ["index","snorkeling","island-tour","west-tour","east-tour","privacy","terms","cancellation"])assert.match(readFileSync("public/"+name+".html","utf8"),/analytics\.js\?v=3\.36\.0/);assert.doesNotMatch(readFileSync("public/dashboard.html","utf8"),/analytics\.js/);assert.match(renderEnglishTourPage("west","https://example.com"),/analytics\.js/);assert.match(renderExperiencePage({...draft,photo_url:"/photos/website/123"},"id","https://example.com"),/analytics\.js/);});
+
+test("published CMS hero is in first HTML response and untrusted photo URLs are ignored",async()=>{
+ const {applyPublishedPhotoSlots}=await import("../src/website-cms.mjs");
+ const id="09380b3a-33a6-4429-adfd-703d2e213ab1",url="/photos/website/"+id;
+ const original='<figure><img data-npe-slot="hero" src="/photos/kelingking" alt="Original" loading="eager" fetchpriority="high"><figcaption>Original credit</figcaption></figure><img data-npe-slot="west" src="/photos/broken-beach" alt="West">';
+ const html=applyPublishedPhotoSlots(original,[{slot:"hero",media_id:id,url,alt_id:'Owner "photo"',alt_en:"Owner photo"},{slot:"west",media_id:id,url:"https://example.com/bad",alt_id:"bad"}]);
+ assert.ok(html.includes('src="'+url+'" data-npe-original-src="/photos/kelingking"'));
+ assert.match(html,/alt="Owner &quot;photo&quot;"/);
+ assert.match(html,/fetchpriority="high"/);
+ assert.match(html,/data-npe-owner-photo="true"/);
+ assert.doesNotMatch(html,/Original credit|example\.com/);
+ assert.match(html,/src="\/photos\/broken-beach"/);
+});

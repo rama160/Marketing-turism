@@ -300,3 +300,11 @@ for(const path of publishedPhotos){
 const jpg=await fetch(base+"/photos/kelingking.jpg?v=5",{signal:AbortSignal.timeout(20000)});
 if(jpg.status!==200||!(jpg.headers.get("content-type")||"").startsWith("image/jpeg"))throw Error("Static JPG fallback broken");
 console.log("Verified "+publishedPhotos.size+" distinct published CMS photos and JPG fallback");
+
+// The current CMS-selected hero must be discoverable before any JavaScript runs.
+const heroSlot=websiteSlots.items.find(x=>x.slot==="hero");
+if(heroSlot){
+ const heroTag=[...landingMarkup.matchAll(/<img\b[^>]*data-npe-slot="hero"[^>]*>/g)][0]?.[0]||"";
+ if(!heroTag.includes('src="'+heroSlot.url+'"')||!heroTag.includes('fetchpriority="high"'))throw Error("Published hero is not server-rendered for LCP");
+}
+console.log("Verified server-rendered published hero for LCP");

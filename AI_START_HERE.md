@@ -1,3 +1,6 @@
+## SEO performance hotfix (25 Nov 2026, v3.36.0)
+- Render validated CMS photo slots directly in legacy public HTML, keeping final hero eager/high priority and gallery lazy loading. Owner attribution is rendered for replaced figure images; invalid/absent slots keep the original. Browser refresh still checks CMS changes. Avoid redundant assignment when current SSR photo matches. Revalidate updated public scripts and refresh public cache. No DB, URL, layout, GA4 or booking changes. CI covers SSR photo trust boundary; live smoke verifies current hero in raw HTML. PageSpeed lab/CrUX scores remain unmeasured; compare mobile and desktop in PSI before attributing numeric improvements.
+
 ## Photo reliability hotfix (25 Nov 2026, v3.36.0)
 - Preserve all owner-selected media and activity data. Accept existing static JPG aliases, retry transient CMS image failures once, show honest placeholder only if retry fails, and install recovery on dynamic bilingual pages as well. Refresh public asset cache. Production smoke checks every referenced published CMS JPEG and the static JPG alias; no generated substitute photos.
 
