@@ -49,5 +49,8 @@ test("homepage CMS contains separately editable hero and all twelve thumbnail la
  const html=readFileSync("public/index.html","utf8"),app=readFileSync("public/app.js","utf8");
  const keys=[...html.matchAll(/data-copy="(homeThumb\.[^"]+)"/g)].map(x=>x[1]);
  assert.equal(new Set(keys).size,12);
- for(const k of [...keys,"hero.highlight1","hero.whatsapp","regions.west.cta"]){assert.ok(CONTENT_FIELDS.some(([key])=>key===k));assert.ok(app.includes('"'+k+'"'));}
+ for(const k of [...keys,"hero.whatsapp","regions.west.cta"]){assert.ok(CONTENT_FIELDS.some(([key])=>key===k));assert.ok(app.includes('"'+k+'"'));}
+ assert.match(app,/cmsEffectiveValue\("hero\.highlight"\+\(i\+1\)/);
+ assert.match(app,/cmsHeroListSave/);
+ assert.ok(CONTENT_FIELDS.some(([key])=>key==="hero.highlight1"));
 });
