@@ -2039,7 +2039,7 @@ $("#cmsLayoutSave").onclick=async()=>{
 // Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
 
-let seoItems=[],seoEditing=null,seoMedia=[];
+let seoItems=[],seoEditing=null,seoMedia=[],seoOrder=[],seoOrderVersion=0;
 const seoForm=$("#seoForm");
 function seoFormPayload(){
  const data=new FormData(seoForm);
@@ -2061,11 +2061,28 @@ function editSeoArticle(item=null){
  $("#seoUrl").textContent=item?"URL tetap: /id/articles/"+item.slug+" · /en/articles/"+item.slug:"URL dibuat saat simpan draft.";
  drawSeoCover();
 }
+
+function drawSeoOrder(){
+ const root=$("#seoOrderRows");if(!root)return;
+ root.innerHTML=seoOrder.map((key,i)=>{const article=seoItems.find(x=>"article:"+x.id===key);return '<div class="layoutOrderRow"><strong>'+esc(article?.published?.title_id||key)+'</strong><label>Posisi <select data-seo-position="'+i+'">'+seoOrder.map((_,j)=>'<option value="'+j+'" '+(j===i?"selected":"")+'>'+(j+1)+'</option>').join("")+'</select></label></div>';}).join("")||'<p class="feedback">Terbitkan artikel terlebih dahulu.</p>';
+ root.querySelectorAll("[data-seo-position]").forEach(el=>el.onchange=()=>{seoOrder=moveTo(seoOrder,Number(el.dataset.seoPosition),Number(el.value));drawSeoOrder();});
+ $("#seoOrderSave").disabled=seoOrder.length===0;
+}
+$("#seoOrderSave").onclick=async()=>{
+ const btn=$("#seoOrderSave");btn.disabled=true;
+ try{if(!confirm("Terbitkan urutan artikel baru?"))return;
+  const result=await api("admin/site-content","POST",{key:"layout.order.articles",locale:"id",value:JSON.stringify({order:seoOrder,hidden:[]}),expected_version:seoOrderVersion,owner_confirmed:true});
+  seoOrderVersion=result.version;say("#seoOrderFeedback","Urutan artikel berhasil diterbitkan.",true);
+ }catch(err){say("#seoOrderFeedback",err.message);}finally{btn.disabled=!seoOrder.length;}
+};
+
 async function loadSeoArticles(){
  if(!ownerSignedIn)return;
  try{
-  const [r,m]=await Promise.all([api("admin/website/articles"),api("admin/website/media")]);
+  const [r,m,copy]=await Promise.all([api("admin/website/articles"),api("admin/website/media"),api("admin/site-content")]);
   seoItems=r.items||[];seoMedia=m.items||[];
+  const row=(copy.items||[]).find(x=>x.key==="layout.order.articles"&&x.locale==="id");seoOrderVersion=row?.version||0;
+  seoOrder=orderedKeys(seoItems.filter(x=>x.published).map(x=>"article:"+x.id),readOrder({"layout.order.articles":row?.value},"articles"));drawSeoOrder();
   $("#seoList").innerHTML=seoItems.length?seoItems.map(a=>'<article class="panel"><small>'+(a.published?"Published · draft dapat diedit":"Draft")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button><button type="button" class="primary small" data-seo-action="publish" data-id="'+esc(a.id)+'">Publish draft</button>'+(a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a><button type="button" class="outline small" data-seo-action="unpublish" data-id="'+esc(a.id)+'">Tarik publikasi</button>':'<button type="button" class="outline small" data-seo-action="delete" data-id="'+esc(a.id)+'">Hapus draft</button>')+'</div></article>').join(""):'<p>Belum ada artikel. Tekan Artikel baru.</p>';
   $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
   $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{

@@ -1,6 +1,7 @@
 // Shared data-only rules for owner layout controls and public rendering.
 export const LAYOUT_PREFIX="layout.order.";
 export const baseGroups=Object.freeze({
+ articles:[],
  packages:["snorkeling","island"],
  regions:["west","east","snorkeling"],
  "thumb:west":["west-kelingking","west-broken-beach","west-angels-billabong","west-crystal-bay"],
@@ -12,14 +13,15 @@ export const baseGroups=Object.freeze({
  "detail:static:island":["island-west","island-east"]
 });
 export const activityKey=id=>"activity:"+id;
-const uuid=/^activity:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+const uuid=/^(?:activity|article):[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 export const validGroup=g=>Object.hasOwn(baseGroups,g)||/^detail:activity:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(g)&&g.length<=110;
 export function validateOrder(group,value){
  if(!validGroup(group))throw Error("Bagian susunan tidak valid");
  const x=typeof value==="string"?JSON.parse(value):value;
  if(!x||!Array.isArray(x.order)||!Array.isArray(x.hidden)||x.order.length>150||x.hidden.length>150)throw Error("Susunan tidak valid");
- const allowed=k=>typeof k==="string"&&((baseGroups[group]||[]).includes(k)||uuid.test(k));
+ const allowed=k=>typeof k==="string"&&((baseGroups[group]||[]).includes(k)||uuid.test(k)&&k.startsWith(group==="articles"?"article:":"activity:"));
  for(const arr of [x.order,x.hidden])if(arr.some(k=>!allowed(k))||new Set(arr).size!==arr.length)throw Error("Item susunan tidak valid atau duplikat");
+ if(group==="articles"&&x.hidden.length)throw Error("Gunakan Tarik publikasi untuk menyembunyikan artikel");
  return {order:x.order,hidden:x.hidden};
 }
 export function readOrder(copy,group){try{return validateOrder(group,copy?.[LAYOUT_PREFIX+group]);}catch{return {order:[],hidden:[]};}}

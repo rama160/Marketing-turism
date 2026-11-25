@@ -1,3 +1,6 @@
+## Article list ordering
+- Apply direct-position ordering to published article lists in both languages using an independent versioned layout record. Article publication/unpublication remains explicit and sitemap URLs stay intact. Add an article back-to-guide/home link.
+
 ## Layout test harness follow-up
 - Exercise real shared ordering module in browser-like VM tests, including native history Back preserving authenticated session. Revalidate layout module and rotate offline static cache. No production content edits.
 

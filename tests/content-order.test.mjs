@@ -28,3 +28,10 @@ test("dashboard records real navigation and guest pages never replace history",(
  assert.match(web,/history\.back\(\)/);
  assert.match(web,/applyPublicLayout/);
 });
+
+test("article positions are independent of activity layout and cannot unpublish via ordering",()=>{
+ const key="article:12345678-1234-4234-9234-123456789abc";
+ assert.deepEqual(validateOrder("articles",{order:[key],hidden:[]}).order,[key]);
+ assert.throws(()=>validateOrder("articles",{order:[key],hidden:[key]}));
+ assert.throws(()=>validateOrder("regions",{order:[key],hidden:[]}));
+});
