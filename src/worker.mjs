@@ -120,7 +120,7 @@ async function route(req,env,ctx){
   }
   const headers=new Headers(response.headers);
   const policy=headers.get("content-security-policy");
-  if(policy)headers.set("content-security-policy",policy.replace("script-src 'self' https://challenges.cloudflare.com;","script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com;").replace("connect-src 'self' https://challenges.cloudflare.com;","connect-src 'self' https://challenges.cloudflare.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com;").replace("https://raw.githubusercontent.com blob:;","https://raw.githubusercontent.com blob: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com;"));
+  if(policy)headers.set("content-security-policy",policy.replace("script-src 'self' https://challenges.cloudflare.com;","script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://static.cloudflareinsights.com;").replace("connect-src 'self' https://challenges.cloudflare.com;","connect-src 'self' https://challenges.cloudflare.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com;").replace("https://raw.githubusercontent.com blob:;","https://raw.githubusercontent.com blob: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com;"));
   return new Response(method==="HEAD"?null:response.body,{status:response.status,statusText:response.statusText,headers});
  }
  if(path.startsWith("/photos/research/")){
@@ -160,7 +160,7 @@ async function route(req,env,ctx){
   for(const name of ["content-length","content-encoding","etag","last-modified","content-range","accept-ranges"])headers.delete(name);
   headers.set("content-type","text/html; charset=utf-8");headers.set("cache-control","no-cache");headers.set("x-content-type-options","nosniff");
   headers.set("referrer-policy","strict-origin-when-cross-origin");headers.set("x-frame-options","DENY");
-  headers.set("content-security-policy","default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com; style-src 'self'; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://raw.githubusercontent.com blob: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'");
+  headers.set("content-security-policy","default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://static.cloudflareinsights.com; style-src 'self'; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com; img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://raw.githubusercontent.com blob: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'");
   return new Response(method==="HEAD"?null:html,{headers});
  }
  if(!db)return bad("D1 database belum aktif",503);

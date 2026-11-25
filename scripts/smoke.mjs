@@ -336,3 +336,8 @@ for(const path of ["/photos/kelingking",...(heroSlot?[heroSlot.url]:[])]){
  if(!variant.ok||!variant.headers.get("content-type")?.startsWith("image/webp")||String.fromCharCode(...bytes.slice(8,12))!=="WEBP")throw Error("Responsive variant missing "+path);
 }
 console.log("Responsive WebP confirmed for static and CMS hero");
+
+if(!/script-src [^;]*https:\/\/static\.cloudflareinsights\.com/.test(photoPolicy)||!/connect-src [^;]*https:\/\/cloudflareinsights\.com/.test(photoPolicy))throw Error("Cloudflare Web Analytics CSP missing");
+if(/'unsafe-inline'|'unsafe-eval'/.test(photoPolicy))throw Error("Public CSP weakened");
+if(!(await get("/styles.css")).includes(".eyebrow{letter-spacing:2px;font-weight:800;color:#255c66;"))throw Error("Contrast fix missing");
+console.log("Verified public analytics CSP and contrast CSS");

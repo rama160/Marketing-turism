@@ -677,3 +677,29 @@ test("responsive sizes distinguish homepage thumbnails and hero, retain original
  assert.equal((await readResponsivePhoto(new Request("https://example.com/photos/kelingking?npew=240"),env,"kelingking")).headers.get("content-type"),"image/webp");
  assert.equal(await readResponsivePhoto(new Request("https://example.com/photos/kelingking?npew=999"),env,"kelingking"),null);
 });
+
+test("public eyebrow text meets WCAG AA contrast on the audited light backgrounds",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const css=readFileSync("public/styles.css","utf8");
+ const color=css.match(/\.eyebrow\{[^}]*color:(#[0-9a-f]{6})/i)?.[1];
+ const luminance=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
+ assert.ok(color);
+ for(const background of ["#f3f7fa","#e7f3f5","#ffffff"])assert.ok((luminance(background)+.05)/(luminance(color)+.05)>=4.5,background);
+ assert.match(css,/\.premiumHero \.eyebrow\{color:#fff1cb/);
+});
+test("Cloudflare beacon CSP permission is confined to public documents",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const policy="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self'; frame-ancestors 'none'";
+ const env={ASSETS:{fetch:async()=>new Response("<html><head></head><body></body></html>",{headers:{"content-security-policy":policy,"content-type":"text/html"}})}};
+ for(const path of ["/","/privacy.html"]){
+  const r=await worker.fetch(new Request("https://nusapenidaexperiences.com"+path),env,{});
+  assert.equal(r.status,200);
+  const csp=r.headers.get("content-security-policy");
+  assert.match(csp,/script-src [^;]*https:\/\/static\.cloudflareinsights\.com/);
+  assert.match(csp,/connect-src [^;]*https:\/\/cloudflareinsights\.com/);
+  assert.doesNotMatch(csp,/'unsafe-inline'|'unsafe-eval'/);
+  assert.match(csp,/frame-ancestors 'none'/);
+ }
+ const dashboard=await worker.fetch(new Request("https://nusapenidaexperiences.com/dashboard.html"),env,{});
+ assert.equal(dashboard.headers.get("content-security-policy"),policy);
+});
