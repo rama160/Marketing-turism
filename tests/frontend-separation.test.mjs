@@ -14,8 +14,7 @@ test("guest tourism homepage does not expose agent dashboard links, forms or adm
  assert.ok(page.includes('data-action="lead_enquiry"'));
  assert.match(guest,/publicAPI\("leads","POST"/);
  assert.match(guest,/publicAPI\("readiness"\)/);
- assert.match(guest,/location\.replace\("\/dashboard\.html"\)/);
- assert.match(guest,/searchParams\.get\("view"\)!=="website"/);
+ assert.doesNotMatch(guest,/location\.replace\("\/dashboard\.html"\)/);
  assert.doesNotMatch(guest,/ADMIN_TOKEN|tourAdmin|\/api\/admin\/|admin\/growth/);
 });
 

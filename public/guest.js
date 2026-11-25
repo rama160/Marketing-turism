@@ -98,11 +98,6 @@ function initPublicGuestForm(){
  });
 }
 initPublicGuestForm();
-// Existing agent PWA installations previously used "/" as their start_url;
-// bring standalone owners straight to the dedicated dashboard without changing ordinary guest browsing.
-if((window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone===true) &&
- new URL(location.href).searchParams.get("view")!=="website"){
- location.replace("/dashboard.html");
-}
+// The installed app uses manifest.start_url; guest pages never redirect or replace browser history.
 // Public browsing does not install/precache the admin PWA on first visit.
 // The dedicated dashboard owns its service worker registration.

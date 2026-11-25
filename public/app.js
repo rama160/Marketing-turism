@@ -1,3 +1,4 @@
+import {LAYOUT_PREFIX,baseGroups,groupItems,readOrder,orderedKeys,moveTo} from "./content-order.mjs";
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const money=n=>"Rp"+new Intl.NumberFormat("id-ID").format(n||0);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -44,8 +45,38 @@ const NPE_PAGE_GROUP={
  growth:"growth",market:"growth",analytics:"analytics",
  business:"settings",operators:"settings",rates:"settings"
 };
+let navRestoring=false,navTab="summary";
+function recordDashboardNav(patch={},replace=false){
+ if(!ownerSignedIn||navRestoring)return;
+ const prev=history.state?.npeDashboard||{};
+ const state={...prev,tab:navTab,...patch};
+ const hash="#"+[state.tab,state.tab==="website"?state.view:"",state.tab==="website"&&state.view==="pages"?state.page:"",state.tab==="articles"?state.article:"",state.pane===undefined?"":"pane-"+state.pane].filter(Boolean).map(encodeURIComponent).join("/");
+ const current=history.state?.npeDashboard;
+ if(current&&JSON.stringify(current)===JSON.stringify(state)&&!replace)return;
+ history[replace||!current?"replaceState":"pushState"]({...history.state,npeDashboard:state},"",hash);
+}
+function dashboardBack(){
+ if(history.state?.npeDashboard&&history.length>1){history.back();return;}
+ if(navTab!=="summary")changeTab("summary");
+}
+window.addEventListener("popstate",event=>{
+ if(!ownerSignedIn)return;
+ const state=event.state?.npeDashboard;if(!state)return;
+ navRestoring=true;
+ try{
+  if(navTab!==state.tab)changeTab(state.tab);
+  if(state.tab==="website"){
+   if(state.page&&[...$("#cmsPagePicker").options].some(x=>x.value===state.page))$("#cmsPagePicker").value=state.page;
+   cmsView(state.view||"published");
+   if(state.view==="activity")cmsForm.hidden=false;
+  }
+  if(state.tab==="articles"){if(!state.article)$("#seoForm").hidden=true;else if(seoEditing?.id===state.article||state.article==="new")$("#seoForm").hidden=false;else{const item=seoItems.find(x=>x.id===state.article);if(item)editSeoArticle(item);}}
+  if(Number.isInteger(state.pane))document.querySelector("#tab-"+state.tab+" .dashPaneNav [data-pane='"+state.pane+"']")?.click();
+ }finally{navRestoring=false;}
+});
 function changeTab(name){
  const page=document.getElementById("tab-"+name);if(!page)return;
+ navTab=name;recordDashboardNav({tab:name,view:name==="website"?npeCmsView:undefined,page:name==="website"?$("#cmsPagePicker").value:undefined,article:undefined,pane:undefined});
  const group=NPE_PAGE_GROUP[name]||"home",workspace=NPE_WORKSPACES[group];
  sessionStorage.setItem("npe-dashboard-tab",name);
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
@@ -74,6 +105,7 @@ function changeTab(name){
  const menu=$("#dashNavigation"),toggle=$("#dashMenuToggle");menu?.classList.remove("open");toggle?.setAttribute("aria-expanded","false");
  window.scrollTo?.({top:0,behavior:"instant"});
 }
+$("#dashBack").onclick=dashboardBack;
 const dashMenuToggle=$("#dashMenuToggle");
 if(dashMenuToggle)dashMenuToggle.onclick=()=>{
  const open=$("#dashNavigation").classList.toggle("open");dashMenuToggle.setAttribute("aria-expanded",String(open));
@@ -118,7 +150,7 @@ function initCompactPanels(){
    btn.type="button";btn.className="dashPaneBtn";btn.textContent=titles[i]||"Bagian "+(i+1);
    btn.dataset.pane=String(i);btn.setAttribute("aria-pressed","false");
    nav.appendChild(btn);
-   btn.addEventListener("click",()=>select(i));
+   btn.addEventListener("click",()=>{select(i);recordDashboardNav({pane:i});});
   });
   panel.insertBefore(nav,panel.firstChild);
   function select(index){
@@ -208,7 +240,10 @@ $("#waSendApproved").onclick=async()=>{
 async function enterOwnerDashboard(){
  ownerSignedIn=true;
  $("#unlockPanel").hidden=true;$("#adminContent").hidden=false;$("#lock").hidden=false;
- changeTab(sessionStorage.getItem("npe-dashboard-tab")||"summary");
+ const previous=history.state?.npeDashboard;
+ navRestoring=true;
+ try{changeTab(previous?.tab||sessionStorage.getItem("npe-dashboard-tab")||"summary");if(previous?.tab==="website"){if(previous.page)$("#cmsPagePicker").value=previous.page;cmsView(previous.view==="activity"?"published":previous.view||"published");}}finally{navRestoring=false;}
+ recordDashboardNav({tab:navTab,view:navTab==="website"?npeCmsView:undefined,page:navTab==="website"?$("#cmsPagePicker").value:undefined},true);
  await refresh();
 }
 $("#lock").onclick=async()=>{
@@ -1037,6 +1072,7 @@ const cmsDefaultFields=["category","parent_activity","media_id","title_en","titl
 function cmsView(name){
  if(!["published","drafts","activity","pages","media"].includes(name))return;
  npeCmsView=name;
+ if(navTab==="website")recordDashboardNav({view:name,page:name==="pages"?$("#cmsPagePicker").value:undefined});
  document.querySelectorAll("[data-cms-view]").forEach(el=>{el.hidden=el.dataset.cmsView!==name;});
  document.querySelectorAll("[data-cms-view-button]").forEach(b=>{
   const on=b.dataset.cmsViewButton===name;b.classList.toggle("current",on);b.setAttribute("aria-pressed",String(on));
@@ -1132,7 +1168,7 @@ function startWebsiteDetail(parent){
  $("#cmsFormHeading").textContent="Tambah Detail Aktivitas";
 }
 function resetWebsiteForm(){
- npeCmsReturn="drafts";npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
+ npeCmsReturn=npeCmsView==="activity"?"drafts":npeCmsView;npeCmsEditing=null;npeCmsPriceCleared=false;cmsForm.reset();
  cmsSet("seo_mode","AUTO");cmsSeoMode();
  cmsParentOptions();cmsField("parent_activity").disabled=true;cmsField("category").disabled=false;renderCmsCategories("ISLAND_TOUR");$("#cmsNewCategoryWrap").hidden=false;$("#cmsNewCategory").value="";$("#cmsCategoryFeedback").textContent="";
  cmsSet("price_unit","PERSON");cmsSet("price_from",true);
@@ -1789,6 +1825,7 @@ function renderCmsPagePhotos(){
  const page=$("#cmsPagePicker").value;
  const slots=cmsPagePhotoSlots[page]||[];
  renderCmsPageDetails();
+ renderLayoutEditor();
  const groups=new Map();for(const slot of slots){const group=slot==="hero"?"01 · Foto cover utama":!slot.includes("-")?"02 · Cover kartu wisata (dipakai bersama halaman paket)":"03 · Galeri destinasi / thumbnail";if(!groups.has(group))groups.set(group,[]);groups.get(group).push(slot);}
  root.innerHTML=[...groups].map(([name,list])=>'<details class="panel cmsPart" '+(page!=="home"?"open":"")+'> <summary>'+esc(name)+'</summary><div class="npeCmsPagePhotos">'+list.map(slot=>{
   const photo=cmsCurrentPhoto(slot);
@@ -1844,7 +1881,7 @@ function filterCmsPageFields(){
  });
 }
 $("#cmsPageFilter").oninput=filterCmsPageFields;
-$("#cmsPagePicker").onchange=renderCmsPageFields;
+$("#cmsPagePicker").onchange=()=>{recordDashboardNav({view:"pages",page:$("#cmsPagePicker").value});renderCmsPageFields();};
 $("#cmsPageLocale").onchange=renderCmsPageFields;
 $("#cmsPagePhoto").onclick=()=>{
  const page=$("#cmsPagePicker").value,slot=cmsPublishedPages.find(([id])=>id===page)?.[4]||"hero";
@@ -1915,13 +1952,66 @@ function drawHeroListPreview(){
 }
 function drawHeroListRows(){
  const root=$("#cmsHeroListRows");if(!root)return;
- root.innerHTML=heroListDraft.map((row,i)=>'<div class="heroListRow"><div class="heroListRowHead"><strong>Layanan '+(i+1)+'</strong><div class="actions"><button type="button" class="outline small" data-hero-move="'+i+':-1" '+(i===0?"disabled":"")+' aria-label="Naikkan layanan '+(i+1)+'">↑</button><button type="button" class="outline small" data-hero-move="'+i+':1" '+(i===heroListDraft.length-1?"disabled":"")+' aria-label="Turunkan layanan '+(i+1)+'">↓</button><button type="button" class="outline small" data-hero-remove="'+i+'">Hapus</button></div></div><label>Ikon<select data-hero-row="'+i+'" data-hero-field="icon">'+Object.entries(heroIconChoices).map(([key,[symbol,label]])=>'<option value="'+key+'" '+(row.icon===key?"selected":"")+'>'+esc(symbol+" "+label)+'</option>').join("")+'</select></label><div class="npeCms2col"><label>Indonesia<input maxlength="60" data-hero-row="'+i+'" data-hero-field="id" value="'+esc(row.id)+'"></label><label>English<input maxlength="60" data-hero-row="'+i+'" data-hero-field="en" value="'+esc(row.en)+'"></label></div></div>').join("")||'<p class="feedback">Tidak ada layanan. Tambahkan layanan jika diinginkan.</p>';
+ root.innerHTML=heroListDraft.map((row,i)=>'<div class="heroListRow"><div class="heroListRowHead"><strong>Layanan '+(i+1)+'</strong><div class="actions"><label class="orderPosition">Posisi <select aria-label="Pindahkan layanan '+(i+1)+' ke posisi" data-hero-position="'+i+'">'+heroListDraft.map((_,j)=>'<option value="'+j+'" '+(i===j?"selected":"")+'>'+(j+1)+'</option>').join("")+'</select></label><button type="button" class="outline small" data-hero-remove="'+i+'">Hapus</button></div></div><label>Ikon<select data-hero-row="'+i+'" data-hero-field="icon">'+Object.entries(heroIconChoices).map(([key,[symbol,label]])=>'<option value="'+key+'" '+(row.icon===key?"selected":"")+'>'+esc(symbol+" "+label)+'</option>').join("")+'</select></label><div class="npeCms2col"><label>Indonesia<input maxlength="60" data-hero-row="'+i+'" data-hero-field="id" value="'+esc(row.id)+'"></label><label>English<input maxlength="60" data-hero-row="'+i+'" data-hero-field="en" value="'+esc(row.en)+'"></label></div></div>').join("")||'<p class="feedback">Tidak ada layanan. Tambahkan layanan jika diinginkan.</p>';
  root.querySelectorAll("[data-hero-field]").forEach(el=>el.oninput=()=>{heroListDraft[Number(el.dataset.heroRow)][el.dataset.heroField]=el.value;heroListDirty=true;drawHeroListPreview();});
  root.querySelectorAll("[data-hero-remove]").forEach(el=>el.onclick=()=>{heroListDraft.splice(Number(el.dataset.heroRemove),1);heroListDirty=true;drawHeroListRows();});
- root.querySelectorAll("[data-hero-move]").forEach(el=>el.onclick=()=>{const [i,d]=el.dataset.heroMove.split(":").map(Number),j=i+d;if(j<0||j>=heroListDraft.length)return;[heroListDraft[i],heroListDraft[j]]=[heroListDraft[j],heroListDraft[i]];heroListDirty=true;drawHeroListRows();});
+ root.querySelectorAll("[data-hero-position]").forEach(el=>el.onchange=()=>{heroListDraft=moveTo(heroListDraft,Number(el.dataset.heroPosition),Number(el.value));heroListDirty=true;drawHeroListRows();});
  $("#cmsHeroAdd").disabled=heroListDraft.length>=8;$("#cmsHeroBoat").disabled=heroListDraft.length>=8||heroListDraft.some(row=>row.icon==="boat");
  drawHeroListPreview();
 }
+
+
+const layoutLabels={packages:"Paket wisata di beranda",regions:"Kartu destinasi di beranda","thumb:west":"Thumbnail West Tour","thumb:east":"Thumbnail East Tour","thumb:snorkeling":"Thumbnail Snorkeling","detail:static:west":"Detail West Tour","detail:static:east":"Detail East Tour","detail:static:snorkeling":"Detail Snorkeling","detail:static:island":"Detail Island Tour"};
+let layoutEdit=null;
+function layoutActivities(){return npeCmsActivities.filter(x=>x.status==="PUBLISHED"&&x.published).map(x=>({id:x.id,...x.published}));}
+function renderLayoutEditor(){
+ const picker=$("#cmsLayoutGroup");if(!picker)return;
+ const old=picker.value;
+ const labels={...layoutLabels};
+ for(const item of layoutActivities().filter(x=>!x.parent_activity))labels["detail:activity:"+item.slug]="Detail "+item.title_id;
+ picker.innerHTML=Object.entries(labels).map(([key,label])=>'<option value="'+esc(key)+'">'+esc(label)+'</option>').join("");
+ const page=$("#cmsPagePicker").value,preferred="detail:static:"+page;
+ picker.value=Object.hasOwn(labels,old)?old:Object.hasOwn(labels,preferred)?preferred:"packages";
+ if(!layoutEdit||layoutEdit.group!==picker.value||!layoutEdit.dirty)loadLayoutDraft();
+ else drawLayoutRows();
+}
+function loadLayoutDraft(){
+ const group=$("#cmsLayoutGroup").value,record=cmsRecords.get("id:"+LAYOUT_PREFIX+group);
+ const config=readOrder(record?{[LAYOUT_PREFIX+group]:record.value}:{},group);
+ const items=groupItems(group,layoutActivities()).map(x=>({...x,label:x.optional||x.key.startsWith("activity:")?x.label:cmsPageSlotLabels[x.key.replace(/-second$/,"")]||x.label}));
+ const keys=orderedKeys(items.map(x=>x.key),config);
+ layoutEdit={group,version:record?.version||0,items,keys,hidden:new Set([...config.hidden,...items.filter(x=>x.optional&&!config.order.includes(x.key)).map(x=>x.key)]),dirty:false};
+ drawLayoutRows();
+}
+function drawLayoutRows(){
+ const root=$("#cmsLayoutRows");if(!root||!layoutEdit)return;
+ if(!cmsActivitiesLoaded){root.textContent="Memuat daftar aktivitas...";$("#cmsLayoutSave").disabled=true;return;}
+ $("#cmsLayoutSave").disabled=false;
+ const x=layoutEdit,visible=x.keys.filter(k=>!x.hidden.has(k)),hidden=x.keys.filter(k=>x.hidden.has(k));
+ const title=k=>x.items.find(i=>i.key===k)?.label||k;
+ root.innerHTML=visible.map((k,i)=>'<div class="layoutOrderRow"><strong>'+esc(title(k))+'</strong><label>Posisi <select data-layout-position="'+i+'" aria-label="Posisi '+esc(title(k))+'">'+visible.map((_,j)=>'<option value="'+j+'" '+(j===i?"selected":"")+'>'+(j+1)+'</option>').join("")+'</select></label><button type="button" class="outline small" data-layout-hide="'+esc(k)+'">Sembunyikan</button></div>').join("")+
+ (hidden.length?'<details class="layoutAvailable"><summary>Item tersedia / disembunyikan ('+hidden.length+')</summary>'+hidden.map(k=>'<div class="layoutOrderRow"><span>'+esc(title(k))+'</span><button type="button" class="outline small" data-layout-show="'+esc(k)+'">+ Tampilkan</button></div>').join("")+'</details>':"");
+ root.querySelectorAll("[data-layout-position]").forEach(el=>el.onchange=()=>{x.keys=[...moveTo(visible,Number(el.dataset.layoutPosition),Number(el.value)),...hidden];x.dirty=true;drawLayoutRows();});
+ root.querySelectorAll("[data-layout-hide]").forEach(el=>el.onclick=()=>{x.hidden.add(el.dataset.layoutHide);x.dirty=true;drawLayoutRows();});
+ root.querySelectorAll("[data-layout-show]").forEach(el=>el.onclick=()=>{x.hidden.delete(el.dataset.layoutShow);x.dirty=true;drawLayoutRows();});
+}
+$("#cmsLayoutGroup").onchange=()=>{if(layoutEdit?.dirty&&!confirm("Batalkan perubahan susunan yang belum disimpan?")){$("#cmsLayoutGroup").value=layoutEdit.group;return;}loadLayoutDraft();};
+$("#cmsLayoutReset").onclick=loadLayoutDraft;
+$("#cmsLayoutAdd").onclick=()=>{
+ const group=$("#cmsLayoutGroup").value;
+ if(group.startsWith("thumb:"))startWebsiteDetail("static:"+group.slice(6));
+ else if(group.startsWith("detail:"))startWebsiteDetail(group.slice(7));
+ else resetWebsiteForm();
+};
+$("#cmsLayoutSave").onclick=async()=>{
+ if(!layoutEdit||!cmsActivitiesLoaded)return;
+ const x=layoutEdit,btn=$("#cmsLayoutSave");btn.disabled=true;
+ try{
+  if(!confirm("Terbitkan susunan ini dalam kedua bahasa? Item yang disembunyikan tidak dihapus dari database."))return;
+  const key=LAYOUT_PREFIX+x.group,result=await api("admin/site-content","POST",{key,locale:"id",value:JSON.stringify({order:x.keys,hidden:[...x.hidden]}),expected_version:x.version,owner_confirmed:true});
+  cmsRecords.set("id:"+key,result);x.version=result.version;x.dirty=false;say("#cmsLayoutFeedback","Susunan terbit. Muat ulang website untuk melihat hasilnya.",true);
+ }catch(err){say("#cmsLayoutFeedback",err.message);}finally{btn.disabled=false;}
+};
 
 // Automatically restore durable login even after browser/app restart. No admin token stored in localStorage.
 (async function restoreOwnerSession(){
@@ -1960,7 +2050,7 @@ function drawSeoCover(){
  root.innerHTML=photo?'<img class="seoEditorCover" alt="'+esc(photo.title)+'" src="'+esc(photo.url)+'?npew=480">':"";
 }
 function editSeoArticle(item=null){
- seoEditing=item;seoForm.reset();seoForm.hidden=false;$("#seoPreviewArea").textContent="";
+ seoEditing=item;seoForm.reset();seoForm.hidden=false;recordDashboardNav({article:item?.id||"new"});$("#seoPreviewArea").textContent="";
  $("#seoMedia").innerHTML='<option value="">Pilih cover</option>'+seoMedia.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.title)+'</option>').join("");
  const draft=item?.draft||{};
  for(const [key,value] of Object.entries(draft)){
@@ -1989,7 +2079,7 @@ async function loadSeoArticles(){
 }
 $("#seoNew").onclick=()=>editSeoArticle();
 $("#seoMedia").onchange=drawSeoCover;
-$("#seoCancel").onclick=()=>{seoForm.hidden=true;};
+$("#seoCancel").onclick=()=>{seoForm.hidden=true;recordDashboardNav({article:undefined});};
 $("#seoPreview").onclick=()=>{
  const d=seoFormPayload();
  $("#seoPreviewArea").innerHTML=["id","en"].map(l=>'<section class="panel"><small>'+l.toUpperCase()+'</small><h2>'+esc(d["title_"+l])+'</h2><p>'+esc(d["summary_"+l])+'</p>'+String(d["body_"+l]||"").split(/\n+/).filter(Boolean).map(s=>s.startsWith("## ")?"<h3>"+esc(s.slice(3))+"</h3>":"<p>"+esc(s)+"</p>").join("")+'<p>SEO title: '+esc(String(d["title_"+l]||"").slice(0,60))+'</p><p>Meta description: '+esc(String(d["summary_"+l]||"").slice(0,160))+'</p></section>').join("");

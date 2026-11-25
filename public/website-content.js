@@ -1,6 +1,7 @@
+import {LAYOUT_PREFIX,readOrder,orderedKeys,activityKey} from "./content-order.mjs";
 // Public-only CMS enhancements: no admin token, no operator rates and no guest personal data.
 const el=(tag,klass,text)=>{const n=document.createElement(tag);if(klass)n.className=klass;if(text!==undefined)n.textContent=text;return n;};
-let publicActivities=[];
+let publicActivities=[],layoutCopy={};
 function responsiveSource(img,url){
  if(!/^\/photos\/(?:website\/[0-9a-f]{8}-[0-9a-f-]{27,36}|[a-z-]+)$/.test(url))return;
  img.sizes=img.sizes||"(max-width: 700px) 100vw, 50vw";
@@ -55,7 +56,8 @@ async function loadWebsiteActivities(){
   if(!response.ok)throw Error("activities");
   const activities=await response.json();
   publicActivities=activities.items||[];
-  drawPublicActivities();drawPublicDetails();
+  try{const r=await fetch("/api/public/site-content?lang=id",{cache:"no-store"});if(r.ok)layoutCopy=(await r.json()).items||{};}catch(_){}
+  drawPublicActivities();drawPublicDetails();applyPublicLayout();
  }catch(error){console.warn("NPE activities unavailable",error);}
 }
 function loadWebsitePublic(){return Promise.allSettled([loadWebsitePhotos(),loadWebsiteActivities()]);}
@@ -114,8 +116,71 @@ window.addEventListener("npe:language",()=>{
    ?"Photo supplied to Nusa Penida Experiences; owner confirmed usage rights."
    :"Foto disediakan untuk Nusa Penida Experiences; pemilik mengonfirmasi hak penggunaan.";
  });
- markHomepagePhotoCredits();drawPublicActivities();drawPublicDetails();
+ markHomepagePhotoCredits();drawPublicActivities();drawPublicDetails();applyPublicLayout();
 });
+
+function sortPublicChildren(root,group,keyFor){
+ if(!root)return;
+ const cfg=readOrder(layoutCopy,group),nodes=[...root.children].filter(n=>keyFor(n));
+ // Preserve default markup/order when no owner configuration exists.
+ if(!cfg.order.length&&!cfg.hidden.length)return;
+ const map=new Map(nodes.map(n=>[keyFor(n),n]));
+ for(const k of orderedKeys([...map.keys()],cfg)){const n=map.get(k);n.hidden=cfg.hidden.includes(k);root.append(n);}
+}
+function addPublicRegionCards(){
+ const root=document.querySelector("#tour-regions .tour-showcase-grid");if(!root)return;
+ root.querySelectorAll("[data-layout-added-region]").forEach(n=>n.remove());
+ const cfg=readOrder(layoutCopy,"regions"),lang=currentLanguage()==="en"?"en":"id";
+ for(const a of publicActivities.filter(x=>!x.parent_activity&&x.photo_url&&cfg.order.includes(activityKey(x.id))&&!cfg.hidden.includes(activityKey(x.id)))){
+  const card=el("article","spot-showcase");card.dataset.layoutAddedRegion=a.id;
+  const cover=el("div","spot-cover"),img=el("img","spot-cover-image");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
+  const overlay=el("div","spot-overlay"),text=el("div");text.append(el("h3","",a["title_"+lang]),el("p","",a["summary_"+lang]));
+  const link=el("a","spot-link",lang==="en"?"View tour ↗":"Lihat tur ↗");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);overlay.append(text,link);cover.append(img,overlay);card.append(cover);root.append(card);
+ }
+}
+function addPublicThumbs(root,group){
+ if(!root)return;
+ root.querySelectorAll("[data-layout-added-thumb]").forEach(n=>n.remove());
+ const cfg=readOrder(layoutCopy,group),lang=currentLanguage()==="en"?"en":"id";
+ for(const a of publicActivities.filter(x=>x.parent_activity==="static:"+group.slice(6)&&x.photo_url&&cfg.order.includes(activityKey(x.id))&&!cfg.hidden.includes(activityKey(x.id)))){
+  const item=el("div","destination-thumb");item.dataset.layoutAddedThumb=a.id;
+  const img=el("img");img.loading="lazy";img.decoding="async";img.width=240;img.height=135;img.alt=a["title_"+lang];img.src=a.photo_url+"?npew=240";
+  item.append(img,el("span","",a["title_"+lang]));root.append(item);
+ }
+}
+function applyPublicLayout(){
+ sortPublicChildren(document.querySelector("#packages .cards"),"packages",n=>n.dataset.npeDynamicActivity?activityKey(n.dataset.npeDynamicActivity):n.querySelector("img[data-npe-slot]")?.dataset.npeSlot);
+ addPublicRegionCards();
+ const regions=document.querySelector("#tour-regions .tour-showcase-grid");
+ sortPublicChildren(regions,"regions",n=>n.dataset.layoutAddedRegion?activityKey(n.dataset.layoutAddedRegion):n.querySelector("img.spot-cover-image")?.dataset.npeSlot);
+ for(const group of ["west","east","snorkeling"]){
+  const root=regions?.querySelector("."+ (group==="snorkeling"?"sea":group)+"-showcase .spot-thumbs");if(!root)continue;
+  // The repeated Atuh label gets its own stable identity, not a second photo file.
+  for(const n of root.children){if(!n.dataset.layoutKey&&!n.dataset.layoutAddedThumb){const key=n.querySelector("img[data-npe-slot]")?.dataset.npeSlot;if(key)n.dataset.layoutKey=n.querySelector('[data-copy="homeThumb.east-atuh-beach-second.title"]')?"east-atuh-beach-second":key;}}
+  addPublicThumbs(root,"thumb:"+group);
+  sortPublicChildren(root,"thumb:"+group,n=>n.dataset.layoutAddedThumb?activityKey(n.dataset.layoutAddedThumb):n.dataset.layoutKey);
+ }
+ const staticPaths={"/snorkeling":"static:snorkeling","/island-tour":"static:island","/west-tour":"static:west","/east-tour":"static:east"};
+ const section=document.querySelector("[data-npe-detail-parent]"),path=location.pathname.replace(/\/+$/,"").replace(/\.html$/i,"");
+ const parent=section?.dataset.npeDetailParent||staticPaths[path];
+ if(parent){const root=section?.matches(".scene-grid")?section:section?.querySelector(".scene-grid")||document.querySelector(".scene-grid");sortPublicChildren(root,"detail:"+parent,n=>n.dataset.npeDynamicDetail?activityKey(n.dataset.npeDynamicDetail):n.querySelector("img[data-npe-slot]")?.dataset.npeSlot);}
+}
+// Native document navigation remains intact. An in-page Back link is available on detail pages,
+// including direct entries without a previous NPE page; never expose a dashboard link to guests.
+function installPublicBack(){
+ const ownerPreview=location.pathname==="/"&&new URL(location.href).searchParams.get("view")==="website";
+ if(location.pathname==="/"&&!ownerPreview)return;
+ const header=document.querySelector("header.top");if(!header||header.querySelector("[data-npe-back]"))return;
+ const a=el("a","npeBackLink",currentLanguage()==="en"?"← Back":"← Kembali");
+ a.dataset.npeBack="true";a.href="/";
+ let previous=null;try{previous=new URL(document.referrer);}catch(_){}
+ const same=previous?.origin===location.origin&&previous.href!==location.href;
+ if(same)a.addEventListener("click",event=>{if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();history.back();});
+ if(!ownerPreview||same)header.append(a);
+}
+installPublicBack();
+window.addEventListener("npe:language",()=>{const a=document.querySelector("[data-npe-back]");if(a)a.textContent=currentLanguage()==="en"?"← Back":"← Kembali";});
+
 loadWebsitePublic();
 // Returning from the dashboard via browser history must refresh published details too.
 window.addEventListener("pageshow",event=>{if(event.persisted)void loadWebsitePublic();});

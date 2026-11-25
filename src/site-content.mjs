@@ -1,3 +1,4 @@
+import {LAYOUT_PREFIX,validGroup,validateOrder} from "../public/content-order.mjs";
 // Canonical server-side allowlist and persistence for the public homepage editor.
 export const CONTENT_FIELDS=Object.freeze([
  ["hero.whatsapp","Beranda · Tombol WhatsApp"],
@@ -86,11 +87,13 @@ export function validateHeroHighlights(value){
  });
 }
 const allowed=new Set([...CONTENT_FIELDS.map(([key])=>key),HERO_LIST_KEY]);
+const isAllowed=key=>allowed.has(key)||(key.startsWith(LAYOUT_PREFIX)&&validGroup(key.slice(LAYOUT_PREFIX.length)));
 export const SUPPORTED_LOCALES=["id","en"];
 export function validateSiteEdit(b){
  const key=String(b?.key??""),locale=String(b?.locale??""),value=String(b?.value??"").trim();
- if(!allowed.has(key)||!SUPPORTED_LOCALES.includes(locale))throw Error("Field atau bahasa konten tidak valid");
- if(key===HERO_LIST_KEY){if(locale!=="id"||value.length>3000)throw Error("Daftar layanan harus disimpan bersama kedua bahasa");validateHeroHighlights(value);}
+ if((!allowed.has(key)&&!(key.startsWith(LAYOUT_PREFIX)&&validGroup(key.slice(LAYOUT_PREFIX.length))))||!SUPPORTED_LOCALES.includes(locale))throw Error("Field atau bahasa konten tidak valid");
+ if(key.startsWith(LAYOUT_PREFIX)){if(locale!=="id"||value.length>10500)throw Error("Susunan disimpan bersama kedua bahasa");validateOrder(key.slice(LAYOUT_PREFIX.length),value);}
+ else if(key===HERO_LIST_KEY){if(locale!=="id"||value.length>3000)throw Error("Daftar layanan harus disimpan bersama kedua bahasa");validateHeroHighlights(value);}
  else if((!key.startsWith("price.")&&value.length<2)||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus teks biasa; harga boleh dikosongkan untuk tidak menampilkan harga.");
  if(b.owner_confirmed!==true)throw Error("Persetujuan admin untuk publikasi diperlukan");
  if(!Number.isSafeInteger(b.expected_version)||b.expected_version<0)throw Error("Versi konten tidak valid");
@@ -99,11 +102,11 @@ export function validateSiteEdit(b){
 export async function publicSiteContent(db,locale){
  const lang=SUPPORTED_LOCALES.includes(locale)?locale:"en";
  const rows=await db.prepare("SELECT key,value FROM site_content WHERE locale=?").bind(lang).all();
- return {locale:lang,items:Object.fromEntries(rows.results.filter(x=>allowed.has(x.key)).map(x=>[x.key,x.value]))};
+ return {locale:lang,items:Object.fromEntries(rows.results.filter(x=>isAllowed(x.key)).map(x=>[x.key,x.value]))};
 }
 export async function adminSiteContent(db){
  const rows=await db.prepare("SELECT key,locale,value,version,updated_at FROM site_content ORDER BY key,locale").all();
- return {fields:CONTENT_FIELDS,items:rows.results.filter(x=>allowed.has(x.key))};
+ return {fields:CONTENT_FIELDS,items:rows.results.filter(x=>isAllowed(x.key))};
 }
 export async function publishSiteContent(db,body){
  const b=validateSiteEdit(body);

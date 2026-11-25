@@ -271,3 +271,5 @@ html[lang="id"] [data-npe-lang="en"],html[lang="en"] [data-npe-lang="id"]{displa
 .heroCustomLayout .heroHighlights b{flex:none}
 .heroCustomLayout .heroHighlights>span>span{overflow-wrap:anywhere}
 @media(max-width:700px){.premiumHero.heroCustomLayout{gap:24px;padding-bottom:42px}.heroCustomLayout .heroHighlights>span{width:calc(50% - 10px)}}
+
+#packages .cards>[hidden],.tour-showcase-grid>[hidden],.spot-thumbs>[hidden],.scene-grid>[hidden]{display:none!important}.npeBackLink{font-size:13px;color:#075466;font-weight:650;padding:8px;white-space:nowrap}
