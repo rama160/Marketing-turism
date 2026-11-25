@@ -1,4 +1,4 @@
-import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage} from "./seo-articles.mjs";
+import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
 import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
@@ -249,7 +249,8 @@ async function route(req,env,ctx){
   return result;
  }
  if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
- const articleAdmin=path.match(/^\/api\/admin\/website\/articles(?:\/([0-9a-f-]+))?(?:\/(publish|unpublish|delete))?$/);
+ if(path==="/api/admin/website/articles/research"&&method==="POST")return json(await generateResearchArticle(db,env));
+ const articleAdmin=path.match(/^\/api\/admin\/website\/articles(?:\/([0-9a-f-]+))?(?:\/(approve|reject|publish|unpublish|delete))?$/);
  if(articleAdmin){
   const [,id,action]=articleAdmin;
   if(!((!id&&method==="POST")||(id&&!action&&method==="PATCH")||(id&&action&&method==="POST")))return bad("Metode tidak diizinkan",405);
@@ -864,6 +865,8 @@ export default {
   if(event.cron==="0 2 * * *"){
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
+   try{await generateResearchArticle(env.DB,env);}
+   catch(_){console.error("SEO_DRAFT_RESEARCH_UNAVAILABLE");}
   }
  }
 };

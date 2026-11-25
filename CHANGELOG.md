@@ -1,3 +1,6 @@
+## 26 November 2026 — Automated editorial research (draft only)
+- Owner explicitly authorizes independent SEO article drafts, not social campaigns or automatic publishing. Reuse daily Worker cron with one research attempt per UTC week and review backlog cap of two. Aggregate existing public Reddit topic signals (not keyword volume), choose uncovered topic, retrieve a fixed Wikimedia source and existing product context; Workers AI generates ID/EN text. Failed source/AI/validation creates no article. Evidence shown in editor; owner selects cover, checks facts, edits, approves current version and explicitly publishes. Reject retains history; edit resets approval; public snapshots isolated. Existing direct-position ordering remains. No new menu, paid API, or new cron. CI/deploy/live scheduled research not yet verified.
+
 ## 26 November 2026 — SEO follow-up during indexing quota limit
 - Roadmap 1.0.4: record quota blocker; independent keyword research/map and conversion/link audit continue. Add consent-based analytics coverage for public article indexes/details; add localized crawlable parent-tour links on published destination pages. Regression and smoke checks extended; no new menu, URLs, DB or content publication. Live results pending verification.
 

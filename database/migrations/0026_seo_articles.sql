@@ -6,3 +6,9 @@ CREATE TABLE IF NOT EXISTS seo_articles (
  version INTEGER NOT NULL DEFAULT 1, published_at TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_seo_articles_published ON seo_articles(published_at DESC);
+
+-- Additive, idempotent weekly research lock and topic history.
+CREATE TABLE IF NOT EXISTS seo_research_runs (
+ week TEXT PRIMARY KEY, status TEXT NOT NULL, topic TEXT, detail TEXT,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

@@ -31,15 +31,21 @@ test("article lifecycle keeps live snapshot isolated and prevents referenced cov
   assert.equal((await publishedArticles(db)).length,0);
   assert.throws(()=>sqlite.prepare("DELETE FROM website_media WHERE id=?").run(draft.media_id));
   await assert.rejects(()=>articleAction(db,row.id,{expected_version:1},"publish"));
-  await articleAction(db,row.id,{expected_version:1,owner_confirmed:true},"publish");
+  await assert.rejects(()=>articleAction(db,row.id,{expected_version:1,owner_confirmed:true},"publish"),/Setujui/);
+  await articleAction(db,row.id,{expected_version:1,owner_confirmed:true},"approve");
+  assert.equal((await publishedArticles(db)).length,0);
+  await articleAction(db,row.id,{expected_version:2,owner_confirmed:true},"publish");
   assert.equal((await publishedArticles(db))[0].title_en,draft.title_en);
-  const edited=await saveArticle(db,{...draft,title_en:"Changed travel guide",expected_version:2},row.id);
+  const edited=await saveArticle(db,{...draft,title_en:"Changed travel guide",expected_version:3},row.id);
   assert.equal(edited.slug,row.slug);
   assert.equal((await publishedArticles(db))[0].title_en,draft.title_en);
-  await assert.rejects(()=>articleAction(db,row.id,{expected_version:3,owner_confirmed:true},"delete"));
-  await articleAction(db,row.id,{expected_version:3,owner_confirmed:true},"unpublish");
+  await assert.rejects(()=>articleAction(db,row.id,{expected_version:4,owner_confirmed:true},"publish"),/Setujui/);
+  await articleAction(db,row.id,{expected_version:4,owner_confirmed:true},"reject");
+  assert.equal((await publishedArticles(db))[0].title_en,draft.title_en);
+  await assert.rejects(()=>articleAction(db,row.id,{expected_version:5,owner_confirmed:true},"delete"));
+  await articleAction(db,row.id,{expected_version:5,owner_confirmed:true},"unpublish");
   assert.equal((await publishedArticles(db)).length,0);
-  await articleAction(db,row.id,{expected_version:4,owner_confirmed:true},"delete");
+  await articleAction(db,row.id,{expected_version:6,owner_confirmed:true},"delete");
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM seo_articles").get().n,0);
  }finally{sqlite.close();}
 });
@@ -53,4 +59,19 @@ test("homepage CMS contains separately editable hero and all twelve thumbnail la
  assert.match(app,/cmsEffectiveValue\("hero\.highlight"\+\(i\+1\)/);
  assert.match(app,/cmsHeroListSave/);
  assert.ok(CONTENT_FIELDS.some(([key])=>key==="hero.highlight1"));
+});
+
+test("weekly independent research makes a private draft only, with real evidence and no duplicate run",async()=>{
+ const {DatabaseSync}=await import("node:sqlite");const {readFileSync}=await import("node:fs");const {generateResearchArticle,publishedArticles,listArticles}=await import("../src/seo-articles.mjs");
+ const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_media(id TEXT PRIMARY KEY); CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE growth_opportunities(headline TEXT,source TEXT,discovered_at TEXT);");
+ sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
+ const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){for(const s of stmts)await s.run();}};
+ let calls=0;const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async()=>{calls++;return {response:JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
+ const options={now:Date.UTC(2026,10,26),request:async()=>({ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Island background and factual geography for editorial research. ".repeat(3)}]}})})};
+ try{
+  assert.equal((await generateResearchArticle(db,env,options)).status,"DRAFT_CREATED");
+  assert.equal((await publishedArticles(db)).length,0);const items=(await listArticles(db)).items;
+  assert.equal(items.length,1);assert.equal(items[0].review_state,"DRAFT");assert.ok(items[0].research.sources.length);assert.equal(items[0].draft.media_id,"");
+  assert.equal((await generateResearchArticle(db,env,options)).status,"WEEK_LIMIT");assert.equal(calls,1);
+ }finally{sqlite.close();}
 });

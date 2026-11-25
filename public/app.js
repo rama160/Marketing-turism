@@ -2180,6 +2180,8 @@ function editSeoArticle(item=null){
  }
  for(const input of seoForm.querySelectorAll('[name="links"]'))input.checked=(draft.links||[]).includes(input.value);
  $("#seoUrl").textContent=item?"URL tetap: /id/articles/"+item.slug+" · /en/articles/"+item.slug:"URL dibuat saat simpan draft.";
+ const evidence=item?.research;
+ $("#seoResearchEvidence").innerHTML=evidence?'<small>Riset otomatis · '+esc(evidence.research_date||"")+'</small><p>'+esc(evidence.keyword||"")+' · sinyal pertanyaan publik: '+esc(String(evidence.public_question_signals??0))+' (bukan volume pencarian)</p><p>'+(evidence.sources||[]).map(u=>'<span>'+esc(u)+'</span>').join(" · ")+'</p><p>Periksa fakta dan pilih cover sebelum Setujui.</p>':"";
  drawSeoCover();
 }
 
@@ -2204,17 +2206,34 @@ async function loadSeoArticles(){
   seoItems=r.items||[];seoMedia=m.items||[];
   const row=(copy.items||[]).find(x=>x.key==="layout.order.articles"&&x.locale==="id");seoOrderVersion=row?.version||0;
   seoOrder=orderedKeys(seoItems.filter(x=>x.published).map(x=>"article:"+x.id),readOrder({"layout.order.articles":row?.value},"articles"));drawSeoOrder();
-  $("#seoList").innerHTML=seoItems.length?seoItems.map(a=>'<article class="panel"><small>'+(a.published?"Published · draft dapat diedit":"Draft")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button><button type="button" class="primary small" data-seo-action="publish" data-id="'+esc(a.id)+'">Publish draft</button>'+(a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a><button type="button" class="outline small" data-seo-action="unpublish" data-id="'+esc(a.id)+'">Tarik publikasi</button>':'<button type="button" class="outline small" data-seo-action="delete" data-id="'+esc(a.id)+'">Hapus draft</button>')+'</div></article>').join(""):'<p>Belum ada artikel. Tekan Artikel baru.</p>';
-  $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
-  $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{
-   const a=seoItems.find(x=>x.id===b.dataset.id),action=b.dataset.seoAction;
-   if(!a||!confirm((action==="publish"?"Terbitkan draft ID dan EN yang tersimpan?":action==="unpublish"?"Tarik artikel dari website dan sitemap?":"Hapus draft secara permanen?")))return;
-   b.disabled=true;
-   try{await api("admin/website/articles/"+a.id+"/"+action,"POST",{expected_version:a.version,owner_confirmed:true});seoForm.hidden=true;await loadSeoArticles();say("#seoFeedback","Artikel berhasil diproses.",true);}
-   catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
-  });
+  const latest=r.latest_research;
+  $("#seoResearchStatus").textContent="Riset otomatis: maksimal 1 draft/minggu, tidak pernah auto-publish. "+(latest?latest.week+" · "+latest.status+" · "+(latest.detail||""):"Belum ada riwayat riset.");
+  drawSeoList();
  }catch(e){say("#seoFeedback",e.message);}
 }
+function drawSeoList(){
+ const filter=$("#seoFilter").value;
+ const visible=seoItems.filter(a=>filter==="all"||filter==="published"&&a.published||filter==="review"&&a.review_state==="DRAFT"||filter==="approved"&&a.review_state==="APPROVED"||filter==="rejected"&&a.review_state==="REJECTED");
+ const btn=(action,label,a,primary=false)=>'<button type="button" class="'+(primary?"primary":"outline")+' small" data-seo-action="'+action+'" data-id="'+esc(a.id)+'">'+label+'</button>';
+ $("#seoList").innerHTML=visible.map(a=>'<article class="panel"><small>'+esc(a.review_state==="APPROVED"?"Disetujui":a.review_state==="REJECTED"?"Ditolak":a.review_state==="PUBLISHED"?"Published":"Draft")+(a.published?" · versi terbit tersedia":"")+(a.research?" · Riset otomatis":"")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button>'+
+ (a.review_state==="DRAFT"?btn("approve","Setujui",a,true)+btn("reject","Tolak",a):a.review_state==="APPROVED"?btn("publish","Publish",a,true)+btn("reject","Tolak draft",a):"")+
+ (a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a>'+btn("unpublish","Tarik publikasi",a):btn("delete","Hapus draft",a))+'</div></article>').join("")||'<p>Belum ada artikel pada daftar ini.</p>';
+ $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
+ $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{
+  const a=seoItems.find(x=>x.id===b.dataset.id),action=b.dataset.seoAction;
+  const messages={approve:"Setujui draft ID dan EN yang tersimpan? Pastikan fakta dan cover benar.",reject:"Tolak draft ini? Versi publik lama (jika ada) tetap tayang.",publish:"Publish versi draft yang disetujui?",unpublish:"Tarik artikel dari website dan sitemap?",delete:"Hapus draft secara permanen?"};
+  if(!a||!confirm(messages[action]))return;
+  b.disabled=true;
+  try{await api("admin/website/articles/"+a.id+"/"+action,"POST",{expected_version:a.version,owner_confirmed:true});seoForm.hidden=true;recordDashboardNav({article:undefined});if(action==="approve")$("#seoFilter").value="approved";if(action==="publish")$("#seoFilter").value="published";await loadSeoArticles();say("#seoFeedback",action==="approve"?"Draft disetujui. Publish tetap manual.":"Artikel berhasil diproses.",true);}
+  catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
+ });
+}
+$("#seoFilter").onchange=drawSeoList;
+$("#seoResearch").onclick=async()=>{
+ const b=$("#seoResearch");b.disabled=true;
+ try{const result=await api("admin/website/articles/research","POST",{});await loadSeoArticles();$("#seoFilter").value="review";drawSeoList();say("#seoFeedback",result.detail||result.status,result.status==="DRAFT_CREATED");}
+ catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
+};
 $("#seoNew").onclick=()=>editSeoArticle();
 $("#seoMedia").onchange=drawSeoCover;
 $("#seoCancel").onclick=()=>{seoForm.hidden=true;recordDashboardNav({article:undefined});};
@@ -2224,6 +2243,6 @@ $("#seoPreview").onclick=()=>{
 };
 seoForm.onsubmit=async e=>{
  e.preventDefault();const button=seoForm.querySelector('[type="submit"]');button.disabled=true;
- try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Preview dan Publish secara manual.",true);}
+ try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Perubahan membatalkan persetujuan lama. Setujui dahulu, lalu Publish manual.",true);}
  catch(err){say("#seoFeedback",err.message);}finally{button.disabled=false;}
 };

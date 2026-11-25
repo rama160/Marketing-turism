@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.4 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.5 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -147,7 +147,7 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
 | SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [ ] |
-| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [ ] |
+| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Owner mengizinkan riset dan draft otomatis terbatas; approval dan publish terpisah; uji release diperlukan |
 | SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
 
@@ -159,7 +159,7 @@ Topik calon artikel (uji gap sebelum membuat, perbarui panduan existing bila sud
 5. Lembongan snorkeling vs mangrove visit: bedakan kegiatan laut dan darat.
 6. Biaya dan pilihan private vs sharing; transparansi yang benar, tanpa bocor harga supplier.
 
-Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang dapat dibuktikan, review manusia, link kontekstual (umumnya 1–3 yang benar-benar relevan), judul deskriptif, tanggal pembaruan faktual. Tidak ada keyword stuffing, artikel massal AI, review palsu, tanggal palsu atau schema yang tidak sesuai isi. Artikel baru tidak boleh otomatis terbit.
+Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang dapat dibuktikan, review manusia, link kontekstual (umumnya 1–3 yang benar-benar relevan), judul deskriptif, tanggal pembaruan faktual. Tidak ada keyword stuffing, artikel massal AI, review palsu, tanggal palsu atau schema yang tidak sesuai isi. Artikel baru tidak boleh otomatis terbit. Riset dan pembuatan draft otomatis diizinkan owner 26 Nov, maksimal satu percobaan per minggu; backlog review maksimal dua. Tidak mengubah kampanye otomatis.
 
 ### Fase 3 — Reputasi, backlink dan konversi (hari 21–60)
 
@@ -252,6 +252,11 @@ Pedoman keputusan:
   - /en/experiences/boat-ticket + /id/experiences/boat-ticket → Sanur–Lembongan, arah sebaliknya, Lembongan–Gili sesuai rute yang tersedia. Pertimbangkan artikel rute khusus hanya jika punya nilai tambah.
   - Calon artikel berbeda intent: Lembongan–Ceningan 2D1N (panduan, bukan klaim paket siap jual), persiapan naik fast boat dari Sanur, memilih private/shared snorkeling. Prioritaskan setelah inventaris dan persetujuan owner; tidak auto-publish.
 - Next: verifikasi CI/deploy/smoke, minta data Performance 28 hari dan GA4 Realtime tanpa PII, konfirmasi penawaran operator sebelum ubah halaman, lanjut checklist indexasi saat kuota tersedia. Tidak ada ranking baru yang diklaim.
+
+### 2026-11-26 — SEO-011/012: riset mandiri dan draft artikel
+- Owner menyetujui automasi riset dan pembuatan draft artikel saja; bukan publikasi. Gunakan CMS existing, riset topik dari pertanyaan publik agregat dan sumber Wikimedia live serta inventaris produk; tidak mengklaim volume/ranking. Hindari duplikasi topik dan halaman penjualan. 1 percobaan per minggu UTC, batas backlog 2 draft, daily cron existing; sumber/AI gagal maka tidak membuat artikel. Tidak ada pembelian layanan baru; pemakaian Workers AI mengikuti kuota akun.
+- Workflow: Draft → edit/preview, tolak atau setujui → Publish manual; edit membatalkan approval sebelumnya, versi publik tidak berubah sampai publish. Cover dipilih owner. Urutan artikel terbit dapat dipindahkan langsung. Tidak mempublikasikan artikel saat implementasi.
+- Bukti: kode dan regression tests; status release dan hasil riset live belum diverifikasi. SEO-002 masih tertahan quota; SEO-003 butuh data GSC, SEO-008 butuh fakta penawaran.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
