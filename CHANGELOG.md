@@ -1,3 +1,6 @@
+## PageSpeed follow-up (25 Nov 2026)
+- Owner PSI baseline: mobile performance 72, desktop 99, accessibility and best practices 92, SEO 100. Mobile LCP reported 16.2s; field data unavailable. Add a final CMS-matched hero preload, correct hero attribution, remove redundant admin PWA precaching from ordinary public visits while retaining dashboard registration. Update smoke assertions to accept correct owner credits rather than falsely demanding Wikimedia for all photos, and verify actual slot URLs, bytes and preload. No CMS media, booking or analytics changes; no paid image transform service. PSI retest and expanded LCP breakdown required to confirm measured improvement.
+
 ## SEO performance hotfix (25 Nov 2026, v3.36.0)
 - Render validated CMS photo slots directly in legacy public HTML, keeping final hero eager/high priority and gallery lazy loading. Owner attribution is rendered for replaced figure images; invalid/absent slots keep the original. Browser refresh still checks CMS changes. Avoid redundant assignment when current SSR photo matches. Revalidate updated public scripts and refresh public cache. No DB, URL, layout, GA4 or booking changes. CI covers SSR photo trust boundary; live smoke verifies current hero in raw HTML. PageSpeed lab/CrUX scores remain unmeasured; compare mobile and desktop in PSI before attributing numeric improvements.
 

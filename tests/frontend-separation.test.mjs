@@ -119,3 +119,8 @@ test("repository release identity and guest assets stay aligned with current pro
   assert.ok(file(fileName).includes('website-content.js?v='+pkg.version),fileName+" uses stale CMS script");
  }
 });
+
+test("public guest script does not install the admin PWA",()=>{
+ assert.doesNotMatch(file("guest.js"),/navigator\.serviceWorker\.register\(/);
+ assert.match(file("app.js"),/navigator\.serviceWorker\.register\(/);
+});

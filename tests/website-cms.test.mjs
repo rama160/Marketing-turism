@@ -636,3 +636,10 @@ test("published CMS hero is in first HTML response and untrusted photo URLs are 
  assert.doesNotMatch(html,/Original credit|example\.com/);
  assert.match(html,/src="\/photos\/broken-beach"/);
 });
+test("LCP preload matches owner photo and hero credit is not misattributed",()=>{
+ const media_id="09380b3a-33a6-4429-adfd-703d2e213ab1",url="/photos/website/"+media_id;
+ const html='<html><head><link rel="stylesheet" href="/styles.css"></head><body><main><img data-npe-slot="hero" src="/photos/kelingking" alt="Kelingking" fetchpriority="high"><small class="heroCredit">Wikimedia Commons</small></main></body></html>';
+ const result=renderLegacyTourPage(html,legacyTourRoute("/"),"https://example.com",{},[],"",[{slot:"hero",media_id,url,alt_id:"NPE",alt_en:"NPE"}]);
+ assert.ok(result.includes('<link rel="preload" as="image" href="'+url+'" fetchpriority="high">'));
+ assert.ok(result.includes('src="'+url+'"'));assert.doesNotMatch(result,/Wikimedia Commons/);
+});

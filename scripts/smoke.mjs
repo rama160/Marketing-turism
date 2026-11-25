@@ -43,12 +43,12 @@ for(const path of ["/","/snorkeling.html","/island-tour.html","/west-tour.html",
 }
 const internal=await fetch(base+"/__npe_templates/index.txt",{redirect:"manual",signal:AbortSignal.timeout(20000)});
 if(internal.status!==404)throw Error("Internal generated HTML source must not be public");
-const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling Nusa Penida")||!snorkeling.includes("Manta Bay")||!snorkeling.includes("Wikimedia Commons"))throw Error("Snorkeling/gallery missing");
+const snorkeling=await get("/snorkeling.html");if(!snorkeling.includes("Snorkeling Nusa Penida")||!snorkeling.includes("Manta Bay")||(!snorkeling.includes("Wikimedia Commons")&&!snorkeling.includes('data-npe-owner-photo="true"')))throw Error("Snorkeling/gallery missing");
 const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(![snorkeling,island,west,east].every(page=>page.includes("npeFaqGrid")&&page.includes('data-whatsapp-package=')))throw Error("Tour FAQ or contextual WhatsApp CTA missing");
-if(!west.includes("Kelingking")||!west.includes("Broken Beach")||!west.includes("Wikimedia Commons"))throw Error("West gallery missing");
-if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||!east.includes("Wikimedia Commons"))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
+if(!west.includes("Kelingking")||!west.includes("Broken Beach")||(!west.includes("Wikimedia Commons")&&!west.includes('data-npe-owner-photo="true"')))throw Error("West gallery missing");
+if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||(!east.includes("Wikimedia Commons")&&!east.includes('data-npe-owner-photo="true"')))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
 const robots=await get("/robots.txt");if(!robots.includes("Sitemap: "+base+"/sitemap.xml"))throw Error("Robots sitemap host mismatch");const websiteSitemap=await get("/sitemap.xml");if(websiteSitemap.includes("workers.dev"))throw Error("Legacy host leaked into sitemap");
 for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"])if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
 if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
@@ -308,3 +308,17 @@ if(heroSlot){
  if(!heroTag.includes('src="'+heroSlot.url+'"')||!heroTag.includes('fetchpriority="high"'))throw Error("Published hero is not server-rendered for LCP");
 }
 console.log("Verified server-rendered published hero for LCP");
+
+// Validate rendered gallery sources AND correct credits after CMS substitutions.
+const liveSlots=new Map(websiteSlots.items.map(x=>[x.slot,x.url]));
+for(const html of [landingMarkup,snorkeling,west,east,island]){
+ for(const match of html.matchAll(/<img\b[^>]*data-npe-slot="([^"]+)"[^>]*>/g)){
+  const slot=liveSlots.get(match[1]);if(slot&&!match[0].includes(' src="'+slot+'"'))throw Error("Wrong published slot "+match[1]);
+ }
+ for(const figure of html.matchAll(/<figure\b[^>]*>[\s\S]*?<\/figure>/g)){
+  if(figure[0].includes('data-npe-rendered-photo="true"')&&figure[0].includes("<figcaption")&&!figure[0].includes('data-npe-owner-photo="true"'))throw Error("Missing owner photo credit");
+ }
+}
+if(heroSlot&&!landingMarkup.includes('<link rel="preload" as="image" href="'+heroSlot.url+'" fetchpriority="high">'))throw Error("LCP preload not matching published hero");
+if((await get("/guest.js")).includes('navigator.serviceWorker.register('))throw Error("Public browsing must not precache admin PWA");
+console.log("Verified CMS gallery credits, final hero preload and public PWA separation");

@@ -64,4 +64,5 @@ if((window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigat
  new URL(location.href).searchParams.get("view")!=="website"){
  location.replace("/dashboard.html");
 }
-if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+// Public browsing does not install/precache the admin PWA on first visit.
+// The dedicated dashboard owns its service worker registration.
