@@ -1,3 +1,6 @@
+## Photo reliability hotfix (25 Nov 2026, v3.36.0)
+- Preserve all owner-selected media and activity data. Accept existing static JPG aliases, retry transient CMS image failures once, show honest placeholder only if retry fails, and install recovery on dynamic bilingual pages as well. Refresh public asset cache. Production smoke checks every referenced published CMS JPEG and the static JPG alias; no generated substitute photos.
+
 ## NPE v3.36.0 — consent-based public Google Analytics 4
 - GA4 G-5232NFPSPV on official public origin only, no dashboard, no ads or Google Signals in tag config. Basic consent: no Google tag until opt-in; reject/revoke supported, no booking restriction. No customer form contents, reference, full outbound WhatsApp URL or arbitrary query values in custom events.
 - page_view, whatsapp_click and generate_lead (only after successful guest API response); no fabricated purchases or sales revenue. Existing anonymous aggregate tracking and manual campaigns remain.

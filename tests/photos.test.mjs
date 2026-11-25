@@ -77,3 +77,10 @@ test("Cloudflare bundled local photo takes precedence and does not consume KV",a
  const res=await servePhoto(new Request("https://tour.example/photos/diamond-beach"),env);
  assert.equal(res.status,200);assert.equal(res.headers.get("x-photo-status"),"asset-local");assert.equal(called,1);
 });
+
+test("JPG fallback alias is served through the same photo gateway",async()=>{
+ const bytes=new Uint8Array(12000);bytes[0]=255;bytes[1]=216;bytes[bytes.length-2]=255;bytes[bytes.length-1]=217;
+ const {servePhoto}=await import("../src/photos.mjs");
+ const r=await servePhoto(new Request("https://example.com/photos/kelingking.jpg?v=5"),{ASSETS:{fetch:async()=>new Response(bytes,{headers:{"content-type":"image/jpeg"}})}});
+ assert.equal(r.status,200);assert.equal(r.headers.get("content-type"),"image/jpeg");
+});

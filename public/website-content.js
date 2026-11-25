@@ -12,12 +12,13 @@ async function loadWebsitePhotos(){
   document.querySelectorAll("img[data-npe-slot]").forEach(img=>{
    const slot=slots.get(img.dataset.npeSlot);
    if(!slot)return;
+   if(img.getAttribute?.("src")===slot.url&&img.naturalWidth>0)return;
    img.removeAttribute("data-photo-slug");
    // Prevent an earlier fallback attempt for the original image from leaking into the replacement.
    delete img.dataset.photoFallbackStage;
    delete img.dataset.localPhotoFailed;
-   img.src=slot.url;
    img.alt=currentLanguage()==="en"?slot.alt_en:slot.alt_id;
+   img.src=slot.url;
    // Original Wikimedia attribution must not be displayed for a different owner-uploaded image.
    const caption=img.closest("figure")?.querySelector("figcaption");
    if(caption){caption.dataset.npeOwnerPhoto="true";caption.textContent=currentLanguage()==="en"

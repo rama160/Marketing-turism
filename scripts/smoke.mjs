@@ -288,3 +288,15 @@ console.log("SUCCESS v3.36.0 LIVE: consented guest intake active, Turnstile fail
 const analytics=await get("/analytics.js");if(!analytics.includes("G-5232NFPSPV")||!analytics.includes("generate_lead")||!analytics.includes("whatsapp_click"))throw Error("GA4 asset missing");
 for(const path of ["/","/en/tours/snorkeling","/privacy.html"]){const page=await get(path);if(!page.includes('/analytics.js?v=3.36.0'))throw Error("GA4 missing "+path);}
 if((await get("/dashboard.html")).includes('/analytics.js'))throw Error("GA4 must not load on dashboard");
+
+// Verify actual bytes for every live owner-selected CMS photo, not just static catalog IDs.
+const publishedPhotos=new Set([...websiteSlots.items.map(x=>x.url),...websiteCatalog.items.map(x=>x.photo_url)].filter(Boolean));
+for(const path of publishedPhotos){
+ const response=await fetch(base+path,{signal:AbortSignal.timeout(20000)});
+ const type=response.headers.get("content-type")||"";
+ const bytes=new Uint8Array(await response.arrayBuffer());
+ if(response.status!==200||!type.startsWith("image/jpeg")||bytes.length<10000||bytes[0]!==255||bytes[1]!==216||bytes.at(-2)!==255||bytes.at(-1)!==217)throw Error("Published CMS photo unavailable: "+path+" HTTP "+response.status);
+}
+const jpg=await fetch(base+"/photos/kelingking.jpg?v=5",{signal:AbortSignal.timeout(20000)});
+if(jpg.status!==200||!(jpg.headers.get("content-type")||"").startsWith("image/jpeg"))throw Error("Static JPG fallback broken");
+console.log("Verified "+publishedPhotos.size+" distinct published CMS photos and JPG fallback");

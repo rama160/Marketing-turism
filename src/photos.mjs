@@ -9,7 +9,7 @@ const imageResponse=(bytes,status)=>new Response(bytes,{headers:{
  "x-content-type-options":"nosniff","x-photo-status":status
 }});
 export async function servePhoto(req,env={},ctx){
- const u=new URL(req.url),slug=u.pathname.replace(/^\/photos\//,"");
+ const u=new URL(req.url),slug=u.pathname.replace(/^\/photos\//,"").replace(/\.jpg$/,"");
  if(!photoKeys.includes(slug))return new Response("Photo not found",{status:404});
  if(req.method!=="GET")return new Response("Method not allowed",{status:405});
  // A distinct cache key prevents stale 3.0.3 gateway responses from blocking KV population.
