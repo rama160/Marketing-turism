@@ -1361,6 +1361,18 @@ const cmsPageMap={
   "hero.subtitle",
   "hero.description",
   "hero.cta",
+  "homeThumb.west-kelingking.title",
+  "homeThumb.west-broken-beach.title",
+  "homeThumb.west-angels-billabong.title",
+  "homeThumb.west-crystal-bay.title",
+  "homeThumb.east-diamond-beach.title",
+  "homeThumb.east-atuh-beach.title",
+  "homeThumb.east-tree-house.title",
+  "homeThumb.east-atuh-beach-second.title",
+  "homeThumb.snorkeling-manta-bay.title",
+  "homeThumb.snorkeling-manta-point.title",
+  "homeThumb.snorkeling-gamat-bay.title",
+  "homeThumb.snorkeling-crystal-bay.title",
   "hero.whatsapp",
   "hero.highlight1",
   "hero.highlight2",
@@ -1794,7 +1806,7 @@ function renderCmsPageFields(){
  const labels={home:"Beranda NPE",snorkeling:"Snorkeling Nusa Penida",island:"Island Tour",west:"Wisata Barat",east:"Wisata Timur"};
  notice.textContent=labels[page]+" · "+keys.length+" bagian isi saat ini berhasil dimuat ("+(lang==="en"?"English":"Bahasa Indonesia")+"). Ubah satu atau beberapa kolom; kolom yang tidak diubah akan tetap sama."+
   (missing.length?" "+missing.length+" bagian belum mempunyai konten bawaan; dapat diisi melalui editor.":"");
- const sectionFor=k=>page==="home"?(k.startsWith("hero.")?"01 · Cover / Hero":k.startsWith("packages.")||k.startsWith("island.")||k.startsWith("snorkeling.")||k==="price.island"||k==="price.snorkeling"?"02 · Isi paket wisata":/^(regions|west|east|sea)\.|^price\.(west|east)$/.test(k)?"03 · Kartu destinasi Barat, Timur & Snorkeling":"04 · Kontak & isi lainnya"):/Spot\./.test(k)?"03 · Isi galeri destinasi":k.startsWith("price.")?"02 · Harga":"01 · Cover & isi halaman";
+ const sectionFor=k=>page==="home"?(k.startsWith("hero.")?"01 · Cover / Hero":k.startsWith("packages.")||k.startsWith("island.")||k.startsWith("snorkeling.")||k==="price.island"||k==="price.snorkeling"?"02 · Isi paket wisata":/^(regions|west|east|sea)\.|^price\.(west|east)$/.test(k)?"03 · Kartu destinasi Barat, Timur & Snorkeling":k.startsWith("homeThumb.")?"04 · Nama thumbnail galeri":"05 · Kontak & isi lainnya"):/Spot\./.test(k)?"03 · Isi galeri destinasi":k.startsWith("price.")?"02 · Harga":"01 · Cover & isi halaman";
  const groups=new Map();for(const k of keys){const group=sectionFor(k);if(!groups.has(group))groups.set(group,[]);groups.get(group).push(k);}
  root.innerHTML=[...groups].sort(([a],[b])=>a.localeCompare(b)).map(([group,groupKeys],i)=>'<details class="panel cmsPart"'+(i===0?" open":"")+'> <summary>'+esc(group)+'</summary><div class="npeCmsPageFields">'+groupKeys.map(k=>{
   const value=cmsEffectiveValue(k,lang),label=fields.get(k)||k,isPrice=k.startsWith("price.");
@@ -1812,6 +1824,7 @@ function filterCmsPageFields(){
  $("#cmsPageFields")?.querySelectorAll("[data-cms-page-field]").forEach(el=>{
   const field=el.querySelector("span")?.textContent?.toLowerCase()||"";
   el.hidden=Boolean(q&&!field.includes(q)&&!el.dataset.cmsPageField.toLowerCase().includes(q));
+  if(q&&!el.hidden){const group=el.closest("details");if(group)group.open=true;}
  });
 }
 $("#cmsPageFilter").oninput=filterCmsPageFields;

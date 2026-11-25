@@ -1,3 +1,6 @@
+## Article CMS follow-up
+- Editable names for all 12 homepage gallery thumbnails, including separate label for repeated Atuh slot; existing photo references stay shared. Fix nested hero highlight sizing and bilingual article navigation. Add actual SQLite article lifecycle regression, cover foreign-key protection and live article index/404 verification. No article published automatically.
+
 ## NPE Studio article CMS and grouped homepage editor (25 Nov 2026)
 - Add authenticated article draft/publish/unpublish/delete workflows with separate public snapshots, bilingual text, stable generated slug, metadata, Article JSON-LD, gallery cover, preview and allowlisted tour links; sitemap includes published articles only. Add isolated migration 0026 and protect referenced gallery photos. Public index and article routes; no automatic campaign generation. New covers use existing WebP fallback until next deployment. Group existing homepage fields into Hero, packages, destination cards and contact; list all thumbnail slots and separate cover/galley images. Add editable hero highlights and CTA text; existing shared cover slots remain shared across pages, and duplicate Atuh slots retain their existing mapping. No seed articles published without approval. Verify CI/deploy, authenticated browser editing and Lighthouse before claiming completion.
 

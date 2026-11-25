@@ -360,3 +360,12 @@ for(const slug of ["nusa-lembongan-island-tour","boat-ticket"]){
  }
 }
 console.log("Verified competitive decision guides on existing public URLs");
+
+for(const lang of ["id","en"]){
+ const index="/"+lang+"/articles",html=await get(index);
+ if(!html.includes('rel="canonical" href="'+base+index+'"')||!websiteSitemap.includes(base+index))throw Error("Article index canonical/sitemap missing "+lang);
+ const missing=await fetch(base+index+"/npe-smoke-nonexistent-article-00000000");
+ if(missing.status!==404)throw Error("Unpublished article route should be 404");
+}
+if(!landingMarkup.includes('data-copy="hero.highlight1"')||!landingMarkup.includes('data-copy="homeThumb.west-kelingking.title"'))throw Error("Grouped homepage fields missing from live HTML");
+console.log("Verified article discovery and new homepage editable fields");
