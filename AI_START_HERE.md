@@ -1,3 +1,9 @@
+# Aturan aktif: roadmap SEO (26 November 2026)
+
+**Baca [roadmap.md](./roadmap.md) sebelum setiap pekerjaan SEO NPE.** Ini adalah sumber utama prioritas dan status pekerjaan SEO; permintaan eksplisit owner serta perbaikan kritis tetap berlaku. Fokus halaman pertama Google untuk kueri non-brand relevan dan konversi nyata, bukan penambahan fitur. Kerjakan task ID dengan prioritas tertinggi yang siap, update roadmap yang sama setelah setiap pekerjaan dengan bukti, status, blocker dan next action; jangan tandai selesai tanpa verifikasi. Tidak ada menu/dashboard, layanan berbayar, auto-publish, branch atau dokumen roadmap duplikat tanpa kebutuhan terbukti dan persetujuan owner. GSC baseline adalah prioritas P0. Aturan keamanan dan publikasi existing tetap berlaku.
+
+---
+
 ## Homepage destination card editor
 - Group homepage destination section copy, static card cover, thumbnail labels and direct photo actions in one editor. Add a main activity or a static detail from the card editor; publication explicitly requested from this workspace appends it to its selected display group using the existing versioned layout API. Dynamic cards show published child thumbnail links and verified prices; order and hide their details with the existing layout control. No schema changes or reset; original static slots and published URLs remain intact. Drafts published in a different session can be placed using the existing layout selector. Photo and activity publication remains owner-confirmed.
 

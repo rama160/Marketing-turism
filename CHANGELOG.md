@@ -1,3 +1,7 @@
+## 26 November 2026 — Roadmap SEO berbasis hasil
+- Tambah satu roadmap.md sebagai acuan wajib tugas SEO dengan KPI, fase, ID pekerjaan, acceptance criteria, bukti baseline dan siklus evaluasi. Prioritas P0: GSC/indexasi/GA4; konten dan konversi mendahului fitur baru. Hubungkan dari AI_START_HERE dan README.
+- Perubahan dokumentasi saja; tidak mengubah kode, database, harga, publikasi artikel, secrets, kampanye, atau konfigurasi deployment. Baseline ranking dan konversi belum diperoleh.
+
 ## Homepage destination card editor
 - Group homepage destination section copy, static card cover, thumbnail labels and direct photo actions in one editor. Add a main activity or a static detail from the card editor; publication explicitly requested from this workspace appends it to its selected display group using the existing versioned layout API. Dynamic cards show published child thumbnail links and verified prices; order and hide their details with the existing layout control. No schema changes or reset; original static slots and published URLs remain intact. Drafts published in a different session can be placed using the existing layout selector. Photo and activity publication remains owner-confirmed.
 

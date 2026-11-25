@@ -1,3 +1,7 @@
+## Roadmap SEO aktif (26 November 2026)
+
+Untuk setiap pekerjaan optimasi pencarian, ikuti [roadmap.md](./roadmap.md). Dokumen ini mengatur target Top 10 non-brand dan konversi, prioritas, bukti, aturan anti-penambahan fitur tanpa manfaat, serta pembaruan status setiap sesi. Mulai dari baseline Search Console dan indexasi; tidak ada klaim peringkat tanpa data.
+
 ## NPE v3.36.0 — consent-based public Google Analytics 4
 - GA4 G-5232NFPSPV on official public origin only, no dashboard, no ads or Google Signals in tag config. Basic consent: no Google tag until opt-in; reject/revoke supported, no booking restriction. No customer form contents, reference, full outbound WhatsApp URL or arbitrary query values in custom events.
 - page_view, whatsapp_click and generate_lead (only after successful guest API response); no fabricated purchases or sales revenue. Existing anonymous aggregate tracking and manual campaigns remain.
