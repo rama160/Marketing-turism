@@ -69,12 +69,29 @@ export const CONTENT_FIELDS=Object.freeze([
  ["eastSpot.treeHouse.description","Galeri eastSpot · treeHouse deskripsi"],
  ["contact.eyebrow","Kontak · label"],["contact.title","Kontak · judul"],["contact.description","Kontak · deskripsi"],["contact.notice","Kontak · pemberitahuan"]
 ]);
-const allowed=new Set(CONTENT_FIELDS.map(([key])=>key));
+export const HERO_LIST_KEY="hero.highlights";
+export const HERO_ICONS=Object.freeze({tour:"✦",snorkel:"〰",private:"◈",local:"♡",boat:"⛴",beach:"☀",check:"✓"});
+export function validateHeroHighlights(value){
+ const rows=JSON.parse(value);
+ if(!Array.isArray(rows)||rows.length>8)throw Error("Maksimal 8 layanan pada cover");
+ return rows.map(row=>{
+  if(!row||!Object.hasOwn(HERO_ICONS,row.icon))throw Error("Ikon layanan tidak valid");
+  const clean={icon:row.icon};
+  for(const lang of ["id","en"]){
+   const v=typeof row[lang]==="string"?row[lang].trim():"";
+   if(v.length<2||v.length>60||/[<>\u0000-\u001f\u007f]/.test(v))throw Error("Nama layanan ID dan EN wajib 2–60 karakter");
+   clean[lang]=v;
+  }
+  return clean;
+ });
+}
+const allowed=new Set([...CONTENT_FIELDS.map(([key])=>key),HERO_LIST_KEY]);
 export const SUPPORTED_LOCALES=["id","en"];
 export function validateSiteEdit(b){
  const key=String(b?.key??""),locale=String(b?.locale??""),value=String(b?.value??"").trim();
  if(!allowed.has(key)||!SUPPORTED_LOCALES.includes(locale))throw Error("Field atau bahasa konten tidak valid");
- if((!key.startsWith("price.")&&value.length<2)||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus teks biasa; harga boleh dikosongkan untuk tidak menampilkan harga.");
+ if(key===HERO_LIST_KEY){if(locale!=="id"||value.length>3000)throw Error("Daftar layanan harus disimpan bersama kedua bahasa");validateHeroHighlights(value);}
+ else if((!key.startsWith("price.")&&value.length<2)||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus teks biasa; harga boleh dikosongkan untuk tidak menampilkan harga.");
  if(b.owner_confirmed!==true)throw Error("Persetujuan admin untuk publikasi diperlukan");
  if(!Number.isSafeInteger(b.expected_version)||b.expected_version<0)throw Error("Versi konten tidak valid");
  return {key,locale,value,expectedVersion:b.expected_version};

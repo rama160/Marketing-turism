@@ -974,8 +974,8 @@ async function loadSiteEditor(){
   cmsRecords=new Map((response.items||[]).map(x=>[cmsId(x.key,x.locale),x]));
   cmsFields=response.fields||[];
   const keyInput=$("#cmsKey"),previous=keyInput.value;
-  keyInput.innerHTML=cmsFields.map(([key,label])=>'<option value="'+esc(key)+'">'+esc(label)+'</option>').join("");
-  if(cmsFields.some(([key])=>key===previous))keyInput.value=previous;
+  keyInput.innerHTML=cmsFields.filter(([key])=>!/^hero\.highlight[1-4]$/.test(key)).map(([key,label])=>'<option value="'+esc(key)+'">'+esc(label)+'</option>').join("");
+  if([...keyInput.options].some(o=>o.value===previous))keyInput.value=previous;
   syncCms();
   renderCmsPageFields();
   drawPublishedPageCards();
@@ -1385,10 +1385,7 @@ const cmsPageMap={
   "homeThumb.snorkeling-gamat-bay.title",
   "homeThumb.snorkeling-crystal-bay.title",
   "hero.whatsapp",
-  "hero.highlight1",
-  "hero.highlight2",
-  "hero.highlight3",
-  "hero.highlight4",
+  // Legacy highlights remain available as migration defaults; edit them in the structured bilingual list.
   "regions.west.cta",
   "regions.east.cta",
   "regions.sea.cta",
@@ -1793,7 +1790,7 @@ function renderCmsPagePhotos(){
  const slots=cmsPagePhotoSlots[page]||[];
  renderCmsPageDetails();
  const groups=new Map();for(const slot of slots){const group=slot==="hero"?"01 · Foto cover utama":!slot.includes("-")?"02 · Cover kartu wisata (dipakai bersama halaman paket)":"03 · Galeri destinasi / thumbnail";if(!groups.has(group))groups.set(group,[]);groups.get(group).push(slot);}
- root.innerHTML=[...groups].map(([name,list])=>'<details class="panel cmsPart" open><summary>'+esc(name)+'</summary><div class="npeCmsPagePhotos">'+list.map(slot=>{
+ root.innerHTML=[...groups].map(([name,list])=>'<details class="panel cmsPart" '+(page!=="home"?"open":"")+'> <summary>'+esc(name)+'</summary><div class="npeCmsPagePhotos">'+list.map(slot=>{
   const photo=cmsCurrentPhoto(slot);
   return '<article class="npeCmsPhotoTile">'+
    (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersinkron / tersedia</div>')+
@@ -1801,6 +1798,9 @@ function renderCmsPagePhotos(){
    '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'" '+(!cmsSlotsLoaded?"disabled":"")+'>Ganti foto</button></div></article>';
  }).join("")+'</div></details>').join("");
  root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsEditPhoto));
+ const coverMount=$("#cmsHeroCoverPhoto");
+ if(page==="home"&&coverMount){const cover=[...root.querySelectorAll("details")].find(el=>el.querySelector('[data-cms-edit-photo="hero"]'));if(cover){coverMount.replaceChildren(cover);cover.open=true;}}
+ $("#cmsPagePhoto").hidden=page==="home";
 }
 function cmsPublishedPage(page){
  $("#cmsPagePicker").value=page;$("#cmsPageLocale").value="id";
@@ -1816,7 +1816,7 @@ function renderCmsPageFields(){
   return;
  }
  const page=$("#cmsPagePicker").value,lang=$("#cmsPageLocale").value,fields=new Map(cmsFields);
- const keys=(cmsPageMap[page]||[]).filter(k=>fields.has(k));
+ const keys=[...new Set(cmsPageMap[page]||[])].filter(k=>fields.has(k));
  const missing=keys.filter(k=>!cmsEffectiveValue(k,lang).trim());
  const labels={home:"Beranda NPE",snorkeling:"Snorkeling Nusa Penida",island:"Island Tour",west:"Wisata Barat",east:"Wisata Timur"};
  notice.textContent=labels[page]+" · "+keys.length+" bagian isi saat ini berhasil dimuat ("+(lang==="en"?"English":"Bahasa Indonesia")+"). Ubah satu atau beberapa kolom; kolom yang tidak diubah akan tetap sama."+
@@ -1831,6 +1831,7 @@ function renderCmsPageFields(){
    '<textarea data-cms-page-key="'+esc(k)+'" rows="'+rows+'" maxlength="1200" placeholder="'+
     (isPrice?"Kosongkan untuk menyembunyikan harga":"Isi konten halaman")+'">'+esc(value)+'</textarea></label>';
  }).join("")+'</div></details>').join("");
+ renderHeroListEditor(page);
  $("#cmsPageFeedback").textContent="";
  renderCmsPagePhotos();filterCmsPageFields();
 }
@@ -1868,6 +1869,60 @@ $("#cmsPageSave").onclick=async()=>{
  }catch(e){say("#cmsPageFeedback",updated+" elemen tersimpan. "+e.message+" Muat ulang jika ada konflik.");}
  finally{btn.disabled=false;}
 };
+
+const heroListKey="hero.highlights";
+const heroIconChoices={tour:["✦","Island tour"],snorkel:["〰","Snorkeling"],private:["◈","Sharing / Private"],local:["♡","Operator lokal"],boat:["⛴","Fast boat"],beach:["☀","Pantai"],check:["✓","Lainnya"]};
+let heroListDraft=null,heroListVersion=0,heroListDirty=false;
+function readHeroList(){
+ const saved=cmsRecords.get("id:"+heroListKey);
+ if(saved){try{const rows=JSON.parse(saved.value);if(Array.isArray(rows))return rows;}catch(_){}}
+ return ["tour","snorkel","private","local"].map((icon,i)=>({icon,id:cmsEffectiveValue("hero.highlight"+(i+1),"id"),en:cmsEffectiveValue("hero.highlight"+(i+1),"en")}));
+}
+function renderHeroListEditor(page){
+ const root=$("#cmsPageFields");
+ if(page!=="home")return;
+ const cover=root.querySelector("details");
+ if(!cover)return;
+ const mount=document.createElement("div");mount.id="cmsHeroCoverPhoto";cover.insertBefore(mount,cover.children[1]||null);
+ if(!heroListDirty){heroListDraft=readHeroList();heroListVersion=cmsRecords.get("id:"+heroListKey)?.version||0;}
+ const panel=document.createElement("section");panel.className="heroListEditor";panel.id="cmsHeroListEditor";
+ panel.innerHTML='<div class="npeCmsSectionHeader"><div><h4>Layanan di bawah cover</h4><p class="feedback">Tambah, ubah, hapus atau atur urutan. ID dan EN tersimpan bersama. Maksimal 8 layanan.</p></div></div><div id="cmsHeroListRows"></div><div class="actions"><button type="button" class="outline small" id="cmsHeroAdd">+ Tambah layanan</button><button type="button" class="outline small" id="cmsHeroBoat">+ Fast Boat Ticket</button></div><div id="cmsHeroListPreview" class="heroListPreview"></div><div class="actions"><button type="button" class="primary small" id="cmsHeroListSave">Simpan & terbitkan layanan</button><button type="button" class="outline small" id="cmsHeroListReset">Batalkan perubahan</button></div><p class="feedback" role="status" id="cmsHeroListFeedback"></p>';
+ cover.append(panel);
+ drawHeroListRows();
+ $("#cmsHeroAdd").onclick=()=>addHeroListRow({icon:"check",id:"",en:""});
+ $("#cmsHeroBoat").onclick=()=>addHeroListRow({icon:"boat",id:"Tiket Fast Boat",en:"Fast Boat Tickets"});
+ $("#cmsHeroListReset").onclick=()=>{heroListDirty=false;heroListDraft=readHeroList();heroListVersion=cmsRecords.get("id:"+heroListKey)?.version||0;drawHeroListRows();say("#cmsHeroListFeedback","Perubahan daftar dibatalkan.",true);};
+ $("#cmsHeroListSave").onclick=async()=>{
+  const btn=$("#cmsHeroListSave");btn.disabled=true;
+  try{
+   const rows=heroListDraft.map(x=>({icon:x.icon,id:x.id.trim(),en:x.en.trim()}));
+   if(rows.some(x=>x.id.length<2||x.en.length<2))throw Error("Lengkapi nama layanan dalam kedua bahasa.");
+   if(!confirm("Terbitkan daftar layanan cover dalam kedua bahasa?"))return;
+   const result=await api("admin/site-content","POST",{key:heroListKey,locale:"id",value:JSON.stringify(rows),expected_version:heroListVersion,owner_confirmed:true});
+   cmsRecords.set("id:"+heroListKey,result);heroListVersion=result.version;heroListDraft=rows;heroListDirty=false;
+   drawHeroListRows();say("#cmsHeroListFeedback","Daftar layanan berhasil diterbitkan. Muat ulang website untuk melihatnya.",true);
+  }catch(err){say("#cmsHeroListFeedback",err.message);}finally{btn.disabled=false;}
+ };
+}
+function addHeroListRow(row){
+ if(heroListDraft.length>=8){say("#cmsHeroListFeedback","Maksimal 8 layanan.");return;}
+ heroListDraft.push(row);heroListDirty=true;drawHeroListRows();
+}
+function drawHeroListPreview(){
+ const root=$("#cmsHeroListPreview");if(!root)return;
+ const lang=$("#cmsPageLocale").value;
+ root.innerHTML='<small>Pratinjau · '+lang.toUpperCase()+'</small><div>'+heroListDraft.map(row=>'<span><b>'+esc(heroIconChoices[row.icon]?.[0]||"✓")+'</b> '+esc(row[lang]||"Nama layanan")+'</span>').join("")+'</div>';
+}
+function drawHeroListRows(){
+ const root=$("#cmsHeroListRows");if(!root)return;
+ root.innerHTML=heroListDraft.map((row,i)=>'<div class="heroListRow"><div class="heroListRowHead"><strong>Layanan '+(i+1)+'</strong><div class="actions"><button type="button" class="outline small" data-hero-move="'+i+':-1" '+(i===0?"disabled":"")+' aria-label="Naikkan layanan '+(i+1)+'">↑</button><button type="button" class="outline small" data-hero-move="'+i+':1" '+(i===heroListDraft.length-1?"disabled":"")+' aria-label="Turunkan layanan '+(i+1)+'">↓</button><button type="button" class="outline small" data-hero-remove="'+i+'">Hapus</button></div></div><label>Ikon<select data-hero-row="'+i+'" data-hero-field="icon">'+Object.entries(heroIconChoices).map(([key,[symbol,label]])=>'<option value="'+key+'" '+(row.icon===key?"selected":"")+'>'+esc(symbol+" "+label)+'</option>').join("")+'</select></label><div class="npeCms2col"><label>Indonesia<input maxlength="60" data-hero-row="'+i+'" data-hero-field="id" value="'+esc(row.id)+'"></label><label>English<input maxlength="60" data-hero-row="'+i+'" data-hero-field="en" value="'+esc(row.en)+'"></label></div></div>').join("")||'<p class="feedback">Tidak ada layanan. Tambahkan layanan jika diinginkan.</p>';
+ root.querySelectorAll("[data-hero-field]").forEach(el=>el.oninput=()=>{heroListDraft[Number(el.dataset.heroRow)][el.dataset.heroField]=el.value;heroListDirty=true;drawHeroListPreview();});
+ root.querySelectorAll("[data-hero-remove]").forEach(el=>el.onclick=()=>{heroListDraft.splice(Number(el.dataset.heroRemove),1);heroListDirty=true;drawHeroListRows();});
+ root.querySelectorAll("[data-hero-move]").forEach(el=>el.onclick=()=>{const [i,d]=el.dataset.heroMove.split(":").map(Number),j=i+d;if(j<0||j>=heroListDraft.length)return;[heroListDraft[i],heroListDraft[j]]=[heroListDraft[j],heroListDraft[i]];heroListDirty=true;drawHeroListRows();});
+ $("#cmsHeroAdd").disabled=heroListDraft.length>=8;$("#cmsHeroBoat").disabled=heroListDraft.length>=8||heroListDraft.some(row=>row.icon==="boat");
+ drawHeroListPreview();
+}
+
 // Automatically restore durable login even after browser/app restart. No admin token stored in localStorage.
 (async function restoreOwnerSession(){
  try{

@@ -1,3 +1,4 @@
+import {HERO_LIST_KEY,HERO_ICONS,validateHeroHighlights} from "./site-content.mjs";
 import {readResponsivePhoto,addResponsivePhotos} from "./photos.mjs";
 // Independent website content publishing. Never mutate operator rates, quote snapshots or bookings.
 // Website photos use the existing PHOTO_KV binding but a separate key prefix and metadata table.
@@ -635,6 +636,15 @@ export function renderLegacyTourPage(html,page,origin,copy={},activities=[],veri
   if(!Object.hasOwn(copy,key)||typeof copy[key]!=="string")return all;
   return open.slice(0,-1)+' data-npe-default="'+original.replace(/"/g,"&quot;")+'">'+escapeHTML(copy[key])+close;
  });
+ // The structured list is published as one bilingual version; retain all legacy fields until the owner saves it.
+ if(page.canonical==="/"&&typeof copy[HERO_LIST_KEY]==="string"){
+  try{
+   const rows=validateHeroHighlights(copy[HERO_LIST_KEY]);
+   const markup=rows.map(row=>'<span><b aria-hidden="true">'+escapeHTML(HERO_ICONS[row.icon])+'</b><span data-hero-label-id="'+escapeHTML(row.id)+'" data-hero-label-en="'+escapeHTML(row.en)+'">'+escapeHTML(row.id)+'</span></span>').join("");
+   body=body.replace(/<div class="heroHighlights">[\s\S]*?<\/div>/,()=>'<div class="heroHighlights heroHighlightsCustom"'+(rows.length?"":" hidden")+'>'+markup+'</div>');
+   body=body.replace('class="hero premiumHero"','class="hero premiumHero heroCustomLayout"');
+  }catch{/* Invalid saved list never removes the original cover. */}
+ }
  const related=activities.filter(a=>page.key?a.parent_activity==="static:"+page.key:!a.parent_activity);
  const links=related.filter(a=>slugRE.test(a.slug)&&!body.includes('href="/id/experiences/'+a.slug+'"')).map(a=>'<a class="textLink" href="/id/experiences/'+a.slug+'">'+escapeHTML(a.title_id)+'</a>');
  if(links.length)body=body.replace("</main>",()=>'<nav class="section" aria-label="Pengalaman wisata terkait"><h2>Jelajahi pengalaman lainnya</h2><p>'+links.join(" · ")+"</p></nav></main>");

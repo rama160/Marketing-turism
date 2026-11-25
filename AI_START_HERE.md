@@ -1,3 +1,6 @@
+## Editable cover service list and simpler editor
+- Replace four fixed hero highlight inputs in the owner editor with one ordered bilingual list (0–8 services; icon, ID and EN labels, add/remove/reorder, fast boat preset, preview, explicit publication). Existing four saved labels remain the default until the owner publishes a new list. Store one versioned value through existing authenticated site-content API; no migration or data reset. Render new list server-side with accessible decorative icons and responsive flow. Move cover photo into Cover section, collapse other photo groups and deduplicate text fields. No change to published photos or automatic campaigns.
+
 ## CMS hotfix — 25 Nov 2026
 - Fix D1 compound SELECT limit by counting website and article media references separately; merge counts without changing published references or media. Independently settle CMS API loads so gallery errors do not reset published slot photos or activity state. Suppress default photo previews until live slots load, show explicit unavailable states instead of zero counts. Retain existing photo selections and protect referenced media. Add real SQLite regression and D1-limit check.
 

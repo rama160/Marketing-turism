@@ -756,3 +756,22 @@ test("CMS independently retains live slots when other requests fail",async()=>{
  assert.match(loader,/if\(media.status==="fulfilled"/);
  assert.match(source,/function cmsCurrentPhoto\(slot\)\{\s*if\(!cmsSlotsLoaded\)return null/);
 });
+
+test("owner can publish a bilingual ordered cover list, including fast boat and an empty list",async()=>{
+ const {validateSiteEdit,validateHeroHighlights}=await import("../src/site-content.mjs");
+ const {readFileSync}=await import("node:fs");
+ const base=readFileSync("public/index.html","utf8"),page=legacyTourRoute("/");
+ const rows=[{icon:"boat",id:"Tiket Fast Boat",en:"Fast Boat Tickets"},{icon:"tour",id:"Wisata pulau",en:"Island Tour"}];
+ const value=JSON.stringify(rows);
+ assert.deepEqual(validateHeroHighlights(value),rows);
+ assert.equal(validateSiteEdit({key:"hero.highlights",locale:"id",value,expected_version:0,owner_confirmed:true}).value,value);
+ assert.throws(()=>validateSiteEdit({key:"hero.highlights",locale:"en",value,expected_version:0,owner_confirmed:true}));
+ assert.throws(()=>validateHeroHighlights(JSON.stringify([{icon:"boat",id:"<script>",en:"Boat"}])));
+ assert.throws(()=>validateHeroHighlights(JSON.stringify(Array(9).fill(rows[0]))));
+ const rendered=renderLegacyTourPage(base,page,"https://example.com",{"hero.highlights":value});
+ assert.match(rendered,/data-hero-label-en="Fast Boat Tickets"/);
+ assert.match(rendered,/heroCustomLayout/);
+ assert.ok(rendered.indexOf("Tiket Fast Boat")<rendered.indexOf("Wisata pulau"));
+ assert.match(renderLegacyTourPage(base,page,"https://example.com",{"hero.highlights":"[]"}),/heroHighlightsCustom" hidden/);
+ assert.match(renderLegacyTourPage(base,page,"https://example.com"),/data-copy="hero.highlight4"/);
+});

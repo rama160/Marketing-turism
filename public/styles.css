@@ -262,3 +262,12 @@ html[lang="id"] [data-npe-lang="en"],html[lang="en"] [data-npe-lang="id"]{displa
 .seoArticle{max-width:850px;margin:0 auto}.seoArticle p{line-height:1.75}.seoArticleCover{width:100%;height:auto;border-radius:16px}.seoArticle figure{margin:20px 0}.seoArticle h2{margin-top:24px}
 
 .heroHighlights>span>span{display:inline;white-space:inherit;width:auto;gap:0}
+
+/* Owner-configurable highlight rows stay in normal flow so extra services never overlap hero text. */
+.premiumHero.heroCustomLayout{display:flex;flex-direction:column;align-items:stretch;justify-content:center;padding-bottom:48px;gap:32px}
+.heroCustomLayout .heroHighlights{position:relative;inset:auto;gap:12px 20px;flex-wrap:wrap}
+.heroCustomLayout .heroHighlights[hidden]{display:none}
+.heroCustomLayout .heroHighlights>span{white-space:normal;max-width:100%;width:auto}
+.heroCustomLayout .heroHighlights b{flex:none}
+.heroCustomLayout .heroHighlights>span>span{overflow-wrap:anywhere}
+@media(max-width:700px){.premiumHero.heroCustomLayout{gap:24px;padding-bottom:42px}.heroCustomLayout .heroHighlights>span{width:calc(50% - 10px)}}

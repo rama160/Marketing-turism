@@ -305,6 +305,7 @@ async function apply(){
   const key=el.dataset.copy;
   el.textContent=typeof translations[key]==="string"?translations[key]:(lang==="en"?englishHome[key]||englishText[originals[key]]||originals[key]:originals[key]);
  }
+ for(const el of document.querySelectorAll("[data-hero-label-id]"))el.textContent=lang==="en"?el.dataset.heroLabelEn:el.dataset.heroLabelId;
  if(document.querySelector("[data-copy]"))document.title=lang==="en"?"Nusa Penida Experiences | Snorkeling & Island Tours":idTitle;
  else document.title=lang==="en"?(englishText[idTitle]||idTitle):idTitle;
  window.dispatchEvent(new CustomEvent("npe:language",{detail:{language:lang,mode}}));
