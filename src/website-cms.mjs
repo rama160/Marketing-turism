@@ -314,6 +314,260 @@ export async function updateWebsiteSlot(db,b){
 
 
 
+// Original decision-support copy, separate from owner-managed offers and prices.
+const competitiveTourGuides={
+ "snorkeling": {
+  "title": [
+   "Panduan memilih snorkeling Nusa Penida",
+   "How to choose a Nusa Penida snorkeling tour"
+  ],
+  "sections": [
+   [
+    [
+     "Sharing atau private?",
+     "Shared boat or private snorkeling?"
+    ],
+    [
+     "Sharing cocok untuk wisatawan yang ingin berbagi biaya per orang. Private cocok untuk grup yang menginginkan kapal khusus; minta harga per kapal, kapasitas dan daftar spot sebelum memilih.",
+     "Choose a shared trip if you prefer a per-person fare. A private boat suits groups wanting their own charter; ask for the total boat price, capacity and proposed sites before choosing."
+    ]
+   ],
+   [
+    [
+     "Manta Bay atau Manta Point?",
+     "Manta Bay or Manta Point?"
+    ],
+    [
+     "Kedua lokasi berbeda. Minta konfirmasi spot yang benar-benar ditawarkan, bukan hanya nama paket. Operator dapat mengganti lokasi karena gelombang, arus atau visibilitas. Penampakan manta tidak dijamin; jangan mengejar atau menyentuh satwa laut.",
+     "These are distinct sites. Ask which one the operator actually plans to visit rather than relying on a package name. Waves, currents and visibility can change the route. Manta sightings are not guaranteed; never chase or touch marine wildlife."
+    ]
+   ],
+   [
+    [
+     "Persiapan dan biaya",
+     "What to confirm before snorkeling"
+    ],
+    [
+     "Sampaikan pengalaman berenang, jumlah tamu dan lokasi menginap. Pastikan titik kumpul, durasi, peralatan, pendamping, aturan keselamatan, biaya per orang atau kapal serta apakah transfer dan makan termasuk. Jadwalkan wisata darat pada hari lain.",
+     "Share swimming ability, group size and accommodation location. Confirm meeting point, duration, equipment, supervision, safety arrangements, per-person or boat price, and whether transfers and meals are included. Plan land touring on another day."
+    ]
+   ]
+  ],
+  "links": [
+   "island",
+   "west",
+   "east"
+  ]
+ },
+ "west": {
+  "title": [
+   "Rencana wisata Nusa Penida Barat",
+   "Planning your Nusa Penida West Tour"
+  ],
+  "sections": [
+   [
+    [
+     "Contoh urutan perjalanan",
+     "Suggested West Tour itinerary"
+    ],
+    [
+     "Mulai dari titik jemput yang disepakati di pulau, lanjut ke panorama Kelingking, Broken Beach dan Angel’s Billabong, lalu Crystal Bay bila waktu dan akses memungkinkan. Urutan ini ilustrasi, bukan jadwal tetap; utamakan waktu kembali ke pelabuhan bila mengejar kapal.",
+     "Start at an agreed pickup point on the island, then consider Kelingking viewpoint, Broken Beach and Angel’s Billabong, followed by Crystal Bay if time and access permit. This is an illustrative route, not a fixed schedule; allow for your return boat if needed."
+    ]
+   ],
+   [
+    [
+     "Untuk siapa rute Barat?",
+     "Who is the West Tour for?"
+    ],
+    [
+     "Rute Barat cocok untuk wisatawan yang ingin melihat tebing dan panorama ikonik. Akses turun ke pantai atau berenang bukan kewajiban; pilih titik pandang yang sesuai kemampuan dan kondisi keselamatan.",
+     "Choose the West if iconic cliffs and coastal viewpoints are your priority. Beach descents or swimming are not required; choose accessible viewpoints suited to your mobility and safe conditions."
+    ]
+   ],
+   [
+    [
+     "Apa yang perlu dipastikan?",
+     "Private car tour: what to confirm"
+    ],
+    [
+     "Konfirmasi titik jemput, kapasitas mobil, rute, waktu perjalanan dan biaya kendaraan. Minta rincian tiket kapal, makan siang, tiket masuk, parkir dan pengeluaran pribadi agar bisa membandingkan total biaya.",
+     "Confirm pickup, vehicle seating, route, duration and vehicle cost. Ask for a breakdown of boat tickets, lunch, entrance fees, parking and personal expenses to compare total trip costs."
+    ]
+   ]
+  ],
+  "links": [
+   "east",
+   "island",
+   "snorkeling"
+  ]
+ },
+ "east": {
+  "title": [
+   "Rencana wisata Nusa Penida Timur",
+   "Planning your Nusa Penida East Tour"
+  ],
+  "sections": [
+   [
+    [
+     "Contoh urutan perjalanan",
+     "Suggested East Tour itinerary"
+    ],
+    [
+     "Setelah penjemputan yang disepakati, rencanakan Diamond Beach, Atuh Beach dan panorama Rumah Pohon sesuai akses dan waktu. Konfirmasi urutan dengan operator; jangan menganggap semua titik wajib dikunjungi saat kondisi tidak aman.",
+     "After an agreed pickup, plan Diamond Beach, Atuh Beach and the Rumah Pohon viewpoint according to access and available time. Confirm the sequence with the operator; no stop should be mandatory when conditions are unsafe."
+    ]
+   ],
+   [
+    [
+     "Tangga, akses dan kenyamanan",
+     "Steps, access and comfort"
+    ],
+    [
+     "Sebagian akses pantai melibatkan tangga curam. Bila membawa anak, lansia atau memiliki keterbatasan mobilitas, minta alternatif panorama tanpa turun ke pantai. Periksa biaya atau antrean titik foto Rumah Pohon.",
+     "Some beach access involves steep steps. If travelling with children, older guests or limited mobility, request viewpoint alternatives instead of descending. Ask about separate fees or queues at the Tree House photo point."
+    ]
+   ],
+   [
+    [
+     "Rencanakan biaya dan penjemputan",
+     "Plan pickup and total trip cost"
+    ],
+    [
+     "Sampaikan alamat hotel atau pelabuhan, jumlah peserta dan waktu kapal kembali. Konfirmasi biaya mobil, tiket masuk, parkir, makan dan tiket fast boat sebelum membayar.",
+     "Provide your hotel or harbour, group size and return boat time. Confirm car cost, entry fees, parking, meals and fast boat tickets before paying."
+    ]
+   ]
+  ],
+  "links": [
+   "west",
+   "island",
+   "snorkeling"
+  ]
+ },
+ "island": {
+  "title": [
+   "Pilih West atau East Tour Nusa Penida",
+   "Nusa Penida West vs East: choosing your route"
+  ],
+  "sections": [
+   [
+    [
+     "Bandingkan pengalaman",
+     "Compare the two routes"
+    ],
+    [
+     "Pilih Barat untuk panorama Kelingking dan formasi batu pesisir; pilih Timur untuk Diamond Beach, Atuh Beach dan Rumah Pohon. Bila ingin keduanya, pertimbangkan dua hari wisata darat agar waktu perjalanan tidak terlalu padat.",
+     "Choose West for Kelingking and coastal rock formations; choose East for Diamond Beach, Atuh Beach and the Tree House viewpoint. If both appeal to you, consider two land-tour days rather than a rushed itinerary."
+    ]
+   ],
+   [
+    [
+     "Private atau sharing?",
+     "Private car or shared tour?"
+    ],
+    [
+     "Private menggunakan kendaraan khusus grup Anda dengan harga yang dikonfirmasi berdasarkan kapasitas dan rute. Sharing bergantung ketersediaan operator. Bandingkan biaya total dan fasilitas, bukan hanya angka harga awal.",
+     "A private car is reserved for your group, with the quote based on seating and route. Shared trips depend on operator availability. Compare total costs and inclusions rather than just the advertised starting rate."
+    ]
+   ],
+   [
+    [
+     "Berangkat dari Bali atau sudah di pulau?",
+     "Starting from Bali or already on Nusa Penida?"
+    ],
+    [
+     "Jika dari Bali, periksa tiket fast boat dan waktu check-in serta sambungan kendaraan. Jika sudah menginap di Nusa Penida, sampaikan alamat hotel. Snorkeling dan wisata darat direncanakan pada hari berbeda.",
+     "From Bali, check fast boat tickets, check-in time and onward car pickup. If already staying on Nusa Penida, share your hotel address. Snorkeling and land tours are planned on separate days."
+    ]
+   ]
+  ],
+  "links": [
+   "west",
+   "east",
+   "snorkeling"
+  ]
+ },
+ "nusa-lembongan-island-tour": {
+  "title": [
+   "Rencanakan island tour Nusa Lembongan",
+   "Plan your Nusa Lembongan island tour"
+  ],
+  "sections": [
+   [
+    [
+     "Contoh rute wisata",
+     "Suggested island route"
+    ],
+    [
+     "Diskusikan Dream Beach, Devil’s Tears, Yellow Bridge dan area Mangrove Point di darat dengan operator. Panorama Lembongan atau Mahagiri Beach dapat menjadi pilihan tambahan sesuai waktu, akses dan penawaran. Tur darat di Mangrove Point berbeda dengan snorkeling atau naik perahu mangrove.",
+     "Discuss Dream Beach, Devil’s Tears, Yellow Bridge and the onshore Mangrove Point area with your operator. Panorama Point or Mahagiri Beach may be additional options according to time, access and the quote. An onshore mangrove stop is different from snorkeling or a mangrove boat trip."
+    ]
+   ],
+   [
+    [
+     "Penjemputan dan fasilitas",
+     "Pickup and inclusions"
+    ],
+    [
+     "Jika berangkat dari Sanur, konfirmasi kapal pergi-pulang dan titik jemput di Lembongan. Jika sudah menginap di pulau, berikan alamat hotel. Minta rincian biaya kendaraan, tiket masuk, makan dan aktivitas tambahan. Jaga jarak dari tepi tebing dan semburan ombak di Devil’s Tears.",
+     "From Sanur, confirm return boat tickets and pickup on Lembongan. If staying on the island, provide your hotel. Ask about vehicle costs, admission, meals and extras. Keep away from cliff edges and wave surges at Devil’s Tears."
+    ]
+   ]
+  ],
+  "links": [
+   "island",
+   "snorkeling"
+  ]
+ },
+ "boat-ticket": {
+  "title": [
+   "Panduan tiket fast boat Sanur, Lembongan dan Gili",
+   "Fast boat tickets: Sanur, Lembongan and Gili Islands"
+  ],
+  "sections": [
+   [
+    [
+     "Pilih rute dan arah perjalanan",
+     "Choose your route and direction"
+    ],
+    [
+     "Sampaikan apakah Anda memerlukan Sanur–Nusa Lembongan atau arah sebaliknya, atau koneksi Lembongan–Gili dan sebaliknya. Tentukan pulau Gili tujuan dan tanggal; rute langsung bergantung jadwal operator yang tersedia.",
+     "Tell us whether you need Sanur to Nusa Lembongan or the reverse, or a connection between Lembongan and the Gili Islands. Specify the Gili island and date; direct routes depend on available operator schedules."
+    ]
+   ],
+   [
+    [
+     "Bandingkan tiket sebelum membayar",
+     "Compare tickets before payment"
+    ],
+    [
+     "Konfirmasi pelabuhan, jam check-in, jadwal berangkat, jenis tiket sekali jalan atau pulang-pergi, bagasi, biaya transfer darat dan ketentuan perubahan jadwal. Jangan mengandalkan jadwal lama; keberangkatan dapat berubah karena kondisi laut atau operasional.",
+     "Confirm harbour, check-in, departure schedule, one-way or return fare, luggage, land transfers and change terms. Do not rely on old timetables; sailings may change with sea conditions or operations."
+    ]
+   ]
+  ],
+  "links": [
+   "island",
+   "snorkeling"
+  ]
+ }
+};
+const competitiveRoutes={snorkeling:["/snorkeling.html","/en/tours/snorkeling","Snorkeling Nusa Penida","Nusa Penida snorkeling tour"],west:["/west-tour.html","/en/tours/west","Wisata Nusa Penida Barat","Nusa Penida West Tour"],east:["/east-tour.html","/en/tours/east","Wisata Nusa Penida Timur","Nusa Penida East Tour"],island:["/island-tour.html","/en/tours/island","Paket island tour Nusa Penida","Nusa Penida island tours"]};
+export function renderCompetitiveGuide(key,lang="id",bilingual=false){
+ const guide=Object.hasOwn(competitiveTourGuides,key)?competitiveTourGuides[key]:null;
+ if(!guide)return "";
+ const ix=lang==="en"?1:0;
+ const words=pair=>bilingual?'<span data-npe-lang="id">'+escapeHTML(pair[0])+'</span><span data-npe-lang="en">'+escapeHTML(pair[1])+'</span>':escapeHTML(pair[ix]);
+ const sections=guide.sections.map(([heading,body])=>"<h3>"+words(heading)+"</h3><p>"+words(body)+"</p>").join("");
+ const links=guide.links.map(k=>{
+  const r=competitiveRoutes[k];
+  if(bilingual)return '<span data-npe-lang="id"><a class="textLink" href="'+r[0]+'">'+escapeHTML(r[2])+'</a></span><span data-npe-lang="en"><a class="textLink" href="'+r[1]+'">'+escapeHTML(r[3])+'</a></span>';
+  return '<a class="textLink" href="'+r[ix]+'">'+escapeHTML(r[ix+2])+'</a>';
+ }).join(" · ");
+ return '<section class="panel" data-npe-competitive-guide="'+key+'"><h2>'+words(guide.title)+'</h2>'+sections+'<h3>'+words(["Bandingkan paket wisata terkait","Compare related island experiences"])+'</h3><p>'+links+'</p></section>';
+}
+
 const legacyTours={
  "/":{file:"index",key:"",title:"hero.title",summary:"hero.description"},
  "/snorkeling.html":{file:"snorkeling",key:"snorkeling",title:"snorkelingPage.title",summary:"snorkelingPage.lead"},
@@ -376,6 +630,7 @@ export function renderLegacyTourPage(html,page,origin,copy={},activities=[],veri
  const related=activities.filter(a=>page.key?a.parent_activity==="static:"+page.key:!a.parent_activity);
  const links=related.filter(a=>slugRE.test(a.slug)&&!body.includes('href="/id/experiences/'+a.slug+'"')).map(a=>'<a class="textLink" href="/id/experiences/'+a.slug+'">'+escapeHTML(a.title_id)+'</a>');
  if(links.length)body=body.replace("</main>",()=>'<nav class="section" aria-label="Pengalaman wisata terkait"><h2>Jelajahi pengalaman lainnya</h2><p>'+links.join(" · ")+"</p></nav></main>");
+ if(page.key)body=body.replace("</main>",()=>renderCompetitiveGuide(page.key,"id",true)+"</main>");
  const rendered=addResponsivePhotos(applyPublishedPhotoSlots(head+body,photoSlots,"id"),page.canonical==="/");
  // The preload points at the exact final image, not the template's original.
  if(page.canonical==="/"){
@@ -440,11 +695,12 @@ export function renderEnglishTourPage(key,origin,siteCopy={}){
 <div class="panel"><h2>Plan your experience</h2><p>${esc(page.description)}</p><h2>Highlights</h2><ul>${lists}</ul>
 <p>Final routes, operator availability, capacity, pricing and inclusions are confirmed before payment. No departure or wildlife sighting is guaranteed.</p>
 <a class="primary" data-whatsapp-chat href="https://wa.me/628561752525?text=${whatsApp}" rel="noopener noreferrer" target="_blank">Ask about this experience on WhatsApp</a></div>
+${renderCompetitiveGuide(key,"en")}
 <section class="npeFaq"><h2>Frequently asked questions</h2><div class="npeFaqGrid">${faq}</div></section>
 <nav class="panel"><h2>Explore other tours and islands</h2><p>${nav}</p>
 <p><a href="/en/experiences/nusa-lembongan-island-tour">Nusa Lembongan Island Tour</a> · <a href="/en/experiences/boat-ticket">Bali and Gili Fast Boat Tickets</a></p></nav>
 </section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cancellation.html">Cancellation policy</a></footer><script type="module" src="/website-content.js?v=3.36.0"></script></body></html>`;
- return layout;
+ return addResponsivePhotos(layout,false);
 }
 
 export function renderExperiencePage(activity,locale,origin,related=[]){
@@ -458,7 +714,7 @@ export function renderExperiencePage(activity,locale,origin,related=[]){
  const schema=JSON.stringify({"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":origin+"/#organization",name:"Nusa Penida Experiences",url:origin+"/",logo:origin+"/icon.svg"},{"@type":"WebPage",name:seoTitle,description:seoDesc,url:root,inLanguage:lang,primaryImageOfPage:activity.photo_url?origin+activity.photo_url:undefined,isPartOf:{"@type":"WebSite",name:"Nusa Penida Experiences",url:origin},breadcrumb:{"@id":root+"#breadcrumb"}},{"@type":"BreadcrumbList","@id":root+"#breadcrumb",itemListElement:[{"@type":"ListItem",position:1,name:"Nusa Penida Experiences",item:origin+"/"},{"@type":"ListItem",position:2,name:title,item:root}]}]}).replace(/</g,"\\u003c");
  const relatedLinks=related.filter(x=>x.slug!==activity.slug&&(x.parent_activity==="activity:"+activity.slug||(!activity.parent_activity&&!x.parent_activity))).slice(0,16).map(x=>'<a class="textLink" href="/'+lang+'/experiences/'+encodeURIComponent(x.slug)+'">'+escapeHTML(x["title_"+p])+'</a>').join(" · ");
  const relatedMarkup=relatedLinks?'<nav class="panel" aria-label="'+(isEN?"Related experiences":"Pengalaman wisata terkait")+'"><h2>'+(isEN?"Explore more island experiences":"Jelajahi pengalaman wisata lainnya")+'</h2><p>'+relatedLinks+'</p></nav>':"";
- return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><meta property="og:image" content="'+escapeHTML(activity.photo_url?origin+activity.photo_url:origin+"/icon.svg")+'"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/styles.css"><link rel="icon" type="image/svg+xml" href="/icon.svg"><script type="application/ld+json">'+schema+'</script><script src="/photo-loader.js?v=5" defer></script><script src="/analytics.js?v=3.36.0" defer></script></head><body><header class="top"><a class="brand" href="/"><img class="brandLogo" src="/icon.svg" width="122" height="76" alt="Nusa Penida Experiences logo"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'" alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" data-whatsapp-chat href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div>'+(!activity.parent_activity?'<section data-npe-detail-parent="activity:'+escapeHTML(activity.slug)+'" hidden><h2 class="gallery-heading">'+(isEN?"Explore the destinations":"Jelajahi destinasi")+'</h2><div class="scene-grid"></div></section>':"")+'</section>'+(!activity.parent_activity&&related.some(x=>x.parent_activity==="activity:"+activity.slug)?'<p class="npeGalleryDisclaimer">'+(isEN?"Destination photos show available points of interest; not every location is included in every itinerary. Confirm your selected route with the operator.":"Galeri menampilkan pilihan destinasi; tidak semua lokasi otomatis termasuk dalam setiap paket. Pastikan itinerary dengan operator.")+'</p>':"")+relatedMarkup+'</main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer><script type="module" src="/website-content.js?v=3.36.0"></script></body></html>';
+ return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><meta property="og:image" content="'+escapeHTML(activity.photo_url?origin+activity.photo_url:origin+"/icon.svg")+'"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/styles.css"><link rel="icon" type="image/svg+xml" href="/icon.svg"><script type="application/ld+json">'+schema+'</script><script src="/photo-loader.js?v=5" defer></script><script src="/analytics.js?v=3.36.0" defer></script></head><body><header class="top"><a class="brand" href="/"><img class="brandLogo" src="/icon.svg" width="122" height="76" alt="Nusa Penida Experiences logo"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'" alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" data-whatsapp-chat href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div>'+(!activity.parent_activity?'<section data-npe-detail-parent="activity:'+escapeHTML(activity.slug)+'" hidden><h2 class="gallery-heading">'+(isEN?"Explore the destinations":"Jelajahi destinasi")+'</h2><div class="scene-grid"></div></section>':"")+'</section>'+(!activity.parent_activity&&related.some(x=>x.parent_activity==="activity:"+activity.slug)?'<p class="npeGalleryDisclaimer">'+(isEN?"Destination photos show available points of interest; not every location is included in every itinerary. Confirm your selected route with the operator.":"Galeri menampilkan pilihan destinasi; tidak semua lokasi otomatis termasuk dalam setiap paket. Pastikan itinerary dengan operator.")+'</p>':"")+renderCompetitiveGuide(activity.slug,lang)+relatedMarkup+'</main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer><script type="module" src="/website-content.js?v=3.36.0"></script></body></html>';
 }
 export async function findPublishedExperience(db,slug){
  if(!slugRE.test(slug))return null;

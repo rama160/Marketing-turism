@@ -345,3 +345,18 @@ console.log("Verified public analytics CSP and contrast CSS");
 if(/<script[^>]*src="https:\/\/challenges\.cloudflare\.com\/turnstile/.test(landingMarkup))throw Error("Eager Turnstile script still on homepage");
 if(!guestScript.includes("function prepareGuestChallenge")||!guestScript.includes('if(!body["cf-turnstile-response"])'))throw Error("Deferred challenge or token guard missing");
 console.log("Verified deferred Turnstile and guest token guard");
+
+for(const [key,html] of [["snorkeling",snorkeling],["west",west],["east",east],["island",island]]){
+ if(!html.includes('data-npe-competitive-guide="'+key+'"'))throw Error("Missing Indonesian decision guide "+key);
+ const en=await get("/en/tours/"+key);
+ if(!en.includes('data-npe-competitive-guide="'+key+'"'))throw Error("Missing English decision guide "+key);
+}
+for(const slug of ["nusa-lembongan-island-tour","boat-ticket"]){
+ for(const lang of ["id","en"]){
+  const path="/"+lang+"/experiences/"+slug;
+  if(!websiteSitemap.includes(path))continue; // Only verify owner-published activities.
+  const html=await get(path);
+  if(!html.includes('data-npe-competitive-guide="'+slug+'"'))throw Error("Missing published experience guide "+path);
+ }
+}
+console.log("Verified competitive decision guides on existing public URLs");

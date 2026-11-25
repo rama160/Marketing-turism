@@ -703,3 +703,25 @@ test("Cloudflare beacon CSP permission is confined to public documents",async()=
  const dashboard=await worker.fetch(new Request("https://nusapenidaexperiences.com/dashboard.html"),env,{});
  assert.equal(dashboard.headers.get("content-security-policy"),policy);
 });
+test("competitive guides reuse existing canonical routes, localised links and truthful buying guidance",async()=>{
+ const {renderCompetitiveGuide}=await import("../src/website-cms.mjs");
+ const {readFileSync}=await import("node:fs");
+ for(const key of ["snorkeling","west","east","island"]){
+  const path={snorkeling:"snorkeling",west:"west-tour",east:"east-tour",island:"island-tour"}[key];
+  const id=renderLegacyTourPage(readFileSync("public/"+path+".html","utf8"),legacyTourRoute("/"+path+".html"),"https://example.com");
+  const en=renderEnglishTourPage(key,"https://example.com");
+  for(const html of [id,en]){
+   assert.equal(html.split('data-npe-competitive-guide="'+key+'"').length,2);
+   assert.equal((html.match(/<link rel="canonical"/g)||[]).length,1);
+   assert.doesNotMatch(html,/data-npe-competitive-guide="unknown"|aggregateRating/);
+  }
+  assert.match(id,/data-npe-lang="en"/);
+  assert.match(en,/href="\/en\/tours\//);
+ }
+ assert.equal(renderCompetitiveGuide("constructor"),"");
+ assert.equal(renderCompetitiveGuide("unknown"),"");
+ assert.match(renderCompetitiveGuide("boat-ticket","en"),/one-way or return fare/);
+ assert.match(renderCompetitiveGuide("nusa-lembongan-island-tour","id"),/Mangrove Point di darat/);
+ assert.match(renderCompetitiveGuide("snorkeling","en"),/Manta sightings are not guaranteed/);
+ assert.doesNotMatch(renderLegacyTourPage(readFileSync("public/index.html","utf8"),legacyTourRoute("/"),"https://example.com"),/data-npe-competitive-guide=/);
+});
