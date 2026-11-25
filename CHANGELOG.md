@@ -1,3 +1,6 @@
+## 26 November 2026 — Prioritaskan indexasi sisa URL
+- Roadmap 1.0.2: buka kembali SEO-002 atas instruksi owner; daftar 18 URL aktivitas bilingual berdasarkan D1 read-only dan kode sitemap, plus dua indeks artikel kosong yang ditunda. GSC verdict belum diperoleh; lanjut pekerjaan SEO setelah gate indexasi. Tidak ada perubahan kode/DB.
+
 ## 26 November 2026 — Koreksi baseline SEO roadmap
 - Catat hasil GSC yang dilaporkan dalam percakapan 25 Nov: kepemilikan terverifikasi, sitemap 28 URL ditemukan, 10/10 URL awal dilaporkan terindeks. Tidak mengklaim 28 URL terindeks atau audit live baru; daftar URL asli belum tersedia. Lanjutkan SEO-003/004/005, pantau coverage melalui SEO-020. Dokumentasi saja.
 

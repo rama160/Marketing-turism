@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.1 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.2 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **P0 — baseline performa pencarian (SEO-003), konversi (SEO-004) dan performa teknis (SEO-005); pemantauan indeks sisanya**.
+- Status: aktif. Fokus saat ini: **P0 — SEO-002 lanjutan: selesaikan pemeriksaan dan indexasi URL aktivitas tersisa sebelum SEO-003, sesuai instruksi owner**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -65,12 +65,43 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
 | SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
-| SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [x] Audit awal selesai menurut laporan 25 Nov (10/10); coverage sisanya masuk SEO-020, tidak diasumsikan gagal |
-| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [ ] Berikutnya — perlu data performa aktual |
+| SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [~] Audit awal selesai (10/10); owner meminta selesaikan pemeriksaan 18 URL aktivitas terlebih dahulu. Lihat checklist lanjutan. Status indeks masing-masing belum dikonfirmasi. |
+| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [ ] Ditunda sampai gate SEO-002 lanjutan selesai sesuai instruksi owner |
 | SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [ ] |
 | SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
 
 Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan layar yang relevan. Lakukan audit publik yang independen sambil menunggu; jangan mengarang hasil. Tidak perlu membuat integrasi API/dashboard sebelum membuktikan ekspor manual tidak memadai. Setelah perbaikan indexasi, ajukan request indexing hanya untuk URL prioritas baru/berubah secara wajar; bukan berkali-kali setiap hari.
+
+### SEO-002 lanjutan — checklist indexasi (26 November 2026)
+
+Owner meminta menuntaskan 18 URL tersisa sebelum fase berikutnya. Query SELECT read-only D1 menemukan sembilan aktivitas terbit; kode renderWebsiteSitemap menghasilkan masing-masing URL EN/ID (18) dan sepuluh URL utama. Riwayat awal 28 URL ditemukan dan 10 terindeks; daftar persis sepuluh URL tidak tersedia sehingga 18 URL aktivitas di bawah adalah kandidat yang harus dicocokkan melalui URL Inspection, bukan klaim semuanya belum terindeks. Kode artikel menambahkan dua indeks bahasa; D1 belum memiliki artikel terbit sehingga total sitemap yang dihitung dari kode dan data adalah 30, bukan hasil fetch XML langsung. Akses langsung sitemap melalui web tool tidak berhasil; [Verify Cloudflare terbaru lulus](https://github.com/rama160/Marketing-turism/actions/runs/45722066142) termasuk HTTP 200/canonical/hreflang seluruh sitemap dan halaman indeks artikel. Tidak ada perubahan aplikasi, database, harga atau publikasi.
+
+| No. | URL canonical | Status GSC / tanggal |
+|---|---|---|
+| 1 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour | Belum diperiksa pada sesi ini |
+| 2 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour | Belum diperiksa pada sesi ini |
+| 3 | https://nusapenidaexperiences.com/en/experiences/boat-ticket | Belum diperiksa pada sesi ini |
+| 4 | https://nusapenidaexperiences.com/id/experiences/boat-ticket | Belum diperiksa pada sesi ini |
+| 5 | https://nusapenidaexperiences.com/en/experiences/snorkeling-mangrove-point | Belum diperiksa pada sesi ini |
+| 6 | https://nusapenidaexperiences.com/id/experiences/snorkeling-mangrove-point | Belum diperiksa pada sesi ini |
+| 7 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-dream-beach | Belum diperiksa pada sesi ini |
+| 8 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-dream-beach | Belum diperiksa pada sesi ini |
+| 9 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-devil-s-tear | Belum diperiksa pada sesi ini |
+| 10 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-devil-s-tear | Belum diperiksa pada sesi ini |
+| 11 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-yellow-bridge | Belum diperiksa pada sesi ini |
+| 12 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-yellow-bridge | Belum diperiksa pada sesi ini |
+| 13 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-mangrove-point | Belum diperiksa pada sesi ini |
+| 14 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-mangrove-point | Belum diperiksa pada sesi ini |
+| 15 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-panorama-point | Belum diperiksa pada sesi ini |
+| 16 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-panorama-point | Belum diperiksa pada sesi ini |
+| 17 | https://nusapenidaexperiences.com/en/experiences/nusa-lembongan-island-tour-mahagiri-beach | Belum diperiksa pada sesi ini |
+| 18 | https://nusapenidaexperiences.com/id/experiences/nusa-lembongan-island-tour-mahagiri-beach | Belum diperiksa pada sesi ini |
+
+Indeks artikel tambahan: https://nusapenidaexperiences.com/en/articles dan https://nusapenidaexperiences.com/id/articles. Tunda permintaan manual sampai terdapat artikel bermanfaat terbit (saat ini kosong); tidak memaksa Google mengindeks halaman kosong. Jangan memasukkan dashboard, alias redirect, draft atau halaman duplikat.
+
+Prosedur owner: buka https://search.google.com/search-console, pilih property NPE, buka URL Inspection; URL is on Google → catat selesai tanpa request ulang. URL is not on Google → Test live URL, periksa crawl/fetch/indexing/canonical; bila layak dan belum pernah diajukan, Request indexing satu kali. Jika gagal, catat alasan untuk koreksi teknis/konten. Request berhasil bukan bukti indexasi. Jika quota habis, lanjut saat tersedia; sitemap yang sukses tidak perlu dikirim ulang tanpa perubahan penting. Periksa hasil setelah waktu wajar (Google menyarankan setidaknya satu minggu sebelum menganggap ada masalah). Sumber: https://support.google.com/webmasters/answer/9012289 dan https://support.google.com/webmasters/answer/7474347.
+
+Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh URL canonical yang layak terindeks atau alasan pengecualian sah yang disetujui owner; baru lanjut SEO-003 sesuai keputusan owner. Google menentukan indexasi; tidak ada jaminan semua URL masuk indeks. Akses akun GSC tidak tersedia bagi AI pada sesi ini; owner melakukan inspeksi/request dan melaporkan hasil. Tidak membuat fitur/cron baru.
 
 ### Fase 1 — Kata kunci dan halaman penjualan (hari 7–21)
 
@@ -176,6 +207,10 @@ Pedoman keputusan:
 - Keputusan: tandai verifikasi dan audit awal selesai berdasarkan riwayat; jangan mengulang permintaan indeks. Pantau sisa coverage dan URL baru secara berkala pada SEO-020 (dan SEO-013 untuk artikel baru).
 - Next action: SEO-003 (baseline Performance/Search results: clicks, impressions, CTR, posisi, queries, pages), SEO-004 (GA4 dan konversi), SEO-005 (baseline performa). Jika data domain baru belum mencukupi, catat dan lanjutkan riset kompetitor/keyword independen SEO-006 serta peta keyword SEO-007 tanpa membuat fitur baru.
 - Bukti: catatan percakapan proyek 25 Nov 2026 dan koreksi owner 26 Nov 2026; bukan akses baru ke akun GSC. Tidak ada perubahan website/DB/publikasi.
+
+### 2026-11-26 — Gate indexasi lanjutan
+- SEO-002 dibuka kembali atas instruksi owner. 18 kandidat URL diambil dari sembilan aktivitas published di D1 dan aturan URL bilingual di kode sitemap. Dua indeks artikel tambahan belum berisi artikel. Tidak mengklaim hasil indeks baru. Daftar dan prosedur tercatat di atas.
+- Bukti teknis: Verify Cloudflare 45722066142 lulus. Akses XML langsung dan GSC tidak tersedia; owner perlu menjalankan URL Inspection dan menyerahkan verdict. SEO-003 dan fase berikutnya ditunda hingga gate SEO-002 selesai.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
