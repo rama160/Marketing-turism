@@ -605,7 +605,7 @@ function renderCampaigns(){
    '<a href="'+esc(photo.source)+'" target="_blank" rel="noopener noreferrer">'+esc(photo.credit)+' / '+esc(photo.license)+'</a>':"Foto referensi katalog";
   const actions=c.status==="DRAFT"&&!old?
    '<button class="primary" type="button" data-action="approveCampaign" data-id="'+esc(c.id)+'">✓ Setujui draf</button>'+
-   '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak &amp; Buat Ulang</button>'+
+   '<button class="outline" type="button" data-action="rejectCampaign" data-id="'+esc(c.id)+'">✕ Tolak Draf</button>'+
     '<button class="outline" type="button" data-action="researchPhoto" data-id="'+esc(c.id)+'">🔎 Cari foto otomatis</button>':"";
   const own=data.ownerPhotos.filter(p=>p.activity_id===c.activity_id);
   const pick=c.status==="DRAFT"&&!old&&own.length?
@@ -634,7 +634,7 @@ function renderCampaigns(){
    '</div>'+queues+after+'<small>ID tracking: '+esc(c.id)+'</small></div></article>';
  }
  $("#campaignList").innerHTML='<p class="feedback">Tinjau <strong>foto, caption lengkap, dan kanal</strong> sebelum memutuskan. Jika Anda menyetujui dan memilih kanal, AI akan menjadwalkan publikasi otomatis. Penolakan membuat alternatif baru. Jadwal Metricool lama tetap terpisah.</p>'+
-  (current.map(x=>card(x)).join("")||'<p>Belum ada draf baru. Klik Siapkan 7 draf minggu ini untuk membuat rencana editorial.</p>')+
+  (current.map(x=>card(x)).join("")||'<p>Belum ada draf baru. Buat kampanye secara manual.</p>')+
   (archived.length?'<details class="item"><summary>Riwayat draf lama / ditolak ('+archived.length+')</summary>'+
    '<p class="feedback">Buat draf baru sebelum menyetujui materi lama. Draf yang ditolak tidak dapat disetujui lagi.</p>'+
    archived.map(x=>card(x,true)).join("")+'</details>':"");
@@ -722,19 +722,6 @@ $("#refreshMetaQueue").onclick=async()=>{
  }catch(e){target.textContent="Belum dapat memeriksa antrean publikasi: "+e.message;}
  finally{button.disabled=false;}
 };
-$("#prepareMarketingWeek").onclick=async()=>{
- if(!confirm("Buat 7 draf konten pemasaran mingguan (Instagram, Facebook, TikTok) untuk diperiksa? Belum ada publikasi otomatis."))return;
- const b=$("#prepareMarketingWeek");
- b.disabled=true;
- try{
-  const result=await api("admin/marketing/prepare-week","POST",{owner_confirmed:true});
-  $("#marketingWeekFeedback").textContent=result.generated>0
-   ?"Berhasil menyiapkan "+result.generated+" draf untuk pekan "+result.week_start+". Periksa daftar kampanye. Facebook/Instagram tersambung ke Metricool; Cloudflare tidak otomatis menerbitkan draf tanpa API yang diotorisasi."
-   :"Draf untuk pekan "+result.week_start+" sudah pernah dibuat. Tidak ada duplikasi.";
-  await refresh();
- }catch(err){$("#marketingWeekFeedback").textContent="Gagal membuat draf: "+err.message;}
- finally{b.disabled=false;}
-};
 $("#reuseDraft").onclick=()=>{if(lastMarketing)$("#campaignForm [name=caption]").value=lastMarketing;};
 $("#campaignForm").onsubmit=async e=>{
  e.preventDefault();try{await api("admin/campaigns","POST",formValues(e.target));e.target.reset();await refresh();say("#adminFeedback","Kampanye disimpan sebagai draf.",true);}catch(err){say("#adminFeedback",err.message)}
@@ -796,13 +783,13 @@ document.addEventListener("click",async e=>{
    const reason=prompt("Mengapa draf ini ditolak? Contoh: gambar kurang cocok / caption terlalu formal / ganti sudut destinasi:");
    if(reason===null)return;
    if(reason.trim().length<3){say("#adminFeedback","Tuliskan alasan penolakan minimal 3 karakter.");return;}
-   if(!confirm("Tolak draf ini dan langsung buat alternatif caption + gambar? Draf sebelumnya tetap tersimpan di riwayat."))return;
+   if(!confirm("Tolak draf ini? Draf tetap tersimpan di riwayat dan tidak dibuat ulang otomatis."))return;
    button.disabled=true;
    try{
     const result=await api("admin/campaigns/"+encodeURIComponent(id)+"/status","PATCH",
      {status:"REJECTED",owner_confirmed:true,reason:reason.trim()});
     await refresh();
-    say("#adminFeedback","Draf ditolak. Alternatif baru sudah dibuat (ID: "+result.replacement_id+"). Silakan periksa preview foto dan caption.",true);
+    say("#adminFeedback","Draf ditolak. Tidak ada draf pengganti otomatis.",true);
    }finally{button.disabled=false;}
    return;
   }

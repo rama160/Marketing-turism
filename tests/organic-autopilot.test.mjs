@@ -1,31 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {spawnSync} from "node:child_process";
 import {readFileSync} from "node:fs";
 import {marketingIntelligence,validateMarketingObservation} from "../src/marketing-intelligence.mjs";
 import {weeklyDrafts} from "../src/sales.mjs";
 
-test("independent optimizer builds three licensed review-only posts without social credentials",()=>{
- const result=spawnSync(process.execPath,["scripts/organic-week.mjs"],{encoding:"utf8",env:{...process.env,CAMPAIGN_DAY:"2026-10-26"}});
- assert.equal(result.status,0,result.stderr);
- const d=JSON.parse(readFileSync("dist/organic-week.json","utf8"));
- assert.equal(d.week_start,"2026-10-26");
- assert.equal(d.posts.length,3);
- assert.equal(d.all_candidates.length,7);
- assert.equal(d.external_publishing,false);
- assert.equal(d.learning.observation_count,0);
- assert.equal(new Set(d.posts.map(x=>x.photo.slug)).size,3);
- assert.ok(d.posts.some(x=>x.activity_id==="ISLAND_TOUR_CAR"));
- assert.ok(d.posts.some(x=>x.activity_id==="SNORKELING_3_SPOTS"));
- for(const x of d.posts){
-  assert.equal(x.status,"OWNER_REVIEW_REQUIRED");
-  assert.equal(x.platform_publication,"NOT_ATTEMPTED");
-  assert.equal(x.hour_basis,"EDITORIAL_FALLBACK");
-  assert.match(x.photo.url,/^https:\/\/raw.githubusercontent.com\/rama160\/Marketing-turism\/main\/public\/photos\/[a-z-]+\.jpg$/);
-  assert.match(x.photo.source,/^https:\/\/commons.wikimedia.org\//);
-  assert.match(x.photo.license,/^CC BY-SA/);
-  assert.doesNotMatch(x.caption,/^\[REVIEW/);
- }
+test("independent campaign generator and scheduled workflow were removed",()=>{
+ assert.throws(()=>readFileSync("scripts/organic-week.mjs"),/ENOENT/);
+ assert.throws(()=>readFileSync(".github/workflows/organic-marketing.yml"),/ENOENT/);
 });
 
 test("marketing feedback really changes priority when a channel has strong evidence",()=>{

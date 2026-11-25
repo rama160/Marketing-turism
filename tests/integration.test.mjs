@@ -299,89 +299,36 @@ test("marketing intelligence records only verified numeric metrics and learns tr
  const untouched=intelligence.strategies.find(s=>s.platform==="Facebook"&&s.activity_id==="SNORKELING_3_SPOTS");
  assert.ok(winner.score>untouched.score);
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_observations").get().n,2);
- const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
- assert.equal(made.httpStatus,200);
- assert.equal(made.observations_used,2);
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
- const decision=JSON.parse(sqlite.prepare("SELECT ranked_json FROM marketing_decisions").get().ranked_json);
- assert.ok(decision.some(x=>x.platform==="Instagram"&&x.recommended_hour===10));
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='PUBLISHED'").get().n,0);
+ assert.equal(intelligence.production.automatic_campaign_creation,false);
+ assert.equal((await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true})).httpStatus,410);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,0);
  sqlite.close();
 });
 
-test("weekly cron prepares seven multilingual channel-specific drafts once and never auto-publishes",async()=>{
+test("retired weekly route and cron never create campaigns or legacy publications",async()=>{
  const {request,sqlite,env}=fixture();
- const unauth=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true},false);
- assert.equal(unauth.httpStatus,401);
- const denied=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:false});
- assert.equal(denied.httpStatus,403);
- const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
- assert.equal(made.httpStatus,200);
- assert.equal(made.generated,7);
- assert.equal(made.status,"DRAFT_REVIEW");
- assert.equal(made.publication,"NONE");
- assert.equal(made.social_networks_connected,false);
- const drafts=sqlite.prepare("SELECT status,platform,caption FROM campaign_drafts").all();
- assert.equal(drafts.length,7);
- assert.ok(drafts.every(x=>x.status==="DRAFT"&&x.caption.startsWith("[REVIEW ")));
- assert.deepEqual([...new Set(drafts.map(x=>x.platform))].sort(),["Facebook","Instagram","TikTok"]);
- assert.ok(drafts.some(x=>x.caption.includes("· EN]"))&&drafts.some(x=>x.caption.includes("· ID]")));
- assert.ok(drafts.some(x=>x.caption.includes("Manta"))&&!drafts.some(x=>x.caption.includes("guaranteed manta")));
- const repeated=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
- assert.equal(repeated.generated,0);
+ assert.equal((await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true},false)).httpStatus,401);
+ assert.equal((await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true})).httpStatus,410);
  await worker.scheduled({cron:"0 1 * * 1"},env,{});
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,1);
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='PUBLISHED'").get().n,0);
+ await worker.scheduled({cron:"0 2 * * *"},env,{});
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,0);
  sqlite.close();
 });
 
-
-test("independent Meta cron is disabled until owner supplies specific publishing authorization",async()=>{
+test("legacy idea queue is history-only even with old publishing credentials",async()=>{
  const {request,sqlite,env}=fixture();
  const today=new Date().toISOString().slice(0,10);
- const made=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
- assert.equal(made.httpStatus,200);
- const monday=new Date(today+"T00:00:00Z");monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
- const expected=today===monday.toISOString().slice(0,10)?3:0;
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications").get().n,expected);
- const previous=sqlite.prepare("SELECT status FROM marketing_publications").all();
- assert.ok(previous.every(p=>p.status==="READY"));
+ sqlite.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)").run("legacy-test",today,today,0,"READY");
+ Object.assign(env,{META_GRAPH_PUBLISH_ENABLED:"true",META_GRAPH_OWNER_APPROVED:"true",META_GRAPH_PUBLISH_START:"2026-01-01",META_GRAPH_PAGE_ID:"1375913638943340",META_GRAPH_IG_USER_ID:"17841490000123456",META_GRAPH_PAGE_TOKEN:"local-testing-meta-token-contains-no-real-secrets"});
+ const original=globalThis.fetch;let writes=0;
+ try{globalThis.fetch=async(url,options)=>{if(options?.method!=="GET")writes++;return new Response(JSON.stringify({id:env.META_GRAPH_PAGE_ID}),{status:200});};
  await worker.scheduled({cron:"0 2 * * *"},env,{});
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='ATTEMPTED'").get().n,0);
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_publications WHERE status='POSTED'").get().n,0);
- sqlite.close();
-});
-
-test("independent Meta cron marks an ambiguous partial publish for review and never repeats it",async()=>{
- const {db,sqlite,env}=fixture();
- const today=new Date().toISOString().slice(0,10);
- const monday=new Date(today+"T00:00:00Z");monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
- sqlite.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)")
-  .run("partial-publish-test",monday.toISOString().slice(0,10),today,0,"READY");
- Object.assign(env,{META_GRAPH_PUBLISH_ENABLED:"true",META_GRAPH_OWNER_APPROVED:"true",META_GRAPH_PUBLISH_START:"2026-01-01",
-  META_GRAPH_PAGE_ID:"1375913638943340",META_GRAPH_IG_USER_ID:"17841490000123456",
-  META_GRAPH_PAGE_TOKEN:"local-testing-meta-token-contains-no-real-secrets"});
- let attempts=0;
- const originalFetch=globalThis.fetch;
- globalThis.fetch=async(url,options)=>{
-  // Daily read-only connectivity checks are separate from outbound post attempts.
-  if(options.method==="GET")
-   return new Response(JSON.stringify({id:url.includes(env.META_GRAPH_PAGE_ID)?env.META_GRAPH_PAGE_ID:env.META_GRAPH_IG_USER_ID}),{status:200});
-  attempts++;
-  return new Response(JSON.stringify(attempts===1?{id:"12345678901234"}:{error:{message:"Meta error"}}),{
-   status:attempts===1?200:403,headers:{"content-type":"application/json"}});
- };
- try{
-  await worker.scheduled({cron:"0 2 * * *"},env,{});
-  assert.equal(attempts,2);
-  const status=sqlite.prepare("SELECT status,facebook_post_id,instagram_post_id FROM marketing_publications WHERE id=?").get("partial-publish-test");
-  assert.equal(status.status,"REVIEW_REQUIRED");
-  assert.equal(status.facebook_post_id,"12345678901234");
-  assert.equal(status.instagram_post_id,null);
-  await worker.scheduled({cron:"0 2 * * *"},env,{});
-  assert.equal(attempts,2,"never retry a partially completed post");
- }finally{globalThis.fetch=originalFetch;sqlite.close();}
+ assert.equal(writes,0);assert.equal(sqlite.prepare("SELECT status FROM marketing_publications WHERE id='legacy-test'").get().status,"READY");
+ assert.equal((await request("/api/admin/marketing/publications")).independent_meta_publishing_enabled,false);
+ }finally{globalThis.fetch=original;sqlite.close();}
 });
 
 test("public readiness is fail-closed and business profile edits require owner token",async()=>{
@@ -773,110 +720,32 @@ test("unconfigured internal diagnostics do not call Meta or enable publishing",a
  }finally{globalThis.fetch=originalFetch;sqlite.close();}
 });
 
-test("daily Cron recovers a missing week, keeps outdated content in history and never queues past dates",async()=>{
- const {request,sqlite,env}=fixture();
- const today=new Date().toISOString().slice(0,10);
- const monday=new Date(today+"T00:00:00Z");
- monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
- const week=monday.toISOString().slice(0,10);
- // Historical draf remains present, but it does not replace current weekly review.
- sqlite.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status,created_at) VALUES(?,?,?,?,?,?)").run(
-  "historic-test","SNORKELING_3_SPOTS","Website","[AUTO 2026-10-18] Previously created historical draft text, do not erase it","DRAFT","2026-10-18 01:00:00");
+test("daily cron preserves history without regenerating any missing campaigns",async()=>{
+ const {sqlite,env}=fixture();
+ sqlite.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)").run("historic-test","SNORKELING_3_SPOTS","Website","Historical draft remains unchanged","DRAFT");
  await worker.scheduled({cron:"0 2 * * *"},env,{});
- const ledger=sqlite.prepare("SELECT id FROM scheduled_runs WHERE id=?").get("campaign-week-"+week);
- assert.ok(ledger,"missed weekly schedule recovered by existing daily Cron");
- const drafts=sqlite.prepare("SELECT caption,status FROM campaign_drafts WHERE id!='historic-test'").all();
- assert.equal(drafts.length,7);
- assert.ok(drafts.every(x=>x.status==="DRAFT"));
- const dates=drafts.map(x=>/\[REVIEW (\d{4}-\d{2}-\d{2})/.exec(x.caption)?.[1]);
- assert.ok(dates.every(Boolean));
- assert.ok(dates.every(x=>x>=today),"never show past review dates during recovery");
- const queue=sqlite.prepare("SELECT intended_date FROM marketing_publications").all();
- if(today!==week)assert.equal(queue.length,0,"late recovery does not schedule stale direct social posts");
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
  await worker.scheduled({cron:"0 2 * * *"},env,{});
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE id!='historic-test'").get().n,7,"daily recovery is idempotent");
- assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,1);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM scheduled_runs").get().n,0);
  sqlite.close();
 });
-
-test("owner can see vetted campaign photo and full preview, reject, and immediately review a different replacement",async()=>{
- const {request,sqlite,env}=fixture();
- const created=await request("/api/admin/campaigns","POST",{activity_id:"SNORKELING_3_SPOTS",platform:"Instagram",
-  caption:"Temukan aktivitas snorkeling Nusa Penida dan tanya operator tentang kondisi laut serta rute. #NusaPenida"});
+test("manual campaign preview and rejection preserve photo, history and approval boundaries without replacement",async()=>{
+ const {request,sqlite,env}=fixture();let aiCalls=0;env.AI={run:async()=>{aiCalls++;throw Error("unexpected AI");}};
+ const created=await request("/api/admin/campaigns","POST",{activity_id:"SNORKELING_3_SPOTS",platform:"Instagram",caption:"Temukan aktivitas snorkeling Nusa Penida dan tanya operator tentang kondisi laut serta rute."});
  assert.equal(created.httpStatus,201);
- assert.equal((await request("/api/admin/campaigns","GET",undefined,false)).httpStatus,401);
- const before=await request("/api/admin/campaigns");
- const original=before.items.find(x=>x.id===created.id);
- assert.equal(original.status,"DRAFT");
- assert.match(original.preview_photo.url,/^\/photos\//);
- assert.match(original.preview_photo.source,/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
- assert.match(original.preview_photo.license,/^CC BY-SA /);
- assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"},false)).httpStatus,401);
- assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"REJECTED",owner_confirmed:true,reason:"  "})).httpStatus,422);
- const reject=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"});
- assert.equal(reject.status,"REJECTED");
- assert.equal(reject.replacement_status,"DRAFT");
- assert.ok(reject.replacement_id);
- assert.notEqual(reject.preview_photo.slug,original.preview_photo.slug);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,2);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM audit_log WHERE action='REJECTED_REGENERATED'").get().count,1);
- const after=await request("/api/admin/campaigns");
- const previous=after.items.find(x=>x.id===created.id);
- const replacement=after.items.find(x=>x.id===reject.replacement_id);
- assert.equal(previous.status,"REJECTED");
- assert.equal(previous.rejection_reason,"Foto kurang menarik");
- assert.equal(previous.replacement_id,reject.replacement_id);
- assert.equal(replacement.status,"DRAFT");
- assert.equal(replacement.revision,1);
- assert.notEqual(replacement.caption,original.caption);
- assert.notEqual(replacement.preview_photo.slug,original.preview_photo.slug);
- assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"REJECTED",owner_confirmed:true,reason:"Sekali lagi"})).httpStatus,409);
- assert.equal((await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"APPROVED",owner_confirmed:true})).httpStatus,409);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,2);
- const approved=await request("/api/admin/campaigns/"+replacement.id+"/status","PATCH",
-  {status:"APPROVED",owner_confirmed:true});
- assert.equal(approved.status,"APPROVED");
- const checked=(await request("/api/admin/campaigns")).items.find(x=>x.id===replacement.id);
- assert.equal(checked.status,"APPROVED");
- assert.equal(checked.preview_photo.slug,replacement.preview_photo.slug);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM marketing_publications WHERE status='POSTED'").get().count,0);
- sqlite.close();
-});
-test("owner can reject successive replacements while preserving both originals and feedback",async()=>{
- const {request,sqlite,env}=fixture();
- const first=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Facebook",
-  caption:"Jelajahi West Nusa Penida bersama operator lokal dan rencanakan perjalanan berdasarkan tanggal Anda."});
- const r1=await request("/api/admin/campaigns/"+first.id+"/status","PATCH",
-  {status:"REJECTED",reason:"Ganti gambar",owner_confirmed:true});
- const r2=await request("/api/admin/campaigns/"+r1.replacement_id+"/status","PATCH",
-  {status:"REJECTED",reason:"Ganti gaya caption",owner_confirmed:true});
- assert.equal(r2.status,"REJECTED");
- assert.notEqual(r2.replacement_id,r1.replacement_id);
- const items=(await request("/api/admin/campaigns")).items;
- assert.equal(items.filter(x=>x.status==="REJECTED").length,2);
- assert.equal(items.filter(x=>x.status==="DRAFT").length,1);
- assert.equal(items.find(x=>x.id===r2.replacement_id).revision,2);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM campaign_drafts").get().count,3);
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM audit_log WHERE action='REJECTED_REGENERATED'").get().count,2);
- sqlite.close();
-});
-test("failed Workers AI regeneration falls back to safe editorial draft without auto posting",async()=>{
- const {request,sqlite,env}=fixture();
- env.AI={run:async()=>{throw Error("AI quota exhausted")}};
- const created=await request("/api/admin/campaigns","POST",{activity_id:"ISLAND_TOUR_CAR",platform:"Instagram",
-  caption:"Jelajahi pesona Nusa Penida Barat serta pemandangan laut yang memikat. Tanyakan pilihan rute."});
- const r=await request("/api/admin/campaigns/"+created.id+"/status","PATCH",
-  {status:"REJECTED",owner_confirmed:true,reason:"Buat lebih estetik"});
- assert.equal(r.status,"REJECTED");
- assert.equal(r.generator,"SAFE_EDITORIAL_FALLBACK");
- assert.equal((await request("/api/admin/campaigns")).items.find(x=>x.id===r.replacement_id).status,"DRAFT");
- assert.equal(sqlite.prepare("SELECT COUNT(*) count FROM marketing_publications WHERE status='POSTED'").get().count,0);
+ const original=(await request("/api/admin/campaigns")).items.find(x=>x.id===created.id);
+ assert.equal(original.status,"DRAFT");assert.match(original.preview_photo.url,/^\/photos\//);assert.match(original.preview_photo.source,/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+ const path="/api/admin/campaigns/"+created.id+"/status";
+ assert.equal((await request(path,"PATCH",{status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"},false)).httpStatus,401);
+ assert.equal((await request(path,"PATCH",{status:"REJECTED",owner_confirmed:true,reason:"  "})).httpStatus,422);
+ const rejected=await request(path,"PATCH",{status:"REJECTED",owner_confirmed:true,reason:"Foto kurang menarik"});
+ assert.equal(rejected.status,"REJECTED");assert.equal(rejected.replacement_id,null);assert.equal(aiCalls,0);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,1);
+ const after=(await request("/api/admin/campaigns")).items.find(x=>x.id===created.id);
+ assert.equal(after.status,"REJECTED");assert.equal(after.rejection_reason,"Foto kurang menarik");
+ assert.equal((await request(path,"PATCH",{status:"APPROVED",owner_confirmed:true})).httpStatus,409);
+ assert.equal((await request(path,"PATCH",{status:"REJECTED",owner_confirmed:true,reason:"Sekali lagi"})).httpStatus,409);
+ assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM audit_log WHERE action='REJECTED'").get().n,1);
  sqlite.close();
 });
 
@@ -982,16 +851,13 @@ test("verified Graph insights create a measured successor DRAFT and strategy wit
   assert.equal(metrics[0].reactions,39);
   assert.equal(metrics[0].link_clicks,null,"unknown clicks cannot be invented");
   assert.equal(metrics[0].data_status,"VERIFIED");
-  const feedback=sqlite.prepare("SELECT * FROM approved_social_learning").all();
-  assert.equal(feedback.length,1);
-  const successor=sqlite.prepare("SELECT * FROM campaign_drafts WHERE id=?").get(feedback[0].new_campaign_id);
-  assert.equal(successor.status,"DRAFT");
-  assert.match(successor.caption,/REVIEW/);
-  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,1);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,1);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM marketing_decisions").get().n,0);
   const intel=await request("/api/admin/marketing/intelligence");
   assert.ok(intel.observation_count>=1);
   await worker.scheduled({cron:"0 * * * *"},env,{});
-  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,1);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,0);
  }finally{globalThis.fetch=original;sqlite.close();}
 });
 test("unknown or removed Meta insights must not create invented observations or improved drafts",async()=>{
@@ -1228,43 +1094,10 @@ test("research source outages keep draft workflow functional and never fabricate
  sqlite.close();
 });
 
-test("weekly automatic topic research creates owner-review DRAFT with sourced media and no unapproved posts",async()=>{
- const {db,sqlite,env,request}=fixture();
- env.PHOTO_KV={value:new Map(),get(k){return this.value.get(k)||null},
-  put(k,v){this.value.set(k,v);return Promise.resolve()},delete(k){this.value.delete(k);return Promise.resolve()}};
- const jpeg=new Uint8Array(22000);jpeg.set([255,216,255,224],0);jpeg.set([255,217],21998);
- const sourceFetch=async url=>{
-  if(String(url).includes("/w/api.php")){
-   const search=new URL(url).searchParams.get("gsrsearch");
-   const name=/manta/i.test(search)?"Manta Nusa Penida snorkeling":
-    /snorkeling/i.test(search)?"Snorkeling Nusa Penida":
-    /diamond/i.test(search)?"Diamond Beach Nusa Penida":"Kelingking Beach Nusa Penida";
-   const page={title:"File:"+name+".jpg",imageinfo:[{mime:"image/jpeg",
-    thumburl:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/automatic.jpg",
-    extmetadata:{Artist:{value:"Penida photo author"},LicenseShortName:{value:"CC BY 4.0"},
-     LicenseUrl:{value:"https://creativecommons.org/licenses/by/4.0/"}}}]};
-   return new Response(JSON.stringify({query:{pages:[page]}}),{status:200,headers:{"content-type":"application/json"}});
-  }
-  return new Response(jpeg,{status:200,headers:{"content-type":"image/jpeg"}});
- };
- const oldFetch=globalThis.fetch;globalThis.fetch=sourceFetch;
- try{
-  const result=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
-  assert.equal(result.httpStatus,200,JSON.stringify(result));
-  assert.equal(result.generated,7);
-  const drafts=sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts WHERE status='DRAFT'").get().n;
-  assert.equal(drafts,7);
-  const sourced=sqlite.prepare("SELECT COUNT(*) n FROM campaign_review_records WHERE media_slug LIKE 'research-%'").get().n;
-  assert.ok(sourced>=1,"weekly prep must attach Commons media to at least one draft before approval");
-  const onlyDraft=sqlite.prepare("SELECT status FROM campaign_drafts").all().every(x=>x.status==="DRAFT");
-  assert.equal(onlyDraft,true);
-  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_queue").get().n,0,"not posted/queued until owner approval");
-  const source=sqlite.prepare("SELECT source_url,license,author FROM researched_photo_library LIMIT 1").get();
-  assert.match(source.source_url,/commons\.wikimedia\.org/);assert.equal(source.license,"CC BY 4.0");
-  const repeated=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});
-  assert.equal(repeated.generated,0);
-  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,7);
- }finally{globalThis.fetch=oldFetch;sqlite.close();}
+test("retired campaign preparation cannot invoke research or create drafts",async()=>{
+ const {request,sqlite,env}=fixture();const original=globalThis.fetch;let requests=0;
+ try{globalThis.fetch=async()=>{requests++;throw Error("unexpected network");};const r=await request("/api/admin/marketing/prepare-week","POST",{owner_confirmed:true});assert.equal(r.httpStatus,410);assert.equal(requests,0);assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,0);}
+ finally{globalThis.fetch=original;sqlite.close();}
 });
 
 test("growth acquisition extracts only public travel questions and real mapped business names, no member identities",()=>{
@@ -1594,7 +1427,7 @@ test("public click-to-chat measures aggregate intent only, never a guest lead or
  assert.equal(growth.leads,0);
  sqlite.close();
 });
-test("existing published Meta post with verified zero views generates new owner-review growth draft instead of stalling",async()=>{
+test("existing published Meta post with verified zero views records metrics only",async()=>{
  const {request,sqlite,env}=fixture();
  env.META_APPROVED_AUTOPOST_ENABLED="true";
  env.META_PAGE_ID="1375913638943340";
@@ -1617,12 +1450,8 @@ test("existing published Meta post with verified zero views generates new owner-
   const stats=sqlite.prepare("SELECT views,data_status FROM approved_social_metrics").get();
   assert.equal(stats.views,0);
   assert.equal(stats.data_status,"VERIFIED");
-  const learning=sqlite.prepare("SELECT * FROM approved_social_learning").all();
-  assert.equal(learning.length,1);
-  assert.equal(learning[0].source_views,0);
-  const next=sqlite.prepare("SELECT status,caption FROM campaign_drafts WHERE id=?").get(learning[0].new_campaign_id);
-  assert.equal(next.status,"DRAFT");
-  assert.match(next.caption,/tanggal|peserta|date|group size/i);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM approved_social_learning").get().n,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,1);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM approved_social_queue").get().n,1,"new draft not automatically approved");
  }finally{globalThis.fetch=original;sqlite.close();}
 });

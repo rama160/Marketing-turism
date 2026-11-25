@@ -2,11 +2,10 @@
 // Immutable approved snapshots, one queue row per channel, no unattended retry of Graph POST.
 // No Metricool mutation: new approval queue never imports existing Metricool posts.
 import {postGraph,checkMetaReadAccess} from "./meta-publisher.mjs";
-import {marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
-import {weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
+import {marketingIntelligence} from "./marketing-intelligence.mjs";
+import {weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {campaignPhotoBySlug,campaignPhotoForDraft} from "./marketing-media.mjs";
 import {resolveCampaignPhoto} from "./photo-library.mjs";
-import {choosePhotoForReview} from "./photo-research.mjs";
 const uid=()=>crypto.randomUUID();
 const pageHost="https://marketing-turism-agent.finchat-ai-gateway.workers.dev";
 const gBase="https://graph.facebook.com/v26.0";
@@ -210,60 +209,6 @@ export async function feedbackEvidence(db,day){
  return [...manual,...real.map(r=>({...r,impressions:null,source:"META_INSIGHTS",
   published_hour:Number(new Date(r.published_at.replace(" ","T")+"Z").toLocaleString("en-US",{timeZone:"Asia/Makassar",hour:"2-digit",hour12:false}))%24}))];
 }
-async function newLearningDraft(db,env,row,stats,sourceEvidence){
- if(!Number.isSafeInteger(stats.views)||stats.views<0)return "UNVERIFIED_VIEWS";
- if(await db.prepare("SELECT queue_id FROM approved_social_learning WHERE queue_id=?").bind(row.id).first())return "ALREADY_LEARNED";
- const day=baliDay(Date.now()),obs=sourceEvidence.filter(x=>(x.views??x.impressions)>0);
- const strategy=marketingIntelligence(obs,weeklyDrafts(marketingWeekStart(day)),day);
- const top=strategy.recommendations.find(x=>channels.has(x.platform)&&x.samples>0)||
-  strategy.recommendations.find(x=>channels.has(x.platform));
- const lowReach=stats.views<50;
- const preferredPlatform=lowReach?row.platform:(top?.platform||row.platform);
- const preferredActivity=lowReach?row.activity_id:(top?.activity_id||row.activity_id);
- const revision=(obs.length%5)+1;
- const reason=lowReach?"caption dan CTA perlu berbeda karena "+stats.views+" views; gunakan pertanyaan tanggal dan jumlah peserta":
-  "Buat variasi dari performa "+stats.views+" media views nyata pada "+row.platform;
- let caption=replacementCampaignCaption({activity_id:preferredActivity,platform:preferredPlatform,revision,reason,date:day});
- let generator="CURATED_FEEDBACK";
- if(env.AI){
-  try{
-   const data=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
-    {role:"system",content:"Write an original organic tourism caption for owner review only in Indonesian, 100-700 characters. No invented prices, availability, guarantees or wildlife sightings. Avoid repeating the previous post. If reach was low, change the opening hook and offer a useful itinerary tip. Ask the reader to share their travel date and group size, without implying availability. Return caption only."},
-    {role:"user",content:"Nusa Penida Experiences; "+preferredPlatform+"; "+preferredActivity+". Based on verified "+stats.views+" views and "+(stats.reactions??"unavailable")+" reactions on prior post. Use a different storytelling angle."}
-   ]});
-   const proposed=String(data?.response||"").trim();
-   if(proposed.length>=100&&proposed.length<=700&&!/\b(Rp\s?\d|gratis|diskon|guaranteed)\b/i.test(proposed)){
-    caption="[REVIEW "+day+" · LEARNING · AI] "+proposed;
-    generator="WORKERS_AI";
-   }
-  }catch(_){}
- }
- const id=uid();
- // The next draft researches licensed imagery when the owner has not supplied an unused photo.
- // Photo choice remains editable until approval. Offline/invalid Commons falls back to the gallery.
- let discovered={slug:null,origin:"FALLBACK_VETTED_GALLERY"};
- try{discovered=await choosePhotoForReview(db,env,preferredActivity,caption,{discover:true})}catch(_){}
- const draftSlug=discovered.slug||campaignPhotoForDraft(preferredActivity,caption).slug;
- const strategyRows=strategy.recommendations.slice(0,5).map(x=>({platform:x.platform,activity_id:x.activity_id,score:x.strategy_score,basis:x.basis,samples:x.samples}));
- try{
-  await db.batch([
-   db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,'DRAFT')")
-    .bind(id,preferredActivity,preferredPlatform,caption),
-   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?)")
-    .bind(id,draftSlug,0),
-   db.prepare("INSERT INTO approved_social_learning(queue_id,new_campaign_id,strategy_version,source_views) VALUES(?,?,?,?)")
-    .bind(row.id,id,MARKETING_STRATEGY_VERSION,stats.views),
-   db.prepare("INSERT INTO marketing_decisions(id,week_start,strategy_version,input_observations,ranked_json,assumptions) VALUES(?,?,?,?,?,?)")
-    .bind(uid(),marketingWeekStart(day),MARKETING_STRATEGY_VERSION,strategy.observation_count,JSON.stringify(strategyRows),
-     (lowReach?"Distribusi lemah, belum ada bukti konten sukses. Prioritaskan hook dan CTA yang dapat diuji. ":
-      "Bukti tayangan Meta tersedia. ")+"Draf baru dari pengamatan Meta asli; "+stats.views+" views, data lainnya nullable; pemilik wajib menyetujui."),
-   db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-    .bind(uid(),"campaign",id,"STRATEGY_FEEDBACK_DRAFT",JSON.stringify({source_queue_id:row.id,views:stats.views,generator,owner_review_required:true,
-       low_reach:lowReach,photo_origin:discovered.origin,photo_slug:draftSlug}))
-  ]);
-  return "NEW_DRAFT_CREATED";
- }catch(_){return "ALREADY_PROCESSED";}
-}
 export async function collectApprovedInsights(db,env,request=fetch,now=Date.now()){
  if(!approvedAutopilotEnabled(env))return {status:"DISABLED"};
  const rows=await db.prepare("SELECT q.*,c.activity_id FROM approved_social_queue q "+
@@ -281,11 +226,7 @@ export async function collectApprovedInsights(db,env,request=fetch,now=Date.now(
    "shares=excluded.shares,saves=excluded.saves,link_clicks=excluded.link_clicks,data_status=excluded.data_status,error_code=excluded.error_code,recorded_at=CURRENT_TIMESTAMP")
    .bind(uid(),row.id,day,stats.views,stats.reach,stats.reactions,stats.comments,stats.shares,stats.saves,null,stats.data_status,stats.error_code).run();
   await db.prepare("UPDATE approved_social_queue SET last_insight_at=CURRENT_TIMESTAMP WHERE id=? AND status='POSTED'").bind(row.id).run();
-  let learning="NEED_VERIFIED_METRICS";
-  if(stats.data_status==="VERIFIED"&&stats.views!==null){
-   const evidence=await feedbackEvidence(db,day);
-   learning=await newLearningDraft(db,env,row,stats,evidence);
-  }
+  const learning=stats.data_status==="VERIFIED"?"METRICS_ONLY_MANUAL_CAMPAIGNS":"NEED_VERIFIED_METRICS";
   summary.push({queue_id:row.id,platform:row.platform,result:stats.data_status,learning});
  }
  return {status:"CHECKED",outcomes:summary};

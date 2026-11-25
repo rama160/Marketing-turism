@@ -388,3 +388,5 @@
 .dashboardPage #cmsQuickPhotoSelected[hidden],.dashboardPage #cmsQuickPhotoChooser[hidden],.dashboardPage #cmsQuickPhotoRightsWrap[hidden]{display:none}
 .dashboardPage .npeQuickPhotoDialog input[readonly]{background:#eff4f5;color:#46626a}
 @media(max-width:600px){.dashboardPage .npeQuickPhotoGallery{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboardPage .npeCmsHeaderActions{width:100%}.dashboardPage .npeCmsHeaderActions button{flex:1}}
+
+.dashboardPage .dashBrand img{width:108px;height:66px;object-fit:contain;background:#07344d;padding:5px;border-radius:9px}.dashboardPage .dashBrand strong{display:none}@media(max-width:760px){.dashboardPage .dashBrand img{width:90px;height:56px}}

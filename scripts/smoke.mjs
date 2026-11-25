@@ -8,7 +8,7 @@ async function get(path,expectedStatus=200){
 }
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
-if(health.version!=="3.33.0")throw Error("Cloudflare release version mismatch: "+health.version);
+if(health.version!=="3.34.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
 if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
@@ -133,13 +133,13 @@ if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.photos?.hero||!editorManifest.photos?.["west-kelingking"])
  throw Error("Live published content snapshot incomplete: site editor would display blank copy");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
-if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.33.0"')||
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.34.0"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
  !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
  throw Error("Standalone agent dashboard or navigation missing");
 if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
- page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.33.0"')||
+ page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.34.0"')||
  !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
  guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
  throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
@@ -189,7 +189,7 @@ for(const slug of ["kelingking","broken-beach","diamond-beach","manta-point","ma
 }
 if(!styles.includes('.spot-cover .spot-cover-image')||!styles.includes('.packageArt .package-cover-image')||!styles.includes('.premiumHero .heroBackdrop')||!styles.includes('background:#063c58!important'))throw Error("Mobile image fit / fallback styles not deployed");
 const swLive=await get("/service-worker.js");
-if(!swLive.includes("marketing-turism-public-v33"))throw Error("PWA asset cache did not bump");
+if(!swLive.includes("marketing-turism-public-v34"))throw Error("PWA asset cache did not bump");
 // Guest contact: primary click-to-chat must not be confused with public catalog.
 const number="628561752525";
 const contact="https://wa.me/"+number,catalog="https://wa.me/c/"+number;
@@ -214,9 +214,9 @@ const waSendWithoutOwner=await fetch(base+"/api/admin/whatsapp/send",{method:"PO
 if(waSendWithoutOwner.status!==401)throw Error("Guest could call WhatsApp sending route: "+waSendWithoutOwner.status);
 if(!dashboard.includes('id="waThreadList"')||!dashboard.includes('id="waSendApproved" disabled')||!app.includes('waSendingEnabled=cfg.sending_enabled===true'))throw Error("Owner-only WhatsApp inbox management UI missing");
 if(!dashboard.includes('id="marketingMetricsForm"')||!app.includes('admin/marketing/intelligence'))throw Error("Owner learning dashboard v3.8.0 missing");
-if(!dashboard.includes('id="prepareMarketingWeek"')||!app.includes('admin/marketing/prepare-week'))throw Error("Owner organic marketing autopilot UI missing");
+if(dashboard.includes('id="prepareMarketingWeek"')||app.includes('admin/marketing/prepare-week')||!dashboard.includes("Kampanye manual"))throw Error("Retired automatic campaign UI still deployed");
 if(!dashboard.includes('id="waSetupGuideId"')||!dashboard.includes('Panduan Hubungkan WhatsApp (Bahasa Indonesia)'))throw Error("Owner Indonesian WhatsApp guide link missing on live site");
-const emblem=await get("/icon.svg");if(!emblem.includes("pari manta")||!emblem.includes("cliff"))throw Error("Manta cliff brand not live");
+const emblem=await get("/icon.svg");if(!emblem.includes("Approved transparent logo")||!emblem.includes("airplane, cliff and ocean waves"))throw Error("Approved logo not live");
 for(const subpage of ["/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html","/privacy.html","/terms.html","/cancellation.html"]){
  const h=await get(subpage);
  if(!h.includes('src="/icon.svg"')||!h.includes('src="/language.js"'))throw Error("Bilingual brand header missing on "+subpage);
@@ -231,7 +231,7 @@ if(denied.status!==401)throw Error("CMS unauthorized publishing not blocked: "+d
 // Acquisition v3.12: verify real deployed assets and fail-closed endpoints without creating leads.
 if(!dashboard.includes('id="tab-growth"')||!dashboard.includes('id="growthResearch"')||
  !dashboard.includes('data-tab="growth"')||!app.includes('admin/growth')||
- !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.33.0")).includes("/api/public/intent"))
+ !app.includes("function renderGrowth")||!(await get("/website-content.js?v=3.34.0")).includes("/api/public/intent"))
  throw Error("Customer acquisition dashboard or click-to-chat code not deployed");
 if(!styles.includes(".growthKpi")||!styles.includes(".growthColumns"))
  throw Error("Customer acquisition mobile styling absent");
@@ -271,4 +271,4 @@ await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
 if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.33.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+console.log("SUCCESS v3.34.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");

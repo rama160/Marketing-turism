@@ -76,7 +76,7 @@ test("all Wikimedia gallery photos credit actual photographers",()=>{
  }
 });
 
-test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/pari manta|manta/i);assert.match(icon,/cliff|tebing/i);assert.doesNotMatch(home,/PENIVARA/)});
+test("official Nusa Penida Experiences branding is consistent across PWA",()=>{const home=read("index.html"),tour=read("island-tour.html"),icon=read("icon.svg");assert.match(home,/NUSA PENIDA/);assert.match(tour,/NUSA PENIDA/);assert.match(icon,/airplane, cliff and ocean waves/);assert.doesNotMatch(home,/PENIVARA/)});
 
 test("gallery CSP allows only Wikimedia Commons and upload thumbnail hosts, plus local site assets",()=>{
  const policy=read("_headers");
@@ -121,7 +121,7 @@ test("premium tourism visuals use real credited destination images and honest ac
  for(const path of ["/west-tour.html","/east-tour.html","/snorkeling.html"])assert.ok(home.includes(path));
  assert.match(home,/class="tour-showcase-grid"/);
  assert.match(home,/Wikimedia Commons/);
- assert.match(logo,/Siluet tebing Nusa Penida dan pari manta/);
+ assert.match(logo,/Approved transparent logo/);
  assert.match(read("dashboard.html"),/id="quickSave"/);
  assert.match(read("app.js"),/admin\/site-content/);
  assert.match(home,/Penerimaan permintaan|Pengiriman lead akan tersedia/);
@@ -142,7 +142,7 @@ test("all large cover images render as genuine img elements with safe mobile fal
  assert.match(css,/background:#063c58!important/);
  assert.match(loader,/photoFallbackStage/);
  assert.match(loader,/photo-unavailable\.svg/);
- assert.match(read("service-worker.js"),/public-v33/);
+ assert.match(read("service-worker.js"),/public-v34/);
 });
 
 test("dashboard boot and tab interactions execute in a browser-like DOM, including token login",async()=>{
@@ -296,11 +296,11 @@ test("owner WhatsApp dashboard links directly to the Indonesian setup guide",()=
 
 test("owner marketing organic autopilot is transparent and gated",()=>{
  const html=read("dashboard.html"),app=read("app.js");
- assert.match(html,/id="prepareMarketingWeek"/);
- assert.match(html,/id="marketingWeekFeedback"/);
+ assert.doesNotMatch(html,/id="prepareMarketingWeek"/);
+ assert.match(html,/Kampanye manual/);
  assert.match(html,/Hubungkan Instagram & Facebook/);
- assert.match(html,/antrean publikasi draf yang disetujui aktif/);
- assert.match(app,/admin\/marketing\/prepare-week/);
+ assert.match(html,/Antrean publikasi draf yang disetujui tetap tersedia/);
+ assert.doesNotMatch(app,/admin\/marketing\/prepare-week/);
  assert.match(app,/owner_confirmed:true/);
 });
 
@@ -330,7 +330,7 @@ test("campaign dashboard separates historic drafts and flags invalid Meta creden
  assert.match(app,/META_PAGE_ACCESS_TOKEN/);
  assert.match(app,/\b401\b/);
  assert.match(app,/Asia\/Makassar/);
- assert.match(sw,/marketing-turism-public-v33/);
+ assert.match(sw,/marketing-turism-public-v34/);
 });
 
 test("owner campaign review has licensed photos, full captions and explicit rejection UI",()=>{
@@ -340,14 +340,14 @@ test("owner campaign review has licensed photos, full captions and explicit reje
  assert.match(app,/campaignCaption/);
  assert.match(app,/preview_photo/);
  assert.match(app,/data-action="rejectCampaign"/);
- assert.match(app,/Tolak &amp; Buat Ulang/);
+ assert.match(app,/Tolak Draf/);
  assert.match(app,/status:"REJECTED"/);
  assert.match(app,/owner_confirmed:true/);
- assert.match(app,/replacement_id/);
+ assert.match(app,/Tidak ada draf pengganti otomatis/);
  assert.match(app,/Data diperbarui|Data diperbarui/);
  assert.match(style,/\.campaignVisual img/);
  assert.match(style,/\.campaignReviewActions/);
- assert.match(read("service-worker.js"),/public-v33/);
+ assert.match(read("service-worker.js"),/public-v34/);
 });
 
 test("owner can deliberately schedule an old approved post without silently posting it",()=>{

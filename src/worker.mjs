@@ -1,9 +1,9 @@
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
-import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart,replacementCampaignCaption} from "./sales.mjs";
+import {leadScore,salesDraft,weeklyDrafts,marketingWeekStart} from "./sales.mjs";
 import {campaignPhotoForDraft,campaignPhotoBySlug} from "./marketing-media.mjs";
-import {validateMarketingObservation,marketingIntelligence,MARKETING_STRATEGY_VERSION} from "./marketing-intelligence.mjs";
-import {metaPublicationConfig,metaConnectionStatus,checkMetaReadAccess,publishMetaTourism} from "./meta-publisher.mjs";
+import {validateMarketingObservation,marketingIntelligence} from "./marketing-intelligence.mjs";
+import {metaConnectionStatus,checkMetaReadAccess} from "./meta-publisher.mjs";
 import {approvedAutopilotEnabled,chooseApprovedSchedule,queueApprovedCampaign,approvedQueueStatus,
  cancelApprovedQueue,dispatchApprovedQueue,collectApprovedInsights,feedbackEvidence} from "./approved-autopilot.mjs";
 import {cancellationPreview,CANCELLATION_POLICY_VERSION} from "./cancellation.mjs";
@@ -75,66 +75,6 @@ async function runMetaDiagnostic(db,env,source){
  await db.prepare("DELETE FROM meta_connection_checks WHERE day < date('now','-30 days')").run();
  return {status:"CHECKED",history:await recentMetaChecks(db)};
 }
-async function prepareMarketingWeek(db,env,dateString,source){
- const monday=marketingWeekStart(dateString),runId="campaign-week-"+monday;
- if(await db.prepare("SELECT id FROM scheduled_runs WHERE id=?").bind(runId).first())return {week_start:monday,generated:0,status:"ALREADY_PREPARED"};
- // Daily recovery creates new future-dated review drafts, not expired editorial suggestions.
- const late=dateString>monday;
- const drafts=weeklyDrafts(monday).map((item,i)=>{
-  if(!late)return item;
-  const d=new Date(dateString+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+i);
-  const planned_date=d.toISOString().slice(0,10);
-  return {...item,planned_date,caption:item.caption.replace(/^\[REVIEW [^\]]+\]/,
-   "[REVIEW "+planned_date+" · "+item.lang.toUpperCase()+"]")};
- });
- const learned=marketingIntelligence(await marketingEvidence(db,dateString),drafts,dateString);
- // Bounded autonomous source discovery BEFORE new review drafts. Existing approved/queued
- // posts never change. Never claim live trends when only exploratory/performance data exists.
- const selectedPhotos=[],reserved=new Set(),attemptedResearch=new Set();
- for(const draft of drafts){
-  let selection={slug:null,origin:"FALLBACK_VETTED_GALLERY"};
-  try{
-   selection=await choosePhotoForReview(db,env,draft.activity_id,draft.caption,{
-    discover:!attemptedResearch.has(draft.activity_id),exclude:reserved});
-  }catch(_){}
-  if(selection.search_status)attemptedResearch.add(draft.activity_id);
-  if(selection.slug)reserved.add(selection.slug);
-  selectedPhotos.push(selection);
- }
- const ranked=learned.recommendations.map(x=>({...x,recommended_hour:learned.best_hours[x.platform]?.hour??null}));
- const statements=[
-  db.prepare("INSERT INTO scheduled_runs(id,kind) VALUES(?,?)").bind(runId,"WEEKLY_MARKETING_DRAFTS"),
-  db.prepare("INSERT INTO marketing_decisions(id,week_start,strategy_version,input_observations,ranked_json,assumptions) VALUES(?,?,?,?,?,?)")
-    .bind(uuid(),monday,MARKETING_STRATEGY_VERSION,learned.observation_count,JSON.stringify(ranked),
-    learned.observation_count?"Kinerja terukur; saran jam hanya jika data memenuhi batas minimum":
-    "Tanpa data nyata; semua 7 konten hanya draf, tidak ada publikasi otomatis")
- ];
- for(const [i,item] of drafts.entries()){
-  const id=uuid(),picked=selectedPhotos[i];
-  statements.push(db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
-   .bind(id,item.activity_id,item.platform,item.caption,"DRAFT"));
-  if(picked.slug)statements.push(db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,0)")
-   .bind(id,picked.slug));
- }
- // Prepare a bounded 3-post opt-in queue; Graph publication is still DISABLED by default.
- const eligible=ranked.filter(x=>x.platform==="Instagram"||x.platform==="Facebook"),chosen=[],covered=new Set();
- for(const item of eligible){
-  if(chosen.length===3)break;
-  if(chosen.length===1&&covered.has(item.activity_id)&&eligible.some(c=>!covered.has(c.activity_id)&&!chosen.some(y=>y.index===c.index)))continue;
-  chosen.push(item);covered.add(item.activity_id);
- }
- if(!late)for(const [n,item] of chosen.entries()){
-  const date=new Date(monday+"T00:00:00Z");date.setUTCDate(date.getUTCDate()+[0,2,4][n]);
-  statements.push(db.prepare("INSERT INTO marketing_publications(id,week_start,intended_date,idea_index,status) VALUES(?,?,?,?,?)")
-   .bind(uuid(),monday,date.toISOString().slice(0,10),item.index,"READY"));
- }
- statements.push(db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-  .bind(uuid(),"scheduled_run",runId,"DRAFTS_CREATED",JSON.stringify({count:drafts.length,source,late_recovery:late,publication_slots:late?0:chosen.length,observations:learned.observation_count,automatically_published:false,
-   imagery:selectedPhotos.map(x=>({source:x.origin||"GALLERY",search:x.search_status||"NOT_REQUIRED"}))})));
- await db.batch(statements);
- return {week_start:monday,generated:drafts.length,status:"DRAFT_REVIEW",observations_used:learned.observation_count,
-  best_hours:learned.best_hours,ranked:ranked.slice(0,3),publication:"NONE"};
-}
 async function activeRate(db,operator,item,bookingMode="LEGACY",variantId="DEFAULT"){
  return db.prepare("SELECT r.* FROM rates r JOIN operators o ON o.id=r.operator_id WHERE r.operator_id=? AND r.item_id=? AND r.booking_mode=? AND r.variant_id=? AND r.active=1 AND r.verified=1 AND o.status='VERIFIED' ORDER BY r.version DESC LIMIT 1").bind(operator,item,bookingMode,variantId).first();
 }
@@ -171,7 +111,7 @@ async function route(req,env,ctx){
  if(path==="/api/webhooks/whatsapp"&&method==="GET")return waChallenge(req,env);
  if(path==="/api/webhooks/whatsapp"&&method==="POST"){if(!db)return bad("D1 database belum aktif",503);return waWebhook(req,env,db);}
  if(method==="OPTIONS")return new Response(null,{status:204,headers:{allow:"GET,POST,PATCH,DELETE"}});
- if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.33.0",db:!!db,ai:!!env.AI});
+ if(path==="/api/health")return json({status:db?"ok":"database_missing",version:"3.34.0",db:!!db,ai:!!env.AI});
 
  // Generated non-HTML assets avoid Cloudflare Assets canonical redirect recursion.
  if(path==="/__npe_templates"||path.startsWith("/__npe_templates/"))return new Response("Not found",{status:404,headers:{"cache-control":"no-store","x-robots-tag":"noindex"}});
@@ -725,54 +665,17 @@ async function route(req,env,ctx){
    "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id WHERE c.id=?").bind(cm[1]).first();
   if(!old)return bad("Kampanye tidak ditemukan",404);
   if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib",403);
-  if(old.rejected_at)return bad("Draf telah ditolak. Tinjau draf pengganti.",409);
+  if(old.rejected_at)return bad("Draf telah ditolak. Buat draf baru secara manual jika diperlukan.",409);
   if(status==="REJECTED"){
    if(old.status!=="DRAFT")return bad("Hanya draf yang belum disetujui dapat ditolak",409);
    const reason=str(b.reason,180);
    if(reason.length<3)return bad("Tuliskan alasan penolakan minimal 3 karakter",422);
-   const revision=Number(old.revision||0)+1;
-   if(revision>100)return bad("Batas revisi tercapai; buat draf manual",422);
-   const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-   let caption=replacementCampaignCaption({activity_id:old.activity_id,platform:old.platform,reason,revision,date:day});
-   let generator="SAFE_EDITORIAL_FALLBACK";
-   // Workers AI is optional: owner gets a draft immediately even when AI is unavailable.
-   // No guests, tokens, rates or payment data is sent to the model.
-   if(env.AI){
-    try{
-     const output=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast",{messages:[
-      {role:"system",content:"You are an Indonesian tourism editorial assistant. Produce ONE ORIGINAL social media caption in the same language as the previous caption, 90-850 characters. Do not invent prices, discounts, safety guarantees, wildlife sightings, live availability, legal authorizations, testimonials, or specific unverified inclusions. Do not use markdown or quotes. This is an OWNER REVIEW DRAFT and must never be published without approval. Avoid repeating the previous wording. End with an inviting question and hashtags."},
-      {role:"user",content:"Brand Nusa Penida Experiences; platform "+old.platform+"; product "+old.activity_id+". Owner rejected prior draft with feedback: "+reason+". Prior copy: "+old.caption.slice(0,700)+". Write a different persuasive caption."}
-     ]});
-     const suggestion=str(output?.response||"",1150);
-     const forbidden=/\b(rp\s?\d|guaranteed|100%|pasti melihat manta|gratis|free trip|discount|diskon|terjamin|insurance included)\b/i;
-     if(suggestion.length>=90&&suggestion.length<=850&&!forbidden.test(suggestion)){
-      const link="https://marketing-turism-agent.finchat-ai-gateway.workers.dev/"+
-       (old.activity_id==="SNORKELING_3_SPOTS"?"snorkeling.html":"island-tour.html");
-      caption="[REVIEW "+day+" · AI · V"+revision+"] "+suggestion+" "+link;
-      generator="WORKERS_AI";
-     }
-    }catch(_){/* Fall back to curated safe alternatives; never block owner. */}
-   }
-   const originalSlug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
-   const newPhoto=campaignPhotoForDraft(old.activity_id,caption,originalSlug,revision);
-   const replacementId=uuid();
-   // Transactional write: no duplicate replacement on repeat rejection or owner double-click.
-   try{
-    await db.batch([
-     db.prepare("INSERT INTO campaign_drafts(id,activity_id,platform,caption,status) VALUES(?,?,?,?,?)")
-      .bind(replacementId,old.activity_id,old.platform,caption,"DRAFT"),
-     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?)")
-      .bind(replacementId,newPhoto.slug,revision),
-     db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision,rejected_at,rejection_reason,replacement_id) "+
-      "VALUES(?,?,?,CURRENT_TIMESTAMP,?,?) ON CONFLICT(campaign_id) DO UPDATE SET "+
-      "rejected_at=CURRENT_TIMESTAMP,rejection_reason=excluded.rejection_reason,replacement_id=excluded.replacement_id "+
-      "WHERE campaign_review_records.rejected_at IS NULL")
-      .bind(cm[1],originalSlug,Number(old.revision||0),reason,replacementId),
-     db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
-      .bind(uuid(),"campaign",cm[1],"REJECTED_REGENERATED",JSON.stringify({reason,revision,replacement_id:replacementId,media_slug:newPhoto.slug,generator}))
-    ]);
-   }catch(_){return bad("Gagal membuat pengganti atau draf sudah diproses. Muat ulang status.",409);}
-   return json({id:cm[1],status:"REJECTED",replacement_id:replacementId,replacement_status:"DRAFT",preview_photo:newPhoto,generator});
+   const slug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
+   await db.batch([
+    db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision,rejected_at,rejection_reason) VALUES(?,?,?,CURRENT_TIMESTAMP,?) ON CONFLICT(campaign_id) DO UPDATE SET rejected_at=CURRENT_TIMESTAMP,rejection_reason=excluded.rejection_reason WHERE campaign_review_records.rejected_at IS NULL").bind(cm[1],slug,Number(old.revision||0),reason),
+    db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"campaign",cm[1],"REJECTED",JSON.stringify({reason}))
+   ]);
+   return json({id:cm[1],status:"REJECTED",replacement_id:null});
   }
   if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");
   const posted=str(b.public_url,500);
@@ -834,9 +737,9 @@ async function route(req,env,ctx){
  if(path==="/api/admin/marketing/publications"&&method==="GET"){
   const day=new Date().toISOString().slice(0,10);
   const rows=await db.prepare("SELECT id,week_start,intended_date,idea_index,status,facebook_post_id,instagram_post_id,error_reason,attempted_at,updated_at FROM marketing_publications ORDER BY intended_date DESC LIMIT 80").all();
-  return json({independent_meta_publishing_enabled:metaPublicationConfig(env,day)!==null,
+  return json({independent_meta_publishing_enabled:false,
    operator_confirmation_required:true,posts:rows.results,
-   note:"Indikator ENABLED hanya berarti konfigurasi memenuhi gerbang lokal; belum membuktikan izin Graph Meta valid atau konten berhasil terbit."});
+   note:"Antrean lama hanya riwayat; publikasi dari ide mingguan dinonaktifkan."});
  }
  if(path==="/api/admin/marketing/approved-queue"&&method==="GET"){
   return json(await approvedQueueStatus(db,env));
@@ -856,7 +759,7 @@ async function route(req,env,ctx){
   const analysis=marketingIntelligence(observations,weekly,day);
   const decisions=(await db.prepare("SELECT week_start,strategy_version,input_observations,ranked_json,assumptions,created_at FROM marketing_decisions ORDER BY created_at DESC LIMIT 8").all()).results;
   return json({...analysis,decisions:decisions.map(x=>({...x,ranked:JSON.parse(x.ranked_json||"[]"),ranked_json:undefined})),
-   production:{weekly_cron:"Senin 09.00 WITA",review_only:true,automatic_platform_publishing:approvedAutopilotEnabled(env),
+   production:{weekly_cron:null,automatic_campaign_creation:false,review_only:true,automatic_platform_publishing:approvedAutopilotEnabled(env),
     metricool_api:"EXTERNAL_API_NOT_CONNECTED",meta_graph:metaConnectionStatus(env,day).ids_valid&&metaConnectionStatus(env,day).tokens_present?"CREDENTIALS_PRESENT_NOT_VERIFIED":"CREDENTIALS_INCOMPLETE",
     payment_collection:false,guest_leads:env.PUBLIC_LEADS_ENABLED==="true"}});
  }
@@ -879,12 +782,7 @@ async function route(req,env,ctx){
   ]);
   return json({id,status:"RECORDED",source:"OWNER_VERIFIED",automatic_publishing:false},201);
  }
- if(path==="/api/admin/marketing/prepare-week"&&method==="POST"){
-  const b=await parse(req);
-  if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib untuk menyiapkan kampanye",403);
-  const day=new Date().toISOString().slice(0,10);
-  return json({...await prepareMarketingWeek(db,env,day,"OWNER_DASHBOARD"),publication:"NONE",social_networks_connected:false});
- }
+ if(path==="/api/admin/marketing/prepare-week"&&method==="POST")return bad("Pembuatan kampanye mingguan otomatis telah dihapus. Buat kampanye secara manual.",410);
  if(path==="/api/admin/marketing/draft"&&method==="POST"){
   const b=await parse(req),activity=str(b.activity_id,80);
   if(!["SNORKELING_3_SPOTS","ISLAND_TOUR_CAR"].includes(activity))return bad("Aktivitas tidak valid");
@@ -897,37 +795,11 @@ async function route(req,env,ctx){
  }
  return bad("Endpoint tidak ditemukan",404);
 }
-async function runIndependentMetaPublication(db,env,day){
- // No credential means zero external requests or DB status change.
- if(!metaPublicationConfig(env,day))return {status:"DISABLED"};
- const slot=await db.prepare("SELECT id,week_start,idea_index FROM marketing_publications WHERE intended_date=? AND status='READY' LIMIT 1").bind(day).first();
- if(!slot)return {status:"NO_ELIGIBLE_POST"};
- const claimed=await db.prepare("UPDATE marketing_publications SET status='ATTEMPTED',attempted_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='READY'").bind(slot.id).run();
- if(claimed?.meta?.changes!==1)return {status:"CLAIMED_ELSEWHERE"};
- try{
-  const record=async(channel,id)=>{
-   const fields={facebook:"facebook_post_id",container:"instagram_container_id",instagram:"instagram_post_id"};
-   const column=fields[channel];
-   if(!column)throw Error("Unknown publishing step");
-   await db.prepare("UPDATE marketing_publications SET "+column+"=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='ATTEMPTED'").bind(id,slot.id).run();
-  };
-  await publishMetaTourism(slot.week_start,slot.idea_index,env,record);
-  await db.prepare("UPDATE marketing_publications SET status='POSTED',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='ATTEMPTED'").bind(slot.id).run();
-  await audit(db,"marketing_publication",slot.id,"META_PUBLISHED",{week:slot.week_start,day});
-  return {status:"POSTED"};
- }catch(_){
-  // Facebook may have succeeded before Instagram failed; never retry automatically.
-  await db.prepare("UPDATE marketing_publications SET status='REVIEW_REQUIRED',error_reason='Graph publish did not finish: inspect platform before any retry',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(slot.id).run();
-  await audit(db,"marketing_publication",slot.id,"MANUAL_REVIEW_REQUIRED",{week:slot.week_start,day});
-  return {status:"REVIEW_REQUIRED"};
- }
-}
 export default {
  async fetch(req,env,ctx){try{return await route(req,env,ctx)}catch(e){return bad(e instanceof SyntaxError?"JSON tidak valid":String(e.message||"Kesalahan"),e instanceof PricingError||e instanceof OperationsError?422:400)}},
  async scheduled(event,env,ctx){
   if(!env.DB)return;
   const day=new Date().toISOString().slice(0,10);
-  if(event.cron==="0 1 * * 1"){await prepareMarketingWeek(env.DB,env,day,"WEEKLY_CRON");return;}
   // Only previously approved immutable snapshots are eligible. Never retry ambiguous POSTs.
   if(event.cron==="0 * * * *"){
    // Reuse existing hourly trigger; discovery is bounded to once per two hours.
@@ -946,12 +818,8 @@ export default {
   // ADMIN_TOKEN and without publishing. A diagnostic failure must not block the
   // separate explicitly approved publishing path.
   if(event.cron==="0 2 * * *"){
-   // Recover missed Monday work without enqueuing any past-dated Meta post.
-   try{await prepareMarketingWeek(env.DB,env,day,"DAILY_RECOVERY");}
-   catch(_){console.error("WEEKLY_DRAFT_RECOVERY_FAILED");}
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
-   await runIndependentMetaPublication(env.DB,env,day);
   }
  }
 };
