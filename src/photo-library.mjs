@@ -90,7 +90,7 @@ export async function serveOwnerPhoto(request,env,db){
 export async function selectOwnerPhoto(db,campaignID,photoID){
  if(!idRE.test(campaignID)||!idRE.test(photoID))throw Error("ID foto atau draf tidak valid");
  const row=await db.prepare("SELECT c.status,c.activity_id,c.public_url,r.rejected_at "+
-  "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON c.id=r.campaign_id WHERE c.id=?")
+  "FROM campaign_drafts c LEFT JOIN campaign_review_effective r ON c.id=r.campaign_id WHERE c.id=?")
   .bind(campaignID).first();
  if(!row||row.status!=="DRAFT"||row.rejected_at||row.public_url)
   throw Error("Hanya draf aktif yang belum disetujui boleh diganti fotonya");
@@ -100,7 +100,7 @@ export async function selectOwnerPhoto(db,campaignID,photoID){
  await db.batch([
   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,0) "+
    "ON CONFLICT(campaign_id) DO UPDATE SET media_slug=excluded.media_slug "+
-   "WHERE rejected_at IS NULL AND NOT EXISTS (SELECT 1 FROM approved_social_queue WHERE campaign_id=excluded.campaign_id)")
+   "WHERE rejected_at IS NULL AND NOT EXISTS (SELECT 1 FROM campaign_manual_rejections WHERE campaign_id=excluded.campaign_id) AND NOT EXISTS (SELECT 1 FROM approved_social_queue WHERE campaign_id=excluded.campaign_id)")
    .bind(campaignID,uploadedPrefix+photoID),
   db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
    .bind(crypto.randomUUID(),"campaign",campaignID,"OWNER_PHOTO_SELECTED",JSON.stringify({photo_id:photoID}))

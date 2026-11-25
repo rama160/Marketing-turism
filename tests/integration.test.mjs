@@ -12,7 +12,7 @@ import {extractBlueskyPosts,extractMetaPageComments,extractInstagramComments,ext
 
 function createD1() {
   const sqlite=new DatabaseSync(":memory:");
-  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql","0021_facebook_group_owner_workflow.sql","0022_owner_sessions.sql"])
+  for(const file of ["0001_init.sql","0002_operations.sql","0003_marketing.sql","0004_scheduling.sql","0005_public_readiness.sql","0006_brand_refund_policy.sql","0007_booking_modes.sql","0008_variants_and_supplier_net.sql","0009_site_content.sql","0010_whatsapp_inbox.sql","0011_marketing_learning.sql","0012_meta_autopilot.sql","0013_meta_diagnostics.sql","0014_campaign_reviews.sql","0015_approved_social_feedback.sql","0016_owner_photo_library.sql","0017_photo_research.sql","0018_growth_acquisition.sql","0019_growth_freshness.sql","0020_multichannel_growth.sql","0021_facebook_group_owner_workflow.sql","0022_owner_sessions.sql","0025_manual_campaign_rejections.sql"])
     sqlite.exec(readFileSync(new URL("../database/migrations/"+file,import.meta.url),"utf8"));
   const db={
     prepare(sql){
@@ -822,7 +822,7 @@ test("read-only diagnostics gate remote posting, IG container finishes separatel
   assert.equal(posts.length,3,"published posts are not sent again");
  }finally{globalThis.fetch=original;sqlite.close();}
 });
-test("verified Graph insights create a measured successor DRAFT and strategy without fabricated clicks",async()=>{
+test("verified Graph insights record metrics without creating successor drafts or fabricated clicks",async()=>{
  const {request,sqlite,env}=fixture();
  env.META_APPROVED_AUTOPOST_ENABLED="true";
  env.META_PAGE_ID="1375913638943340";

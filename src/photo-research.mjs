@@ -127,13 +127,13 @@ export async function discoverCommonsPhoto(db,env,topic,request=fetch){
 // otherwise fall back to pre-vetted repo photos. No posting is authorized by research.
 export async function choosePhotoForReview(db,env,activity,caption,{request=fetch,discover=false,exclude=new Set()}={}){
  const q=await db.prepare("SELECT p.id,p.title,p.activity_id,p.created_at FROM owner_photo_library p "+
-  "WHERE p.activity_id=? AND NOT EXISTS (SELECT 1 FROM campaign_review_records c WHERE c.media_slug='owner-'||p.id) "+
+  "WHERE p.activity_id=? AND NOT EXISTS (SELECT 1 FROM campaign_review_effective c WHERE c.media_slug='owner-'||p.id) "+
   "ORDER BY p.created_at DESC LIMIT 15").bind(activity).all();
  const owner=q.results.find(x=>!exclude.has("owner-"+x.id));
  if(owner)return {slug:"owner-"+owner.id,origin:"OWNER_PHOTO"};
  const topic=topicForCampaign(activity,caption);
  const known=await db.prepare("SELECT r.* FROM researched_photo_library r WHERE activity_id=? AND topic=? "+
-  "AND NOT EXISTS (SELECT 1 FROM campaign_review_records c WHERE c.media_slug='research-'||r.id) "+
+  "AND NOT EXISTS (SELECT 1 FROM campaign_review_effective c WHERE c.media_slug='research-'||r.id) "+
   "ORDER BY created_at DESC LIMIT 15").bind(activity,topic).all();
  const existing=known.results.find(x=>!exclude.has("research-"+x.id));
  if(existing)return {slug:"research-"+existing.id,origin:"LICENSED_RESEARCH"};

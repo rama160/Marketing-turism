@@ -70,7 +70,7 @@ export async function queueApprovedCampaign(db,env,old,platforms,evidence=[],opt
  for(const platform of platforms)slots.push({platform,...await chooseApprovedSchedule(db,platform,evidence,Date.now(),env)});
  const statements=[
   db.prepare("UPDATE campaign_drafts SET status='APPROVED',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=? AND public_url IS NULL "+
-   "AND NOT EXISTS (SELECT 1 FROM campaign_review_records WHERE campaign_id=? AND rejected_at IS NOT NULL)")
+   "AND NOT EXISTS (SELECT 1 FROM campaign_review_effective WHERE campaign_id=? AND rejected_at IS NOT NULL)")
    .bind(old.id,previouslyApproved?"APPROVED":"DRAFT",old.id),
   db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,?) ON CONFLICT(campaign_id) DO NOTHING")
    .bind(old.id,photo.photo.slug,Number(old.revision||0))

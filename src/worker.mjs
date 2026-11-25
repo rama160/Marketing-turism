@@ -603,7 +603,7 @@ async function route(req,env,ctx){
  if(path==="/api/admin/campaigns"){
   if(method==="GET"){
    const rows=await db.prepare("SELECT c.*,r.media_slug,r.revision,r.rejected_at,r.rejection_reason,r.replacement_id "+
-    "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id "+
+    "FROM campaign_drafts c LEFT JOIN campaign_review_effective r ON r.campaign_id=c.id "+
     "ORDER BY c.created_at DESC,c.rowid DESC LIMIT 200").all();
    return json({items:await Promise.all(rows.results.map(async x=>{
     const preview=x.media_slug?await resolveCampaignPhoto(db,x.media_slug):campaignPhotoForDraft(x.activity_id,x.caption);
@@ -622,7 +622,7 @@ async function route(req,env,ctx){
   const b=await parse(req);
   if(b.owner_confirmed!==true||b.auto_publish!==true)return bad("Konfirmasi pemilik untuk penjadwalan otomatis diperlukan",403);
   const existing=await db.prepare("SELECT c.*,r.rejected_at,r.media_slug,r.revision "+
-   "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON c.id=r.campaign_id WHERE c.id=?")
+   "FROM campaign_drafts c LEFT JOIN campaign_review_effective r ON c.id=r.campaign_id WHERE c.id=?")
    .bind(oldApprovedRoute[1]).first();
   if(!existing)return bad("Draf tidak ditemukan",404);
   if(existing.status!=="APPROVED"||existing.rejected_at||existing.public_url)
@@ -638,7 +638,7 @@ async function route(req,env,ctx){
   const b=await parse(req);
   if(b.owner_confirmed!==true)return bad("Konfirmasi pemilik untuk foto otomatis diperlukan",403);
   const draft=await db.prepare("SELECT c.*,r.rejected_at FROM campaign_drafts c "+
-   "LEFT JOIN campaign_review_records r ON c.id=r.campaign_id WHERE c.id=?").bind(research[1]).first();
+   "LEFT JOIN campaign_review_effective r ON c.id=r.campaign_id WHERE c.id=?").bind(research[1]).first();
   if(!draft||draft.status!=="DRAFT"||draft.rejected_at)return bad("Hanya draf belum disetujui yang dapat mengganti foto",409);
   if(!photoResearchEnabled(env))return json({status:"DISABLED"});
   const selected=await choosePhotoForReview(db,env,draft.activity_id,draft.caption,{discover:true});
@@ -648,7 +648,7 @@ async function route(req,env,ctx){
   if(check?.status!=="DRAFT")return bad("Draf sudah diproses; perubahan foto dibatalkan",409);
   await db.batch([
    db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision) VALUES(?,?,0) "+
-    "ON CONFLICT(campaign_id) DO UPDATE SET media_slug=excluded.media_slug WHERE rejected_at IS NULL "+
+    "ON CONFLICT(campaign_id) DO UPDATE SET media_slug=excluded.media_slug WHERE rejected_at IS NULL AND NOT EXISTS (SELECT 1 FROM campaign_manual_rejections WHERE campaign_id=excluded.campaign_id) "+
     "AND NOT EXISTS (SELECT 1 FROM approved_social_queue WHERE campaign_id=excluded.campaign_id)")
     .bind(research[1],selected.slug),
    db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)")
@@ -662,7 +662,7 @@ async function route(req,env,ctx){
  if(cm&&method==="PATCH"){
   const b=await parse(req),status=str(b.status,16),old=await db.prepare(
    "SELECT c.*,r.rejected_at,r.media_slug,r.revision,r.replacement_id "+
-   "FROM campaign_drafts c LEFT JOIN campaign_review_records r ON r.campaign_id=c.id WHERE c.id=?").bind(cm[1]).first();
+   "FROM campaign_drafts c LEFT JOIN campaign_review_effective r ON r.campaign_id=c.id WHERE c.id=?").bind(cm[1]).first();
   if(!old)return bad("Kampanye tidak ditemukan",404);
   if(b.owner_confirmed!==true)return bad("Persetujuan pemilik wajib",403);
   if(old.rejected_at)return bad("Draf telah ditolak. Buat draf baru secara manual jika diperlukan.",409);
@@ -671,10 +671,12 @@ async function route(req,env,ctx){
    const reason=str(b.reason,180);
    if(reason.length<3)return bad("Tuliskan alasan penolakan minimal 3 karakter",422);
    const slug=old.media_slug||campaignPhotoForDraft(old.activity_id,old.caption).slug;
-   await db.batch([
-    db.prepare("INSERT INTO campaign_review_records(campaign_id,media_slug,revision,rejected_at,rejection_reason) VALUES(?,?,?,CURRENT_TIMESTAMP,?) ON CONFLICT(campaign_id) DO UPDATE SET rejected_at=CURRENT_TIMESTAMP,rejection_reason=excluded.rejection_reason WHERE campaign_review_records.rejected_at IS NULL").bind(cm[1],slug,Number(old.revision||0),reason),
+   try{await db.batch([
+    db.prepare("INSERT INTO campaign_manual_rejections(campaign_id,media_slug,rejection_reason) SELECT id,?,? FROM campaign_drafts WHERE id=? AND status=\'DRAFT\' AND NOT EXISTS (SELECT 1 FROM campaign_review_effective WHERE campaign_id=? AND rejected_at IS NOT NULL)").bind(slug,reason,cm[1],cm[1]),
     db.prepare("INSERT INTO audit_log(id,entity,entity_id,action,detail) VALUES(?,?,?,?,?)").bind(uuid(),"campaign",cm[1],"REJECTED",JSON.stringify({reason}))
-   ]);
+   ]);}catch(_){return bad("Draf sudah diproses. Muat ulang status.",409);}
+   const recorded=await db.prepare("SELECT campaign_id FROM campaign_manual_rejections WHERE campaign_id=?").bind(cm[1]).first();
+   if(!recorded)return bad("Draf tidak lagi tersedia untuk ditolak",409);
    return json({id:cm[1],status:"REJECTED",replacement_id:null});
   }
   if(!((old.status==="DRAFT"&&status==="APPROVED")||(old.status==="APPROVED"&&status==="PUBLISHED")))return bad("Status kampanye tidak valid");

@@ -650,7 +650,7 @@ function renderMarketingIntelligence(){
   '<div class="item">'+(i+1)+'. <b>'+esc(v.platform)+'</b> · '+esc(v.activity_id==="ISLAND_TOUR_CAR"?"Island Tour":"Snorkeling")+
   ' · skor strategi '+esc(v.strategy_score)+'/100 · '+esc(v.basis==="BELUM_ADA_DATA"?"uji variasi karena belum ada data":v.basis==="DATA_TERBATAS"?"data masih terbatas":"didasarkan pada metrik")+'</div>').join("");
  root.innerHTML='<p class="feedback">Observasi terverifikasi: <strong>'+num+'</strong> · Strategi v'+esc(info.strategy_version)+
-  ' · Perencanaan mingguan aktif. <strong>'+esc(data.autopilotEnabled?"Draf yang disetujui masuk antrean publikasi terjadwal.":"Penjadwalan otomatis sedang dinonaktifkan.")+'</strong> Statistik dan revisi hanya berdasarkan hasil Meta yang benar-benar tersedia.</p>'+
+  ' · Pembuatan kampanye manual. <strong>'+esc(data.autopilotEnabled?"Draf yang disetujui masuk antrean publikasi terjadwal.":"Penjadwalan otomatis sedang dinonaktifkan.")+'</strong> Statistik hanya berdasarkan hasil Meta yang benar-benar tersedia.</p>'+
   '<h4>Waktu terbaik berdasarkan data</h4>'+timeLines+
   '<h4>Prioritas eksperimen konten berikutnya</h4>'+recommendations;
 }
