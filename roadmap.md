@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.2 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.3 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -74,7 +74,22 @@ Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan 
 
 ### SEO-002 lanjutan — checklist indexasi (26 November 2026)
 
-Owner meminta menuntaskan 18 URL tersisa sebelum fase berikutnya. Query SELECT read-only D1 menemukan sembilan aktivitas terbit; kode renderWebsiteSitemap menghasilkan masing-masing URL EN/ID (18) dan sepuluh URL utama. Riwayat awal 28 URL ditemukan dan 10 terindeks; daftar persis sepuluh URL tidak tersedia sehingga 18 URL aktivitas di bawah adalah kandidat yang harus dicocokkan melalui URL Inspection, bukan klaim semuanya belum terindeks. Kode artikel menambahkan dua indeks bahasa; D1 belum memiliki artikel terbit sehingga total sitemap yang dihitung dari kode dan data adalah 30, bukan hasil fetch XML langsung. Akses langsung sitemap melalui web tool tidak berhasil; [Verify Cloudflare terbaru lulus](https://github.com/rama160/Marketing-turism/actions/runs/45722066142) termasuk HTTP 200/canonical/hreflang seluruh sitemap dan halaman indeks artikel. Tidak ada perubahan aplikasi, database, harga atau publikasi.
+Owner meminta menuntaskan 18 URL tersisa sebelum fase berikutnya. Query SELECT read-only D1 menemukan sembilan aktivitas terbit; kode renderWebsiteSitemap menghasilkan masing-masing URL EN/ID (18) dan sepuluh URL utama. Riwayat awal 28 URL ditemukan dan 10 terindeks; daftar persis sepuluh URL kini dikonfirmasi dari screenshot checklist owner 26 Nov 2026. Seluruhnya adalah halaman utama ID/EN; 18 URL aktivitas di bawah tidak tumpang tindih. Status indeks aktual 18 URL tersebut masih harus diperiksa di GSC. Kode artikel menambahkan dua indeks bahasa; D1 belum memiliki artikel terbit sehingga total sitemap yang dihitung dari kode dan data adalah 30, bukan hasil fetch XML langsung. Akses langsung sitemap melalui web tool tidak berhasil; [Verify Cloudflare terbaru lulus](https://github.com/rama160/Marketing-turism/actions/runs/45722066142) termasuk HTTP 200/canonical/hreflang seluruh sitemap dan halaman indeks artikel. Tidak ada perubahan aplikasi, database, harga atau publikasi.
+
+**10 URL yang telah dilaporkan selesai oleh owner (screenshot checklist 26 Nov):**
+
+- https://nusapenidaexperiences.com/
+- https://nusapenidaexperiences.com/en/tours/snorkeling
+- https://nusapenidaexperiences.com/en/tours
+- https://nusapenidaexperiences.com/en/tours/west
+- https://nusapenidaexperiences.com/en/tours/east
+- https://nusapenidaexperiences.com/en/tours/island
+- https://nusapenidaexperiences.com/snorkeling.html
+- https://nusapenidaexperiences.com/west-tour.html
+- https://nusapenidaexperiences.com/east-tour.html
+- https://nusapenidaexperiences.com/island-tour.html
+
+**18 URL yang belum masuk checklist selesai:**
 
 | No. | URL canonical | Status GSC / tanggal |
 |---|---|---|
@@ -211,6 +226,11 @@ Pedoman keputusan:
 ### 2026-11-26 — Gate indexasi lanjutan
 - SEO-002 dibuka kembali atas instruksi owner. 18 kandidat URL diambil dari sembilan aktivitas published di D1 dan aturan URL bilingual di kode sitemap. Dua indeks artikel tambahan belum berisi artikel. Tidak mengklaim hasil indeks baru. Daftar dan prosedur tercatat di atas.
 - Bukti teknis: Verify Cloudflare 45722066142 lulus. Akses XML langsung dan GSC tidak tersedia; owner perlu menjalankan URL Inspection dan menyerahkan verdict. SEO-003 dan fase berikutnya ditunda hingga gate SEO-002 selesai.
+
+### 2026-11-26 — Rekonsiliasi daftar URL dari screenshot owner
+- Screenshot checklist berisi sepuluh halaman utama ID/EN, semuanya ditandai selesai; catat URL persis di SEO-002. Screenshot bukan tampilan verdict GSC langsung, status terindeks mengikuti laporan owner.
+- D1 read-only diperiksa ulang: 9 aktivitas terbit, 0 artikel terbit. 18 URL bilingual tidak tumpang tindih dengan sepuluh URL pada screenshot; indeks artikel kosong tetap ditunda. [Verify Cloudflare terbaru lulus](https://github.com/rama160/Marketing-turism/actions/runs/45722581500). Fetch sitemap langsung tidak tersedia pada sesi ini.
+- Next: owner memeriksa 18 URL via GSC dan mengirim verdict/request; lanjut SEO-003 hanya setelah gate SEO-002. Tidak ada perubahan aplikasi atau database.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
