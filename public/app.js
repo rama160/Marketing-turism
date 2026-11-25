@@ -938,7 +938,7 @@ $("#quickSave").onclick=async()=>{
 };
 
 // Versioned website content editor. All reading and publishing is authenticated on the Worker.
-let cmsRecords=new Map(),cmsFields=[],cmsPhotoOverrides=new Map();
+let cmsRecords=new Map(),cmsFields=[],cmsPhotoOverrides=new Map(),cmsSlotsLoaded=false,cmsMediaLoaded=false,cmsActivitiesLoaded=false,cmsLoadGeneration=0;
 let cmsPublishedSnapshot={id:{},en:{},photos:{}},cmsPublishedSnapshotPromise=null;
 async function loadCmsPublishedSnapshot(){
  if(cmsPublishedSnapshotPromise)return cmsPublishedSnapshotPromise;
@@ -979,7 +979,8 @@ async function loadSiteEditor(){
   syncCms();
   renderCmsPageFields();
   drawPublishedPageCards();
- }catch(err){say("#cmsFeedback",err.message);say("#cmsStudioFeedback","Tidak dapat memuat konten website: "+err.message);}
+ }catch(err){say("#cmsFeedback",err.message);say("#cmsStudioFeedback","Tidak dapat memuat konten website: "+err.message);return false;}
+ return true;
 }
 $("#cmsLocale").onchange=syncCms;
 $("#cmsKey").onchange=syncCms;
@@ -1158,7 +1159,7 @@ function editWebsiteActivity(id,from="published"){
 }
 function cmsActivityCard(a,isPublished){
  const d=isPublished?(a.published||a.draft):a.draft||{};
- const img=npeCmsMedia.find(x=>x.id===d.media_id);
+ const img=npeCmsMedia.find(x=>x.id===d.media_id)||(/^[0-9a-f-]{36}$/.test(d.media_id||"")?{url:"/photos/website/"+d.media_id,alt_id:d.title_id||d.title_en||"Foto aktivitas"}:null);
  const name=d.title_id||d.title_en||a.slug;
  const price=d.price_verified?(d.price_label_id||""):"";
  const parent=d.parent_activity? (cmsStaticParents.find(x=>x[0]===d.parent_activity)?.[1]||npeCmsActivities.find(x=>"activity:"+x.slug===d.parent_activity)?.published?.title_id||d.parent_activity):"";
@@ -1179,10 +1180,10 @@ function cmsActivityCard(a,isPublished){
 function drawWebsiteCMS(){
  const published=npeCmsActivities.filter(a=>a.status==="PUBLISHED"&&a.published);
  const drafts=npeCmsActivities.filter(a=>a.status!=="PUBLISHED"||a.pending_changes);
- $("#cmsPublishedCount").textContent=String(published.length+5); // Five legacy public pages below
- $("#cmsDraftCount").textContent=String(drafts.length);
- $("#cmsPublishedList").innerHTML=published.length?published.map(a=>cmsActivityCard(a,true)).join(""):'<div class="npeCmsEmpty">Belum ada aktivitas tambahan yang dipublikasikan. Halaman NPE yang sudah tersedia terlihat di bawah.</div>';
- $("#cmsDraftList").innerHTML=drafts.length?drafts.map(a=>cmsActivityCard(a,false)).join(""):'<div class="npeCmsEmpty">Belum ada draft. Tekan <strong>Add Activity</strong> untuk membuat aktivitas baru.</div>';
+ $("#cmsPublishedCount").textContent=cmsActivitiesLoaded?String(published.length+5):"—"; // Five legacy public pages below
+ $("#cmsDraftCount").textContent=cmsActivitiesLoaded?String(drafts.length):"—";
+ $("#cmsPublishedList").innerHTML=!cmsActivitiesLoaded?'<p class="feedback">Aktivitas belum tersinkron. Tekan Refresh.</p>':published.length?published.map(a=>cmsActivityCard(a,true)).join(""):'<div class="npeCmsEmpty">Belum ada aktivitas tambahan yang dipublikasikan. Halaman NPE yang sudah tersedia terlihat di bawah.</div>';
+ $("#cmsDraftList").innerHTML=!cmsActivitiesLoaded?'<p class="feedback">Draft belum tersinkron. Tekan Refresh.</p>':drafts.length?drafts.map(a=>cmsActivityCard(a,false)).join(""):'<div class="npeCmsEmpty">Belum ada draft. Tekan <strong>Add Activity</strong> untuk membuat aktivitas baru.</div>';
  for(const root of [$("#cmsPublishedList"),$("#cmsDraftList")]){
   root.querySelectorAll("[data-cms-edit]").forEach(b=>b.onclick=()=>editWebsiteActivity(b.dataset.cmsEdit,b.dataset.source));
   root.querySelectorAll("[data-cms-add-detail]").forEach(b=>b.onclick=()=>startWebsiteDetail(b.dataset.cmsAddDetail));
@@ -1200,6 +1201,7 @@ function drawWebsiteCMS(){
  refreshActivityPreview();
 }
 function renderNpeMediaGallery(){
+ if(!cmsMediaLoaded){$("#cmsGalleryCount").textContent="(—)";$("#cmsGalleryStatus").textContent="Galeri belum tersinkron. Tekan Refresh.";$("#cmsMediaGrid").textContent="Foto tersimpan tidak dihapus.";return;}
  const q=$("#cmsGallerySearch").value.trim().toLowerCase();
  const shown=npeCmsMedia.filter(m=>(m.title+" "+m.alt_id+" "+m.alt_en).toLowerCase().includes(q));
  $("#cmsGalleryCount").textContent="("+npeCmsMedia.length+")";
@@ -1242,7 +1244,7 @@ async function refreshNpeGallery(){
  if(!ownerSignedIn)return;
  try{
   const r=await api("admin/website/media");
-  npeCmsMedia=r.items||[];
+  npeCmsMedia=r.items||[];cmsMediaLoaded=true;
   renderNpeMediaGallery();
  }catch(e){say("#cmsMediaFeedback","Tidak dapat memuat Galeri NPE: "+e.message);}
 }
@@ -1252,16 +1254,25 @@ $("#cmsOpenGallery").onclick=()=>{
 };
 async function loadWebsiteCMS(){
  if(!ownerSignedIn)return;
- try{
-  const [acts,media,slots]=await Promise.all([
-   api("admin/website/activities"),api("admin/website/media"),api("public/website/slots"),loadSiteEditor()
-  ]);
-  cmsPhotoOverrides=new Map((slots.items||[]).map(x=>[x.slot,x]));
-  npeCmsActivities=acts.items||[];npeCmsMedia=media.items||[];
-  try{const categories=await api("admin/website/categories");cmsCustomCategories=categories.items||[];if(npeCmsView==="activity")renderCmsCategories();}catch(_){/* existing categories remain usable */}
-  drawWebsiteCMS();drawPublishedPageCards();renderCmsPagePhotos();
-  $("#cmsStudioFeedback").textContent="";
- }catch(e){say("#cmsStudioFeedback","CMS belum siap: "+e.message);}
+ const generation=++cmsLoadGeneration;
+ const errors=[];
+ // A failure in the gallery must never discard a successful published slot or activity response.
+ const [acts,media,slots,copy,categories]=await Promise.allSettled([
+  api("admin/website/activities"),api("admin/website/media"),api("public/website/slots"),loadSiteEditor(),api("admin/website/categories")
+ ]);
+ if(generation!==cmsLoadGeneration||!ownerSignedIn)return;
+ if(slots.status==="fulfilled"&&Array.isArray(slots.value.items)){
+  cmsPhotoOverrides=new Map(slots.value.items.map(x=>[x.slot,x]));cmsSlotsLoaded=true;
+ }else{cmsSlotsLoaded=false;errors.push("foto terbit: "+(slots.reason?.message||"respons tidak valid"));}
+ if(acts.status==="fulfilled"&&Array.isArray(acts.value.items)){npeCmsActivities=acts.value.items;cmsActivitiesLoaded=true;}
+ else{cmsActivitiesLoaded=false;errors.push("aktivitas: "+(acts.reason?.message||"respons tidak valid"));}
+ if(media.status==="fulfilled"&&Array.isArray(media.value.items)){npeCmsMedia=media.value.items;cmsMediaLoaded=true;}
+ else{cmsMediaLoaded=false;errors.push("galeri: "+(media.reason?.message||"respons tidak valid"));}
+ if(copy.status!=="fulfilled"||copy.value!==true)errors.push("teks halaman belum tersinkron");
+ if(categories.status==="fulfilled"){cmsCustomCategories=categories.value.items||[];if(npeCmsView==="activity")renderCmsCategories();}
+ else errors.push("kategori: "+(categories.reason?.message||"belum tersedia"));
+ drawWebsiteCMS();drawPublishedPageCards();renderCmsPagePhotos();
+ say("#cmsStudioFeedback",errors.length?"Sebagian data belum berhasil dimuat. "+errors.join(" · ")+". Tekan Refresh; foto publik tidak diubah.":"Data website dan galeri berhasil disinkronkan.",errors.length===0);
 }
 $("#cmsAddActivity").onclick=resetWebsiteForm;
 $("#cmsRefresh").onclick=()=>void loadWebsiteCMS();
@@ -1719,11 +1730,13 @@ $("#cmsQuickPhotoSave").onclick=async()=>{
   }
   const slot=cmsQuickPhotoSlot;
   await api("admin/website/slots","POST",{slot,media_id:cmsQuickPhotoMediaId,owner_confirmed:true});
+  const selected=npeCmsMedia.find(m=>m.id===cmsQuickPhotoMediaId);
+  cmsPhotoOverrides.set(slot,{slot,media_id:cmsQuickPhotoMediaId,url:"/photos/website/"+cmsQuickPhotoMediaId,alt_id:selected?.alt_id||slot});
   // Refresh only image records: do not discard unsaved title/description edits.
   try{
    const [photos,media]=await Promise.all([api("public/website/slots"),api("admin/website/media")]);
-   cmsPhotoOverrides=new Map((photos.items||[]).map(x=>[x.slot,x]));
-   npeCmsMedia=media.items||[];
+   cmsPhotoOverrides=new Map((photos.items||[]).map(x=>[x.slot,x]));cmsSlotsLoaded=true;
+   npeCmsMedia=media.items||[];cmsMediaLoaded=true;
    drawPublishedPageCards();
    renderCmsPagePhotos();
   }catch(_){ /* publication already succeeded; user can refresh to see the image */ }
@@ -1739,6 +1752,7 @@ $("#cmsQuickPhotoSave").onclick=async()=>{
  }
 };
 function cmsCurrentPhoto(slot){
+ if(!cmsSlotsLoaded)return null;
  const overridden=cmsPhotoOverrides.get(slot),fallback=cmsPublishedSnapshot.photos?.[slot];
  return overridden?.url?{url:overridden.url,alt:overridden.alt_id||slot}:fallback||null;
 }
@@ -1748,7 +1762,7 @@ function drawPublishedPageCards(){
   const name=cmsEffectiveValue(titleKey,"id")||label,desc=cmsEffectiveValue(summaryKey,"id");
   const photo=cmsCurrentPhoto(slot),price=cmsEffectiveValue("price."+id,"id");
   return '<article class="npeCmsPublishedCard npeLegacyPublishedCard">'+
-   '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto</div>')+'</div>'+
+   '<div class="npeCmsPublishedImage">'+(photo?'<img loading="lazy" src="'+esc(photo.url)+'" alt="'+esc(photo.alt||name)+'">':'<div class="npeCmsNoImage">Foto belum tersinkron</div>')+'</div>'+
    '<div class="npeCmsPublishedInfo"><small>Halaman publik · Terbit</small><h4>'+esc(name)+'</h4><p>'+esc(desc.slice(0,180))+'</p>'+
    (price?'<strong class="npeCmsPublishedPrice">'+esc(price)+'</strong>':'')+
    (id!=="home"?'<button type="button" class="outline small" data-cms-add-detail="static:'+esc(id)+'">+ Tambah Detail</button>':'')+
@@ -1766,6 +1780,7 @@ function renderCmsPageDetails(){
  if(section.hidden)return;
  $("#cmsAddPageDetail").onclick=()=>startWebsiteDetail(parent);
  const root=$("#cmsPageDetailList");
+ if(!cmsActivitiesLoaded){root.textContent="Detail aktivitas belum tersinkron. Tekan Refresh.";return;}
  const children=npeCmsActivities.filter(a=>a.draft?.parent_activity===parent||a.published?.parent_activity===parent);
  root.innerHTML=children.length?children.map(a=>cmsActivityCard(a,a.status==="PUBLISHED"&&!!a.published)).join(""):'<p class="feedback">Belum ada detail tambahan. Tekan Tambah Detail.</p>';
  root.querySelectorAll("[data-cms-edit]").forEach(b=>b.onclick=()=>editWebsiteActivity(b.dataset.cmsEdit,"pages"));
@@ -1781,9 +1796,9 @@ function renderCmsPagePhotos(){
  root.innerHTML=[...groups].map(([name,list])=>'<details class="panel cmsPart" open><summary>'+esc(name)+'</summary><div class="npeCmsPagePhotos">'+list.map(slot=>{
   const photo=cmsCurrentPhoto(slot);
   return '<article class="npeCmsPhotoTile">'+
-   (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersedia</div>')+
+   (photo?'<img src="'+esc(photo.url)+'" loading="lazy" alt="'+esc(photo.alt||slot)+'">':'<div class="npeCmsNoImage">Foto belum tersinkron / tersedia</div>')+
    '<div><strong>'+esc(cmsPageSlotLabels[slot]||slot)+'</strong>'+
-   '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'">Ganti foto</button></div></article>';
+   '<button type="button" class="outline small" data-cms-edit-photo="'+esc(slot)+'" '+(!cmsSlotsLoaded?"disabled":"")+'>Ganti foto</button></div></article>';
  }).join("")+'</div></details>').join("");
  root.querySelectorAll("[data-cms-edit-photo]").forEach(b=>b.onclick=()=>beginCmsQuickPhoto(b.dataset.cmsEditPhoto));
 }

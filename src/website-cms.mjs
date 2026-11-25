@@ -233,15 +233,20 @@ const mediaUsageSQL=`SELECT media_id, COUNT(*) AS used FROM (
  UNION ALL SELECT media_id FROM website_gallery_photo_slots
  UNION ALL SELECT json_extract(draft_json,'$.media_id') AS media_id FROM website_activities
  UNION ALL SELECT json_extract(published_json,'$.media_id') AS media_id FROM website_activities
- UNION ALL SELECT draft_media_id FROM seo_articles
+) WHERE media_id IS NOT NULL AND media_id!='' GROUP BY media_id`;
+// D1 permits at most five compound SELECT terms. Count article references separately.
+const articleMediaUsageSQL=`SELECT media_id, COUNT(*) AS used FROM (
+ SELECT draft_media_id AS media_id FROM seo_articles
  UNION ALL SELECT published_media_id FROM seo_articles
 ) WHERE media_id IS NOT NULL AND media_id!='' GROUP BY media_id`;
 export async function listWebsiteMedia(db){
- const [media,usage]=await Promise.all([
+ const [media,usage,articleUsage]=await Promise.all([
   db.prepare("SELECT id,title,alt_id,alt_en,bytes,created_at FROM website_media ORDER BY created_at DESC LIMIT 200").all(),
-  db.prepare(mediaUsageSQL).all()
+  db.prepare(mediaUsageSQL).all(),
+  db.prepare(articleMediaUsageSQL).all()
  ]);
- const used=new Map((usage.results||[]).map(r=>[r.media_id,Number(r.used)||0]));
+ const used=new Map();
+ for(const r of [...(usage.results||[]),...(articleUsage.results||[])])used.set(r.media_id,(used.get(r.media_id)||0)+(Number(r.used)||0));
  return {items:(media.results||[]).map(x=>({...x,url:"/photos/website/"+x.id,usage_count:used.get(x.id)||0}))};
 }
 export async function deleteWebsiteMedia(db,env,id,body){

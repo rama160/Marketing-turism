@@ -1,3 +1,6 @@
+## CMS hotfix — 25 Nov 2026
+- Fix D1 compound SELECT limit by counting website and article media references separately; merge counts without changing published references or media. Independently settle CMS API loads so gallery errors do not reset published slot photos or activity state. Suppress default photo previews until live slots load, show explicit unavailable states instead of zero counts. Retain existing photo selections and protect referenced media. Add real SQLite regression and D1-limit check.
+
 ## Article CMS follow-up
 - Editable names for all 12 homepage gallery thumbnails, including separate label for repeated Atuh slot; existing photo references stay shared. Fix nested hero highlight sizing and bilingual article navigation. Add actual SQLite article lifecycle regression, cover foreign-key protection and live article index/404 verification. No article published automatically.
 

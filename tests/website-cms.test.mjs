@@ -222,6 +222,8 @@ test("website media usage counts include both page slots and all activity drafts
     {id,title:"Busy",alt_id:"A",alt_en:"A",bytes:10000,created_at:"2026-11-24"},
     {id:free,title:"Free",alt_id:"B",alt_en:"B",bytes:10000,created_at:"2026-11-24"}
    ]})};
+  assert.ok(sql.split("UNION ALL").length<=5,"D1 compound SELECT limit");
+  if(sql.includes("seo_articles")){assert.match(sql,/draft_media_id/);assert.match(sql,/published_media_id/);return {all:async()=>({results:[{media_id:id,used:2}]})};}
   assert.match(sql,/website_photo_slots/);
   assert.match(sql,/website_gallery_photo_slots/);
   assert.match(sql,/json_extract\(draft_json/);
@@ -229,7 +231,7 @@ test("website media usage counts include both page slots and all activity drafts
   return {all:async()=>({results:[{media_id:id,used:3}]})};
  }};
  const r=await listWebsiteMedia(fake);
- assert.equal(r.items[0].usage_count,3);
+ assert.equal(r.items[0].usage_count,5);
  assert.equal(r.items[1].usage_count,0);
 });
 test("owner deletion rejects references and requires explicit confirmation",async()=>{
@@ -724,4 +726,33 @@ test("competitive guides reuse existing canonical routes, localised links and tr
  assert.match(renderCompetitiveGuide("nusa-lembongan-island-tour","id"),/Mangrove Point di darat/);
  assert.match(renderCompetitiveGuide("snorkeling","en"),/Manta sightings are not guaranteed/);
  assert.doesNotMatch(renderLegacyTourPage(readFileSync("public/index.html","utf8"),legacyTourRoute("/"),"https://example.com"),/data-npe-competitive-guide=/);
+});
+
+test("real SQLite media usage query obeys D1 compound SELECT limit and preserves all references",async()=>{
+ const {DatabaseSync}=await import("node:sqlite");
+ const {readFileSync}=await import("node:fs");
+ const {listWebsiteMedia}=await import("../src/website-cms.mjs");
+ const sqlite=new DatabaseSync(":memory:");
+ sqlite.exec(readFileSync("database/migrations/0023_website_cms.sql","utf8"));
+ sqlite.exec(readFileSync("database/migrations/0024_website_gallery_slots.sql","utf8"));
+ sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
+ const id="12345678-1234-4234-9234-123456789abc",free="87654321-4321-4321-9321-cba987654321";
+ const add=sqlite.prepare("INSERT INTO website_media(id,title,alt_id,alt_en,digest,bytes) VALUES(?,?,?,?,?,?)");
+ add.run(id,"Busy","ID","EN","busy",10000);add.run(free,"Free","ID","EN","free",10000);
+ sqlite.prepare("INSERT INTO website_photo_slots(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?)").run("hero",id,"ID","EN");
+ sqlite.prepare("INSERT INTO website_gallery_photo_slots(slot,media_id,alt_id,alt_en) VALUES(?,?,?,?)").run("west-kelingking",id,"ID","EN");
+ const snapshot=JSON.stringify({media_id:id});
+ sqlite.prepare("INSERT INTO website_activities(id,slug,draft_json,published_json) VALUES(?,?,?,?)").run("a","a",snapshot,snapshot);
+ sqlite.prepare("INSERT INTO seo_articles(id,slug,draft_json,published_json,draft_media_id,published_media_id) VALUES(?,?,?,?,?,?)").run("b","b",snapshot,snapshot,id,id);
+ const db={prepare(sql){assert.ok(sql.split(/UNION ALL/i).length<=5);const st=sqlite.prepare(sql);return {all:async()=>({results:st.all()})}}};
+ try{const {items}=await listWebsiteMedia(db);assert.equal(items.find(x=>x.id===id).usage_count,6);assert.equal(items.find(x=>x.id===free).usage_count,0);}finally{sqlite.close();}
+});
+test("CMS independently retains live slots when other requests fail",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const source=readFileSync("public/app.js","utf8");
+ const loader=source.slice(source.indexOf("async function loadWebsiteCMS()"),source.indexOf('$("#cmsAddActivity").onclick'));
+ assert.match(loader,/Promise\.allSettled/);
+ assert.match(loader,/if\(slots.status==="fulfilled"/);
+ assert.match(loader,/if\(media.status==="fulfilled"/);
+ assert.match(source,/function cmsCurrentPhoto\(slot\)\{\s*if\(!cmsSlotsLoaded\)return null/);
 });

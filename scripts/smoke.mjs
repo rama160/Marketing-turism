@@ -369,3 +369,5 @@ for(const lang of ["id","en"]){
 }
 if(!landingMarkup.includes('data-copy="hero.highlight1"')||!landingMarkup.includes('data-copy="homeThumb.west-kelingking.title"'))throw Error("Grouped homepage fields missing from live HTML");
 console.log("Verified article discovery and new homepage editable fields");
+
+if(!app.includes("cmsSlotsLoaded")||!app.includes("Promise.allSettled"))throw Error("CMS independent synchronization fix not deployed");
