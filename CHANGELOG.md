@@ -1,3 +1,6 @@
+## 26 November 2026 — First live GSC research verified
+- CI/deploy/Verify 712d061 succeeded; owner dashboard and read-only D1 confirm DONE/NO_ROWS, zero raw rows, 24 active keyword hypotheses, 14 mapped, no observations. GSC connection verified, ranking baseline unavailable. Roadmap v1.0.35 advances to SEO-006A; documentation only.
+
 ## 26 November 2026 — Align remaining dashboard asset regression assertion
 - CI/deploy 241 pass, 1 fail: website-cms.test.mjs still expected old script URL. Update exact revision assertion, retain application changes and all tests. Release and live GSC verification pending.
 

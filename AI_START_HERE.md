@@ -1,3 +1,6 @@
+## Instruksi aktif SEO-006A — 26 November 2026
+- SEO-003B koneksi GSC dan run NO_ROWS terverifikasi dari screenshot owner + D1 (24 aktif, 14 mapped, 0 raw/accepted GSC rows, periode 27 Okt–23 Nov). Ranking/volume N/A; pantau cron existing, validasi GSC UI/export saat data ada. CI/deploy/Verify 712d061 sukses. NEXT: SEO-006A Keyword Planner, ikuti roadmap.md §0; jalur gratis/manual bersumber terlebih dahulu, cek syarat API, tidak membuat kampanye atau biaya tanpa izin. Konfirmasi pemulihan kebijakan key creation. Instruksi ini mengungguli catatan historis berikut.
+
 ## SEO-003B dashboard recovery — 26 November 2026
 - Owner reported blank keyword workspace; D1 plans/runs/observations zero, schema and GSC bindings present. Cache hypothesis not confirmed. Dashboard asset revision, explicit loading/error, safe GSC diagnostic codes and bounded first-run bootstrap on existing hourly cron. Tests added; verify release and actual D1 Google snapshot before advancing SEO-006A. No secret or auth bypass, no new cron.
 
