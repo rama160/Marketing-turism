@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.22 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.23 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -357,6 +357,11 @@ Pedoman keputusan:
 - Screenshot owner 10.36 WITA: percobaan 2/3, SOURCE_UNAVAILABLE, koneksi atau respons Wikimedia gagal. Belum ada draft; penyebab jaringan spesifik tidak diketahui, tetapi tahap sumber terkonfirmasi. Tambah Action API → REST summary → referensi geografi stabil Indonesia Travel yang diperiksa 26 Nov. Gunakan sumber cadangan hanya dengan provenance REVIEWED_REFERENCE; simpan tanggal dan kegagalan endpoint. Topik masih dipilih dari sinyal pertanyaan publik dan katalog, tidak mengklaim volume pencarian atau riset daring baru jika fallback. Tidak gunakan cache untuk harga/jadwal/kondisi aktual.
 - Referensi: https://www.indonesia.travel/id/id/travel-ideas/adventure/di-indonesia-aja-rekomendasi-wisata-di-nusa-lembongan-dan-ceningan-puas-jelajah-seharian ; https://www.indonesia.travel/id/id/travel-ideas/adventure/nusa-penida ; https://www.indonesia.travel/id/en/destination/bali-nusa-tenggara/west-nusa-tenggara/lombok---gili-trawangan-and-the-gilis ; https://www.mediawiki.org/wiki/Wikimedia_REST_API .
 - Tidak reset lock, tidak menghapus data, tidak menambah biaya/provider AI. Satu kesempatan tersisa minggu ini. Setelah deploy/Verify lulus, owner klik riset sekali; jika AI/DB gagal, diagnosis tahap yang ditampilkan. CI/deploy/live draft belum terverifikasi. Tidak ada publikasi otomatis.
+
+### 2026-11-26 — SEO-011/012: koreksi keluaran AI
+- Screenshot owner 10.39 WITA dan D1 read-only: week 2026-11-23, attempt 3/3 INVALID_DRAFT, topic lembongan-two-days, 0 artikel. Release a3ba384 CI 45743650435, deploy 45743650409, Verify 45743750028 sukses. Tahap source dan AI sudah dilewati; field historis tidak tercatat.
+- Diagnostic langsung Workers AI model existing: JSON bilingual body_id 141 karakter dan body_en 765 (minimum 500); uji single-language JSON schema gagal parsing; plain-text Indonesia 1658 karakter. Ini reproduksi masalah panjang, bukan bukti field historis yang sama. Tidak simpan output uji atau publish. Maks 2 perbaikan bahasa per run, hanya jika invalid; normalize kontrol/whitespace, batas metadata, error per bahasa/field, tetap 500–12000 karakter body, tolak HTML/URL; provenance format_repairs. Konten tetap perlu review fakta oleh owner.
+- Tambahkan satu pemulihan manual khusus INVALID_DRAFT yang kehabisan 3 percobaan, marker Pemulihan format v2 (tidak reset history, tidak boleh berulang, sukses tetap satu draft/minggu, cron tidak membuka lock). Tidak mengubah schema atau menghapus data. Uji baru untuk fallback teks, invalid, recovery dan no publish. CI/deploy/live draft belum terverifikasi. Model existing memakai kuota AI; tidak menambah layanan berbayar.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

@@ -151,3 +151,35 @@ test("research sources fail over to REST, then reviewed tourism reference with h
  assert.equal(fallback.kind,"REVIEWED_REFERENCE");assert.equal(fallback.checked,"2026-11-26");assert.match(fallback.url,/www\.indonesia\.travel/);assert.equal(fallback.failures.length,2);
  assert.equal(await collectArticleSource("Unknown location",async()=>{throw Error("offline");}),null);
 });
+
+test("plain text repair preserves content and rejects insufficient or unsafe output",async()=>{
+ const {articlePlainText}=await import("../src/seo-articles.mjs");
+ const body="Rencanakan kunjungan sesuai kondisi dan konfirmasi pengaturan bersama operator. ".repeat(14);
+ const result=articlePlainText("## Panduan dua hari\n\nRingkasan perjalanan yang membantu tamu merencanakan wisata.\n\n### Hari pertama\n\n"+body,"id");
+ assert.equal(result.fields.title_id,"Panduan dua hari");
+ assert.match(result.fields.body_id,/## Hari pertama/);
+ assert.ok(result.fields.body_id.length>500);
+ assert.ok(articlePlainText("Title\nSummary\nToo short","en").error);
+ assert.ok(articlePlainText("Title\nA summary with enough detail for travelers.\n"+body+" https://example.com","en").error);
+});
+test("exhausted invalid draft gets one versioned recovery with single-language text repair",async()=>{
+ const {DatabaseSync}=await import("node:sqlite");const {readFileSync}=await import("node:fs");const {generateResearchArticle,publishedArticles}=await import("../src/seo-articles.mjs");
+ const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_media(id TEXT PRIMARY KEY); CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE growth_opportunities(headline TEXT,source TEXT,discovered_at TEXT);");
+ sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
+ const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){sqlite.exec("BEGIN");try{for(const s of stmts)await s.run();sqlite.exec("COMMIT");}catch(e){sqlite.exec("ROLLBACK");throw e;}}};
+ let calls=0;
+ const long="Practical travel advice that confirms arrangements with the operator. ".repeat(15);
+ const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;if(config.response_format)return {response:{...draft,body_id:"Terlalu pendek",body_en:long}};assert.match(config.messages[0].content,/Indonesian/);return {response:"## Panduan perjalanan\n\nRencanakan perjalanan sesuai kondisi dan konfirmasi pengaturan.\n\n## Rute\n"+"Pertimbangkan pilihan perjalanan yang sesuai dengan waktu dan kondisi. ".repeat(15)};}}};
+ const opts={now:Date.UTC(2026,10,26),request:async()=>({ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Stable island geography and coastal scenery. ".repeat(4)}]}})})};
+ try{
+  sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-23","INVALID_DRAFT","Percobaan 3/3 · Isi draft bilingual tidak memenuhi validasi.");
+  assert.equal((await generateResearchArticle(db,env,opts)).status,"WEEK_LIMIT");assert.equal(calls,0);
+  const result=await generateResearchArticle(db,env,{...opts,manual:true});
+  assert.equal(result.status,"DRAFT_CREATED");assert.equal(calls,2);assert.match(result.detail,/Pemulihan format v2/);
+  const record=JSON.parse(sqlite.prepare("SELECT draft_json FROM seo_articles WHERE id=?").get(result.id).draft_json);
+  assert.equal(record._research.format_repairs[0].language,"id");assert.equal(record._review,"DRAFT");assert.equal((await publishedArticles(db)).length,0);
+  assert.equal((await generateResearchArticle(db,env,{...opts,manual:true})).status,"WEEK_LIMIT");
+  sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-30","INVALID_DRAFT","Percobaan 3/3 · Pemulihan format v2 · failed");
+  assert.equal((await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,10,30),manual:true})).status,"WEEK_LIMIT");assert.equal(calls,2);
+ }finally{sqlite.close();}
+});
