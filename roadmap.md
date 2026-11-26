@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.7 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.8 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -270,6 +270,10 @@ Pedoman keputusan:
 - SEO-008 audit penawaran: data site_content harga ID untuk snorkeling, island, west, east berupa string kosong; dua aktivitas root Lembongan dan Boat Ticket mempunyai price_label_en kosong dan price_verified=0. Pertahankan pilihan harga kosong, jangan isi tarif net atau perkiraan. Lembongan memiliki deskripsi empat destinasi dan panduan pickup/rute; Boat Ticket memiliki penjelasan rute Sanur–Lembongan/Bali–Gili dan batasan jadwal. Panduan existing West/East/Island/Snorkeling memuat contoh rute, pertanyaan fasilitas, perbandingan dan catatan keselamatan. Gap: detail penawaran yang benar-benar disediakan, durasi, titik jemput, kapasitas, include/exclude dan harga jual jika owner ingin menampilkan. Tidak mengubah copy atau harga tanpa konfirmasi.
 - Next P0: SEO-003 ekspor Performance GSC 28 hari (clicks/impressions/CTR/position, queries/pages/country/device); SEO-004 uji Realtime page_view dan whatsapp_click setelah consent, tanpa mengirim data tamu atau booking palsu; SEO-005 PSI mobile/desktop untuk beranda, snorkeling, west/east, island, Lembongan dan fast boat. Skor historis bukan pengukuran baru. SEO-002 lanjutkan checklist 18 URL saat kuota tersedia; tidak mengulang 10 URL yang selesai.
 - Next P1: validasi penawaran enam klaster dengan owner/operator, perkuat halaman existing (SEO-008); siapkan draft pertama melalui CMS (SEO-011/012), verifikasi HTTP/canonical/hreflang/sitemap dan link setelah publish (SEO-013). Baru lakukan trust/backlink sesuai prioritas roadmap. Tidak ada perubahan kode, D1, publikasi atau harga dalam review ini; hanya dokumentasi. Ranking, impressions, clicks, enquiry dan booking organik masih belum terukur.
+
+### 2026-11-26 — Pemulihan akses dashboard (perbaikan operasional)
+- Owner melaporkan aplikasi membuka website publik. Stabilkan manifest launch /dashboard.html, direct shell tiga alias, cache manifest, dan buka website di jendela terpisah. Pemulihan legacy standalone root hanya untuk perangkat yang telah mengunjungi dashboard (marker non-rahasia); shortcut lama tanpa marker mungkin perlu diinstal ulang dari dashboard. Guest browser dan canonical SEO tidak berubah, dashboard tetap noindex/no-store serta login cookie existing.
+- Tambah regression dan live smoke; belum ada bukti Android aktual atau deployment saat commit. Tidak mengubah D1, harga, konten atau urutan pekerjaan SEO P0/P1.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

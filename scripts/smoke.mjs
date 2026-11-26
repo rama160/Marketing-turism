@@ -17,6 +17,14 @@ if(base==="https://nusapenidaexperiences.com"){
  const oldHealth=await fetch(aliases[0]+"/api/health",{redirect:"manual",signal:AbortSignal.timeout(20000)});
  if(oldHealth.status!==200)throw Error("Legacy API compatibility lost");
 }
+// Test entry and manifest directly, not a followed redirect that might land on the guest homepage.
+const appManifest=JSON.parse(await get("/manifest.webmanifest"));
+if(appManifest.start_url!=="/dashboard.html"||appManifest.id!=="/dashboard.html"||appManifest.scope!=="/")throw Error("Installed dashboard launch manifest incorrect");
+for(const path of ["/dashboard","/dashboard.html","/dashboard/"]){
+ const res=await fetch(base+path,{redirect:"manual",signal:AbortSignal.timeout(20000)});
+ const markup=await res.text();
+ if(res.status!==200||!markup.includes('id="adminArea"')||markup.includes('id="leadForm"')||!res.headers.get("x-robots-tag")?.includes("noindex")||!res.headers.get("cache-control")?.includes("no-store"))throw Error("Dashboard launch route failed: "+path);
+}
 const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
 if(health.version!=="3.36.0")throw Error("Cloudflare release version mismatch: "+health.version);

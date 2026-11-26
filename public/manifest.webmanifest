@@ -14,12 +14,6 @@
       "purpose": "any"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Lihat Website",
-      "short_name": "Website",
-      "url": "/",
-      "description": "Buka website publik pengalaman wisata"
-    }
-  ]
+  "id": "/dashboard.html",
+  "scope": "/"
 }

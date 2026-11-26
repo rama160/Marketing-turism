@@ -79,6 +79,8 @@ test("Android installed agent goes to dashboard; public service worker never cac
  const manifest=JSON.parse(file("manifest.webmanifest"));
  const sw=file("service-worker.js");
  assert.equal(manifest.start_url,"/dashboard.html");
+ assert.equal(manifest.id,"/dashboard.html");assert.equal(manifest.scope,"/");assert.equal(manifest.shortcuts,undefined);
+ assert.doesNotMatch(sw,/"\/manifest\.webmanifest"/);
  assert.ok(manifest.name.includes("Agent Dashboard"));
  assert.ok(sw.includes("/guest.js"));
  assert.ok(!sw.includes('"/app.js"'));
@@ -140,4 +142,32 @@ test("guest challenge loads on demand, renders once, and keeps the token gate",a
  challenge.ensure();assert.equal(scripts.length,1);challenge.reset();assert.deepEqual(resets,["widget-1"]);
  assert.match(guest,/if\(!body\["cf-turnstile-response"\]\)\{challenge.ensure\(\);/);
  assert.ok(guest.indexOf('if(!body["cf-turnstile-response"])')<guest.indexOf('publicAPI("leads","POST"'));
+});
+
+test("legacy installed owner launch recovers without redirecting public browser or explicit preview",async()=>{
+ const {runInNewContext}=await import("node:vm");
+ const guest=file("guest.js"),end=guest.indexOf("const $=");
+ const source=guest.slice(0,end);
+ function launch(standalone,visited,path){
+  const redirects=[];
+  runInNewContext(source,{URL,window:{matchMedia:()=>({matches:standalone}),location:{href:"https://example.com"+path,replace:u=>redirects.push(u)}},navigator:{},localStorage:{getItem:()=>visited?"1":null}});
+  return redirects;
+ }
+ assert.deepEqual(launch(true,true,"/"),["https://example.com/dashboard.html"]);
+ assert.deepEqual(launch(false,true,"/"),[]);
+ assert.deepEqual(launch(true,false,"/"),[]);
+ assert.deepEqual(launch(true,true,"/?view=website"),[]);
+ assert.deepEqual(launch(true,true,"/snorkeling.html"),[]);
+ assert.match(file("dashboard.html"),/href="\/\?view=website" target="_blank" rel="noopener noreferrer"/);
+});
+test("dashboard entry routes return direct private shell, not public homepage",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const assets={fetch:async req=>new URL(req.url).pathname==="/__npe_templates/dashboard.txt"?new Response(file("dashboard.html")):new Response("unexpected",{status:404})};
+ for(const path of ["/dashboard","/dashboard.html","/dashboard/"]){
+  const r=await worker.fetch(new Request("https://nusapenidaexperiences.com"+path),{ASSETS:assets});
+  assert.equal(r.status,200);assert.equal(r.headers.get("cache-control"),"no-store");assert.match(r.headers.get("x-robots-tag"),/noindex/);
+  const html=await r.text();assert.match(html,/id="adminArea"/);assert.doesNotMatch(html,/id="leadForm"/);
+ }
+ const legacy=await worker.fetch(new Request("https://marketing-turism-agent.finchat-ai-gateway.workers.dev/dashboard.html"),{ASSETS:assets});
+ assert.equal(legacy.status,301);assert.equal(legacy.headers.get("location"),"https://nusapenidaexperiences.com/dashboard.html");
 });

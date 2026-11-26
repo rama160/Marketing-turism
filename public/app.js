@@ -2166,6 +2166,8 @@ $("#cmsLayoutSave").onclick=async()=>{
  }
 })();
 // Admin sessions and API responses are never cached by the guest service worker.
+// A non-secret marker identifies devices that opened the owner workspace; never store credentials here.
+try{localStorage.setItem("npe-owner-workspace-visited","1");}catch(_){}
 // Register the static PWA shell for Android installation; it intentionally excludes dashboard.html, APIs and credentials.
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
 

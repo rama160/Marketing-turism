@@ -1,4 +1,14 @@
-// Guest-only website code. No dashboard token, admin routes or privileged UI.
+// Guest-only website code. No dashboard token, admin API routes or privileged UI.
+// Recover an older owner-app shortcut that opens the home page in standalone mode.
+// Ordinary browser visitors and explicit website previews remain on the public website.
+(function recoverOwnerLaunch(){
+ try{
+  const standalone=window.matchMedia?.("(display-mode: standalone)")?.matches||navigator.standalone===true;
+  const url=new URL(window.location.href);
+  if(standalone&&url.pathname==="/"&&url.searchParams.get("view")!=="website"&&localStorage.getItem("npe-owner-workspace-visited")==="1")
+   window.location.replace(new URL("/dashboard.html",url.origin).href);
+ }catch(_){}
+})();
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const say=(id,message,ok=false)=>{const el=$(id);if(!el)return;el.textContent=message;el.style.color=ok?"#167058":"#a24836"};

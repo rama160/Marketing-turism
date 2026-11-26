@@ -9,6 +9,9 @@
 - Owner requests direct device upload, not gallery selection or external image retrieval. Keep existing cover if unchanged; upload a new one using existing authenticated media storage, rights confirmation and a quality-prioritized article compression profile (max 1600 px, preserve ratio, JPEG 0.90–0.78, target ≤300 KB, fallback ≤850 KB); original device file unchanged. Existing gallery/other photo flows unchanged. Cover-only scope, no body-gallery feature. Save draft applies replacement/removal; approval resets as before.
 - Add direct permanent delete for draft/rejected/approved/published articles. Published deletion requires explicit extra confirmation and current version; public ID/EN routes return 404, sitemap/list omit record after cache refresh. Shared photos not automatically deleted. No production article deleted by implementation. Tests added; release/live verification pending.
 
+## 26 November 2026 — Installed dashboard launch recovery
+- Owner reports installed dashboard opens public site. Keep canonical /dashboard.html manifest start and add explicit stable identity/scope, remove public shortcut, open explicit Website preview separately, remove manifest from offline cache and revalidate. Serve dashboard aliases directly via private no-store/noindex HTML shell from build template, preserving host migration and auth. Recover legacy standalone root only on devices marked by visiting the owner dashboard; normal guests and explicit website preview are unaffected. Existing home-screen shortcuts without marker may need reinstallation. No token stored, no SEO URL or DB change. CI/deploy and physical Android launch pending.
+
 ---
 
 ## Homepage destination card editor

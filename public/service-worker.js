@@ -1,6 +1,6 @@
 // Static public assets only. Never cache API/guest/admin data or payment responses.
-const CACHE="marketing-turism-public-v36-layout2";
-const URLS=["/","/index.html","/styles.css","/guest.js","/analytics.js","/language.js","/content-order.mjs","/manifest.webmanifest","/icon.svg","/photo-loader.js","/photo-unavailable.svg","/privacy.html","/terms.html","/cancellation.html","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"];
+const CACHE="marketing-turism-public-v36-dashboard-launch";
+const URLS=["/","/index.html","/styles.css","/guest.js","/analytics.js","/language.js","/content-order.mjs","/icon.svg","/photo-loader.js","/photo-unavailable.svg","/privacy.html","/terms.html","/cancellation.html","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(URLS)).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener("fetch",event=>{

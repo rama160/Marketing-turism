@@ -114,11 +114,16 @@ async function route(req,env,ctx){
  }
  // Static dashboard/legal routes are explicitly intercepted so old public links migrate.
  if(read&&staticDocument&&env.ASSETS){
-  const response=await env.ASSETS.fetch(req);
   if(path.startsWith("/dashboard")){
-   const headers=new Headers(response.headers);headers.set("x-robots-tag","noindex, nofollow");headers.set("cache-control","no-store");
-   return new Response(method==="HEAD"?null:response.body,{status:response.status,statusText:response.statusText,headers});
+   // Explicit direct shell: never follow an Assets redirect into the public landing page.
+   const response=await env.ASSETS.fetch(new Request(new URL("/__npe_templates/dashboard.txt",u.origin),{method:"GET"}));
+   if(!response.ok)return new Response("Dashboard temporarily unavailable",{status:503,headers:{"cache-control":"no-store","x-robots-tag":"noindex, nofollow"}});
+   const headers=new Headers(response.headers);
+   headers.set("content-type","text/html; charset=utf-8");headers.set("x-robots-tag","noindex, nofollow");headers.set("cache-control","no-store");
+   headers.delete("content-length");headers.delete("etag");
+   return new Response(method==="HEAD"?null:response.body,{status:200,headers});
   }
+  const response=await env.ASSETS.fetch(req);
   const headers=new Headers(response.headers);
   const policy=headers.get("content-security-policy");
   if(policy)headers.set("content-security-policy",policy.replace("script-src 'self' https://challenges.cloudflare.com;","script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://static.cloudflareinsights.com;").replace("connect-src 'self' https://challenges.cloudflare.com;","connect-src 'self' https://challenges.cloudflare.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com;").replace("https://raw.githubusercontent.com blob:;","https://raw.githubusercontent.com blob: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com;"));

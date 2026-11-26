@@ -32,6 +32,8 @@ if(!manifest.id["hero.title"]||!manifest.en["hero.title"]||
  !manifest.id["snorkelingPage.title"]||!manifest.photos.hero||
  !manifest.id["price.snorkeling"])throw Error("Editor snapshot not populated from live page source");
 await writeFile("public/site-editor-defaults.json",JSON.stringify(manifest,null,2)+"\n");
+// Serve the admin shell directly from a non-HTML template to avoid Assets HTML canonical redirects.
+await writeFile("public/__npe_templates/dashboard.txt",await readFile("public/dashboard.html","utf8"));
 await mkdir("dist",{recursive:true});
 await cp("public","dist",{recursive:true,force:true});
 await writeFile("dist/BUILD_INFO.txt","Marketing Tourism web build; requires Cloudflare Worker and D1 for persistent operations.\n");
