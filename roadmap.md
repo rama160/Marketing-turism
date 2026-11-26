@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.26 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.27 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-011/012 prioritas aktif: diagnosis riset pertama gagal, pemulihan generator dan draft pertama; SEO-013 setelah publish. SEO-002/003 menunggu kuota/data, SEO-015/016/017 release lulus dengan uji nyata pending, SEO-018 outreach menunggu owner, SEO-019 evaluasi kelayakan. Tidak mengulang pekerjaan selesai atau menambah fitur tanpa kebutuhan.**.
+- Status: aktif. Fokus saat ini: **SEO-013 prioritas aktif: verifikasi teknis artikel pertama lulus, cek indexasi melalui GSC; SEO-002/003 lanjut saat kuota/data tersedia. SEO-011/012 siklus artikel pertama berhasil, kualitas terjemahan otomatis berikutnya perlu review; SEO-018 outreach menunggu owner, SEO-019 evaluasi kelayakan. SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur tanpa kebutuhan.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -125,7 +125,7 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 | SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
 | SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
 | SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui; aktivitas dinamis D1 versi 3 terverifikasi; CI/deploy/Verify commit 703d494 lulus. Copy awal selesai; fasilitas/harga spesifik belum dikonfirmasi, tetap tidak diasumsikan |
-| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] [verified 26 Nov] Reverse links EN dan live reachability lulus pada 0e13557; artikel nyata belum terbit |
+| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [x] Verify 45749519570: 32/32 URL sitemap terjangkau dari homepage melalui HTML anchors, termasuk artikel pertama ID/EN. Pantau bila ada regresi. |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [x] Perbaikan teknis teridentifikasi pada cover Lembongan: skor 87 → 97; CI/deploy/smoke lulus. Evaluasi lanjutan bila ada temuan nyata. |
 
 Kandidat awal peta kata kunci (hipotesis, bukan ranking atau volume terukur):
@@ -146,9 +146,9 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 1 draft lembongan-two-days, 0 terbit; riset berhasil, sinyal pertanyaan 0; owner menemukan versi bilingual tidak selaras |
-| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; draft pertama tersimpan, tetapi bilingual tidak selaras; generator naskah induk + terjemahan dengan pemeriksaan struktur/angka/destinasi disiapkan; release dan review/publish belum selesai |
-| SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
+| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 1 artikel terbit; enam kandidat awal tersedia, riset pertama memilih lembongan-two-days dengan sinyal pertanyaan 0 (bukan volume). Validasi gap dan prioritas berikut dari GSC/kebutuhan pelanggan. |
+| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Siklus pertama berhasil: draft dikoreksi editorial, owner upload cover/publish 26 Nov 11.04 WITA; D1 1/1 terbit. Generator naskah induk + terjemahan terpasang; keselarasan otomatis artikel berikut perlu review. Tidak mengulang riset minggu ini. |
+| SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [~] URL ID/EN pertama, HTTP 200, canonical/hreflang, sitemap dan crawlability lulus Verify 45749519570; index Google belum diketahui. Owner cek GSC sesuai kuota. |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
 
 Topik calon artikel (uji gap sebelum membuat, perbarui panduan existing bila sudah menjawab):
@@ -376,6 +376,12 @@ Pedoman keputusan:
 ### 2026-11-26 — SEO-013/016: tampilan daftar artikel
 - Release d8f9e27 CI/deploy/Verify lulus. Screenshot owner 11.28 WITA: halaman daftar artikel hanya judul/ringkasan. D1 read-only: artikel pertama published dengan media_id 73ceaa31-5fbc-4f1b-9f08-f95722ef9b60. Renderer index tidak menampilkan cover, bukan kegagalan upload.
 - Buat kartu editorial responsif dengan cover published, judul, ringkasan, tanggal publikasi, CTA baca ID/EN. Artikel pertama mengikuti order owner sebagai unggulan, sisanya grid dua kolom/HP satu kolom. Seluruh kartu link HTML, srcset existing, pertama eager/high priority dan sisanya lazy. Fallback brand bila cover kosong, tidak membuat foto baru. Tidak mengubah artikel, URL, sitemap, schema, data atau dashboard. Unit dan smoke memeriksa visual cover/tautan. CI/deploy/Verify release baru dan uji HP belum terverifikasi; indexasi Google tetap belum diketahui.
+
+### 2026-11-26 — Rekonsiliasi roadmap sesudah artikel pertama terbit
+- Release e2133f9: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45749438337), [deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45749438340), [Verify lulus](https://github.com/rama160/Marketing-turism/actions/runs/45749519570). Log smoke 03.32 UTC menyatakan Crawlable homepage links reach 32 of 32 sitemap URLs; validasi penemuan artikel dan kartu cover lulus. Ini bukti crawlability internal, bukan Google indexing. Uji tampilan fisik HP belum dilaporkan.
+- D1 read-only: 1 artikel total/1 terbit, lembongan-two-days-fa0f5e50, published_at 2026-11-26 03:04:14 UTC (11.04 WITA). Testimoni 0 total/0 visible saat diperiksa. Tidak ada perubahan data.
+- SEO-009 selesai untuk audit awal. SEO-011/012 siklus pertama selesai, aktivitas editorial berkala masih berjalan. SEO-013 teknis lulus, status indeks belum diketahui: cek https://nusapenidaexperiences.com/en/articles/lembongan-two-days-fa0f5e50 dan https://nusapenidaexperiences.com/id/articles/lembongan-two-days-fa0f5e50 di GSC. Request satu kali hanya jika belum terindeks dan layak, sesuai kuota. Dua halaman indeks artikel kini berisi konten, dapat diperiksa tanpa request berulang. Sitemap tidak perlu dikirim ulang.
+- Urutan berikut: SEO-013/002 saat kuota tersedia; SEO-018 lima prospek yang telah dicatat, outreach dengan persetujuan owner; SEO-019 evaluasi kelayakan Google Business Profile tanpa alamat palsu; SEO-003/020 cek data 27–28 Nov jika tersedia dan review mingguan. SEO-014/021–023 menunggu baseline. SEO-008 harga/fasilitas, SEO-015 ketentuan, SEO-016 booking dan SEO-017 ulasan asli tetap memerlukan konfirmasi/bukti nyata. Tidak membuat fitur baru, melakukan outreach, mengubah harga atau memulai riset duplikat. Perubahan dokumentasi saja.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
