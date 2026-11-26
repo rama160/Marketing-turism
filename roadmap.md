@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.19 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.20 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-005 audit performa awal selesai; SEO-002 menunggu kuota, SEO-003 menunggu data. Prioritas aktif SEO-008 optimasi penawaran dan SEO-011/012 konten berkualitas; tidak mengulang pekerjaan selesai atau menambah fitur.**.
+- Status: aktif. Fokus saat ini: **SEO-011/012 prioritas aktif: diagnosis riset pertama gagal, pemulihan generator dan draft pertama; SEO-013 setelah publish. SEO-002/003 menunggu kuota/data, SEO-015/016/017 release lulus dengan uji nyata pending, SEO-018 outreach menunggu owner, SEO-019 evaluasi kelayakan. Tidak mengulang pekerjaan selesai atau menambah fitur tanpa kebutuhan.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -146,8 +146,8 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1: 0 artikel, 0 terbit; panduan existing dan calon topik dicatat, hasil riset pertama belum tersedia |
-| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; belum ada draft produksi, uji Android dan review/publish artikel nyata belum dilakukan |
+| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 0 artikel, 0 terbit; riset minggu 23 Nov memilih lembongan-two-days tetapi FAILED; penyebab belum terdiagnosis |
+| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; riset produksi pertama FAILED; lock mingguan menahan retry. Diagnosis tahap kegagalan dan retry terbatas diperlukan; review/publish artikel nyata belum dilakukan |
 | SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
 
@@ -165,9 +165,9 @@ Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang d
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-015 | P1 | Perkuat trust: identitas bisnis/role agen, kontak, kebijakan pemesanan/pembatalan, operator dan sumber foto | Fakta terverifikasi; tidak klaim izin, rating atau kemitraan yang belum ada | [~] Copy trust diselaraskan; release dan detail retensi/kebijakan final perlu verifikasi |
-| SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] WhatsApp jalur utama; form website dihapus dan endpoint legacy ditutup dengan flag khusus; review bukan lead; uji guest nyata/booking belum dilakukan |
-| SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] SOP dan template siap; owner minta review langsung tampil, hide/show; fitur dan proteksi diterapkan, belum ada ulasan nyata |
+| SEO-015 | P1 | Perkuat trust: identitas bisnis/role agen, kontak, kebijakan pemesanan/pembatalan, operator dan sumber foto | Fakta terverifikasi; tidak klaim izin, rating atau kemitraan yang belum ada | [~] Copy trust dan testimoni release a5ecbd3 CI/deploy/Verify lulus; detail retensi/kebijakan final perlu owner |
+| SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] WhatsApp jalur utama; form website dihapus, endpoint legacy 410 terverifikasi smoke; uji chat/booking nyata belum dilakukan |
+| SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] Testimoni langsung tampil/hide/show: CI/deploy/Verify lulus; D1 0 total/0 tampil. Uji pelanggan/Android dan ulasan nyata belum ada |
 | SEO-018 | P2 | Identifikasi mitra relevan (hotel/villa/homestay, operator, travel guide); tawarkan referensi yang bermanfaat | Daftar target, kontak melalui owner approval, respons dan link aktif relevan tercatat | [~] Lima prospek resmi dan draft outreach siap; belum dikirim |
 | SEO-019 | P2 | Evaluasi Google Business Profile hanya jika memenuhi aturan kelayakan interaksi pelanggan | Kelayakan terdokumentasi; tanpa alamat palsu atau listing bisnis online-only | [ ] |
 
@@ -342,6 +342,11 @@ Pedoman keputusan:
 
 ### 2026-11-26 — Koreksi CI testimoni
 - CI 45741234334 gagal 4 assertion lama (form lead, label pembatalan, jumlah CTA WhatsApp, action Turnstile). Tes validasi/review langsung tampil/hide/show/limit lulus. CI release trust sebelumnya juga gagal pada fixture jumlah CTA. Koreksi fixture sesuai perubahan owner, tetap uji keamanan, tautan kebijakan, CTA, dan tambahkan penolakan API. Tidak menghapus review atau mengubah data lama. Release terbaru belum diverifikasi.
+
+### 2026-11-26 — Verifikasi release testimoni dan prioritas pemulihan artikel
+- Release a5ecbd32b43e83b937c3fcf598f4c5175829dcbb: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741357607), [deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741357642), [Verify lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741466594). Tidak mengulang pengembangan; uji Android oleh owner/pelanggan dan transaksi nyata belum dibuktikan.
+- D1 read-only: website_reviews 0 total/0 visible; seo_articles 0 total/0 published. seo_research_runs minggu 2026-11-23: FAILED, topic lembongan-two-days, detail “Riset atau AI gagal; tidak ada publikasi otomatis.” Audit generator: catch generik tidak membedakan kegagalan sumber, AI, JSON/validasi atau DB; INSERT OR IGNORE lock mingguan mencegah retry normal walau gagal. Penyebab spesifik belum diketahui. Tidak reset lock, tidak menjalankan AI, tidak membuat review/draft palsu.
+- Prioritas berikut SEO-011/012: diagnosis tahap dan error yang aman tanpa secret/PII, perbaiki sebab nyata, retry terbatas hanya failure dan cegah draft duplikat, verifikasi draft tersimpan; persetujuan/upload foto/publish tetap owner. SEO-013 cek URL/sitemap/tautan setelah artikel terbit. SEO-018 outreach 5 prospek menunggu owner; SEO-019 evaluasi kelayakan lokasi/interaksi pelanggan sebelum membuat profil, tanpa alamat palsu. SEO-002/003 lanjut saat kuota/data tersedia. SEO-020 evaluasi berkala setelah baseline tersedia. Perubahan dokumentasi saja.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
