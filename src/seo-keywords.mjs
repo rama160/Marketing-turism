@@ -32,9 +32,10 @@ export function validateKeyword(input,paths){
  if(target&&!paths.includes(target))throw Error("Pilih URL canonical yang sudah terbit.");
  if(target&&((locale==="id"&&target.startsWith("/en/"))||(locale==="en"&&(target.startsWith("/id/")||target.endsWith(".html")))))throw Error("Bahasa keyword dan halaman sasaran harus sesuai.");
  const m=input.manual||{},numeric=(v,min,max,integer=false)=>{if(v===""||v===null||v===undefined)return null;const n=Number(v);if(!Number.isFinite(n)||n<min||n>max||integer&&!Number.isInteger(n))throw Error("Metrik manual tidak valid.");return n;};
- const manual={volume:numeric(m.volume,0,1e9,true),difficulty:numeric(m.difficulty,0,100),impressions:numeric(m.impressions,0,1e9,true),clicks:numeric(m.clicks,0,1e9,true),position:numeric(m.position,1,1000),source:clean(m.source,200),period:clean(m.period,100),country:clean(m.country,60),device:clean(m.device,40),checked:clean(m.checked,10),competitors:clean(m.competitors,1800),notes:clean(m.notes,1500)};
+ const manual={volume:numeric(m.volume,0,1e9,true),volume_min:numeric(m.volume_min,0,1e9,true),volume_max:numeric(m.volume_max,0,1e9,true),difficulty:numeric(m.difficulty,0,100),impressions:numeric(m.impressions,0,1e9,true),clicks:numeric(m.clicks,0,1e9,true),position:numeric(m.position,1,1000),source:clean(m.source,200),period:clean(m.period,100),country:clean(m.country,60),device:clean(m.device,40),checked:clean(m.checked,10),competitors:clean(m.competitors,1800),notes:clean(m.notes,1500)};
  if(manual.clicks!==null&&(manual.impressions===null||manual.clicks>manual.impressions))throw Error("Klik manual tidak boleh melebihi impressions.");
- if((manual.volume!==null||manual.difficulty!==null||manual.impressions!==null||manual.clicks!==null||manual.position!==null||manual.competitors)&&(!manual.source||!manual.period||!manual.country||!manual.device||!dateOK(manual.checked)))throw Error("Metrik/riset kompetitor memerlukan sumber, periode, negara, perangkat dan tanggal cek.");
+ if((manual.volume_min!==null)!==(manual.volume_max!==null)||manual.volume_min!==null&&(manual.volume_min>manual.volume_max||manual.volume!==null))throw Error("Isi estimasi tunggal atau rentang volume lengkap, bukan keduanya.");
+ if((manual.volume!==null||manual.volume_min!==null||manual.difficulty!==null||manual.impressions!==null||manual.clicks!==null||manual.position!==null||manual.competitors)&&(!manual.source||!manual.period||!manual.country||!manual.device||!dateOK(manual.checked)))throw Error("Metrik/riset kompetitor memerlukan sumber, periode, negara, perangkat dan tanggal cek.");
  return {keyword,normalized,locale,cluster,intent,target_path:target,priority,topic,manual,active:input.active===false?0:1};
 }
 export async function ensureKeywordSeeds(db){
@@ -64,12 +65,13 @@ export async function saveKeyword(db,input,id=null){
 const b64url=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
 const enc=s=>b64url(new TextEncoder().encode(s));
 const configured=env=>!!env.GSC_SERVICE_ACCOUNT_JSON&&["sc-domain:nusapenidaexperiences.com",origin+"/"].includes(env.GSC_PROPERTY);
-async function gscToken(env,request,now){
+async function gscToken(env,request,now,scope="https://www.googleapis.com/auth/webmasters.readonly"){
+ if(!["https://www.googleapis.com/auth/webmasters.readonly","https://www.googleapis.com/auth/adwords"].includes(scope))throw Error("CONFIG");
  let credentials;try{credentials=JSON.parse(env.GSC_SERVICE_ACCOUNT_JSON);}catch{throw Error("CONFIG");}
  if(!credentials||!/^[^\s@]+@[^\s@]+\.gserviceaccount\.com$/.test(credentials.client_email||"")||typeof credentials.private_key!=="string")throw Error("CONFIG");
  const pem=credentials.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,"");
  let key;try{key=await crypto.subtle.importKey("pkcs8",Uint8Array.from(atob(pem),c=>c.charCodeAt(0)),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);}catch{throw Error("CONFIG");}
- const iat=Math.floor(now/1000),unsigned=enc(JSON.stringify({alg:"RS256",typ:"JWT"}))+"."+enc(JSON.stringify({iss:credentials.client_email,scope:"https://www.googleapis.com/auth/webmasters.readonly",aud:"https://oauth2.googleapis.com/token",iat,exp:iat+3000}));
+ const iat=Math.floor(now/1000),unsigned=enc(JSON.stringify({alg:"RS256",typ:"JWT"}))+"."+enc(JSON.stringify({iss:credentials.client_email,scope,aud:"https://oauth2.googleapis.com/token",iat,exp:iat+3000}));
  const sig=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned));
  const r=await request("https://oauth2.googleapis.com/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:unsigned+"."+b64url(sig)}),signal:AbortSignal.timeout(10000)});
  if(!r.ok)throw Error("AUTH");
@@ -234,6 +236,90 @@ export async function publicResearchStatus(db){
  }
  try{const r=await db.prepare("SELECT diagnostic_json,checked_at FROM growth_source_diagnostics WHERE source='REDDIT_PUBLIC_RSS'").first();if(r)out[0].diagnostic={...JSON.parse(r.diagnostic_json),checked_at:r.checked_at};}catch{}
  return out;
+}
+
+
+// SEO-006A: read-only keyword planning. Basic access is not confirmation of permissible use.
+// Owner must obtain confirmation that the declared purpose is allowed before enabling the flag.
+const plannerMarkets={GLOBAL:[],ID:["geoTargetConstants/2360"],AU:["geoTargetConstants/2036"],US:["geoTargetConstants/2840"],GB:["geoTargetConstants/2826"]};
+const plannerLanguages={en:"languageConstants/1000",id:"languageConstants/1025"};
+const plannerTTL=90*86400000,plannerWeek=7*86400000;
+function plannerConfig(env){
+ const configured=!!env.GSC_SERVICE_ACCOUNT_JSON&&/^\d{10}$/.test(String(env.GOOGLE_ADS_CUSTOMER_ID||""));
+ return {configured,approved:env.GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED==="true"};
+}
+export function plannerScope(input={}){
+ const market=String(input.market||"GLOBAL"),locale=String(input.locale||"en");
+ if(!Object.hasOwn(plannerMarkets,market)||!Object.hasOwn(plannerLanguages,locale))throw Error("Pasar atau bahasa Keyword Planner tidak valid.");
+ return {market,locale,key:market+":"+locale,network:"GOOGLE_SEARCH",period:"Google default: last 12 months",source:"GOOGLE_ADS_API_V26"};
+}
+const plannerInt=v=>{if(typeof v!=="number"&&!(typeof v==="string"&&/^\d+$/.test(v)))return null;const n=Number(v);return Number.isSafeInteger(n)&&n>=0?n:null;};
+const monthNames=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+export function parsePlannerRows(data,kind,requested=[]){
+ if(!data||typeof data!=="object"||Array.isArray(data)||data.error||(data.results!==undefined&&!Array.isArray(data.results)))throw Error("RESPONSE");
+ const raw=data.results||[],seen=new Set(),rows=[],requestedSet=new Set(requested.map(norm));
+ for(const r of raw.slice(0,300)){
+  const keyword=typeof r?.text==="string"?r.text.trim():"",key=norm(keyword);
+  if(!safeQuery(keyword)||seen.has(key))continue;
+  const variants=[...new Set((Array.isArray(r.closeVariants)?r.closeVariants:[]).filter(v=>typeof v==="string"&&safeQuery(v)).map(v=>v.trim()))].slice(0,100);
+  if(kind==="historical"&&!requestedSet.has(key)&&!variants.some(v=>requestedSet.has(norm(v))))continue;
+  if(kind==="ideas"&&!Object.values(clusters).some(re=>re.test(keyword)))continue;
+  seen.add(key);const m=(kind==="historical"?r.keywordMetrics:r.keywordIdeaMetrics)||{};
+  const monthly=(Array.isArray(m.monthlySearchVolumes)?m.monthlySearchVolumes:[]).slice(0,48).map(v=>{
+   const year=plannerInt(v.year),month=monthNames.indexOf(v.month)+1;
+   return year&&month?{month:year+"-"+String(month).padStart(2,"0"),searches:plannerInt(v.monthlySearches)}:null;
+  }).filter(Boolean).sort((a,b)=>a.month.localeCompare(b.month));
+  const competition=["LOW","MEDIUM","HIGH"].includes(m.competition)?m.competition:null,index=plannerInt(m.competitionIndex);
+  rows.push({keyword,close_variants:variants,avg_monthly_searches:plannerInt(m.avgMonthlySearches),monthly,ads_competition:competition,ads_competition_index:index!==null&&index<=100?index:null});
+ }
+ const measured=rows.filter(r=>r.avg_monthly_searches!==null||r.monthly.some(m=>m.searches!==null)).length;
+ return {status:measured?"MEASURED":rows.length?"METRICS_UNAVAILABLE":raw.length?"FILTERED":"NO_ROWS",raw_rows:raw.length,measured,rows,truncated:raw.length>300||!!data.nextPageToken};
+}
+function plannerError(e){return ["CONFIG","AUTH","ACCESS","QUOTA","REQUEST","RESPONSE","NETWORK","NO_SEEDS"].includes(e?.message)?e.message:"NETWORK";}
+async function plannerRequest(request,env,token,operation,body){
+ if(!["generateKeywordHistoricalMetrics","generateKeywordIdeas"].includes(operation))throw Error("CONFIG");
+ const r=await request("https://googleads.googleapis.com/v26/customers/"+env.GOOGLE_ADS_CUSTOMER_ID+":"+operation,{method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+ if(!r.ok)throw Error(r.status===401?"AUTH":r.status===403?"ACCESS":r.status===429?"QUOTA":"REQUEST");
+ try{return await r.json();}catch{throw Error("RESPONSE");}
+}
+export async function readKeywordPlanner(db,env,input={},now=Date.now()){
+ const scope=plannerScope(input),config=plannerConfig(env);
+ if(!config.configured)return {status:"NOT_CONFIGURED",scope,...config};
+ if(!config.approved)return {status:"APPROVAL_REQUIRED",scope,...config};
+ const row=await db.prepare("SELECT status,started_at,report_json FROM seo_keyword_planner_reports WHERE market_key=?").bind(scope.key).first();
+ if(!row||row.started_at<now-plannerTTL)return {status:"NOT_RUN",scope,...config};
+ return {...JSON.parse(row.report_json||"{}"),status:row.status,started_at:row.started_at,...config};
+}
+export async function collectKeywordPlanner(db,env,input={}, {manual=false,now=Date.now(),request=fetch,pause=()=>new Promise(resolve=>setTimeout(resolve,1200))}={}){
+ const scope=plannerScope(input),config=plannerConfig(env);
+ // Retention enforcement even when authorization is revoked; no Google request without approval.
+ await db.prepare("DELETE FROM seo_keyword_planner_reports WHERE started_at<?").bind(now-plannerTTL).run();
+ if(!config.configured||!config.approved)return readKeywordPlanner(db,env,input,now);
+ const lock=crypto.randomUUID(),report={scope,checked_at:new Date(now).toISOString(),sections:{}};
+ const claim=await db.prepare("INSERT INTO seo_keyword_planner_reports(market_key,lock_id,started_at,status,report_json) VALUES(?,?,?,'RUNNING',?) ON CONFLICT(market_key) DO UPDATE SET lock_id=excluded.lock_id,started_at=excluded.started_at,status='RUNNING',report_json=excluded.report_json WHERE seo_keyword_planner_reports.started_at<=?").bind(scope.key,lock,now,JSON.stringify(report),now-(manual?3600000:plannerWeek)).run();
+ if(claim.meta?.changes!==1)return {...await readKeywordPlanner(db,env,input,now),cooldown:true};
+ let status="ERROR";
+ try{
+  await ensureKeywordSeeds(db);
+  // Only owner-authored or built-in tourism seeds, never raw GSC query exports or guest information.
+  const plans=(await db.prepare("SELECT keyword FROM seo_keyword_plans WHERE active=1 AND locale=? AND origin IN ('SEED','OWNER') ORDER BY priority,keyword LIMIT 100").bind(scope.locale).all()).results;
+  const keywords=[...new Set(plans.map(p=>p.keyword).filter(s=>typeof s==="string"&&safeQuery(s)&&Object.values(clusters).some(re=>re.test(s))))];
+  if(!keywords.length)throw Error("NO_SEEDS");
+  report.requested_keywords=keywords;report.seed_limit=100;
+  const token=await gscToken(env,request,now,"https://www.googleapis.com/auth/adwords");
+  const common={geoTargetConstants:plannerMarkets[scope.market],language:plannerLanguages[scope.locale],keywordPlanNetwork:"GOOGLE_SEARCH",includeAdultKeywords:false};
+  try{report.sections.historical=parsePlannerRows(await plannerRequest(request,env,token,"generateKeywordHistoricalMetrics",{...common,keywords}),"historical",keywords);}catch(e){report.sections.historical={status:"ERROR",error:plannerError(e),rows:[]};}
+  // Keyword planning has separate rate limits. Do not repeat a denied/throttled request.
+  if(["AUTH","ACCESS","QUOTA"].includes(report.sections.historical.error))report.sections.ideas={status:"SKIPPED",rows:[]};
+  else{
+   await pause();
+   try{report.sections.ideas=parsePlannerRows(await plannerRequest(request,env,token,"generateKeywordIdeas",{...common,keywordSeed:{keywords:keywords.slice(0,20)},pageSize:100}),"ideas");}catch(e){report.sections.ideas={status:"ERROR",error:plannerError(e),rows:[]};}
+  }
+  const failed=Object.values(report.sections).filter(s=>["ERROR","SKIPPED"].includes(s.status)).length;
+  status=failed===0?"DONE":failed===2?"ERROR":"PARTIAL";
+ }catch(e){report.error=plannerError(e);}
+ await db.prepare("UPDATE seo_keyword_planner_reports SET status=?,report_json=? WHERE market_key=? AND lock_id=?").bind(status,JSON.stringify(report),scope.key,lock).run();
+ return {...report,status,started_at:now,...config};
 }
 
 // Ranking actions use observed query–URL pairs only; no estimated Google rank or volume.

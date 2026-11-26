@@ -48,6 +48,7 @@ jobs:
           npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0027_website_reviews.sql
           npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0028_seo_keywords.sql
           npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0029_seo_performance.sql
+          npx --yes wrangler@4 d1 execute marketing-turism-db --remote --file=database/migrations/0030_seo_keyword_planner.sql
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

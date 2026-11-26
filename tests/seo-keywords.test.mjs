@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage,plannerScope,parsePlannerRows,readKeywordPlanner,collectKeywordPlanner} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -18,7 +18,7 @@ test("GSC observations preserve actual query-page metrics and reject external/in
 });
 test("seed, owner version guard, automatic public signal snapshot and unconfigured GSC",async()=>{
  const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE seo_articles(slug TEXT,published_json TEXT);CREATE TABLE growth_discovery_runs(source TEXT,result TEXT,created_at TEXT);CREATE TABLE growth_opportunities(source TEXT,headline TEXT,discovered_at TEXT);");
- sqlite.exec(readFileSync("database/migrations/0028_seo_keywords.sql","utf8"));sqlite.exec(readFileSync("database/migrations/0029_seo_performance.sql","utf8"));
+ sqlite.exec(readFileSync("database/migrations/0028_seo_keywords.sql","utf8"));sqlite.exec(readFileSync("database/migrations/0029_seo_performance.sql","utf8"));sqlite.exec(readFileSync("database/migrations/0030_seo_keyword_planner.sql","utf8"));
  const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){for(const s of stmts)await s.run();}};
  try{
  await ensureKeywordSeeds(db);await ensureKeywordSeeds(db);let v=await listKeywords(db,{});assert.equal(v.plans.length,24);assert.equal(v.observations.length,0);assert.equal(v.gsc_configured,false);
@@ -38,6 +38,12 @@ test("seed, owner version guard, automatic public signal snapshot and unconfigur
  const pair=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
  const key=Buffer.from(await crypto.subtle.exportKey("pkcs8",pair.privateKey)).toString("base64");
  env.GSC_SERVICE_ACCOUNT_JSON=JSON.stringify({client_email:"unit@example.iam.gserviceaccount.com",private_key:"-----BEGIN PRIVATE KEY-----\n"+key+"\n-----END PRIVATE KEY-----"});
+ const adsEnv={...env,GOOGLE_ADS_CUSTOMER_ID:"1234567890"};
+ const blocked=await collectKeywordPlanner(db,adsEnv,{}, {request:()=>{throw Error("must not fetch")}});assert.equal(blocked.status,"APPROVAL_REQUIRED");
+ assert.equal((await readKeywordPlanner(db,adsEnv)).configured,true);
+ const plannerCalls=[];const result=await collectKeywordPlanner(db,{...adsEnv,GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED:"true"},{market:"AU",locale:"en"},{manual:true,pause:async()=>{},request:async(url,opts)=>{plannerCalls.push(url);if(url.includes("oauth2.googleapis.com")){const payload=JSON.parse(Buffer.from(opts.body.get("assertion").split(".")[1],"base64url").toString());assert.equal(payload.scope,"https://www.googleapis.com/auth/adwords");return Response.json({access_token:"test"});}const b=JSON.parse(opts.body);assert.equal(b.language,"languageConstants/1000");assert.deepEqual(b.geoTargetConstants,["geoTargetConstants/2036"]);assert.equal(b.keywordPlanNetwork,"GOOGLE_SEARCH");const metric={avgMonthlySearches:"500",competition:"LOW",competitionIndex:"20",monthlySearchVolumes:[{year:"2026",month:"OCTOBER",monthlySearches:"400"}]};return Response.json({results:url.endsWith(":generateKeywordHistoricalMetrics")?[{text:b.keywords[0],keywordMetrics:metric}]:[{text:"nusa penida west island tour",keywordIdeaMetrics:metric}]});}});
+ assert.equal(result.status,"DONE");assert.equal(plannerCalls.length,3);assert.equal(result.sections.historical.rows[0].avg_monthly_searches,500);assert.equal(result.sections.ideas.rows[0].monthly[0].searches,400);assert.equal((await readKeywordPlanner(db,{...adsEnv,GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED:"true"},{market:"AU",locale:"en"})).status,"DONE");
+ assert.equal((await collectKeywordPlanner(db,{...adsEnv,GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED:"true"},{market:"AU",locale:"en"},{manual:true,request:()=>{throw Error("must not fetch")}})).cooldown,true);
  const calls=[];
  const success=await bootstrapKeywordResearch(db,env,{request:async(url,opts)=>{calls.push(url);if(url.includes("oauth2.googleapis.com"))return Response.json({access_token:"unit-test-token"});assert.equal(opts.headers.authorization,"Bearer unit-test-token");return Response.json({rows:[{keys:["nusa penida west tour","https://nusapenidaexperiences.com/en/tours/west"],clicks:1,impressions:10,position:12}]});}});
  assert.equal(success.gsc_status,"MEASURED");assert.equal(success.rows,1);assert.equal(calls.length,2);
@@ -68,4 +74,14 @@ test("GSC period and independent hourly aggregation preserve scope and weighted 
  const result=summarizePerformanceRows(data,"total",range,[]);
  assert.equal(result.rows[0].impressions,4);assert.equal(result.rows[0].position,19);assert.equal(result.rows[0].ctr,.25);assert.equal(result.outside,1);
  assert.equal(summarizePerformanceRows({rows:[]},"total",range,[]).status,"NO_ROWS");
+});
+
+test("planner missing data stays null, close variants remain grouped, manual ranges need evidence",()=>{
+ assert.throws(()=>plannerScope({market:"invalid"}),/Pasar/);
+ const result=parsePlannerRows({results:[{text:"nusa penida west tour",closeVariants:["west nusa penida tour"],keywordMetrics:{monthlySearchVolumes:[{year:"2026",month:"OCTOBER"}]}},{text:"unrelated keyword",keywordMetrics:{avgMonthlySearches:"900"}}]},"historical",["west nusa penida tour"]);
+ assert.equal(result.rows.length,1);assert.equal(result.rows[0].avg_monthly_searches,null);assert.equal(result.rows[0].monthly[0].searches,null);assert.equal(result.status,"METRICS_UNAVAILABLE");
+ assert.throws(()=>validateKeyword({...input,manual:{volume_min:10,volume_max:100}},["/en/tours/west"]),/sumber/);
+ assert.throws(()=>validateKeyword({...input,manual:{volume_min:100,volume_max:10}},["/en/tours/west"]),/rentang/);
+ const m=validateKeyword({...input,manual:{volume_min:10,volume_max:100,source:"Google Keyword Planner export",period:"12 months",country:"Global",device:"All",checked:"2026-11-26"}},["/en/tours/west"]).manual;
+ assert.equal(m.volume,null);assert.equal(m.volume_max,100);
 });

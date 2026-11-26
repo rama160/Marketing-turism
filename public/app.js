@@ -2342,7 +2342,7 @@ function renderKeywords(){
  const {plans,observations,latest,snapshot,gsc_configured,ranking,previous}=kwData;
  const rankingById=new Map((ranking?.pairs||[]).map((p,i)=>[p.id,{...p,order:i}]));
  const observed=plans.filter(p=>observations.some(o=>o.normalized===p.normalized)).length;
- $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual?.volume!==null&&p.manual?.volume!==undefined).length],["Top 3 · pasangan target",ranking?.measured?ranking.top3:"N/A"],["Top 10 · pasangan target",ranking?.measured?ranking.top10:"N/A"],["Peluang posisi >10–30",ranking?.measured?ranking.quickWins:"N/A"]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
+ $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual?.volume!=null||p.manual?.volume_min!=null).length],["Top 3 · pasangan target",ranking?.measured?ranking.top3:"N/A"],["Top 10 · pasangan target",ranking?.measured?ranking.top10:"N/A"],["Peluang posisi >10–30",ranking?.measured?ranking.quickWins:"N/A"]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
  $("#kwStatus").textContent=(gsc_configured?"GSC terkonfigurasi":"GSC belum terhubung — set secret service account di Cloudflare")+
   " · Riset terakhir: "+(latest?latest.created_at+" UTC · "+latest.gsc_status:"belum dijalankan")+
   " · Snapshot GSC: "+(snapshot?snapshot.period_start+" – "+snapshot.period_end+" (global, semua perangkat; maks. 300 pasangan query–URL)":"N/A")+
@@ -2356,7 +2356,7 @@ function renderKeywords(){
   const rank=rankingById.get(p.id),actions={QUICK_WIN:"Prioritas: bandingkan intent dan isi dengan hasil Google teratas; perkuat halaman target dan tautan internal.",PROTECT_TOP10:"Pertahankan: cek CTR, judul dan konversi tanpa mengubah URL.",BUILD_RELEVANCE:"Perkuat relevansi dan otoritas; evaluasi gap sebelum revisi."};
   const rankHtml=rank?'<p><strong>'+esc(actions[rank.action])+'</strong><br><small>'+esc(rank.delta?"Perubahan vs periode pembanding: posisi "+(rank.delta.position>=0?"+":"")+rank.delta.position.toFixed(1)+" (positif = membaik) · klik "+rank.delta.clicks+" · impresi "+rank.delta.impressions+" · CTR "+rank.delta.ctr.toFixed(1)+" poin persen":"Belum ada pasangan pembanding terukur")+'</small></p>':"";
   return '<article class="panel kwCard"><small>'+esc(p.locale.toUpperCase()+" · "+p.cluster+" · "+p.intent+" · P"+p.priority+" · "+p.origin)+'</small><h4>'+esc(p.keyword)+'</h4><p><strong>Sasaran:</strong> '+esc(mapped?p.target_path:p.target_path?"URL lama tidak lagi terbit":"Belum dipetakan")+'</p>'+
-   '<p>Volume/bulan: <strong>'+esc(m.volume??"N/A")+'</strong> · Difficulty: <strong>'+esc(m.difficulty??"N/A")+'</strong><br>Sinyal klaster: '+esc(signal??"N/A")+(m.source?'<br><small>'+esc([m.source,m.period,m.country,m.device,m.checked].filter(Boolean).join(" · "))+'</small>':"")+'</p>'+
+   '<p>Volume/bulan: <strong>'+esc(m.volume??(m.volume_min!=null&&m.volume_max!=null?m.volume_min+"–"+m.volume_max:"N/A"))+'</strong> · Difficulty: <strong>'+esc(m.difficulty??"N/A")+'</strong><br>Sinyal klaster: '+esc(signal??"N/A")+(m.source?'<br><small>'+esc([m.source,m.period,m.country,m.device,m.checked].filter(Boolean).join(" · "))+'</small>':"")+'</p>'+
    ((m.impressions!==null&&m.impressions!==undefined||m.position!==null&&m.position!==undefined)?'<p><strong>GSC manual:</strong> '+esc(m.impressions??"N/A")+' impressions · '+esc(m.clicks??"N/A")+' klik · posisi '+esc(m.position??"N/A")+'</p>':"")+
    (rows.length?'<div class="kwObserved"><strong>GSC — URL aktual</strong>'+rows.map(o=>'<p>'+esc(o.path)+'<br><small>'+o.impressions+' impressions · '+o.clicks+' klik · '+(o.clicks/o.impressions*100).toFixed(1)+'% CTR · posisi '+o.position.toFixed(1)+'</small></p>').join("")+'</div>':'<p class="feedback">GSC: N/A (tidak ada baris terukur)</p>')+
    rankHtml+(conflict?'<p class="feedback">Periksa potensi konflik URL/intent; tidak otomatis dianggap kanibalisasi.</p>':"")+
@@ -2366,6 +2366,35 @@ function renderKeywords(){
  $("#kwAllObserved").innerHTML=observations.filter(o=>!q||o.query.toLowerCase().includes(q)||o.path.includes(q)).map(o=>'<article class="panel kwCard"><strong>'+esc(o.query)+'</strong><p>'+esc(o.path)+'</p><small>'+o.impressions+' impressions · '+o.clicks+' klik · '+(o.clicks/o.impressions*100).toFixed(1)+'% CTR · posisi '+o.position.toFixed(1)+'</small></article>').join("")||"<p>Belum ada pasangan terukur.</p>";
  $("#kwList").querySelectorAll("[data-kw-edit]").forEach(b=>b.onclick=()=>kwEdit(plans.find(p=>p.id===b.dataset.kwEdit)));
 }
+
+
+let kwPlannerBusy=false,kwPlannerGeneration=0;
+function plannerInput(){return {market:$("#kwPlannerMarket").value||"GLOBAL",locale:$("#kwPlannerLocale").value||"en"};}
+function renderPlannerReport(r){
+ const status={NOT_CONFIGURED:"Secret Customer ID atau kredensial belum lengkap.",APPROVAL_REQUIRED:"Konfigurasi tersedia. Aktivasi API menunggu konfirmasi permissible use dari Google untuk tujuan riset yang direncanakan. Gunakan jalur manual jika tersedia.",NOT_RUN:"Belum ada laporan.",RUNNING:"Riset berjalan.",DONE:"Laporan selesai.",PARTIAL:"Sebagian permintaan gagal.",ERROR:"Riset gagal."}[r?.status]||"Belum tersedia.";
+ say("#kwPlannerStatus",status+(r?.scope?" · "+r.scope.market+" / "+r.scope.locale.toUpperCase()+" · "+r.scope.network:"")+(r?.checked_at?" · "+r.checked_at:"")+(r?.cooldown?" · Laporan terakhir masih berlaku.":"")+(r?.error?" · "+r.error:""),r?.status==="DONE");
+ $("#kwPlannerRun").disabled=kwPlannerBusy||r?.status==="APPROVAL_REQUIRED"||r?.status==="NOT_CONFIGURED";
+ for(const [key,id] of [["historical","#kwPlannerHistory"],["ideas","#kwPlannerIdeas"]]){
+  const s=r?.sections?.[key],rows=s?.rows||[],fmt=v=>v==null?"N/A":Number(v).toLocaleString("id-ID");
+  $(id).innerHTML='<p class="feedback">'+esc(s?s.status+(s.error?" · "+s.error:"")+(s.raw_rows!=null?" · "+s.raw_rows+" baris mentah, "+s.measured+" terukur":"")+(s.truncated?" · hasil dibatasi":""):"Belum tersedia")+'</p>'+rows.map(o=>{
+   const known=kwData.plans.some(p=>p.locale===r.scope.locale&&p.normalized===o.keyword.normalize("NFKC").trim().toLowerCase().replace(/\s+/g," "));
+   return '<article class="panel kwCard"><strong>'+esc(o.keyword)+'</strong><p>Estimasi pencarian/bulan: <strong>'+esc(fmt(o.avg_monthly_searches))+'</strong> · Competition Ads: '+esc(o.ads_competition??"N/A")+' ('+esc(fmt(o.ads_competition_index))+')</p>'+
+    (o.close_variants?.length?'<small>Variasi dekat (angka bersama): '+esc(o.close_variants.join(", "))+'</small>':"")+
+    (o.monthly?.length?'<details><summary>Riwayat bulanan</summary>'+o.monthly.map(m=>'<p>'+esc(m.month)+' · '+esc(fmt(m.searches))+'</p>').join("")+'</details>':"")+
+    (key==="ideas"&&!known?'<p class="feedback">Kandidat baru · tinjau relevansi sebelum menambah pada rencana keyword.</p>':"")+'</article>';
+  }).join("");
+ }
+}
+async function loadPlannerReport(refresh=false){
+ if(!ownerSignedIn)return;
+ const input=plannerInput(),generation=++kwPlannerGeneration;
+ say("#kwPlannerStatus",refresh?"Mengambil estimasi Google…":"Memuat laporan tersimpan…",true);
+ try{const r=refresh?await api("admin/seo/keywords/planner","POST",input):await api("admin/seo/keywords/planner?"+new URLSearchParams(input));
+  if(generation===kwPlannerGeneration&&ownerSignedIn)renderPlannerReport(r);
+ }catch(e){if(generation===kwPlannerGeneration&&ownerSignedIn){renderPlannerReport({status:"ERROR"});say("#kwPlannerStatus",e.message);}}
+}
+for(const id of ["#kwPlannerMarket","#kwPlannerLocale"])$(id).onchange=()=>void loadPlannerReport();
+$("#kwPlannerRun").onclick=async()=>{if(kwPlannerBusy||!ownerSignedIn)return;kwPlannerBusy=true;$("#kwPlannerRun").disabled=true;$("#kwPlannerMarket").disabled=true;$("#kwPlannerLocale").disabled=true;try{await loadPlannerReport(true);}finally{kwPlannerBusy=false;$("#kwPlannerMarket").disabled=false;$("#kwPlannerLocale").disabled=false;await loadPlannerReport();}};
 
 let kwPerfGeneration=0,kwPerfBusy=false;
 function performanceInput(){
@@ -2424,7 +2453,7 @@ async function loadKeywords(){
  try{
   const result=await api("admin/seo/keywords");
   if(!Array.isArray(result.plans)||!Array.isArray(result.paths)||!Array.isArray(result.observations))throw Error("Respons riset tidak lengkap. Muat ulang dashboard.");
-  kwData=result;renderKeywords();renderPublicSources();void loadKeywordPerformance();say("#kwFeedback","",true);return true;
+  kwData=result;renderKeywords();renderPublicSources();void loadKeywordPerformance();void loadPlannerReport();say("#kwFeedback","",true);return true;
  }catch(e){say("#kwStatus","Gagal memuat riset.",false);say("#kwFeedback",e.message);return false;}
 }
 $("#kwNew").onclick=()=>kwEdit();
@@ -2441,4 +2470,4 @@ $("#kwRun").onclick=async()=>{
   say("#kwFeedback",(r.status==="RECENT"?"Riset terakhir masih berlaku. ":"")+message,state==="MEASURED"||state==="NO_ROWS");
  }catch(e){say("#kwFeedback","Riset gagal: "+e.message);}finally{kwBusy=false;$("#kwRun").disabled=false;}
 };
-kwForm.onsubmit=async e=>{e.preventDefault();const button=kwForm.querySelector('[type="submit"]');button.disabled=true;const d=Object.fromEntries(new FormData(kwForm));const manual=Object.fromEntries(["volume","difficulty","impressions","clicks","position","source","period","country","device","checked","competitors","notes"].map(k=>[k,d[k]]));try{await api("admin/seo/keywords"+(kwEditing?"/"+kwEditing.id:""),kwEditing?"PATCH":"POST",{...d,manual,active:kwForm.elements.namedItem("active").checked,expected_version:kwEditing?.version});kwForm.hidden=true;kwEditing=null;if(await loadKeywords())say("#kwFeedback","Keyword disimpan. Tidak mengubah halaman publik.",true);}catch(err){say("#kwEditFeedback",err.message);}finally{button.disabled=false;}};
+kwForm.onsubmit=async e=>{e.preventDefault();const button=kwForm.querySelector('[type="submit"]');button.disabled=true;const d=Object.fromEntries(new FormData(kwForm));const manual=Object.fromEntries(["volume","volume_min","volume_max","difficulty","impressions","clicks","position","source","period","country","device","checked","competitors","notes"].map(k=>[k,d[k]]));try{await api("admin/seo/keywords"+(kwEditing?"/"+kwEditing.id:""),kwEditing?"PATCH":"POST",{...d,manual,active:kwForm.elements.namedItem("active").checked,expected_version:kwEditing?.version});kwForm.hidden=true;kwEditing=null;if(await loadKeywords())say("#kwFeedback","Keyword disimpan. Tidak mengubah halaman publik.",true);}catch(err){say("#kwEditFeedback",err.message);}finally{button.disabled=false;}};

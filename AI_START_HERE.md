@@ -1,3 +1,6 @@
+## SEO-006A guarded Keyword Planner — 26 November 2026
+- Basic approved and Ads read-only access/account/Customer ID secret confirmed. Planner v26 code and manual range support prepared. Google policies require approved intended use; Basic approval alone is not SEO-only permission. Keep GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED unset until Google confirms intended usage; no live Ads calls or campaigns. Verify CI/deploy and use official manual Keyword Planner results with provenance meanwhile. Roadmap v1.0.44; no secret changes.
+
 ## SEO-006A brand verification preparation — 26 November 2026
 - Explorer approved, Branding saved. Owner authorized homepage/privacy/terms and in-product disclosure updates before verification. Read roadmap v1.0.42; verify CI/deploy/live public URLs, then owner completes Verification Center and Basic access. No changes to API credentials/processing or campaigns; Ads integration remains pending. Ensure actual data handling matches published policy, including inference and retention. No claim of Google approval.
 

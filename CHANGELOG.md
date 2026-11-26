@@ -1,3 +1,6 @@
+## 26 November 2026 — Prepare guarded Keyword Planner integration
+- Add owner-only Ads historical metrics/ideas v26 and separate bounded cache 0030, market/language selector, manual estimates/ranges, status and tests. Confirm Basic, read-only access and secret metadata; production calls gated pending permissible-use confirmation. No campaign operations or billing changes. Roadmap v1.0.44.
+
 ## 26 November 2026 — Fix brand verification live smoke initialization order
 - CI and deployment succeeded; Verify failed because the newly added homepage assertion referenced home before initialization. Reuse existing landingMarkup and add regression; keep live checks intact. Roadmap v1.0.43. New release verification pending.
 

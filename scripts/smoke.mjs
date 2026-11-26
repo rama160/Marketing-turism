@@ -179,7 +179,7 @@ if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.photos?.hero||!editorManifest.photos?.["west-kelingking"])
  throw Error("Live published content snapshot incomplete: site editor would display blank copy");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
-if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.36.0&amp;rev=seo003b-perf2"')||
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.36.0&amp;rev=seo006a-planner1"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
  !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
@@ -332,7 +332,9 @@ if(rejectedReview.status!==403)throw Error("Review anti-bot failed closed check"
 await get("/api/admin/website/reviews",401);
 await get("/api/admin/seo/keywords",401);
 await get("/api/admin/seo/keywords/performance?preset=24h",401);
-if(!dashboard.includes('id="kwPerfPeriod"')||!dashboard.includes('id="kwPerfMetrics"')||!dashboard.includes('id="tab-keywords"')||!app.includes("admin/seo/keywords")||!(await get("/app.js?v=3.36.0&rev=seo003b-perf2")).includes("gscKeywordError"))throw Error("Keyword workspace missing");
+await get("/api/admin/seo/keywords/planner?market=GLOBAL&locale=en",401);
+if(!dashboard.includes('id="kwPlannerPanel"')||!dashboard.includes('id="kwPlannerRun"'))throw Error("Keyword Planner workspace missing");
+if(!dashboard.includes('id="kwPerfPeriod"')||!dashboard.includes('id="kwPerfMetrics"')||!dashboard.includes('id="tab-keywords"')||!app.includes("admin/seo/keywords")||!(await get("/app.js?v=3.36.0&rev=seo006a-planner1")).includes("gscKeywordError"))throw Error("Keyword workspace missing");
 if(!dashboard.includes('id="tab-reviews"')||!app.includes('admin/website/reviews'))throw Error("Review visibility controls missing");
 console.log("SUCCESS v3.36.0 LIVE: WhatsApp enquiry, public review listing and Turnstile rejection, protected CMS and booking APIs.");
 
