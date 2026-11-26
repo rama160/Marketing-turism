@@ -406,6 +406,12 @@ Pedoman keputusan:
 - CI pertama 45758526245: 238 lulus/3 gagal, ketiganya kontrak versi asset yang mengharapkan 3.36.0. Pertahankan identitas versi aplikasi existing (tidak bump sebagian). Tes keyword baru lulus pada run pertama; deploy pertama gagal di CI sebelum migration.
 - Seed ID stabil dan cek awal supaya edit/arsip tidak menciptakan ulang keyword; tampilkan semua pasangan GSC aktual, tidak hanya kandidat yang masuk plan. Tambah input manual impressions, klik dan posisi GSC dengan provenance; otomatis tetap immutable. Prioritas artikel memakai impressions pasangan keyword–URL target, bukan menjumlahkan seluruh halaman. Batas 500 plan. CI/deploy ulang belum terverifikasi.
 
+### 2026-11-26 — SEO-003/020/021/022: target Top 10 berbasis data
+- Owner menegaskan tujuan halaman pertama pencarian non-brand, bukan volume artikel. Cloudflare read-only: tidak ada binding GSC_PROPERTY/GSC_SERVICE_ACCOUNT_JSON dan tabel seo_keyword_runs belum berisi snapshot. Karena itu ranking aktual belum dapat diukur.
+- Gunakan menu keyword dan cron existing. Tambah ranking opportunity report untuk pasangan keyword aktif–URL target valid non-brand yang benar-benar terukur: Top 3/10, posisi >10–30 quick wins, pertahankan Top 10, relevansi untuk >30. Urutkan quick wins dahulu, intent BUY, prioritas owner dan impresi. Bandingkan pasangan yang sama dengan snapshot 28 hari sebelumnya yang tidak overlap, bila tersedia; perubahan posisi positif berarti membaik. Tidak ada perbandingan palsu, volume AI, atau klaim posisi live. GSC baris terbatas, rata-rata posisi global semua perangkat, hitungan pasangan bukan seluruh keyword website.
+- Tetap review manual sebelum optimasi publik; audit SERP terlokalisasi dan gap kompetitor masih perlu data sumber. Google Ads historical metrics dapat memberikan estimasi volume, membutuhkan akses developer token/customer/OAuth; persaingan Ads bukan organic difficulty. Google Trends bukan volume absolut. Tidak membeli API atau memasang credential tanpa akses sah; lanjut GSC setup owner dan snapshot pertama sebelum perubahan konten berbasis ranking. Tidak menambah menu, tabel, cron, branch atau URL.
+- CI/deploy belum diverifikasi pada saat commit. SEO-003/020/021/022 tetap in progress; prioritas berikut: koneksi GSC, baseline 28 hari, audit kompetitor untuk quick wins yang terukur, evaluasi 28 hari. SEO-002/013 request indexing tetap sesuai kuota. Tidak menjamin halaman pertama.
+
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
 - ID tugas / status / commit / link URL atau workflow:

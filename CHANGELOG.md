@@ -1,3 +1,6 @@
+## 26 November 2026 — Ranking-first SEO opportunities
+- Extend existing keyword workspace with measured non-brand target-pair Top 3/10, quick wins at average positions >10–30, ordered action recommendations and non-overlapping 28-day snapshot deltas. Missing data remains N/A; no new menu, schema, cron, public edits or paid service. GSC credentials and live data pending; CI/deploy not verified.
+
 ## 26 November 2026 — Keyword workspace release hardening
 - Restore existing cache version contract; first CI 238 pass/3 version assertion failures. Stable seed IDs, archive/rename retained, manual GSC metrics, full observed query-page view, target-pair priority, 500 plan cap. Pending re-run.
 

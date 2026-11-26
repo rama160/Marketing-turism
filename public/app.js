@@ -2339,21 +2339,25 @@ function kwEdit(item=null){
 }
 function renderKeywords(){
  const q=$("#kwSearch").value.trim().toLowerCase(),lang=$("#kwLanguage").value,active=$("#kwActive").value;
- const {plans,observations,latest,snapshot,gsc_configured}=kwData;
+ const {plans,observations,latest,snapshot,gsc_configured,ranking,previous}=kwData;
+ const rankingById=new Map((ranking?.pairs||[]).map((p,i)=>[p.id,{...p,order:i}]));
  const observed=plans.filter(p=>observations.some(o=>o.normalized===p.normalized)).length;
- $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual.volume!==null&&p.manual.volume!==undefined).length]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
+ $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual.volume!==null&&p.manual.volume!==undefined).length],["Top 3 · pasangan target",ranking?.measured?ranking.top3:"N/A"],["Top 10 · pasangan target",ranking?.measured?ranking.top10:"N/A"],["Peluang posisi >10–30",ranking?.measured?ranking.quickWins:"N/A"]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
  $("#kwStatus").textContent=(gsc_configured?"GSC terkonfigurasi":"GSC belum terhubung — set secret service account di Cloudflare")+
   " · Riset terakhir: "+(latest?latest.created_at+" UTC · "+latest.gsc_status:"belum dijalankan")+
   " · Snapshot GSC: "+(snapshot?snapshot.period_start+" – "+snapshot.period_end+" (global, semua perangkat; maks. 300 pasangan query–URL)":"N/A")+
+  " · Pembanding 28 hari non-overlap: "+(previous?previous.period_start+" – "+previous.period_end:"N/A")+" · Posisi = rata-rata GSC, bukan SERP live. Hanya pasangan target non-brand terukur."+
   " · Sinyal publik: "+(latest?.signals?.status==="MEASURED"?"sampel "+latest.signals.sample+" posting, 14 hari":"N/A");
- const visible=plans.filter(p=>(!q||p.keyword.toLowerCase().includes(q)||p.target_path.includes(q))&&(!lang||p.locale===lang)&&(active===""||String(p.active)===active));
+ const visible=plans.filter(p=>(!q||p.keyword.toLowerCase().includes(q)||p.target_path.includes(q))&&(!lang||p.locale===lang)&&(active===""||String(p.active)===active)).sort((a,b)=>(rankingById.get(a.id)?.order??999)-(rankingById.get(b.id)?.order??999));
  $("#kwList").innerHTML=visible.map(p=>{
   const rows=observations.filter(o=>o.normalized===p.normalized),m=p.manual||{},signal=latest?.signals?.counts?.[p.cluster],mapped=p.target_path&&kwData.paths.includes(p.target_path),conflict=rows.length>1||rows.some(o=>mapped&&o.path!==p.target_path);
+  const rank=rankingById.get(p.id),actions={QUICK_WIN:"Prioritas: bandingkan intent dan isi dengan hasil Google teratas; perkuat halaman target dan tautan internal.",PROTECT_TOP10:"Pertahankan: cek CTR, judul dan konversi tanpa mengubah URL.",BUILD_RELEVANCE:"Perkuat relevansi dan otoritas; evaluasi gap sebelum revisi."};
+  const rankHtml=rank?'<p><strong>'+esc(actions[rank.action])+'</strong><br><small>'+esc(rank.delta?"Perubahan vs periode pembanding: posisi "+(rank.delta.position>=0?"+":"")+rank.delta.position.toFixed(1)+" (positif = membaik) · klik "+rank.delta.clicks+" · impresi "+rank.delta.impressions+" · CTR "+rank.delta.ctr.toFixed(1)+" poin persen":"Belum ada pasangan pembanding terukur")+'</small></p>':"";
   return '<article class="panel kwCard"><small>'+esc(p.locale.toUpperCase()+" · "+p.cluster+" · "+p.intent+" · P"+p.priority+" · "+p.origin)+'</small><h4>'+esc(p.keyword)+'</h4><p><strong>Sasaran:</strong> '+esc(mapped?p.target_path:p.target_path?"URL lama tidak lagi terbit":"Belum dipetakan")+'</p>'+
    '<p>Volume/bulan: <strong>'+esc(m.volume??"N/A")+'</strong> · Difficulty: <strong>'+esc(m.difficulty??"N/A")+'</strong><br>Sinyal klaster: '+esc(signal??"N/A")+(m.source?'<br><small>'+esc([m.source,m.period,m.country,m.device,m.checked].filter(Boolean).join(" · "))+'</small>':"")+'</p>'+
    ((m.impressions!==null&&m.impressions!==undefined||m.position!==null&&m.position!==undefined)?'<p><strong>GSC manual:</strong> '+esc(m.impressions??"N/A")+' impressions · '+esc(m.clicks??"N/A")+' klik · posisi '+esc(m.position??"N/A")+'</p>':"")+
    (rows.length?'<div class="kwObserved"><strong>GSC — URL aktual</strong>'+rows.map(o=>'<p>'+esc(o.path)+'<br><small>'+o.impressions+' impressions · '+o.clicks+' klik · '+(o.clicks/o.impressions*100).toFixed(1)+'% CTR · posisi '+o.position.toFixed(1)+'</small></p>').join("")+'</div>':'<p class="feedback">GSC: N/A (tidak ada baris terukur)</p>')+
-   (conflict?'<p class="feedback">Periksa potensi konflik URL/intent; tidak otomatis dianggap kanibalisasi.</p>':"")+
+   rankHtml+(conflict?'<p class="feedback">Periksa potensi konflik URL/intent; tidak otomatis dianggap kanibalisasi.</p>':"")+
    (m.competitors?'<p><strong>Kompetitor/gap:</strong> '+esc(m.competitors)+'</p>':"")+
    '<button type="button" class="outline small" data-kw-edit="'+esc(p.id)+'">Edit / petakan</button></article>';
  }).join("")||"<p>Belum ada keyword pada filter ini.</p>";

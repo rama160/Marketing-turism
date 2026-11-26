@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -29,4 +29,12 @@ test("seed, owner version guard, automatic public signal snapshot and unconfigur
  assert.ok((await keywordArticlePriorities(db))["lembongan-two-days"]);
  const seedRow=v.plans.find(x=>x.origin==="SEED");await saveKeyword(db,{...seedRow,keyword:"Renamed seed keyword",active:false,expected_version:seedRow.version},seedRow.id);v=await listKeywords(db,{});assert.equal(v.plans.length,25);assert.equal(v.plans.find(x=>x.id===seedRow.id).active,0);assert.ok(!v.plans.some(x=>x.keyword===seedRow.keyword));
  }finally{sqlite.close();}
+});
+
+test("ranking opportunities use mapped measured nonbrand pairs and non-overlap comparison only",()=>{
+ const plans=[{id:"quick",active:1,keyword:"west tour",normalized:"west tour",target_path:"/west",priority:2,intent:"BUY"},{id:"top",active:1,keyword:"east tour",normalized:"east tour",target_path:"/east",priority:1,intent:"BUY"},{id:"brand",active:1,keyword:"Nusa Penida Experiences",normalized:"nusa penida experiences",target_path:"/",priority:1,intent:"BUY"},{id:"wrong",active:1,keyword:"snorkel",normalized:"snorkel",target_path:"/snorkel",priority:1,intent:"BUY"}];
+ const obs=[{normalized:"west tour",path:"/west",position:12.5,impressions:100,clicks:4},{normalized:"east tour",path:"/east",position:2.8,impressions:80,clicks:10},{normalized:"nusa penida experiences",path:"/",position:1,impressions:100,clicks:90},{normalized:"snorkel",path:"/other",position:2,impressions:20,clicks:5}];
+ const r=rankingOpportunities(plans,obs,[{...obs[0],position:15.5,clicks:2}]);
+ assert.equal(r.measured,2);assert.equal(r.top3,1);assert.equal(r.top10,1);assert.equal(r.quickWins,1);assert.equal(r.pairs[0].id,"quick");assert.equal(r.pairs[0].delta.position,3);assert.equal(r.pairs[1].delta,null);
+ assert.equal(rankingOpportunities(plans,[]).measured,0);
 });

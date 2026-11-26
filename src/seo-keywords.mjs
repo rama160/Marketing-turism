@@ -128,13 +128,33 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
  await db.batch([db.prepare("DELETE FROM seo_keyword_observations WHERE run_id IN (SELECT id FROM seo_keyword_runs WHERE created_at<datetime('now','-90 days'))"),db.prepare("DELETE FROM seo_keyword_runs WHERE created_at<datetime('now','-90 days')")]);
  return {status:"DONE",gsc_status:gsc,rows:rows.length,signal_status:signals.status};
 }
+// Ranking actions use observed query–URL pairs only; no estimated Google rank or volume.
+export function rankingOpportunities(plans,observations,previous=[]){
+ const old=new Map(previous.map(o=>[o.normalized+"|"+o.path,o]));
+ const pairs=[];
+ for(const p of plans){
+  if(!p.active||!p.target_path||/\bnusa\s*penida\s*experiences\b|nusapenidaexperiences/i.test(p.keyword))continue;
+  const o=observations.find(o=>o.normalized===p.normalized&&o.path===p.target_path);
+  if(!o||o.impressions<=0)continue;
+  const prior=old.get(o.normalized+"|"+o.path),ctr=o.clicks/o.impressions;
+  const delta=prior?{position:prior.position-o.position,clicks:o.clicks-prior.clicks,impressions:o.impressions-prior.impressions,ctr:100*(ctr-prior.clicks/prior.impressions)}:null;
+  const action=o.position>10&&o.position<=30?"QUICK_WIN":o.position<=10?"PROTECT_TOP10":"BUILD_RELEVANCE";
+  pairs.push({id:p.id,keyword:p.keyword,path:o.path,intent:p.intent,priority:p.priority,position:o.position,impressions:o.impressions,clicks:o.clicks,ctr:100*ctr,action,delta});
+ }
+ const order={QUICK_WIN:0,PROTECT_TOP10:1,BUILD_RELEVANCE:2};
+ pairs.sort((a,b)=>order[a.action]-order[b.action]||Number(b.intent==="BUY")-Number(a.intent==="BUY")||a.priority-b.priority||b.impressions-a.impressions||a.position-b.position);
+ return {pairs,measured:pairs.length,top3:pairs.filter(x=>x.position<=3).length,top10:pairs.filter(x=>x.position<=10).length,quickWins:pairs.filter(x=>x.action==="QUICK_WIN").length};
+}
 export async function listKeywords(db,env){
  const paths=await ensureKeywordSeeds(db);
  const plans=(await db.prepare("SELECT * FROM seo_keyword_plans ORDER BY active DESC,priority,locale,keyword LIMIT 500").all()).results.map(x=>({...x,manual:JSON.parse(x.manual_json),manual_json:undefined}));
  const latest=await db.prepare("SELECT * FROM seo_keyword_runs ORDER BY created_at DESC LIMIT 1").first();
  const snapshot=await db.prepare("SELECT * FROM seo_keyword_runs WHERE state='DONE' AND gsc_status IN ('MEASURED','NO_ROWS') ORDER BY created_at DESC LIMIT 1").first();
  const observations=snapshot?(await db.prepare("SELECT query,normalized,path,clicks,impressions,position FROM seo_keyword_observations WHERE run_id=? ORDER BY impressions DESC").bind(snapshot.id).all()).results:[];
- return {plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
+ const previous=snapshot?await db.prepare("SELECT id,period_start,period_end FROM seo_keyword_runs WHERE state='DONE' AND gsc_status='MEASURED' AND period_end<? ORDER BY period_end DESC,created_at DESC LIMIT 1").bind(snapshot.period_start).first():null;
+ const previousRows=previous?(await db.prepare("SELECT normalized,path,clicks,impressions,position FROM seo_keyword_observations WHERE run_id=?").bind(previous.id).all()).results:[];
+ const ranking=rankingOpportunities(plans.filter(p=>paths.includes(p.target_path)),observations,previousRows);
+ return {ranking,previous:previous?{period_start:previous.period_start,period_end:previous.period_end}:null,plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
 }
 export async function keywordArticlePriorities(db){
  try{
