@@ -816,3 +816,23 @@ test("sales copy includes owner-confirmed land durations and conditional three-s
   if(key==="snorkeling"){assert.match(html,/Mangrove Point/);assert.match(html,/wild animals; sightings are not guaranteed/);assert.match(id,/satwa liar; penampakannya tidak dijamin/);}
  }
 });
+
+test("English tours expose published destination and root links in initial HTML",()=>{
+ const items=[{slug:"snorkeling-mangrove-point",parent_activity:"static:snorkeling",title_en:"Mangrove Point <test>"},{slug:"nusa-lembongan-island-tour",parent_activity:"",title_en:"Lembongan Tour"},{slug:"boat-ticket",parent_activity:"",title_en:"Boat Tickets"},{slug:"unrelated-west",parent_activity:"static:west",title_en:"West destination"}];
+ const html=renderEnglishTourPage("snorkeling","https://example.com",{},items);
+ assert.match(html,/href="\/en\/experiences\/snorkeling-mangrove-point"/);
+ assert.match(html,/Mangrove Point &lt;test&gt;/);
+ assert.doesNotMatch(html,/href="\/en\/experiences\/unrelated-west"/);
+ for(const slug of ["boat-ticket","nusa-lembongan-island-tour"])assert.ok(html.includes('href="/en/experiences/'+slug+'"'));
+ assert.doesNotMatch(renderEnglishTourPage("snorkeling","https://example.com"),/href="\/en\/experiences\/boat-ticket"/);
+});
+test("published guides are linked back only from matching sales pages in each language",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const article={slug:"guide-lembongan",published_at:"2026-11-26",title_en:"Lembongan guide",title_id:"Panduan Lembongan",links:["lembongan","west"]};
+ const root={...draft,photo_url:"/photos/website/"+draft.media_id};
+ for(const lang of ["en","id"])assert.ok(renderExperiencePage(root,lang,"https://example.com",[],[article]).includes('href="/'+lang+'/articles/guide-lembongan"'));
+ assert.match(renderEnglishTourPage("west","https://example.com",{},[],[article]),/href="\/en\/articles\/guide-lembongan"/);
+ assert.doesNotMatch(renderEnglishTourPage("east","https://example.com",{},[],[article]),/guide-lembongan/);
+ const html=renderLegacyTourPage(readFileSync("public/west-tour.html","utf8"),legacyTourRoute("/west-tour.html"),"https://example.com",{},[],"",[],[article]);
+ assert.match(html,/href="\/id\/articles\/guide-lembongan"/);
+});

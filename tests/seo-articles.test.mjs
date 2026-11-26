@@ -100,3 +100,13 @@ test("article editor uses device file only and quality-prioritized browser compr
  const result=await compress({size:3000000},"article");
  assert.equal(result.size,250000);assert.deepEqual(calls.map(x=>x.q),[0.9,0.86,0.82]);assert.equal(calls[0].width,1600);assert.equal(calls[0].height,1200);assert.equal(closed,1);
 });
+
+test("related guide navigation is localized, bounded, escaped and excludes unpublished records",async()=>{
+ const {renderRelatedArticleLinks}=await import("../src/seo-articles.mjs");
+ const items=[{slug:"first",published_at:"2026-11-26",title_id:"Panduan <tag>",title_en:"Guide <tag>",links:["boat"]},{slug:"draft",title_id:"Draft",title_en:"Draft",links:["boat"]},{slug:"other",published_at:"2026-11-26",title_id:"Other",title_en:"Other",links:["west"]}];
+ const html=renderRelatedArticleLinks(items,"boat","id");
+ assert.match(html,/href="\/id\/articles\/first"/);assert.match(html,/Panduan &lt;tag&gt;/);
+ assert.doesNotMatch(html,/\/draft|\/other|<tag>/);
+ assert.match(renderRelatedArticleLinks(items,"boat","en"),/href="\/en\/articles\/first"/);
+ assert.equal(renderRelatedArticleLinks(items,"east","en"),"");
+});

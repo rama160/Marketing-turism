@@ -1,3 +1,6 @@
+## 26 November 2026 — Crawlable internal links and related published guides
+- Prior sales copy CI/deploy/Verify passed. Render published dynamic destinations/roots on EN tour pages; use actual published article links to show relevant localized guide anchors on sale pages. Add unit checks and live homepage reachability traversal of sitemap URLs. No new pages, menu, D1 mutation or paid services; release pending.
+
 ## 26 November 2026 — Publish verified tour copy in existing CMS
 - D1 root activities Lembongan and Boat Ticket updated version 2→3 with revision snapshots and unchanged photos/prices; read-back confirmed. Fix test fixture expected original West title to match updated text, retaining escaping assertion. First release CI/deploy failed on stale assertion; corrected release not yet verified.
 

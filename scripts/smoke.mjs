@@ -63,11 +63,13 @@ if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashb
 const websiteCatalog=JSON.parse(await get("/api/public/website/activities"));
 const indexedURLs=[...websiteSitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
 if(new Set(indexedURLs).size!==indexedURLs.length)throw Error("Duplicate URLs in sitemap");
+const crawlGraph=new Map();
 for(const url of indexedURLs){
  if(new URL(url).origin!==base)throw Error("Noncanonical sitemap origin: "+url);
  const response=await fetch(url,{redirect:"manual",signal:AbortSignal.timeout(20000)});
  if(response.status!==200)throw Error("Sitemap URL not direct HTTP 200: "+url+" "+response.status);
  const html=await response.text();
+ crawlGraph.set(url,new Set([...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi)].map(m=>{try{const u=new URL(m[1].replaceAll("&amp;","&"),url);u.hash="";u.search="";return u.href;}catch{return "";}}).filter(x=>indexedURLs.includes(x))));
  if(!html.includes('rel="canonical" href="'+url+'"')||!html.includes('hreflang="id"')||!html.includes('hreflang="en"'))throw Error("Missing canonical/hreflang: "+url);
  const match=new URL(url).pathname.match(/^\/(en|id)\/experiences\/([^/]+)$/);
  const experience=match&&websiteCatalog.items.find(a=>a.slug===match[2]);
@@ -84,6 +86,12 @@ for(const url of indexedURLs){
   if(!html.includes('data-npe-parent-tour href="'+expected+'"'))throw Error("Missing localized parent tour link: "+url);
  }
 }
+// Follow real HTML anchors, not hreflang or sitemap discovery, from the homepage.
+const reachable=new Set([base+"/"]),queue=[base+"/"];
+while(queue.length){for(const target of crawlGraph.get(queue.shift())||[]){if(!reachable.has(target)){reachable.add(target);queue.push(target);}}}
+const orphaned=indexedURLs.filter(url=>!reachable.has(url));
+if(orphaned.length)throw Error("Sitemap pages not reachable through initial HTML links: "+orphaned.join(", "));
+console.log("Crawlable homepage links reach "+reachable.size+" of "+indexedURLs.length+" sitemap URLs");
 if(!Array.isArray(websiteCatalog.items))throw Error("Public CMS activity catalog unavailable");
 // SEO crawlers must get metadata and published activity links before JavaScript executes.
 if(!landingMarkup.includes('application/ld+json')||!landingMarkup.includes('BreadcrumbList'))throw Error("Homepage SEO schema not server-rendered");

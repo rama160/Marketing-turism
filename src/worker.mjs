@@ -155,13 +155,14 @@ async function route(req,env,ctx){
   if(!env.ASSETS)return new Response("Website temporarily unavailable",{status:503});
   const asset=await env.ASSETS.fetch(new Request(new URL("/__npe_templates/"+legacy.file+".txt",u.origin),{method:"GET"}));
   if(!asset.ok)return new Response("Website temporarily unavailable",{status:503,headers:{"cache-control":"no-store","retry-after":"60"}});
-  let copy={},items=[],photoSlots=[];
-  if(db){const results=await Promise.allSettled([publicSiteContent(db,"id"),publicWebsiteActivities(db),getWebsiteSlots(db)]);
+  let copy={},items=[],photoSlots=[],articles=[];
+  if(db){const results=await Promise.allSettled([publicSiteContent(db,"id"),publicWebsiteActivities(db),getWebsiteSlots(db),legacy.key?publishedArticles(db):Promise.resolve([])]);
    if(results[0].status==="fulfilled")copy=results[0].value.items;
    if(results[1].status==="fulfilled")items=results[1].value.items;
    if(results[2].status==="fulfilled")photoSlots=results[2].value.items;
+   if(results[3].status==="fulfilled")articles=results[3].value;
   }
-  const html=renderLegacyTourPage(await asset.text(),legacy,u.origin,copy,items,env.GOOGLE_SITE_VERIFICATION||"",photoSlots);
+  const html=renderLegacyTourPage(await asset.text(),legacy,u.origin,copy,items,env.GOOGLE_SITE_VERIFICATION||"",photoSlots,articles);
   const headers=new Headers(asset.headers);
   for(const name of ["content-length","content-encoding","etag","last-modified","content-range","accept-ranges"])headers.delete(name);
   headers.set("content-type","text/html; charset=utf-8");headers.set("cache-control","no-cache");headers.set("x-content-type-options","nosniff");
@@ -177,15 +178,17 @@ async function route(req,env,ctx){
  if(path==="/api/public/website/articles"&&method==="GET")return json({items:(await publishedArticles(db)).map(a=>({slug:a.slug,photo_url:a.media_id?"/photos/website/"+a.media_id:null}))});
  const englishTour=path.match(/^\/en\/tours(?:\/(west|east|island|snorkeling))?\/?$/);
  if(englishTour&&read){
-  const seoCopy=await publicSiteContent(db,"en");
-  const html=renderEnglishTourPage(englishTour[1]||"",u.origin,seoCopy.items);
+  const key=englishTour[1]||"";
+  const [seoCopy,catalog,articles]=await Promise.all([publicSiteContent(db,"en"),publicWebsiteActivities(db),key?publishedArticles(db).catch(()=>[]):Promise.resolve([])]);
+  const html=renderEnglishTourPage(key,u.origin,seoCopy.items,catalog.items,articles);
   return new Response(method==="HEAD"?null:html,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=600","x-content-type-options":"nosniff"}});
  }
  const experience=path.match(/^\/(en|id)\/experiences\/([a-z0-9-]+)\/?$/);
  if(experience&&read){
   const published=await findPublishedExperience(db,experience[2]);
   if(!published)return new Response("Experience not found",{status:404,headers:{"cache-control":"no-store"}});
-  return new Response(method==="HEAD"?null:renderExperiencePage(published,experience[1],u.origin,(await publicWebsiteActivities(db)).items),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
+  const [catalog,articles]=await Promise.all([publicWebsiteActivities(db),["nusa-lembongan-island-tour","boat-ticket"].includes(published.slug)?publishedArticles(db).catch(()=>[]):Promise.resolve([])]);
+  return new Response(method==="HEAD"?null:renderExperiencePage(published,experience[1],u.origin,catalog.items,articles),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"public,max-age=120","x-content-type-options":"nosniff"}});
  }
  if(path==="/api/public/website/activities"&&method==="GET")return json(await publicWebsiteActivities(db));
  if(path==="/api/public/website/slots"&&method==="GET")return json(await getWebsiteSlots(db));

@@ -87,6 +87,15 @@ export async function publishedArticles(db,slug=null){
  if(slug||!items.length)return items;
  try{const saved=await db.prepare("SELECT value FROM site_content WHERE key=? AND locale=?").bind("layout.order.articles","id").first();const cfg=readOrder({"layout.order.articles":saved?.value},"articles"),map=new Map(items.map(x=>["article:"+x.id,x]));return orderedKeys([...map.keys()],cfg).map(k=>map.get(k));}catch{return items;}
 }
+// Only call with publishedArticles() output, never admin drafts. Match explicit editorial tour links.
+export function renderRelatedArticleLinks(items=[],key,lang="id"){
+ const locale=lang==="en"?"en":"id";
+ if(!Object.hasOwn(ARTICLE_LINKS,key))return "";
+ const matches=items.filter(x=>slugRE.test(x.slug)&&x.published_at&&Array.isArray(x.links)&&x.links.includes(key)&&typeof x["title_"+locale]==="string").slice(0,3);
+ if(!matches.length)return "";
+ const title=locale==="en"?"Helpful travel guides":"Panduan wisata terkait";
+ return '<nav class="panel" data-npe-related-articles aria-label="'+title+'"><h2>'+title+'</h2><p>'+matches.map(x=>'<a class="textLink" href="/'+locale+'/articles/'+esc(x.slug)+'">'+esc(x["title_"+locale])+'</a>').join(" · ")+'</p></nav>';
+}
 export function articleSitemap(items,origin){
  const paths=["",...items.map(x=>"/"+x.slug)];
  return paths.flatMap(p=>["id","en"].map(lang=>'<url><loc>'+esc(origin+"/"+lang+"/articles"+p)+'</loc>'+["id","en"].map(l=>'<xhtml:link rel="alternate" hreflang="'+l+'" href="'+esc(origin+"/"+l+"/articles"+p)+'"/>').join("")+'</url>')).join("");

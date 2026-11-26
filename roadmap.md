@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.14 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.15 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -124,8 +124,8 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 |---|---|---|---|---|
 | SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
 | SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
-| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui; aktivitas dinamis D1 versi 3 terverifikasi; CI awal gagal karena ekspektasi teks judul lama, diperbaiki; verifikasi release diperlukan; harga/fasilitas spesifik tetap dikonfirmasi |
-| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal; CI/deploy/live smoke lulus. Audit link keseluruhan dan artikel terbit masih diperlukan |
+| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui; aktivitas dinamis D1 versi 3 terverifikasi; CI/deploy/Verify commit 703d494 lulus. Copy awal selesai; fasilitas/harga spesifik belum dikonfirmasi, tetap tidak diasumsikan |
+| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent telah lulus. Tambah reverse links EN, related guides dari halaman jual, dan smoke audit reachability dari homepage. Release terbaru belum dikonfirmasi; artikel belum terbit |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [x] Perbaikan teknis teridentifikasi pada cover Lembongan: skor 87 → 97; CI/deploy/smoke lulus. Evaluasi lanjutan bila ada temuan nyata. |
 
 Kandidat awal peta kata kunci (hipotesis, bukan ranking atau volume terukur):
@@ -305,6 +305,12 @@ Pedoman keputusan:
 - Dua aktivitas root diperbarui melalui D1 sesuai instruksi owner: boat-ticket dan nusa-lembongan-island-tour, masing-masing versi 2 → 3 dengan guard versi/draft sama, revision history, draft dan published sinkron. Read-back lulus; foto dan harga kosong tetap sama. Judul/summary/description bilingual, metadata manual spesifik dan durasi sesuai riset; rute Bali–Gili sekitar 1,5–5 jam bergantung pelabuhan dan singgah (https://ekajayafastferry.com/schedule.aspx). Tidak mengklaim operator tertentu sebagai mitra.
 - CI 45737813899 gagal pada assertion judul default West lama; deploy 45737813930 gagal sebelum deploy dan Verify dilewati. Koreksi assertion agar tetap menguji escaping dan default baru, bukan mengabaikan regresi. Perubahan D1 telah tersimpan; template statis menunggu release berhasil. Jangan klaim seluruh live selesai sampai CI/deploy/Verify lulus.
 - SEO-008 masih in progress; harga dan fasilitas spesifik tidak diasumsikan. Setelah release, SEO-011/012 dan SEO-009 dilanjutkan; GSC data/kuota tetap tertahan.
+
+### 2026-11-26 — SEO-008 verifikasi release, SEO-009 audit internal links
+- Commit 703d494: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45737950970), [deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45737951073), [Verify lulus](https://github.com/rama160/Marketing-turism/actions/runs/45738040821). Copy jual awal dan durasi sesuai instruksi owner diterapkan. Tidak mengasumsikan harga/fasilitas khusus.
+- Audit kode: halaman English static tour belum merender dynamic child anchors; Mangrove Point EN berpotensi orphan di HTML awal. Root dynamic EN hardcoded dua slug, tidak mencerminkan katalog perubahan. Perbaiki anchor dari aktivitas published yang sudah tersedia; tidak mengubah URL/desain/DB. Artikel hanya dari published snapshot dengan explicit link key cocok, maksimum 3 per halaman jual; tidak tampil ketika kosong. Draft tidak dapat tampil. Tambah regression dan live smoke graph traversal dari homepage melalui <a href>, tidak menghitung sitemap/hreflang sebagai internal navigation. Status CI/deploy/graph belum diverifikasi saat commit.
+- D1 read-only: 9 aktivitas published; 0 artikel total/terbit, belum ada riwayat seo_research_runs. Pukul 09.49 WITA sebelum jadwal 10.00 WITA yang sebelumnya dicatat. Jangan klaim riset gagal tanpa record; tidak memasukkan draft manual atau menjalankan cron lewat DB. Owner dapat menggunakan Riset & buat draft pada dashboard existing; review, upload cover dan publish manual. SEO-011/012 belum selesai.
+- Next: verifikasi release/graph, lanjut SEO-011–013 dengan artikel pertama dan SEO-015/016 trust/konversi. SEO-002/003 tetap menunggu kuota/data. Tidak ada fitur menu baru, perubahan harga, artikel publik atau DB pada sesi ini.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
