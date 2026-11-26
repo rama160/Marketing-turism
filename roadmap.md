@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.8 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.9 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -66,7 +66,7 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 |---|---|---|---|---|
 | SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
 | SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [!] Audit awal selesai (10/10); owner melaporkan Quota exceeded 26 Nov. Jumlah request tambahan dan verdict belum dilaporkan. Lanjutkan saat kuota tersedia. |
-| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Data GSC Performance belum tersedia; independen dari kuota request, minta ekspor saat owner siap |
+| SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Screenshot owner 26 Nov 09.17 WITA: periode 28 hari, Web, Processing data / No data. Metrik N/A, bukan nol. Periksa kembali 27–28 Nov jika data sudah tersedia; lanjut SEO-004/005 tanpa menunggu. |
 | SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [~] Filter artikel diperbaiki; CI/deploy/live smoke lulus. Realtime, attribution dan konfigurasi GA4 masih perlu bukti |
 | SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
 
@@ -274,6 +274,11 @@ Pedoman keputusan:
 ### 2026-11-26 — Pemulihan akses dashboard (perbaikan operasional)
 - Owner melaporkan aplikasi membuka website publik. Stabilkan manifest launch /dashboard.html, direct shell tiga alias, cache manifest, dan buka website di jendela terpisah. Pemulihan legacy standalone root hanya untuk perangkat yang telah mengunjungi dashboard (marker non-rahasia); shortcut lama tanpa marker mungkin perlu diinstal ulang dari dashboard. Guest browser dan canonical SEO tidak berubah, dashboard tetap noindex/no-store serta login cookie existing.
 - Tambah regression dan live smoke; belum ada bukti Android aktual atau deployment saat commit. Tidak mengubah D1, harga, konten atau urutan pekerjaan SEO P0/P1.
+
+### 2026-11-26 — Bukti Performance GSC dan verifikasi pemulihan dashboard
+- Screenshot owner pukul 09.17 WITA: Performance, 28 days, Search type Web (text), Last update 3 hours ago; pesan “Processing data, please check again in a day or so”, tabel Queries “No data”. SEO-003 tetap BLOCKED oleh pemrosesan Google; clicks, impressions, CTR, position dan query belum tersedia (N/A, bukan nol). Tidak menyimpulkan ranking/indexasi dari laporan kosong. Periksa kembali 27–28 November atau ketika data tersedia; tidak perlu verifikasi domain/sitemap ulang karena kondisi ini.
+- Release pemulihan dashboard `c18522102406965093c01f79b91766aad4b839a1`: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733867157), [Deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733867192), [Verify Cloudflare lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733962505). Uji buka ikon aplikasi pada Android owner masih belum dilaporkan.
+- Prioritas berikut: SEO-004 verifikasi GA4 Realtime dan event setelah consent; SEO-005 audit performa mobile/desktop aktual. SEO-002 lanjut saat kuota tersedia; SEO-003 kembali saat Google menyajikan data. Tidak ada perubahan kode/data produksi dan tidak ada klaim KPI baru.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
