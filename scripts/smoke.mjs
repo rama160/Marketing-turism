@@ -409,6 +409,8 @@ console.log("Verified competitive decision guides on existing public URLs");
 
 for(const lang of ["id","en"]){
  const index="/"+lang+"/articles",html=await get(index);
+ if(!landingMarkup.includes('class="navArticles" data-npe-lang="'+lang+'" href="'+index+'"'))throw Error("Missing public article shortcut "+lang);
+ if(!dashboard.includes('data-seo-filter="published" class="current"')||!dashboard.includes('id="seoPublishedOrder"')||!app.includes("Edit artikel terbit"))throw Error("Direct published article management missing");
  if(!html.includes('rel="canonical" href="'+base+index+'"')||!websiteSitemap.includes(base+index))throw Error("Article index canonical/sitemap missing "+lang);
  if(!html.includes('src="/analytics.js"')||!analytics.includes("articles"))throw Error("Article consent analytics not deployed "+lang);
  const missing=await fetch(base+index+"/npe-smoke-nonexistent-article-00000000");

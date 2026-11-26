@@ -194,3 +194,20 @@ test("aligned translation rejects changed durations, omitted destinations and re
  assert.match(readAlignedTranslation(valid.replaceAll("Pantai Dream","pantai lainnya"),master).error,/destinasi/);
  assert.match(readAlignedTranslation(valid.replace("[3]","[4]"),master).error,/urutan/);
 });
+
+test("article management is directly accessible and homepage has bilingual crawlable shortcuts",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const home=readFileSync("public/index.html","utf8"),dash=readFileSync("public/dashboard.html","utf8"),app=readFileSync("public/app.js","utf8"),css=readFileSync("public/styles.css","utf8");
+ for(const lang of ["id","en"])assert.ok(home.includes('class="navArticles" data-npe-lang="'+lang+'" href="/'+lang+'/articles"'));
+ assert.match(css,/\.top nav>a\.navArticles\{display:inline-flex/);
+ assert.match(dash,/data-seo-filter="published" class="current"/);
+ assert.match(dash,/value="published" selected/);
+ assert.match(dash,/<section id="seoPublishedOrder"/);
+ assert.match(dash,/id="seoOrderSave"/);
+ assert.match(app,/filter==="published"\?a\.published:a\.draft/);
+ assert.match(app,/Edit artikel terbit/);
+ assert.match(app,/visible\.sort\(\(a,b\)=>seoOrder\.indexOf/);
+ assert.match(app,/seoForm\.scrollIntoView/);
+ assert.match(app,/confirm_published_delete:action==="delete"/);
+ for(const lang of ["id","en"])assert.match(renderArticlePage([],lang,"https://example.com"),/class="top seoArticleHeader"/);
+});

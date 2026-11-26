@@ -2190,6 +2190,7 @@ function editSeoArticle(item=null){
  $("#seoMedia").value="";
  say("#seoCoverFeedback","Pilih foto dari perangkat, konfirmasi hak, lalu Upload. Simpan draft untuk menerapkan cover.",true);
  const draft=item?.draft||{};
+ $("#seoEditStatus").textContent=item?.published?"Artikel sedang terbit. Simpan revisi sebagai draft; versi publik lama tetap tampil sampai revisi disetujui dan diterbitkan.":"Isi kedua bahasa, pilih cover, lalu simpan draft.";
  for(const [key,value] of Object.entries(draft)){
   if(key==="links")continue;
   const el=seoForm.elements.namedItem(key);if(el)el.value=value;
@@ -2199,19 +2200,20 @@ function editSeoArticle(item=null){
  const evidence=item?.research;
  $("#seoResearchEvidence").innerHTML=evidence?'<small>Riset otomatis · '+esc(evidence.research_date||"")+'</small><p>'+esc(evidence.keyword||"")+' · sinyal pertanyaan publik: '+esc(String(evidence.public_question_signals??0))+' (bukan volume pencarian)</p><p>'+(evidence.sources||[]).map(u=>'<span>'+esc(u)+'</span>').join(" · ")+'</p><p>'+esc(evidence.source_kind==="REVIEWED_REFERENCE"?"Referensi cadangan ditinjau "+(evidence.source_checked_at||"")+"; pengambilan sumber daring gagal.":evidence.source_kind?"Sumber daring: "+evidence.source_kind:"") +'</p><p>Periksa kesamaan makna kedua bahasa, fakta dan cover sebelum Setujui.</p>':"";
  drawSeoCover();
+ $("#seoEditorHeading").focus({preventScroll:true});seoForm.scrollIntoView({block:"start",behavior:"instant"});
 }
 
 function drawSeoOrder(){
  const root=$("#seoOrderRows");if(!root)return;
  root.innerHTML=seoOrder.map((key,i)=>{const article=seoItems.find(x=>"article:"+x.id===key);return '<div class="layoutOrderRow"><strong>'+esc(article?.published?.title_id||key)+'</strong><label>Posisi <select data-seo-position="'+i+'">'+seoOrder.map((_,j)=>'<option value="'+j+'" '+(j===i?"selected":"")+'>'+(j+1)+'</option>').join("")+'</select></label></div>';}).join("")||'<p class="feedback">Terbitkan artikel terlebih dahulu.</p>';
- root.querySelectorAll("[data-seo-position]").forEach(el=>el.onchange=()=>{seoOrder=moveTo(seoOrder,Number(el.dataset.seoPosition),Number(el.value));drawSeoOrder();});
+ root.querySelectorAll("[data-seo-position]").forEach(el=>el.onchange=()=>{seoOrder=moveTo(seoOrder,Number(el.dataset.seoPosition),Number(el.value));drawSeoOrder();drawSeoList();say("#seoOrderFeedback","Urutan belum disimpan.",true);});
  $("#seoOrderSave").disabled=seoOrder.length===0;
 }
 $("#seoOrderSave").onclick=async()=>{
  const btn=$("#seoOrderSave");btn.disabled=true;
  try{if(!confirm("Terbitkan urutan artikel baru?"))return;
   const result=await api("admin/site-content","POST",{key:"layout.order.articles",locale:"id",value:JSON.stringify({order:seoOrder,hidden:[]}),expected_version:seoOrderVersion,owner_confirmed:true});
-  seoOrderVersion=result.version;say("#seoOrderFeedback","Urutan artikel berhasil diterbitkan.",true);
+  seoOrderVersion=result.version;drawSeoList();say("#seoOrderFeedback","Urutan artikel berhasil diterbitkan.",true);
  }catch(err){say("#seoOrderFeedback",err.message);}finally{btn.disabled=!seoOrder.length;}
 };
 
@@ -2221,7 +2223,7 @@ async function loadSeoArticles(){
   const [r,m,copy]=await Promise.all([api("admin/website/articles"),api("admin/website/media"),api("admin/site-content")]);
   seoItems=r.items||[];seoMedia=m.items||[];
   const row=(copy.items||[]).find(x=>x.key==="layout.order.articles"&&x.locale==="id");seoOrderVersion=row?.version||0;
-  seoOrder=orderedKeys(seoItems.filter(x=>x.published).map(x=>"article:"+x.id),readOrder({"layout.order.articles":row?.value},"articles"));drawSeoOrder();
+  seoOrder=orderedKeys(seoItems.filter(x=>x.published).sort((a,b)=>String(b.published_at||"").localeCompare(String(a.published_at||""))).map(x=>"article:"+x.id),readOrder({"layout.order.articles":row?.value},"articles"));drawSeoOrder();
   const latest=r.latest_research;
   $("#seoResearchStatus").textContent="Riset otomatis: maksimal 1 draft/minggu. Jika gagal, gunakan tombol riset untuk mencoba ulang (total 3 percobaan/minggu; satu pemulihan khusus setelah perbaikan format). Tidak pernah auto-publish. "+(latest?latest.week+" · "+latest.status+" · "+(latest.detail||""):"Belum ada riwayat riset.");
   drawSeoList();
@@ -2229,11 +2231,15 @@ async function loadSeoArticles(){
 }
 function drawSeoList(){
  const filter=$("#seoFilter").value;
- const visible=seoItems.filter(a=>filter==="all"||filter==="published"&&a.published||filter==="review"&&a.review_state==="DRAFT"||filter==="approved"&&a.review_state==="APPROVED"||filter==="rejected"&&a.review_state==="REJECTED");
+ const matches=(a,key)=>key==="all"||key==="published"&&!!a.published||key==="review"&&a.review_state==="DRAFT"||key==="approved"&&a.review_state==="APPROVED"||key==="rejected"&&a.review_state==="REJECTED";
+ const visible=seoItems.filter(a=>matches(a,filter));
+ if(filter==="published")visible.sort((a,b)=>seoOrder.indexOf("article:"+a.id)-seoOrder.indexOf("article:"+b.id));
+ $("#seoPublishedOrder").hidden=filter!=="published";
+ $("#seoArticleTabs").querySelectorAll("[data-seo-filter]").forEach(b=>{const key=b.dataset.seoFilter;b.classList.toggle("current",key===filter);b.setAttribute("aria-pressed",String(key===filter));b.querySelector("span").textContent=String(seoItems.filter(a=>matches(a,key)).length);});
  const btn=(action,label,a,primary=false)=>'<button type="button" class="'+(primary?"primary":"outline")+' small" data-seo-action="'+action+'" data-id="'+esc(a.id)+'">'+label+'</button>';
- $("#seoList").innerHTML=visible.map(a=>'<article class="panel"><small>'+esc(a.review_state==="APPROVED"?"Disetujui":a.review_state==="REJECTED"?"Ditolak":a.review_state==="PUBLISHED"?"Published":"Draft")+(a.published?" · versi terbit tersedia":"")+(a.research?" · Riset otomatis":"")+'</small><h4>'+esc(a.draft.title_id)+'</h4><p>'+esc(a.draft.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">Edit</button>'+
+ $("#seoList").innerHTML=visible.map(a=>{const content=filter==="published"?a.published:a.draft;return '<article class="panel seoManageCard">'+(content.media_id?'<img class="seoManageCover" loading="lazy" alt="" src="/photos/website/'+esc(content.media_id)+'?npew=480">':"")+'<small>'+esc(a.review_state==="APPROVED"?"Disetujui":a.review_state==="REJECTED"?"Ditolak":a.review_state==="PUBLISHED"?"Published":"Draft")+(a.published?" · versi terbit tersedia":"")+(a.research?" · Riset otomatis":"")+'</small><h4>'+esc(content.title_id)+'</h4><p>'+esc(content.summary_id)+'</p><div class="actions"><button type="button" class="outline small" data-seo-edit="'+esc(a.id)+'">'+(a.published?"Edit artikel terbit":"Edit draft")+'</button>'+
  (a.review_state==="DRAFT"?btn("approve","Setujui",a,true)+btn("reject","Tolak",a):a.review_state==="APPROVED"?btn("publish","Publish",a,true)+btn("reject","Tolak draft",a):"")+
- (a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a>'+btn("unpublish","Tarik publikasi",a)+btn("delete","Hapus artikel",a):btn("delete","Hapus artikel",a))+'</div></article>').join("")||'<p>Belum ada artikel pada daftar ini.</p>';
+ (a.published?'<a target="_blank" rel="noopener noreferrer" href="/id/articles/'+esc(a.slug)+'">Lihat ID</a><a target="_blank" rel="noopener noreferrer" href="/en/articles/'+esc(a.slug)+'">Lihat EN</a>'+btn("unpublish","Tarik publikasi",a)+btn("delete","Hapus artikel",a):btn("delete","Hapus artikel",a))+'</div></article>';}).join("")||'<p>Belum ada artikel pada daftar ini.</p>';
  $("#seoList").querySelectorAll("[data-seo-edit]").forEach(b=>b.onclick=()=>editSeoArticle(seoItems.find(a=>a.id===b.dataset.seoEdit)));
  $("#seoList").querySelectorAll("[data-seo-action]").forEach(b=>b.onclick=async()=>{
   const a=seoItems.find(x=>x.id===b.dataset.id),action=b.dataset.seoAction;
@@ -2246,6 +2252,7 @@ function drawSeoList(){
  });
 }
 $("#seoFilter").onchange=drawSeoList;
+$("#seoArticleTabs").querySelectorAll("[data-seo-filter]").forEach(b=>b.onclick=()=>{if(seoCoverBusy)return;$("#seoFilter").value=b.dataset.seoFilter;drawSeoList();});
 $("#seoResearch").onclick=async()=>{
  const b=$("#seoResearch");b.disabled=true;
  try{const result=await api("admin/website/articles/research","POST",{});await loadSeoArticles();$("#seoFilter").value="review";drawSeoList();say("#seoFeedback",result.detail||result.status,["DRAFT_CREATED","RUNNING"].includes(result.status));}
@@ -2287,7 +2294,7 @@ $("#seoPreview").onclick=()=>{
 };
 seoForm.onsubmit=async e=>{
  e.preventDefault();if(seoCoverBusy)return;if($("#seoCoverFile").files?.length){say("#seoCoverFeedback","Upload foto terpilih terlebih dahulu atau kosongkan pilihan file.");return;}const button=seoForm.querySelector('[type="submit"]');button.disabled=true;
- try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Perubahan membatalkan persetujuan lama. Setujui dahulu, lalu Publish manual.",true);}
+ try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());$("#seoFilter").value="review";await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Perubahan membatalkan persetujuan lama. Setujui dahulu, lalu Publish manual.",true);}
  catch(err){say("#seoFeedback",err.message);}finally{button.disabled=false;}
 };
 

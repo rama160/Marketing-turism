@@ -1,3 +1,6 @@
+## 26 November 2026 — Discover and manage published SEO articles
+- Owner screenshot: article shortcut absent and published editor/order/delete difficult to find. Add real bilingual homepage navigation links, visible at mobile widths; fix article header navigation on compact screens. Replace dropdown-only admin discovery with visible state tabs and counts, default Terbit, public snapshot cards/cover, edit scroll/focus, direct order panel and existing confirmation guarded deletion. Existing draft/approval/publish, version guard, shared order and stable URLs retained. No data mutation or actual deletion. Tests and smoke added; release pending.
+
 ## 26 November 2026 — Single-master bilingual SEO articles
 - Owner found mismatched ID/EN first draft. Generate English master, repair only master if needed, translate numbered title/summary/body segments into Indonesian; require matching segment order, headings, numbers and known destination names, reject unrelated translations, allow one translation retry. Structural checks do not certify semantic equivalence; owner review remains required. Include published activity descriptions as evidence, no extra stops without source support. Existing draft correction separate, no new duplicate or auto-publish. CI/deploy pending.
 

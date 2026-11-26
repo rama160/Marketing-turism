@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.24 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.25 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -367,6 +367,11 @@ Pedoman keputusan:
 - Release 9011bb8 CI 45744220691, deploy 45744220758, Verify 45744321131 lulus. D1 draft lembongan-two-days-fa0f5e50 v1, 0 published; AI menciptakan itinerary EN hari 1/2 dan mercusuar Ceningan, ID hasil repair berisi uraian umum, bukan terjemahan. Owner meminta keselarasan. Riset nyata Wikimedia Action berhasil, sinyal pertanyaan 0 (bukan volume).
 - Generator satu naskah induk EN, terjemahan ID berurutan dengan marker; cek jumlah/urutan bagian, heading, angka, nama destinasi yang dikenal, panjang dan teks tidak diterjemahkan. Maks dua panggilan terjemahan, gagal tidak simpan. Masukkan deskripsi produk published sebagai bahan. Uji langsung model existing terjemahan enam baris mempertahankan angka/rute/negasi. Cek struktur bukan jaminan makna; owner tetap review. Tidak mengubah harga, URL atau aturan publikasi.
 - Koreksi draft produksi existing dilakukan terpisah dengan version guard, tidak membuat artikel duplikat atau mempublikasikan. CI/deploy generator terbaru belum diverifikasi.
+
+### 2026-11-26 — SEO-012/013: pintasan dan manajemen artikel terbit
+- D1 artikel pertama lembongan-two-days-fa0f5e50 published 26 Nov 11.04 WITA (03.04 UTC), bahasa ID/EN, URL tetap. Owner screenshot header tidak ada Artikel, daftar admin sulit ditemukan. Tambah anchor header bilingual /id/articles dan /en/articles, tetap terlihat mobile. Header artikel juga menampilkan navigasi di layar kecil.
+- Tab Terbit default dengan count, Perlu review/Disetujui/Ditolak/Semua, daftar publik mengikuti posisi yang disimpan, kartu snapshot publik dan tombol Edit artikel terbit, Lihat ID/EN, Tarik publikasi, Hapus artikel. Panel urutan terbuka, posisi bebas dan Simpan urutan memakai key layout.order.articles existing. Editor langsung fokus/scroll. Revisi tetap draft, versi publik lama tidak berubah sebelum Setujui/Publish. Hapus butuh konfirmasi dan expected_version. Tidak menghapus artikel/foto, tidak menambah tabel atau biaya.
+- Tambah tes/smoke navigasi dan manajemen. Release belum terverifikasi; uji HP owner setelah deploy. SEO-013 belum dinyatakan selesai: verifikasi publik URL, canonical, hreflang, sitemap dan tautan pada release; status index Google belum tersedia.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
