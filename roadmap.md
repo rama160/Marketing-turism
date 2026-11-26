@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.25 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.26 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -372,6 +372,10 @@ Pedoman keputusan:
 - D1 artikel pertama lembongan-two-days-fa0f5e50 published 26 Nov 11.04 WITA (03.04 UTC), bahasa ID/EN, URL tetap. Owner screenshot header tidak ada Artikel, daftar admin sulit ditemukan. Tambah anchor header bilingual /id/articles dan /en/articles, tetap terlihat mobile. Header artikel juga menampilkan navigasi di layar kecil.
 - Tab Terbit default dengan count, Perlu review/Disetujui/Ditolak/Semua, daftar publik mengikuti posisi yang disimpan, kartu snapshot publik dan tombol Edit artikel terbit, Lihat ID/EN, Tarik publikasi, Hapus artikel. Panel urutan terbuka, posisi bebas dan Simpan urutan memakai key layout.order.articles existing. Editor langsung fokus/scroll. Revisi tetap draft, versi publik lama tidak berubah sebelum Setujui/Publish. Hapus butuh konfirmasi dan expected_version. Tidak menghapus artikel/foto, tidak menambah tabel atau biaya.
 - Tambah tes/smoke navigasi dan manajemen. Release belum terverifikasi; uji HP owner setelah deploy. SEO-013 belum dinyatakan selesai: verifikasi publik URL, canonical, hreflang, sitemap dan tautan pada release; status index Google belum tersedia.
+
+### 2026-11-26 — SEO-013/016: tampilan daftar artikel
+- Release d8f9e27 CI/deploy/Verify lulus. Screenshot owner 11.28 WITA: halaman daftar artikel hanya judul/ringkasan. D1 read-only: artikel pertama published dengan media_id 73ceaa31-5fbc-4f1b-9f08-f95722ef9b60. Renderer index tidak menampilkan cover, bukan kegagalan upload.
+- Buat kartu editorial responsif dengan cover published, judul, ringkasan, tanggal publikasi, CTA baca ID/EN. Artikel pertama mengikuti order owner sebagai unggulan, sisanya grid dua kolom/HP satu kolom. Seluruh kartu link HTML, srcset existing, pertama eager/high priority dan sisanya lazy. Fallback brand bila cover kosong, tidak membuat foto baru. Tidak mengubah artikel, URL, sitemap, schema, data atau dashboard. Unit dan smoke memeriksa visual cover/tautan. CI/deploy/Verify release baru dan uji HP belum terverifikasi; indexasi Google tetap belum diketahui.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

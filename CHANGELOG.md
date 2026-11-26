@@ -1,3 +1,6 @@
+## 26 November 2026 — Visual travel guide index
+- Owner screenshot showed text-only article index. Production D1 confirms first published article has cover ID 73ceaa31-5fbc-4f1b-9f08-f95722ef9b60. Render published cover, title, summary, publication date and localized read link in responsive editorial cards; first owner-ordered article featured, subsequent cards two-column/one-column on mobile. Existing responsive photo variants, first eager/high priority, remaining lazy; neutral brand fallback only for absent cover. Preserve URLs, metadata, order, detail template and data; no new image or DB mutation. Add unit and live smoke checks; release pending.
+
 ## 26 November 2026 — Discover and manage published SEO articles
 - Owner screenshot: article shortcut absent and published editor/order/delete difficult to find. Add real bilingual homepage navigation links, visible at mobile widths; fix article header navigation on compact screens. Replace dropdown-only admin discovery with visible state tabs and counts, default Terbit, public snapshot cards/cover, edit scroll/focus, direct order panel and existing confirmation guarded deletion. Existing draft/approval/publish, version guard, shared order and stable URLs retained. No data mutation or actual deletion. Tests and smoke added; release pending.
 

@@ -413,6 +413,15 @@ for(const lang of ["id","en"]){
  if(!dashboard.includes('data-seo-filter="published" class="current"')||!dashboard.includes('id="seoPublishedOrder"')||!app.includes("Edit artikel terbit"))throw Error("Direct published article management missing");
  if(!html.includes('rel="canonical" href="'+base+index+'"')||!websiteSitemap.includes(base+index))throw Error("Article index canonical/sitemap missing "+lang);
  if(!html.includes('src="/analytics.js"')||!analytics.includes("articles"))throw Error("Article consent analytics not deployed "+lang);
+ const guides=indexedURLs.filter(url=>url.startsWith(base+index+"/"));
+ if(guides.length&&!html.includes('class="seoGuideGrid"'))throw Error("Visual article grid missing "+lang);
+ for(const url of guides){
+  const path=new URL(url).pathname,detail=await get(path);
+  const cover=detail.match(/<img class="seoArticleCover"[^>]*\bsrc="([^"]+)"/)?.[1];
+  if(!html.includes('class="seoGuideLink" href="'+path+'"'))throw Error("Article card missing "+path);
+  if(cover&&!html.includes('class="seoGuidePhoto" src="'+cover+'"'))throw Error("Published article cover not rendered in listing "+path);
+ }
+ if(guides.length&&!html.includes('class="seoGuideCard seoGuideFeatured"'))throw Error("Featured guide missing "+lang);
  const missing=await fetch(base+index+"/npe-smoke-nonexistent-article-00000000");
  if(missing.status!==404)throw Error("Unpublished article route should be 404");
 }

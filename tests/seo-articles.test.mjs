@@ -211,3 +211,25 @@ test("article management is directly accessible and homepage has bilingual crawl
  assert.match(app,/confirm_published_delete:action==="delete"/);
  for(const lang of ["id","en"])assert.match(renderArticlePage([],lang,"https://example.com"),/class="top seoArticleHeader"/);
 });
+
+test("public guide index renders published covers, localized card links, owner order and responsive priorities",()=>{
+ const a={...validateArticle(draft),slug:"first-guide",published_at:"2026-11-26 03:04:14"},b={...a,slug:"second-guide",title_en:"Another guide",title_id:"Panduan lainnya"};
+ for(const lang of ["id","en"]){
+  const html=renderArticlePage([a,b],lang,"https://example.com");
+  assert.match(html,/class="section seoArticle seoGuideIndex"/);
+  assert.match(html,/class="seoGuideCard seoGuideFeatured"/);
+  assert.ok(html.indexOf("/"+lang+"/articles/first-guide")<html.indexOf("/"+lang+"/articles/second-guide"));
+  const imgs=[...html.matchAll(/<img class="seoGuidePhoto"[^>]*>/g)].map(m=>m[0]);
+  assert.equal(imgs.length,2);
+  assert.ok(imgs[0].includes('/photos/website/'+draft.media_id));
+  assert.match(imgs[0],/loading="eager"/);assert.match(imgs[0],/fetchpriority="high"/);
+  assert.match(imgs[1],/loading="lazy"/);assert.doesNotMatch(imgs[1],/fetchpriority="high"/);
+  for(const img of imgs){assert.match(img,/srcset=/);assert.match(img,/width="1200" height="675"/);}
+  assert.match(html,lang==="id"?/Baca selengkapnya/:/Read the guide/);
+  assert.match(html,/<time datetime="2026-11-26">/);
+  assert.doesNotMatch(renderArticlePage([a],lang,"https://example.com","first-guide"),/seoGuideGrid/);
+ }
+ const fallback=renderArticlePage([{...a,media_id:""}],"id","https://example.com");
+ assert.match(fallback,/seoGuidePlaceholder/);assert.doesNotMatch(fallback,/seoGuidePhoto/);
+ assert.match(renderArticlePage([],"en","https://example.com"),/Travel guides are coming soon/);
+});
