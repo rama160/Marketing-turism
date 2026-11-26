@@ -2197,7 +2197,7 @@ function editSeoArticle(item=null){
  for(const input of seoForm.querySelectorAll('[name="links"]'))input.checked=(draft.links||[]).includes(input.value);
  $("#seoUrl").textContent=item?"URL tetap: /id/articles/"+item.slug+" · /en/articles/"+item.slug:"URL dibuat saat simpan draft.";
  const evidence=item?.research;
- $("#seoResearchEvidence").innerHTML=evidence?'<small>Riset otomatis · '+esc(evidence.research_date||"")+'</small><p>'+esc(evidence.keyword||"")+' · sinyal pertanyaan publik: '+esc(String(evidence.public_question_signals??0))+' (bukan volume pencarian)</p><p>'+(evidence.sources||[]).map(u=>'<span>'+esc(u)+'</span>').join(" · ")+'</p><p>'+esc(evidence.source_kind==="REVIEWED_REFERENCE"?"Referensi cadangan ditinjau "+(evidence.source_checked_at||"")+"; pengambilan sumber daring gagal.":evidence.source_kind?"Sumber daring: "+evidence.source_kind:"") +'</p><p>Periksa fakta dan pilih cover sebelum Setujui.</p>':"";
+ $("#seoResearchEvidence").innerHTML=evidence?'<small>Riset otomatis · '+esc(evidence.research_date||"")+'</small><p>'+esc(evidence.keyword||"")+' · sinyal pertanyaan publik: '+esc(String(evidence.public_question_signals??0))+' (bukan volume pencarian)</p><p>'+(evidence.sources||[]).map(u=>'<span>'+esc(u)+'</span>').join(" · ")+'</p><p>'+esc(evidence.source_kind==="REVIEWED_REFERENCE"?"Referensi cadangan ditinjau "+(evidence.source_checked_at||"")+"; pengambilan sumber daring gagal.":evidence.source_kind?"Sumber daring: "+evidence.source_kind:"") +'</p><p>Periksa kesamaan makna kedua bahasa, fakta dan cover sebelum Setujui.</p>':"";
  drawSeoCover();
 }
 

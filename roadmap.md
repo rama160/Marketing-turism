@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.23 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.24 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -146,8 +146,8 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 0 artikel, 0 terbit; riset minggu 23 Nov memilih lembongan-two-days tetapi FAILED; ditemukan parameter Wikimedia di luar batas; penyebab live yang tepat belum dipastikan; perbaikan dan retry disiapkan |
-| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; riset produksi pertama FAILED; lock mingguan menahan retry. Diagnosis tahap kegagalan dan retry terbatas diperlukan; review/publish artikel nyata belum dilakukan |
+| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 1 draft lembongan-two-days, 0 terbit; riset berhasil, sinyal pertanyaan 0; owner menemukan versi bilingual tidak selaras |
+| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; draft pertama tersimpan, tetapi bilingual tidak selaras; generator naskah induk + terjemahan dengan pemeriksaan struktur/angka/destinasi disiapkan; release dan review/publish belum selesai |
 | SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
 
@@ -362,6 +362,11 @@ Pedoman keputusan:
 - Screenshot owner 10.39 WITA dan D1 read-only: week 2026-11-23, attempt 3/3 INVALID_DRAFT, topic lembongan-two-days, 0 artikel. Release a3ba384 CI 45743650435, deploy 45743650409, Verify 45743750028 sukses. Tahap source dan AI sudah dilewati; field historis tidak tercatat.
 - Diagnostic langsung Workers AI model existing: JSON bilingual body_id 141 karakter dan body_en 765 (minimum 500); uji single-language JSON schema gagal parsing; plain-text Indonesia 1658 karakter. Ini reproduksi masalah panjang, bukan bukti field historis yang sama. Tidak simpan output uji atau publish. Maks 2 perbaikan bahasa per run, hanya jika invalid; normalize kontrol/whitespace, batas metadata, error per bahasa/field, tetap 500–12000 karakter body, tolak HTML/URL; provenance format_repairs. Konten tetap perlu review fakta oleh owner.
 - Tambahkan satu pemulihan manual khusus INVALID_DRAFT yang kehabisan 3 percobaan, marker Pemulihan format v2 (tidak reset history, tidak boleh berulang, sukses tetap satu draft/minggu, cron tidak membuka lock). Tidak mengubah schema atau menghapus data. Uji baru untuk fallback teks, invalid, recovery dan no publish. CI/deploy/live draft belum terverifikasi. Model existing memakai kuota AI; tidak menambah layanan berbayar.
+
+### 2026-11-26 — SEO-011/012: keselarasan bilingual
+- Release 9011bb8 CI 45744220691, deploy 45744220758, Verify 45744321131 lulus. D1 draft lembongan-two-days-fa0f5e50 v1, 0 published; AI menciptakan itinerary EN hari 1/2 dan mercusuar Ceningan, ID hasil repair berisi uraian umum, bukan terjemahan. Owner meminta keselarasan. Riset nyata Wikimedia Action berhasil, sinyal pertanyaan 0 (bukan volume).
+- Generator satu naskah induk EN, terjemahan ID berurutan dengan marker; cek jumlah/urutan bagian, heading, angka, nama destinasi yang dikenal, panjang dan teks tidak diterjemahkan. Maks dua panggilan terjemahan, gagal tidak simpan. Masukkan deskripsi produk published sebagai bahan. Uji langsung model existing terjemahan enam baris mempertahankan angka/rute/negasi. Cek struktur bukan jaminan makna; owner tetap review. Tidak mengubah harga, URL atau aturan publikasi.
+- Koreksi draft produksi existing dilakukan terpisah dengan version guard, tidak membuat artikel duplikat atau mempublikasikan. CI/deploy generator terbaru belum diverifikasi.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {validateArticle,renderArticlePage,articleSitemap} from "../src/seo-articles.mjs";
+const translateFixture=config=>({response:config.messages[1].content.split("\n").map(line=>{const m=line.match(/^\[(\d+)\] (.*)$/);if(!m)throw Error("missing numbered source");const h=m[2].startsWith("## ")?"## ":"";const place=m[2].includes("Nusa Penida")?"Nusa Penida ":"";return "["+m[1]+"] "+h+place+"Panduan perjalanan ".repeat(Math.max(1,Math.round((m[2].length-place.length)/20))).trim();}).join("\n")});
 const draft={title_id:"Panduan Nusa Penida",title_en:"Nusa Penida travel guide",summary_id:"Ringkasan perjalanan wisata yang lengkap",summary_en:"A useful island travel summary",body_id:"## Rute\nIsi artikel cukup panjang untuk validasi.",body_en:"## Route\nA useful article with enough detail. <script>alert(1)</script>",links:["west","__proto__","https://evil.example"],media_id:"09380b3a-33a6-4429-adfd-703d2e213ab1"};
 test("bilingual articles generate metadata, escape text and allow only known tour links",()=>{
  const a={...validateArticle(draft),slug:"guide",published_at:"2026-11-25 00:00:00"};
@@ -76,13 +77,13 @@ test("weekly independent research makes a private draft only, with real evidence
  const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_media(id TEXT PRIMARY KEY); CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE growth_opportunities(headline TEXT,source TEXT,discovered_at TEXT);");
  sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
  const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){for(const s of stmts)await s.run();}};
- let calls=0;const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async()=>{calls++;return {response:JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
+ let calls=0;const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;if(!config.response_format)return translateFixture(config);return {response:JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
  const options={now:Date.UTC(2026,10,26),request:async()=>({ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Island background and factual geography for editorial research. ".repeat(3)}]}})})};
  try{
   assert.equal((await generateResearchArticle(db,env,options)).status,"DRAFT_CREATED");
   assert.equal((await publishedArticles(db)).length,0);const items=(await listArticles(db)).items;
   assert.equal(items.length,1);assert.equal(items[0].review_state,"DRAFT");assert.ok(items[0].research.sources.length);assert.equal(items[0].draft.media_id,"");
-  assert.equal((await generateResearchArticle(db,env,options)).status,"WEEK_LIMIT");assert.equal(calls,1);
+  assert.equal((await generateResearchArticle(db,env,options)).status,"WEEK_LIMIT");assert.equal(calls,2);assert.equal(items[0].research.bilingual_alignment.method,"EN_MASTER_ID_TRANSLATION");
  }finally{sqlite.close();}
 });
 
@@ -117,7 +118,7 @@ test("legacy failed research can retry manually, diagnoses stages and locks afte
  sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
  const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){sqlite.exec("BEGIN");try{for(const s of stmts)await s.run();sqlite.exec("COMMIT");}catch(e){sqlite.exec("ROLLBACK");throw e;}}};
  let calls=0,mode="invalid";
- const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;assert.equal(config.response_format.type,"json_object");return {response:mode==="invalid"?"not JSON":JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
+ const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;if(!config.response_format)return translateFixture(config);assert.equal(config.response_format.type,"json_object");return {response:mode==="invalid"?"not JSON":JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
  const opts={now:Date.UTC(2026,10,26),request:async(url)=>{assert.equal(new URL(url).searchParams.get("exchars"),"1200");return {ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Island background and factual geography for editorial research. ".repeat(3)}]}})};}};
  try{
   sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-23","FAILED","Legacy error");
@@ -126,12 +127,12 @@ test("legacy failed research can retry manually, diagnoses stages and locks afte
   const failed=await generateResearchArticle(db,env,{...opts,manual:true});assert.equal(failed.status,"AI_FORMAT_ERROR");assert.match(failed.detail,/Percobaan 2\/3/);
   mode="valid";
   const result=await generateResearchArticle(db,env,{...opts,manual:true});assert.equal(result.status,"DRAFT_CREATED");assert.match(result.detail,/Percobaan 3\/3/);
-  assert.equal((await generateResearchArticle(db,env,{...opts,manual:true})).status,"WEEK_LIMIT");assert.equal(calls,2);assert.equal((await publishedArticles(db)).length,0);
+  assert.equal((await generateResearchArticle(db,env,{...opts,manual:true})).status,"WEEK_LIMIT");assert.equal(calls,3);assert.equal((await publishedArticles(db)).length,0);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM seo_articles").get().n,1);
   sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-30","SOURCE_UNAVAILABLE","Percobaan 3/3 · Test");
   assert.equal((await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,10,30),manual:true})).status,"WEEK_LIMIT");
   const recoveredSource=await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,11,7),request:async()=>({ok:true,json:async()=>({error:{code:"test"}})})});
-  assert.equal(recoveredSource.status,"DRAFT_CREATED");assert.equal(calls,3);
+  assert.equal(recoveredSource.status,"DRAFT_CREATED");assert.equal(calls,5);
   const saved=sqlite.prepare("SELECT draft_json FROM seo_articles WHERE id=?").get(recoveredSource.id);
   assert.equal(JSON.parse(saved.draft_json)._research.source_kind,"REVIEWED_REFERENCE");
   assert.equal((await publishedArticles(db)).length,0);
@@ -162,14 +163,14 @@ test("plain text repair preserves content and rejects insufficient or unsafe out
  assert.ok(articlePlainText("Title\nSummary\nToo short","en").error);
  assert.ok(articlePlainText("Title\nA summary with enough detail for travelers.\n"+body+" https://example.com","en").error);
 });
-test("exhausted invalid draft gets one versioned recovery with single-language text repair",async()=>{
+test("exhausted invalid draft gets one versioned recovery with master translation",async()=>{
  const {DatabaseSync}=await import("node:sqlite");const {readFileSync}=await import("node:fs");const {generateResearchArticle,publishedArticles}=await import("../src/seo-articles.mjs");
  const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_media(id TEXT PRIMARY KEY); CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE growth_opportunities(headline TEXT,source TEXT,discovered_at TEXT);");
  sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
  const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){sqlite.exec("BEGIN");try{for(const s of stmts)await s.run();sqlite.exec("COMMIT");}catch(e){sqlite.exec("ROLLBACK");throw e;}}};
  let calls=0;
  const long="Practical travel advice that confirms arrangements with the operator. ".repeat(15);
- const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;if(config.response_format)return {response:{...draft,body_id:"Terlalu pendek",body_en:long}};assert.match(config.messages[0].content,/Indonesian/);return {response:"## Panduan perjalanan\n\nRencanakan perjalanan sesuai kondisi dan konfirmasi pengaturan.\n\n## Rute\n"+"Pertimbangkan pilihan perjalanan yang sesuai dengan waktu dan kondisi. ".repeat(15)};}}};
+ const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;if(config.response_format)return {response:{...draft,body_id:"Terlalu pendek",body_en:long}};assert.match(config.messages[0].content,/Translate the numbered English lines/);return translateFixture(config);}}};
  const opts={now:Date.UTC(2026,10,26),request:async()=>({ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Stable island geography and coastal scenery. ".repeat(4)}]}})})};
  try{
   sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-23","INVALID_DRAFT","Percobaan 3/3 · Isi draft bilingual tidak memenuhi validasi.");
@@ -177,9 +178,19 @@ test("exhausted invalid draft gets one versioned recovery with single-language t
   const result=await generateResearchArticle(db,env,{...opts,manual:true});
   assert.equal(result.status,"DRAFT_CREATED");assert.equal(calls,2);assert.match(result.detail,/Pemulihan format v2/);
   const record=JSON.parse(sqlite.prepare("SELECT draft_json FROM seo_articles WHERE id=?").get(result.id).draft_json);
-  assert.equal(record._research.format_repairs[0].language,"id");assert.equal(record._review,"DRAFT");assert.equal((await publishedArticles(db)).length,0);
+  assert.equal(record._research.bilingual_alignment.method,"EN_MASTER_ID_TRANSLATION");assert.equal(record._research.format_repairs.length,0);assert.equal(record._review,"DRAFT");assert.equal((await publishedArticles(db)).length,0);
   assert.equal((await generateResearchArticle(db,env,{...opts,manual:true})).status,"WEEK_LIMIT");
   sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-30","INVALID_DRAFT","Percobaan 3/3 · Pemulihan format v2 · failed");
   assert.equal((await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,10,30),manual:true})).status,"WEEK_LIMIT");assert.equal(calls,2);
  }finally{sqlite.close();}
+});
+
+test("aligned translation rejects changed durations, omitted destinations and reordered sections",async()=>{
+ const {readAlignedTranslation}=await import("../src/seo-articles.mjs");
+ const master={title_en:"Two days in Nusa Lembongan",summary_en:"Plan a flexible island stay and confirm transport.",body_en:"## Day 1\n\n"+("Allow 30–45 minutes from Sanur. Visit Dream Beach. ".repeat(14)).trim()};
+ const valid="[1] Dua hari di Nusa Lembongan\n[2] Rencanakan perjalanan fleksibel dan konfirmasi transportasi.\n[3] ## Hari 1\n[4] "+("Perkirakan 30–45 menit dari Sanur. Kunjungi Pantai Dream. ".repeat(14)).trim();
+ assert.ok(readAlignedTranslation(valid,master).fields);
+ assert.match(readAlignedTranslation(valid.replace("30–45","30–50"),master).error,/angka/);
+ assert.match(readAlignedTranslation(valid.replaceAll("Pantai Dream","pantai lainnya"),master).error,/destinasi/);
+ assert.match(readAlignedTranslation(valid.replace("[3]","[4]"),master).error,/urutan/);
 });
