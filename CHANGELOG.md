@@ -1,3 +1,6 @@
+## 26 November 2026 — Audit first GSC result quality
+- Read-only database/source audit: raw Google rows 0, 24 seed plans, unavailable Reddit RSS, final period excludes new activity/article publication. Require owner UI comparison and distinguish aggregate/fresh data before moving to Keyword Planner. Documentation only.
+
 ## 26 November 2026 — First live GSC research verified
 - CI/deploy/Verify 712d061 succeeded; owner dashboard and read-only D1 confirm DONE/NO_ROWS, zero raw rows, 24 active keyword hypotheses, 14 mapped, no observations. GSC connection verified, ranking baseline unavailable. Roadmap v1.0.35 advances to SEO-006A; documentation only.
 

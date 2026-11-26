@@ -1,3 +1,6 @@
+## Audit aktif SEO-003B — 26 November 2026
+- Owner meminta verifikasi kualitas sebelum SEO-006A. Raw Google rows 0, 24 SEED, Reddit SOURCE_UNAVAILABLE; periode final berakhir sebelum publikasi terbaru. Koneksi lulus tetapi baseline belum. Bandingkan agregat GSC UI pada periode sama dan data terbaru; diagnosis agregat tanpa query dan fresh bila perlu. Jangan klaim nol impresi dari NO_ROWS. Ikuti roadmap v1.0.36.
+
 ## Instruksi aktif SEO-006A — 26 November 2026
 - SEO-003B koneksi GSC dan run NO_ROWS terverifikasi dari screenshot owner + D1 (24 aktif, 14 mapped, 0 raw/accepted GSC rows, periode 27 Okt–23 Nov). Ranking/volume N/A; pantau cron existing, validasi GSC UI/export saat data ada. CI/deploy/Verify 712d061 sukses. NEXT: SEO-006A Keyword Planner, ikuti roadmap.md §0; jalur gratis/manual bersumber terlebih dahulu, cek syarat API, tidak membuat kampanye atau biaya tanpa izin. Konfirmasi pemulihan kebijakan key creation. Instruksi ini mengungguli catatan historis berikut.
 
