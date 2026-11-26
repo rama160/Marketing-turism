@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.31 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.32 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -401,6 +401,10 @@ Pedoman keputusan:
 - Owner meminta otomatis + manual, terukur, dapat dilihat/edit dashboard. Satu menu Konten & Kampanye → Riset Kata Kunci, 24 seed ID/EN sebagai hipotesis, bukan volume/rank. Pemetaan URL hanya canonical published, satu keyword per bahasa, edit versi/arsip, klaster/intent/prioritas/topik artikel. Manual volume/difficulty/kompetitor memerlukan sumber, periode, negara, perangkat, tanggal cek. Tidak mengubah copy atau URL publik otomatis.
 - Existing daily cron + tombol riset (manual maks per jam): hitung jumlah headline yang cocok per klaster pada sampel max 200 selama 14 hari, hanya jika RSS terkini tersedia. Bukan volume pencarian. GSC Search Analytics query/page 28 hari final, global/all devices, maksimum 300 baris; optional GSC_PROPERTY (sc-domain:nusapenidaexperiences.com atau https://nusapenidaexperiences.com/) dan secret GSC_SERVICE_ACCOUNT_JSON; read-only scope, tidak meminta indexing. GSC belum terhubung; owner aktifkan API, buat service account, berikan akses baca property, masukkan JSON hanya via Worker secret. Jangan kirim private key di chat/repo. Referensi https://developers.google.com/webmaster-tools/v1/searchanalytics/query dan https://developers.google.com/identity/protocols/oauth2/service-account .
 - Data otomatis snapshot terpisah dari edit manual; tampilkan N/A bila tidak ada data; simpan snapshot sukses terakhir, kandidat GSC tidak dipetakan otomatis, potensi konflik query–URL perlu review. Volume/difficulty tidak dihasilkan AI; sumber manual diperlukan, bukan Google Ads competition yang disamakan dengan difficulty organik. Generator artikel memakai prioritas topik owner dan impressions GSC yang tersedia, tetap 1 draft/minggu dan review/publish manual. Tambah migration 0028, API owner-only, unit/smoke; CI/deploy dan uji produksi belum terverifikasi. Tidak membeli layanan, tidak mengubah harga/foto/artikel existing.
+
+### 2026-11-26 — SEO-006/007 penguatan sebelum release
+- CI pertama 45758526245: 238 lulus/3 gagal, ketiganya kontrak versi asset yang mengharapkan 3.36.0. Pertahankan identitas versi aplikasi existing (tidak bump sebagian). Tes keyword baru lulus pada run pertama; deploy pertama gagal di CI sebelum migration.
+- Seed ID stabil dan cek awal supaya edit/arsip tidak menciptakan ulang keyword; tampilkan semua pasangan GSC aktual, tidak hanya kandidat yang masuk plan. Tambah input manual impressions, klik dan posisi GSC dengan provenance; otomatis tetap immutable. Prioritas artikel memakai impressions pasangan keyword–URL target, bukan menjumlahkan seluruh halaman. Batas 500 plan. CI/deploy ulang belum terverifikasi.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

@@ -32,15 +32,18 @@ export function validateKeyword(input,paths){
  if(target&&!paths.includes(target))throw Error("Pilih URL canonical yang sudah terbit.");
  if(target&&((locale==="id"&&target.startsWith("/en/"))||(locale==="en"&&(target.startsWith("/id/")||target.endsWith(".html")))))throw Error("Bahasa keyword dan halaman sasaran harus sesuai.");
  const m=input.manual||{},numeric=(v,min,max,integer=false)=>{if(v===""||v===null||v===undefined)return null;const n=Number(v);if(!Number.isFinite(n)||n<min||n>max||integer&&!Number.isInteger(n))throw Error("Metrik manual tidak valid.");return n;};
- const manual={volume:numeric(m.volume,0,1e9,true),difficulty:numeric(m.difficulty,0,100),source:clean(m.source,200),period:clean(m.period,100),country:clean(m.country,60),device:clean(m.device,40),checked:clean(m.checked,10),competitors:clean(m.competitors,1800),notes:clean(m.notes,1500)};
- if((manual.volume!==null||manual.difficulty!==null||manual.competitors)&&(!manual.source||!manual.period||!manual.country||!manual.device||!dateOK(manual.checked)))throw Error("Metrik/riset kompetitor memerlukan sumber, periode, negara, perangkat dan tanggal cek.");
+ const manual={volume:numeric(m.volume,0,1e9,true),difficulty:numeric(m.difficulty,0,100),impressions:numeric(m.impressions,0,1e9,true),clicks:numeric(m.clicks,0,1e9,true),position:numeric(m.position,1,1000),source:clean(m.source,200),period:clean(m.period,100),country:clean(m.country,60),device:clean(m.device,40),checked:clean(m.checked,10),competitors:clean(m.competitors,1800),notes:clean(m.notes,1500)};
+ if(manual.clicks!==null&&(manual.impressions===null||manual.clicks>manual.impressions))throw Error("Klik manual tidak boleh melebihi impressions.");
+ if((manual.volume!==null||manual.difficulty!==null||manual.impressions!==null||manual.clicks!==null||manual.position!==null||manual.competitors)&&(!manual.source||!manual.period||!manual.country||!manual.device||!dateOK(manual.checked)))throw Error("Metrik/riset kompetitor memerlukan sumber, periode, negara, perangkat dan tanggal cek.");
  return {keyword,normalized,locale,cluster,intent,target_path:target,priority,topic,manual,active:input.active===false?0:1};
 }
 export async function ensureKeywordSeeds(db){
  const paths=await keywordPaths(db);
- const stmts=seed.map(([keyword,locale,cluster,intent,target,topic=""])=>{
+ const seeded=await db.prepare("SELECT count(*) AS n FROM seo_keyword_plans WHERE origin='SEED'").first();
+ if(Number(seeded?.n)>=seed.length)return paths;
+ const stmts=seed.map(([keyword,locale,cluster,intent,target,topic=""],index)=>{
   if(topic==="lembongan-two-days")target=paths.find(p=>p.startsWith("/"+locale+"/articles/lembongan-two-days-"))||"";
-  return db.prepare("INSERT OR IGNORE INTO seo_keyword_plans(id,keyword,normalized,locale,cluster,intent,target_path,priority,topic,origin) VALUES(?,?,?,?,?,?,?,2,?,'SEED')").bind(crypto.randomUUID(),keyword,norm(keyword),locale,cluster,intent,paths.includes(target)?target:"",topic);
+  return db.prepare("INSERT OR IGNORE INTO seo_keyword_plans(id,keyword,normalized,locale,cluster,intent,target_path,priority,topic,origin) VALUES(?,?,?,?,?,?,?,2,?,'SEED')").bind("00000000-0000-4000-8000-"+String(index+1).padStart(12,"0"),keyword,norm(keyword),locale,cluster,intent,paths.includes(target)?target:"",topic);
  });
  await db.batch(stmts);return paths;
 }
@@ -52,6 +55,7 @@ export async function saveKeyword(db,input,id=null){
   const result=await db.prepare("UPDATE seo_keyword_plans SET keyword=?,normalized=?,locale=?,cluster=?,intent=?,target_path=?,priority=?,topic=?,manual_json=?,active=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?").bind(...values,id,input.expected_version).run();
   if(result.meta?.changes!==1)throw Error("Keyword berubah atau tidak ditemukan. Muat ulang.");
  }else{
+  if(Number((await db.prepare("SELECT count(*) AS n FROM seo_keyword_plans").first()).n)>=500)throw Error("Batas 500 keyword tercapai.");
   const result=await db.prepare("INSERT OR IGNORE INTO seo_keyword_plans(id,keyword,normalized,locale,cluster,intent,target_path,priority,topic,manual_json,active,origin) VALUES(?,?,?,?,?,?,?,?,?,?,?,'OWNER')").bind(crypto.randomUUID(),...values).run();
   if(result.meta?.changes!==1)throw Error("Keyword sudah ada untuk bahasa ini. Gunakan Edit.");
  }
@@ -89,7 +93,7 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
  // One scheduled run per UTC day; manual at most once/hour, including failures.
  const latest=await db.prepare("SELECT created_at,state FROM seo_keyword_runs ORDER BY created_at DESC LIMIT 1").first();
  if(latest&&now-Date.parse(latest.created_at.replace(" ","T")+"Z")<(manual?3600000:86400000))return {status:"RECENT",detail:"Hasil terakhir masih berlaku; lihat dashboard."};
- const id=crypto.randomUUID(),end=new Date(now-3*86400000).toISOString().slice(0,10),start=new Date(now-30*86400000).toISOString().slice(0,10);
+ const end=new Date(now-3*86400000).toISOString().slice(0,10),start=new Date(now-30*86400000).toISOString().slice(0,10);
  // Serialized by an atomic hour lock (id is a fixed UTC-hour key, not a user-supplied identifier).
  const lock=day+"T"+new Date(now).toISOString().slice(11,13);
  const ins=await db.prepare("INSERT OR IGNORE INTO seo_keyword_runs(id,day,state,period_start,period_end) VALUES(?,?,'RUNNING',?,?)").bind(lock,day,start,end).run();
@@ -134,11 +138,11 @@ export async function listKeywords(db,env){
 }
 export async function keywordArticlePriorities(db){
  try{
-  const plans=(await db.prepare("SELECT keyword,normalized,locale,topic,priority FROM seo_keyword_plans WHERE active=1 AND topic!='' ORDER BY priority,keyword").all()).results;
+  const plans=(await db.prepare("SELECT keyword,normalized,locale,topic,priority,target_path FROM seo_keyword_plans WHERE active=1 AND topic!='' ORDER BY priority,keyword").all()).results;
   const snap=await db.prepare("SELECT id,period_start,period_end FROM seo_keyword_runs WHERE state='DONE' AND gsc_status='MEASURED' ORDER BY created_at DESC LIMIT 1").first();
-  const obs=snap?(await db.prepare("SELECT normalized,impressions FROM seo_keyword_observations WHERE run_id=?").bind(snap.id).all()).results:[];
+  const obs=snap?(await db.prepare("SELECT normalized,impressions,path FROM seo_keyword_observations WHERE run_id=?").bind(snap.id).all()).results:[];
   const out={};for(const p of plans){
-   const impressions=obs.filter(o=>o.normalized===p.normalized).reduce((a,b)=>a+b.impressions,0);
+   const impressions=obs.filter(o=>o.normalized===p.normalized&&o.path===p.target_path).reduce((a,b)=>a+b.impressions,0);
    const prev=out[p.topic];if(!prev||p.priority<prev.priority||p.priority===prev.priority&&impressions>prev.impressions)out[p.topic]={keyword:p.keyword,locale:p.locale,priority:p.priority,impressions:impressions||null,period:snap?[snap.period_start,snap.period_end]:null};
   }return out;
  }catch{return {};}

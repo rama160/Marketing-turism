@@ -27,5 +27,6 @@ test("seed, owner version guard, automatic public signal snapshot and unconfigur
  const r=await runKeywordResearch(db,{});assert.equal(r.gsc_status,"NOT_CONFIGURED");assert.equal(r.signal_status,"MEASURED");assert.equal((await runKeywordResearch(db,{}, {manual:true})).status,"RECENT");
  v=await listKeywords(db,{});assert.equal(v.latest.signals.counts.lembongan,1);assert.equal(v.observations.length,0);
  assert.ok((await keywordArticlePriorities(db))["lembongan-two-days"]);
+ const seedRow=v.plans.find(x=>x.origin==="SEED");await saveKeyword(db,{...seedRow,keyword:"Renamed seed keyword",active:false,expected_version:seedRow.version},seedRow.id);v=await listKeywords(db,{});assert.equal(v.plans.length,25);assert.equal(v.plans.find(x=>x.id===seedRow.id).active,0);assert.ok(!v.plans.some(x=>x.keyword===seedRow.keyword));
  }finally{sqlite.close();}
 });

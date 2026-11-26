@@ -1,3 +1,6 @@
+## 26 November 2026 — Keyword workspace release hardening
+- Restore existing cache version contract; first CI 238 pass/3 version assertion failures. Stable seed IDs, archive/rename retained, manual GSC metrics, full observed query-page view, target-pair priority, 500 plan cap. Pending re-run.
+
 ## 26 November 2026 — SEO keyword research workspace
 - Add owner-only SEO-006/007 keyword planning and measured snapshots: 24 bilingual seed hypotheses, editable intent/cluster/canonical URL/priority/article topic, archive, manual volume/difficulty and competitor evidence with source/date/period/market/device. Existing public question counts measured per cluster; not search volume. Optional read-only Search Console query/page daily via Worker secret, 28 finalized days, maximum 300 rows, no invented metrics, no indexing API; last successful snapshot retained. Discovered query candidates unmapped; flag actual URL conflicts. Reuse daily cron and owner button, one-hour manual limit. Article priority consumes mapped topic priorities and GSC observations; existing weekly review retained. Additive migration, no paid service or credential stored in repo. GSC access pending owner; full volume/difficulty requires source supplied manually. CI/deploy pending.
 
