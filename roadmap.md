@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.37 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.38 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. **NEXT ACTION WAJIB: SEO-003B audit kualitas — cocokkan agregat Performance UI dan data terbaru; koneksi telah lulus, baseline belum. Setelah gate owner ini, SEO-006A — riset estimasi volume Google Keyword Planner (akses gratis/manual bersumber terlebih dahulu; cek kelayakan API). SEO-003B koneksi dan snapshot NO_ROWS terverifikasi; baseline ranking tetap menunggu data dan dipantau via cron existing. Lanjut SEO-006B/C (tren, SERP), SEO-007/021 (pemetaan dan quick wins), SEO-008/011/012 (optimasi konten), SEO-020/022/023 (evaluasi ranking dan booking). Ikuti gerbang fase di §0; jangan melompati blocker dengan klaim selesai.** SEO-002/013 request indexasi tertahan kuota; 32/32 URL lulus crawlability, bukan bukti indexasi. SEO-018 opsional owner-managed; SEO-019 N/A. Pertahankan pekerjaan dan bukti historis, jangan mengulang yang selesai.
+- Status: aktif. **NEXT ACTION WAJIB: SEO-003B audit kualitas — UI Custom masih processing, konsisten dengan NO_ROWS; perbaiki cakupan agregat, halaman/query dan data provisional terpisah, lalu uji terhadap UI saat tersedia. Koneksi lulus, baseline final belum. Setelah gate kualitas ini, SEO-006A — riset estimasi volume Google Keyword Planner (akses gratis/manual bersumber terlebih dahulu; cek kelayakan API). SEO-003B koneksi dan snapshot NO_ROWS terverifikasi; baseline ranking tetap menunggu data dan dipantau via cron existing. Lanjut SEO-006B/C (tren, SERP), SEO-007/021 (pemetaan dan quick wins), SEO-008/011/012 (optimasi konten), SEO-020/022/023 (evaluasi ranking dan booking). Ikuti gerbang fase di §0; jangan melompati blocker dengan klaim selesai.** SEO-002/013 request indexasi tertahan kuota; 32/32 URL lulus crawlability, bukan bukti indexasi. SEO-018 opsional owner-managed; SEO-019 N/A. Pertahankan pekerjaan dan bukti historis, jangan mengulang yang selesai.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -475,6 +475,11 @@ Pedoman keputusan:
 - Screenshot Performance Search Console 16.22 WITA, Web (text), rentang 24 hours waktu lokal: total 1 impression, 0 clicks, CTR 0%, average position 64; query yang terlihat "nusa penida west island tour", 1 impression, 0 clicks. Data terbaru bersifat provisional, sampel tunggal, URL/country/device tidak tampak. Bukan baseline final, bukan volume pasar, bukan posisi live yang stabil. Jangan memasukkan metrik screenshot ke snapshot otomatis.
 - Periode dashboard final 27 Okt–23 Nov tidak mencakup impresi terbaru 26 Nov. NO_ROWS periode lama tetap konsisten dengan bukti baru, tetapi perbandingan UI periode identik belum dilakukan. Gate SEO-003B kualitas tetap terbuka: cocokkan Performance custom 27 Okt–23 Nov; lihat Pages untuk query terbaru. Prioritaskan agregat property final, data terbaru provisional (dataState all; hourly_all hanya jika dikelompokkan hour), halaman dan query secara terpisah, jangan gabungkan dengan snapshot final atau duplikasi kandidat. Rujukan https://developers.google.com/webmaster-tools/v1/searchanalytics/query dan https://support.google.com/webmasters/answer/17011364 . SEO-006A tetap menunggu gate kualitas sesuai permintaan owner.
 - Perubahan sesi ini dokumentasi saja, belum ada perubahan pengambilan data atau pemetaan keyword.
+
+### 2026-11-26 — Validasi UI Performance dan tindak lanjut cakupan GSC
+- Screenshot owner 16.25 WITA, laporan Web 24 jam: tab Pages menampilkan https://nusapenidaexperiences.com/west-tour.html, 1 impression dan 0 clicks. Bersama screenshot Queries sebelumnya (nusa penida west island tour, posisi rata-rata property 64), ini bukti awal visibilitas non-brand sementara; satu impresi tidak cukup untuk menyimpulkan masalah bahasa/canonical atau ranking stabil.
+- Screenshot owner 16.29 WITA: Custom Performance menampilkan "Processing data, please check again in a day or so" dan "No data". Tanggal awal/akhir tidak terlihat; berdasarkan instruksi sesi diasumsikan 27 Okt–23 Nov, belum dapat diverifikasi secara visual. Konsisten dengan API NO_ROWS, bukan bukti nol impresi; tidak ditemukan indikasi kegagalan autentikasi atau filter lokal pada run pertama.
+- NEXT SEO-003B quality: implementasi cakupan GSC agregat property, page/query terpisah, data provisional dan final terpisah, label periode dan status belum tersedia; uji terhadap UI saat data tersedia. Jangan mengulang setup kredensial atau menunda pekerjaan yang dapat dilakukan tanpa baseline. Setelah perbaikan kualitas diuji, lanjut SEO-006A sesuai gate. Reddit SOURCE_UNAVAILABLE tetap temuan terbuka; investigasi penyebab tanpa bypass pembatasan. Dokumentasi saja, belum implementasi.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

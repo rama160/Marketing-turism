@@ -1,3 +1,6 @@
+## 26 November 2026 — Record GSC custom processing and first visible page
+- Owner screenshots confirm first visible page west-tour.html and Custom report still processing; exact custom dates not visible. Consistent with NO_ROWS; proceed with data coverage improvements before Keyword Planner. Documentation only.
+
 ## 26 November 2026 — Record first visible Search Console impression
 - Document owner UI evidence (24-hour provisional report, one impression, zero clicks, average position 64; query nusa penida west island tour). Existing final snapshot ends 23 Nov; no contradiction, same-period UI comparison pending. Documentation only.
 

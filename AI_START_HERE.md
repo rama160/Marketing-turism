@@ -1,3 +1,6 @@
+## Prioritas aktif SEO-003B — 26 November 2026
+- UI GSC 24 jam tab Pages: west-tour.html, 1 impression, 0 clicks; UI Custom masih processing/no data (tanggal custom tidak tampak). Konsisten dengan NO_ROWS API. Lanjut perbaikan cakupan data terbaru provisional vs final, agregat property dan detail halaman/query sesuai roadmap v1.0.38. Tidak perlu setup ulang; baseline tetap belum tersedia; Reddit masih bermasalah. Instruksi ini mengungguli catatan historis di bawah.
+
 ## Bukti terbaru SEO-003B — 26 November 2026
 - Screenshot GSC owner 24 jam: 1 impression, 0 clicks, CTR 0%, average position 64, query nusa penida west island tour. Provisional, bukan baseline final; periode 27 Okt–23 Nov belum dibandingkan UI. Lanjut gate kualitas dan perbaikan cakupan sesuai roadmap v1.0.37 sebelum SEO-006A. Jangan menyimpan screenshot sebagai observasi API.
 
