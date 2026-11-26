@@ -93,7 +93,7 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
  // One scheduled run per UTC day; manual at most once/hour, including failures.
  const latest=await db.prepare("SELECT created_at,state FROM seo_keyword_runs ORDER BY created_at DESC LIMIT 1").first();
  if(latest&&now-Date.parse(latest.created_at.replace(" ","T")+"Z")<(manual?3600000:86400000))return {status:"RECENT",detail:"Hasil terakhir masih berlaku; lihat dashboard."};
- const end=new Date(now-3*86400000).toISOString().slice(0,10),start=new Date(now-30*86400000).toISOString().slice(0,10);
+ const {start,end}=performanceRange({preset:"28d",mode:"final"},now);
  // Serialized by an atomic hour lock (id is a fixed UTC-hour key, not a user-supplied identifier).
  const lock=day+"T"+new Date(now).toISOString().slice(11,13);
  const ins=await db.prepare("INSERT OR IGNORE INTO seo_keyword_runs(id,day,state,period_start,period_end) VALUES(?,?,'RUNNING',?,?)").bind(lock,day,start,end).run();
@@ -119,9 +119,9 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
    for(let i=0;i<rows.length;i+=50)await db.batch(rows.slice(i,i+50).map(x=>db.prepare("INSERT INTO seo_keyword_observations(run_id,query,normalized,path,clicks,impressions,position) VALUES(?,?,?,?,?,?,?)").bind(lock,x.query,x.normalized,x.path,x.clicks,x.impressions,x.position)));
    // Discovered queries are candidates, not automatically approved URL assignments.
    const plans=(await db.prepare("SELECT count(*) AS n FROM seo_keyword_plans").first()).n;
-   const candidates=rows.filter(x=>Object.values(clusters).some(re=>re.test(x.query))).slice(0,Math.max(0,Math.min(40,500-Number(plans))));
+   const candidates=rows.filter(x=>queryLanguage(x.query)&&Object.values(clusters).some(re=>re.test(x.query))).slice(0,Math.max(0,Math.min(40,500-Number(plans))));
    if(candidates.length)await db.batch(candidates.map(x=>{
-    const locale=x.path.startsWith("/en/")?"en":"id",cluster=Object.keys(clusters).find(k=>k!=="penida"&&clusters[k].test(x.query))||"penida";
+    const locale=queryLanguage(x.query),cluster=Object.keys(clusters).find(k=>k!=="penida"&&clusters[k].test(x.query))||"penida";
     return db.prepare("INSERT OR IGNORE INTO seo_keyword_plans(id,keyword,normalized,locale,cluster,intent,target_path,priority,origin) VALUES(?,?,?,?,?,'PLAN','',2,'GSC')").bind(crypto.randomUUID(),x.query,x.normalized,locale,cluster);
    }));
   }catch(e){gsc="ERROR";rows=[];signals.gsc_error=["CONFIG","AUTH","ACCESS","REQUEST"].includes(e?.message)?e.message:stage;await db.prepare("DELETE FROM seo_keyword_observations WHERE run_id=?").bind(lock).run();}
@@ -138,6 +138,104 @@ export async function bootstrapKeywordResearch(db,env,options={}){
  if(latest&&(latest.state!=="DONE"||latest.gsc_status!=="NOT_CONFIGURED"))return {status:"SKIPPED"};
  return runKeywordResearch(db,env,{...options,manual:true});
 }
+
+// Search Analytics dates use Pacific time. Hourly reports are 24 hour buckets including the current partial hour.
+const HOUR=3600000,DAY=24*HOUR;
+const ptDate=ms=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Los_Angeles",year:"numeric",month:"2-digit",day:"2-digit"}).format(ms);
+const shiftDate=(s,n)=>new Date(Date.parse(s+"T00:00:00Z")+n*DAY).toISOString().slice(0,10);
+export function performanceRange(input={},now=Date.now()){
+ const preset=String(input.preset||"24h"),mode=preset==="24h"?"fresh":String(input.mode||"final");
+ if(!["24h","7d","28d","3m","custom"].includes(preset)||!["fresh","final"].includes(mode))throw Error("Periode atau jenis data tidak valid.");
+ const today=ptDate(now),finalEnd=shiftDate(today,-3);
+ if(preset==="24h"){
+  const endHour=Math.floor(now/HOUR)*HOUR,startHour=endHour-23*HOUR;
+  return {key:"24h",preset,mode,state:"hourly_all",start:ptDate(startHour),end:ptDate(endHour),start_hour:new Date(startHour).toISOString(),end_hour:new Date(endHour).toISOString(),timezone:"America/Los_Angeles"};
+ }
+ let end=mode==="final"?finalEnd:today,start;
+ if(preset==="custom"){
+  start=String(input.start||"");end=String(input.end||"");
+  if(!dateOK(start)||!dateOK(end)||start>end||end>today||start<shiftDate(today,-480)||Date.parse(end)-Date.parse(start)>92*DAY)throw Error("Custom: pilih 1–93 hari, dalam 480 hari terakhir, tidak melewati hari ini (Pacific).");
+ }else if(preset==="3m"){
+  const x=new Date(end+"T00:00:00Z"),d=x.getUTCDate();x.setUTCDate(1);x.setUTCMonth(x.getUTCMonth()-3);const last=new Date(Date.UTC(x.getUTCFullYear(),x.getUTCMonth()+1,0)).getUTCDate();x.setUTCDate(Math.min(d,last));start=shiftDate(x.toISOString().slice(0,10),1);
+ }else start=shiftDate(end,preset==="7d"?-6:-27);
+ return {key:preset+":"+mode,preset,mode,state:mode==="final"?"final":"all",start,end,timezone:"America/Los_Angeles"};
+}
+export function queryLanguage(q){
+ const id=/\b(wisata|paket|tiket|kapal|barat|timur|harga|persiapan|pulau|hari|ke|dari)\b/i.test(q);
+ const en=/\b(west|east|island|private|sharing|itinerary|preparation|accessibility|day|days|ticket|tickets|from|to|best|how|where|price)\b/i.test(q);
+ return id===en?null:id?"id":"en";
+}
+const pageLanguage=p=>p.startsWith("/en/")?"en":p.startsWith("/id/")||p.endsWith(".html")?"id":null;
+const safePage=(value,paths)=>{try{const u=new URL(value);return u.origin===origin&&!u.search&&!u.hash&&paths.includes(u.pathname)?u.pathname:null;}catch{return null;}};
+function cleanMetrics(r){
+ const {clicks,impressions,position}=r||{};
+ return Number.isSafeInteger(clicks)&&Number.isSafeInteger(impressions)&&impressions>0&&clicks>=0&&clicks<=impressions&&Number.isFinite(position)&&position>=1?{clicks,impressions,position}:null;
+}
+// Independent property, query, page and pair aggregations; do not add page or query totals to property totals.
+export function summarizePerformanceRows(data,kind,range,paths){
+ const raw=Array.isArray(data?.rows)?data.rows:[],hourly=range.state==="hourly_all",grouped=new Map();let rejected=0,outside=0;
+ const low=Date.parse(range.start_hour),high=Date.parse(range.end_hour);
+ for(const row of raw){
+  const keys=Array.isArray(row?.keys)?row.keys:[],m=cleanMetrics(row);let i=0;
+  if(hourly){const ts=Date.parse(keys[i++]);if(!Number.isFinite(ts)||ts<low||ts>high){outside++;continue;}}
+  if(!m){rejected++;continue;}
+  const query=kind==="queries"||kind==="pairs"?String(keys[i++]||""):null;
+  const path=kind==="pages"||kind==="pairs"?safePage(keys[i++],paths):null;
+  if((query!==null&&!safeQuery(query))||((kind==="pages"||kind==="pairs")&&!path)){rejected++;continue;}
+  const key=JSON.stringify([query,path]),v=grouped.get(key)||{query,path,clicks:0,impressions:0,weighted:0};
+  v.clicks+=m.clicks;v.impressions+=m.impressions;v.weighted+=m.position*m.impressions;grouped.set(key,v);
+ }
+ const rows=[...grouped.values()].map(({weighted,...v})=>({...v,position:weighted/v.impressions,ctr:v.clicks/v.impressions,
+  ...(v.query?{language_hint:queryLanguage(v.query)}:{}),...(v.path?{page_language:pageLanguage(v.path)}:{})})).sort((a,b)=>b.impressions-a.impressions||b.clicks-a.clicks);
+ return {status:rows.length?"MEASURED":raw.length&&rejected?"FILTERED":"NO_ROWS",raw_rows:raw.length,rejected,outside,truncated:raw.length>=300,
+  aggregation:data.responseAggregationType||null,first_incomplete:data.metadata?.firstIncompleteHour||data.metadata?.firstIncompleteDate||null,rows};
+}
+const performanceKinds={total:[],queries:["query"],pages:["page"],pairs:["query","page"]};
+function reportError(e){return ["CONFIG","AUTH","ACCESS","REQUEST"].includes(e?.message)?e.message:"NETWORK";}
+export async function readKeywordPerformance(db,input={},now=Date.now()){
+ const range=performanceRange(input,now),row=await db.prepare("SELECT status,report_json,started_at FROM seo_performance_reports WHERE cache_key=?").bind(range.key).first();
+ if(!row)return {status:"NOT_RUN",range};
+ const report=JSON.parse(row.report_json||"{}");
+ if(range.preset==="custom"&&(report.range?.start!==range.start||report.range?.end!==range.end))return {status:row.status==="RUNNING"?"RUNNING":"NOT_RUN",range};
+ return {...report,status:row.status,started_at:row.started_at};
+}
+export async function collectKeywordPerformance(db,env,input={}, {now=Date.now(),request=fetch}={}){
+ const range=performanceRange(input,now);
+ if(!configured(env))return {status:"NOT_CONFIGURED",range};
+ const lock=crypto.randomUUID(),pending={range};
+ // Fixed cache slots: one refresh per preset/mode per hour. Custom is also a single slot per mode.
+ const claim=await db.prepare("INSERT INTO seo_performance_reports(cache_key,lock_id,started_at,status,report_json) VALUES(?,?,?,'RUNNING',?) ON CONFLICT(cache_key) DO UPDATE SET lock_id=excluded.lock_id,started_at=excluded.started_at,status='RUNNING',report_json=excluded.report_json WHERE seo_performance_reports.started_at<=?").bind(range.key,lock,now,JSON.stringify(pending),now-HOUR).run();
+ if(claim.meta?.changes!==1){const cached=await readKeywordPerformance(db,input,now);return {...cached,cooldown:true};}
+ let status="ERROR",report={range,sections:{},checked_at:new Date(now).toISOString()};
+ try{
+  const paths=await keywordPaths(db),token=await gscToken(env,request,now);
+  const endpoint="https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(env.GSC_PROPERTY)+"/searchAnalytics/query";
+  const entries=await Promise.all(Object.entries(performanceKinds).map(async([kind,dims])=>{
+   try{
+    const dimensions=range.state==="hourly_all"?["hour",...dims]:dims;
+    const response=await request(endpoint,{method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},
+     body:JSON.stringify({startDate:range.start,endDate:range.end,type:"web",dataState:range.state,dimensions,aggregationType:dims.includes("page")?"auto":"byProperty",rowLimit:300}),signal:AbortSignal.timeout(15000)});
+    if(!response.ok)throw Error(response.status===403?"ACCESS":"REQUEST");
+    const data=await response.json();if(!data||typeof data!=="object"||Array.isArray(data)||data.error||(data.rows!==undefined&&!Array.isArray(data.rows)))throw Error("REQUEST");
+    return [kind,summarizePerformanceRows(data,kind,range,paths)];
+   }catch(e){return [kind,{status:"ERROR",error:reportError(e),rows:[]}];}
+  }));
+  report.sections=Object.fromEntries(entries);
+  const failed=entries.filter(([,v])=>v.status==="ERROR").length;
+  status=failed===0?"DONE":failed===entries.length?"ERROR":"PARTIAL";
+ }catch(e){report.error=reportError(e);}
+ await db.prepare("UPDATE seo_performance_reports SET status=?,report_json=? WHERE cache_key=? AND lock_id=?").bind(status,JSON.stringify(report),range.key,lock).run();
+ return {...report,status,started_at:now};
+}
+export async function publicResearchStatus(db){
+ const sources=["REDDIT_PUBLIC_RSS","BLUESKY_PUBLIC","FACEBOOK_PAGE_COMMENTS","INSTAGRAM_MEDIA_COMMENTS","YOUTUBE_PUBLIC_VIDEO"],out=[];
+ for(const source of sources){
+  try{const r=await db.prepare("SELECT result,candidates,created_at FROM growth_discovery_runs WHERE source=? ORDER BY created_at DESC LIMIT 1").bind(source).first();out.push({source,status:r?.result||"NOT_RUN",candidates:r?.candidates??null,checked_at:r?.created_at||null});}catch{out.push({source,status:"UNKNOWN"});}
+ }
+ try{const r=await db.prepare("SELECT diagnostic_json,checked_at FROM growth_source_diagnostics WHERE source='REDDIT_PUBLIC_RSS'").first();if(r)out[0].diagnostic={...JSON.parse(r.diagnostic_json),checked_at:r.checked_at};}catch{}
+ return out;
+}
+
 // Ranking actions use observed query–URL pairs only; no estimated Google rank or volume.
 export function rankingOpportunities(plans,observations,previous=[]){
  const old=new Map(previous.map(o=>[o.normalized+"|"+o.path,o]));
@@ -164,7 +262,7 @@ export async function listKeywords(db,env){
  const previous=snapshot?await db.prepare("SELECT id,period_start,period_end FROM seo_keyword_runs WHERE state='DONE' AND gsc_status='MEASURED' AND period_end<? ORDER BY period_end DESC,created_at DESC LIMIT 1").bind(snapshot.period_start).first():null;
  const previousRows=previous?(await db.prepare("SELECT normalized,path,clicks,impressions,position FROM seo_keyword_observations WHERE run_id=?").bind(previous.id).all()).results:[];
  const ranking=rankingOpportunities(plans.filter(p=>paths.includes(p.target_path)),observations,previousRows);
- return {ranking,previous:previous?{period_start:previous.period_start,period_end:previous.period_end}:null,plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
+ return {public_sources:await publicResearchStatus(db),ranking,previous:previous?{period_start:previous.period_start,period_end:previous.period_end}:null,plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
 }
 export async function keywordArticlePriorities(db){
  try{

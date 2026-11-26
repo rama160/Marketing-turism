@@ -166,15 +166,17 @@ export async function researchBuyerQuestions(db,env,request=fetch){
  const details=[];
  let total=0;
  if(!done.has("REDDIT_PUBLIC_RSS")){
-  let discovered=0,working=0;
+  let discovered=0,working=0;const failures={};let attempted=0;
+  const failed=code=>{failures[code]=(failures[code]||0)+1;};
   for(const url of feeds){
+   attempted++;
    try{
     const response=await request(url,{method:"GET",headers:{accept:"application/atom+xml,application/rss+xml","user-agent":"NusaPenidaExperiences/1.0 (+https://nusapenidaexperiences.com/)"},
      signal:AbortSignal.timeout(4500)});
-    if(!response.ok)continue;
+    if(!response.ok){failed("HTTP_"+response.status);if([401,403,429].includes(response.status))break;continue;}
     const type=response.headers.get("content-type")||"";
-    if(!/xml|rss|atom/i.test(type))continue;
-    const body=await response.text();working++;
+    if(!/xml|rss|atom/i.test(type)){failed("CONTENT_TYPE");continue;}
+    const body=await response.text();if(body.length>300000||!/<feed\b/i.test(body)){failed("INVALID_FEED");continue;}working++;
     for(const item of extractPublicQuestions(body)){
      const r=await db.prepare("INSERT OR IGNORE INTO growth_opportunities(id,source,source_url,headline,theme,score,suggested_reply) VALUES(?,?,?,?,?,?,?)")
       .bind(item.id,item.source,item.source_url,item.headline,item.theme,item.score,item.suggested_reply).run();
@@ -183,13 +185,15 @@ export async function researchBuyerQuestions(db,env,request=fetch){
       .bind(item.source_url,item.published_at,item.expires_at).run();
      if(discovered>=12)break;
     }
-   }catch(_){}
+   }catch(e){failed(e?.name==="TimeoutError"||e?.name==="AbortError"?"TIMEOUT":"NETWORK_OR_STORAGE");}
    if(discovered>=12)break;
   }
   const status=discovered>0?"FOUND":working>0?"NO_MATCH":"SOURCE_UNAVAILABLE";
   await db.prepare("INSERT INTO growth_discovery_runs(id,source,result,candidates) VALUES(?,'REDDIT_PUBLIC_RSS',?,?)")
    .bind(uuid(),status,discovered).run();
-  details.push({source:"REDDIT_PUBLIC_RSS",status,discovered});total+=discovered;
+  const diagnostic={attempted,working,failures};
+  try{await db.prepare("INSERT INTO growth_source_diagnostics(source,diagnostic_json,checked_at) VALUES('REDDIT_PUBLIC_RSS',?,CURRENT_TIMESTAMP) ON CONFLICT(source) DO UPDATE SET diagnostic_json=excluded.diagnostic_json,checked_at=CURRENT_TIMESTAMP").bind(JSON.stringify(diagnostic)).run();}catch(_){/* optional diagnostics must not block other sources */}
+  details.push({source:"REDDIT_PUBLIC_RSS",status,discovered,diagnostic});total+=discovered;
  }
  if(!done.has("OSM_PUBLIC_BUSINESSES")){
   const found=await discoverOpenAccommodation(db,request);

@@ -1,3 +1,6 @@
+## 26 November 2026 — SEO-003B performance coverage and research diagnostics
+- Add owner-only GSC period cache (24h hourly_all, 7/28 days, 3 months, custom; final/fresh), independent property/query/page/pair metrics, new keyword and language hints, bounded cooldown, hourly/daily reuse. Keep ranking baseline final only. Record safe Reddit failure categories and alternative source statuses. Add migration 0029, tests and dashboard asset revision. Live validation pending.
+
 ## 26 November 2026 — Record GSC custom processing and first visible page
 - Owner screenshots confirm first visible page west-tour.html and Custom report still processing; exact custom dates not visible. Consistent with NO_ROWS; proceed with data coverage improvements before Keyword Planner. Documentation only.
 

@@ -1,3 +1,6 @@
+## SEO-003B performance coverage — 26 November 2026
+- Eight requested improvements implemented in existing workspace: bounded period reports, hourly provisional separated from final, independent aggregate/query/page/pairs, new query detection, heuristic language hints, existing final ranking, safe Reddit diagnostics and existing authorized alternatives, auto/manual via existing cron. Migration 0029 additive. CI/deploy/live GSC pending; read report cache and verify UI before SEO-006A. Do not assume Reddit recovery or invent metrics. Roadmap v1.0.39.
+
 ## Prioritas aktif SEO-003B — 26 November 2026
 - UI GSC 24 jam tab Pages: west-tour.html, 1 impression, 0 clicks; UI Custom masih processing/no data (tanggal custom tidak tampak). Konsisten dengan NO_ROWS API. Lanjut perbaikan cakupan data terbaru provisional vs final, agregat property dan detail halaman/query sesuai roadmap v1.0.38. Tidak perlu setup ulang; baseline tetap belum tersedia; Reddit masih bermasalah. Instruksi ini mengungguli catatan historis di bawah.
 

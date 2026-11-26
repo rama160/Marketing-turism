@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.38 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.39 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -480,6 +480,11 @@ Pedoman keputusan:
 - Screenshot owner 16.25 WITA, laporan Web 24 jam: tab Pages menampilkan https://nusapenidaexperiences.com/west-tour.html, 1 impression dan 0 clicks. Bersama screenshot Queries sebelumnya (nusa penida west island tour, posisi rata-rata property 64), ini bukti awal visibilitas non-brand sementara; satu impresi tidak cukup untuk menyimpulkan masalah bahasa/canonical atau ranking stabil.
 - Screenshot owner 16.29 WITA: Custom Performance menampilkan "Processing data, please check again in a day or so" dan "No data". Tanggal awal/akhir tidak terlihat; berdasarkan instruksi sesi diasumsikan 27 Okt–23 Nov, belum dapat diverifikasi secara visual. Konsisten dengan API NO_ROWS, bukan bukti nol impresi; tidak ditemukan indikasi kegagalan autentikasi atau filter lokal pada run pertama.
 - NEXT SEO-003B quality: implementasi cakupan GSC agregat property, page/query terpisah, data provisional dan final terpisah, label periode dan status belum tersedia; uji terhadap UI saat data tersedia. Jangan mengulang setup kredensial atau menunda pekerjaan yang dapat dilakukan tanpa baseline. Setelah perbaikan kualitas diuji, lanjut SEO-006A sesuai gate. Reddit SOURCE_UNAVAILABLE tetap temuan terbuka; investigasi penyebab tanpa bypass pembatasan. Dokumentasi saja, belum implementasi.
+
+### 2026-11-26 — SEO-003B cakupan data dan diagnosis sumber
+- Owner meminta delapan perbaikan. Workspace existing sekarang menyediakan preset 24 jam (24 bucket hourly_all termasuk jam berjalan), 7/28 hari, 3 bulan dan custom 1–93 hari, final atau provisional (all), tanggal Pacific Time. Empat request independen property total, query, page, query–page; data cache per preset/mode, cooldown satu jam, partial/error/NO_ROWS/FILTERED jelas, batas 300 raw rows per section. Agregasi posisi berbobot impressions, tidak menjumlahkan page/query sebagai total property. Data provisional terpisah dari immutable final 28d baseline; keyword baru terlihat di laporan, final pipeline memasukkan kandidat relevan yang punya petunjuk bahasa tanpa auto mapping. Petunjuk bahasa heuristik, bukan bukti salah canonical. Ranking final dan pembanding non-overlap existing tetap; tidak mengklaim stabil dari satu impresi.
+- Reuse hourly cron untuk report 24h dan daily untuk 28d final, tombol manual mengambil periode terpilih, endpoint owner-only. Migration additive 0029 untuk bounded report cache dan safe provider diagnostics; tidak mengulang migration historis. Reddit catat HTTP/content-type/timeout/format/network, berhenti 401/403/429, tanpa bypass. Status Bluesky/komentar akun Meta/YouTube existing ditampilkan terpisah, manual Reddit link; belum memastikan pemulihan akses provider. D1 sebelum perubahan: Reddit, Bluesky, Facebook SOURCE_UNAVAILABLE; Instagram NO_MATCH. Tidak menyamakan sinyal publik dengan volume Google.
+- Tes tambahan mock API, SQLite, hourly/weighted, partial, cooldown, bahasa, pemisahan final dan fresh, UI dan auth smoke. CI/deploy/Verify dan live Google belum diverifikasi; periksa snapshot baru setelah release. SEO-006A tetap menunggu gate kualitas. Tidak ubah secret, harga, public content, cron definitions, branch atau layanan berbayar.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

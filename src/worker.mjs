@@ -1,4 +1,4 @@
-import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch} from "./seo-keywords.mjs";
+import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
@@ -287,6 +287,8 @@ async function route(req,env,ctx){
  if(path==="/api/admin/seo/keywords"&&method==="GET")return json(await listKeywords(db,env));
  if(path==="/api/admin/seo/keywords"&&method==="POST")return json(await saveKeyword(db,await parse(req)),201);
  if(path==="/api/admin/seo/keywords/research"&&method==="POST")return json(await runKeywordResearch(db,env,{manual:true}));
+ if(path==="/api/admin/seo/keywords/performance"&&method==="GET")return json(await readKeywordPerformance(db,Object.fromEntries(u.searchParams)));
+ if(path==="/api/admin/seo/keywords/performance"&&method==="POST")return json(await collectKeywordPerformance(db,env,await parse(req)));
  const keywordAdmin=path.match(/^\/api\/admin\/seo\/keywords\/([0-9a-f-]{36})$/);
  if(keywordAdmin&&method==="PATCH")return json(await saveKeyword(db,await parse(req),keywordAdmin[1]));
  if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
@@ -890,6 +892,8 @@ export default {
   if(event.cron==="0 * * * *"){
    try{await bootstrapKeywordResearch(env.DB,env);}
    catch(_){console.error("SEO_KEYWORD_BOOTSTRAP_UNAVAILABLE");}
+   try{await collectKeywordPerformance(env.DB,env,{preset:"24h"});}
+   catch(_){console.error("SEO_FRESH_PERFORMANCE_UNAVAILABLE");}
    // Reuse existing hourly trigger; discovery is bounded to once per two hours.
    if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
     const discovery=researchBuyerQuestions(env.DB,env).catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));
@@ -910,6 +914,8 @@ export default {
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
    try{await runKeywordResearch(env.DB,env);}
    catch(_){console.error("SEO_KEYWORD_RESEARCH_UNAVAILABLE");}
+   try{await collectKeywordPerformance(env.DB,env,{preset:"28d",mode:"final"});}
+   catch(_){console.error("SEO_FINAL_PERFORMANCE_UNAVAILABLE");}
    try{await generateResearchArticle(env.DB,env);}
    catch(_){console.error("SEO_DRAFT_RESEARCH_UNAVAILABLE");}
   }

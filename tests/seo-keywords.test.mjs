@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -18,7 +18,7 @@ test("GSC observations preserve actual query-page metrics and reject external/in
 });
 test("seed, owner version guard, automatic public signal snapshot and unconfigured GSC",async()=>{
  const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE seo_articles(slug TEXT,published_json TEXT);CREATE TABLE growth_discovery_runs(source TEXT,result TEXT,created_at TEXT);CREATE TABLE growth_opportunities(source TEXT,headline TEXT,discovered_at TEXT);");
- sqlite.exec(readFileSync("database/migrations/0028_seo_keywords.sql","utf8"));
+ sqlite.exec(readFileSync("database/migrations/0028_seo_keywords.sql","utf8"));sqlite.exec(readFileSync("database/migrations/0029_seo_performance.sql","utf8"));
  const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){for(const s of stmts)await s.run();}};
  try{
  await ensureKeywordSeeds(db);await ensureKeywordSeeds(db);let v=await listKeywords(db,{});assert.equal(v.plans.length,24);assert.equal(v.observations.length,0);assert.equal(v.gsc_configured,false);
@@ -42,6 +42,11 @@ test("seed, owner version guard, automatic public signal snapshot and unconfigur
  const success=await bootstrapKeywordResearch(db,env,{request:async(url,opts)=>{calls.push(url);if(url.includes("oauth2.googleapis.com"))return Response.json({access_token:"unit-test-token"});assert.equal(opts.headers.authorization,"Bearer unit-test-token");return Response.json({rows:[{keys:["nusa penida west tour","https://nusapenidaexperiences.com/en/tours/west"],clicks:1,impressions:10,position:12}]});}});
  assert.equal(success.gsc_status,"MEASURED");assert.equal(success.rows,1);assert.equal(calls.length,2);
  assert.equal((await listKeywords(db,env)).observations.length,1);assert.equal((await bootstrapKeywordResearch(db,env)).status,"SKIPPED");
+ const now=Date.parse("2026-11-26T08:30:00Z"),reportCalls=[];
+ const fresh=await collectKeywordPerformance(db,env,{preset:"24h"},{now,request:async(url,opts)=>{if(url.includes("oauth2.googleapis.com"))return Response.json({access_token:"unit-test-token"});const b=JSON.parse(opts.body);reportCalls.push(b);assert.equal(b.dataState,"hourly_all");const keys=["2026-11-26T00:00:00-08:00",...b.dimensions.slice(1).map(k=>k==="query"?"nusa penida west island tour":"https://nusapenidaexperiences.com/west-tour.html")];return Response.json({rows:[{keys,clicks:0,impressions:1,position:64}]});}});
+ assert.equal(fresh.status,"DONE");assert.equal(reportCalls.length,4);assert.equal(fresh.sections.total.rows[0].position,64);assert.equal(fresh.sections.pairs.rows[0].language_hint,"en");assert.equal(fresh.sections.pairs.rows[0].page_language,"id");assert.equal((await readKeywordPerformance(db,{preset:"24h"},now)).status,"DONE");assert.equal((await collectKeywordPerformance(db,env,{preset:"24h"},{now,request:()=>{throw Error("must not fetch")}})).cooldown,true);
+ assert.equal((await listKeywords(db,env)).observations.length,1,"fresh must not change final observations");
+ const partial=await collectKeywordPerformance(db,env,{preset:"7d",mode:"fresh"},{now,request:async(url,opts)=>{if(url.includes("oauth2.googleapis.com"))return Response.json({access_token:"unit"});return JSON.parse(opts.body).dimensions.includes("page")?new Response("",{status:403}):Response.json({rows:[]});}});assert.equal(partial.status,"PARTIAL");assert.equal(partial.sections.total.status,"NO_ROWS");assert.equal(partial.sections.pages.error,"ACCESS");
  }finally{sqlite.close();}
 });
 
@@ -51,4 +56,16 @@ test("ranking opportunities use mapped measured nonbrand pairs and non-overlap c
  const r=rankingOpportunities(plans,obs,[{...obs[0],position:15.5,clicks:2}]);
  assert.equal(r.measured,2);assert.equal(r.top3,1);assert.equal(r.top10,1);assert.equal(r.quickWins,1);assert.equal(r.pairs[0].id,"quick");assert.equal(r.pairs[0].delta.position,3);assert.equal(r.pairs[1].delta,null);
  assert.equal(rankingOpportunities(plans,[]).measured,0);
+});
+
+test("GSC period and independent hourly aggregation preserve scope and weighted position",()=>{
+ const now=Date.parse("2026-11-26T08:30:00Z"),range=performanceRange({preset:"24h"},now);
+ assert.equal(range.start,"2026-11-25");assert.equal(range.end,"2026-11-26");
+ assert.equal(performanceRange({preset:"28d",mode:"final"},now).start,"2026-10-27");
+ assert.throws(()=>performanceRange({preset:"custom",start:"2026-01-01",end:"2026-11-26"},now),/Custom/);
+ assert.equal(queryLanguage("nusa penida west island tour"),"en");assert.equal(queryLanguage("tour nusa penida barat"),"id");assert.equal(queryLanguage("nusa penida"),null);
+ const data={rows:[{keys:["2026-11-25T23:00:00-08:00"],clicks:0,impressions:1,position:64},{keys:["2026-11-26T00:00:00-08:00"],clicks:1,impressions:3,position:4},{keys:["2026-11-24T00:00:00-08:00"],clicks:0,impressions:99,position:1}]};
+ const result=summarizePerformanceRows(data,"total",range,[]);
+ assert.equal(result.rows[0].impressions,4);assert.equal(result.rows[0].position,19);assert.equal(result.rows[0].ctr,.25);assert.equal(result.outside,1);
+ assert.equal(summarizePerformanceRows({rows:[]},"total",range,[]).status,"NO_ROWS");
 });
