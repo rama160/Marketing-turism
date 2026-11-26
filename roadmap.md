@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.29 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.30 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. Prioritas independen SEO-018 outreach editorial dengan persetujuan owner dan SEO-019 evaluasi selesai (tidak eligible, N/A; owner hanya menerima booking online). SEO-003/020 cek data ketika tersedia; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
+- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. SEO-018 opsional, ditangani mandiri oleh owner tanpa ketergantungan pada daftar mitra tetap; SEO-019 evaluasi selesai (tidak eligible, N/A; owner hanya menerima booking online). Prioritas berikut SEO-003/020 cek data ketika tersedia dan evaluasi SEO berbasis bukti; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -168,7 +168,7 @@ Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang d
 | SEO-015 | P1 | Perkuat trust: identitas bisnis/role agen, kontak, kebijakan pemesanan/pembatalan, operator dan sumber foto | Fakta terverifikasi; tidak klaim izin, rating atau kemitraan yang belum ada | [~] Copy trust dan testimoni release a5ecbd3 CI/deploy/Verify lulus; detail retensi/kebijakan final perlu owner |
 | SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] WhatsApp jalur utama; form website dihapus, endpoint legacy 410 terverifikasi smoke; uji chat/booking nyata belum dilakukan |
 | SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] Testimoni langsung tampil/hide/show: CI/deploy/Verify lulus; D1 0 total/0 tampil. Uji pelanggan/Android dan ulasan nyata belum ada |
-| SEO-018 | P2 | Identifikasi mitra relevan (hotel/villa/homestay, operator, travel guide); tawarkan referensi yang bermanfaat | Daftar target, kontak melalui owner approval, respons dan link aktif relevan tercatat | [~] Lima prospek dan draft outreach siap; prioritaskan dua direktori Lembongan, tawarkan artikel itinerary bilingual pertama sebagai referensi editorial. Belum dikirim, belum ada backlink terverifikasi dari prospek ini; persetujuan owner diperlukan sebelum kontak/biaya. |
+| SEO-018 | P2 | Identifikasi mitra relevan (hotel/villa/homestay, operator, travel guide); tawarkan referensi yang bermanfaat | Daftar target, kontak melalui owner approval, respons dan link aktif relevan tercatat | [ ] Opsional / owner-managed: owner dapat memilih dan menghubungi mitra sendiri; daftar prospek historis hanya referensi yang dapat berubah. Tidak menjadi prasyarat fase berikutnya; tidak ada outreach otomatis, klaim backlink aktif, atau biaya tanpa persetujuan. |
 | SEO-019 | P2 | Evaluasi Google Business Profile hanya jika memenuhi aturan kelayakan interaksi pelanggan | Kelayakan terdokumentasi; tanpa alamat palsu atau listing bisnis online-only | [x] Evaluasi selesai — N/A: owner mengonfirmasi 26 Nov NPE hanya menerima booking; pelayanan langsung oleh operator lokal. Model online-only tidak eligible menurut panduan resmi Google. Tidak membuat profil, evaluasi ulang hanya jika model layanan berubah. |
 
 Tidak membeli link untuk ranking, tidak spam grup/komentar, tidak menggunakan jaringan backlink, tidak mengirim outreach tanpa mandat. Aktivitas sosial hanya mendukung penemuan, kunjungan dan referensi; bukan bukti ranking.
@@ -392,6 +392,10 @@ Pedoman keputusan:
 ### 2026-11-26 — SEO-019 keputusan kelayakan final
 - Owner mengonfirmasi NPE hanya menerima booking, tanpa pelayanan tatap muka oleh usaha sendiri; operator lokal melaksanakan wisata. Berdasarkan https://support.google.com/business/answer/13763036 dan https://support.google.com/business/answer/7039811, bisnis online-only tidak memenuhi syarat Google Business Profile. Evaluasi SEO-019 selesai, implementasi N/A. Jangan membuat profil dengan alamat fiktif atau operator lain. Evaluasi ulang hanya bila model usaha berubah.
 - Fokus SEO-018: lima calon mitra existing, referensi artikel pertama, outreach menunggu persetujuan owner. SEO-002/013 kuota habis, SEO-003/020 menunggu data Google. Tetap artikel berkualitas, testimoni asli, konversi WhatsApp. Tidak mengubah aplikasi/DB, membuat profil, membeli backlink atau mengirim pesan eksternal.
+
+### 2026-11-26 — SEO-018 opsional dan dikelola owner
+- Owner menegaskan mitra bersifat opsional karena dapat berubah dan dapat dihubungi sendiri. SEO-018 bukan lagi prioritas wajib atau blocker; daftar lima prospek lama dipertahankan sebagai referensi historis, bukan target tetap. Tidak menghubungi mitra, membuat integrasi outreach, atau mengklaim backlink baru.
+- Lanjut SEO-003/020 saat data GSC tersedia (cek 27–28 Nov bila tersedia), SEO-002/013 ketika kuota tersedia, SEO-011/012 artikel mingguan sesuai review owner, SEO-017 ulasan nyata. SEO-014/021/022 membutuhkan baseline sebelum optimasi ranking. Tidak mengulang pekerjaan teknis yang sudah lulus atau menambah fitur tanpa kebutuhan. Perubahan dokumentasi saja.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
