@@ -35,7 +35,9 @@ if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.busines
  if(deniedGuestWithoutTurnstile.status!==403)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+deniedGuestWithoutTurnstile.status);
  const landingMarkup=await get("/");
  if(!landingMarkup.includes('data-action="lead_enquiry"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
-await get("/privacy.html");await get("/terms.html");await get("/cancellation.html");
+const privacyTrust=await get("/privacy.html"),termsTrust=await get("/terms.html"),cancelTrust=await get("/cancellation.html");
+if(privacyTrust.includes("formulir penerimaan guest dinonaktifkan")||!privacyTrust.includes("Formulir bukan booking atau pembayaran otomatis")||!termsTrust.includes("tidak ada konfirmasi booking atau pembayaran otomatis")||!cancelTrust.includes("DRAF · BELUM DISETUJUI"))throw Error("Trust page status mismatches manual enquiry flow");
+for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])if(!landingMarkup.includes('data-whatsapp-package="'+service+'"'))throw Error("Missing contextual enquiry link: "+service);
 if(!landingMarkup.includes('npeAboutProcess')||!landingMarkup.includes('npeFaqGrid'))throw Error("Current site missing owner transparency or bilingual FAQ");
 for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"]){
  const markup=await get(path);

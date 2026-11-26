@@ -839,3 +839,19 @@ test("published guides are linked back only from matching sales pages in each la
  const html=renderLegacyTourPage(readFileSync("public/west-tour.html","utf8"),legacyTourRoute("/west-tour.html"),"https://example.com",{},[],"",[],[article]);
  assert.match(html,/href="\/id\/articles\/guide-lembongan"/);
 });
+
+test("trust copy matches manual enquiry flow and preserves draft cancellation policy",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const read=p=>readFileSync("public/"+p,"utf8");
+ const privacy=read("privacy.html"),terms=read("terms.html"),home=read("index.html"),guest=read("guest.js");
+ assert.doesNotMatch(privacy,/formulir penerimaan guest dinonaktifkan/);
+ assert.match(privacy,/Formulir bukan booking atau pembayaran otomatis/);
+ assert.match(privacy,/Rincian periode retensi/);
+ assert.match(terms,/tidak ada konfirmasi booking atau pembayaran otomatis/);
+ assert.match(terms,/bukan ketentuan final yang otomatis berlaku/);
+ assert.match(read("cancellation.html"),/DRAF · BELUM DISETUJUI/);
+ for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])assert.ok(home.includes('data-whatsapp-package="'+service+'"'));
+ assert.match(home,/id="leadSubmit" disabled/);
+ assert.match(guest,/response\.accepting_leads!==true/);
+ assert.match(guest,/\[response\.business_name,response\.business_contact\]/);
+});

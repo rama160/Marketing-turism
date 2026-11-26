@@ -1,3 +1,6 @@
+## 26 November 2026 — Trust and conversion clarity, review/backlink operating plan
+- Align outdated pilot/disabled-form wording with manual enquiry readiness, public contact and payment safeguards; keep cancellation draft and legal details pending. Add contextual WhatsApp routes for Lembongan/boat outside existing Penida-only form; do not alter booking API or data. Tests/smoke added. Record authentic review SOP and five outreach prospects in roadmap, no external messages sent. CI/deploy pending.
+
 ## 26 November 2026 — Correct English tour catalog test fixture
 - CI failed one outdated fixture expecting hardcoded Lembongan text without published catalog. Pass a representative published catalog and assert actual localized anchors, retaining existing metadata/privacy checks. No production code or database changes. Release pending.
 

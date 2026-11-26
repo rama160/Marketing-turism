@@ -84,7 +84,7 @@ function initPublicGuestForm(){
    const response=await publicAPI("readiness");
    $("#leadSubmit").disabled=response.accepting_leads!==true;
    $("#publicBusinessContact").textContent=response.business_contact?
-    "Kontak resmi usaha: "+response.business_contact:"Kontak resmi usaha belum dipublikasikan.";
+    [response.business_name,response.business_contact].filter(Boolean).join(" · "):"Kontak resmi usaha belum dipublikasikan / Business contact not published.";
    if(response.accepting_leads===true)say("#leadFeedback","Form siap menerima permintaan. Lengkapi verifikasi anti-bot.",true);
    else say("#leadFeedback","Penerimaan permintaan tamu belum tersedia; gunakan WhatsApp bisnis.");
   }catch{ $("#leadSubmit").disabled=true;say("#leadFeedback","Layanan belum siap menerima permintaan. Gunakan WhatsApp bisnis."); }

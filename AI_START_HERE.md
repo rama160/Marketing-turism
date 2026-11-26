@@ -21,6 +21,9 @@
 ## 26 November 2026 — Publish verified tour copy in existing CMS
 - D1 root activities Lembongan and Boat Ticket updated version 2→3 with revision snapshots and unchanged photos/prices; read-back confirmed. Fix test fixture expected original West title to match updated text, retaining escaping assertion. First release CI/deploy failed on stale assertion; corrected release not yet verified.
 
+## 26 November 2026 — Trust and conversion clarity, review/backlink operating plan
+- Align outdated pilot/disabled-form wording with manual enquiry readiness, public contact and payment safeguards; keep cancellation draft and legal details pending. Add contextual WhatsApp routes for Lembongan/boat outside existing Penida-only form; do not alter booking API or data. Tests/smoke added. Record authentic review SOP and five outreach prospects in roadmap, no external messages sent. CI/deploy pending.
+
 ---
 
 ## Homepage destination card editor
