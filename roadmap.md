@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.11 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.12 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **P0: SEO-004 verifikasi awal selesai; SEO-005 gunakan baseline homepage 25 Nov, audit hanya template yang belum diperiksa; SEO-003 menunggu data dan SEO-002 menunggu kuota. P1: SEO-008 dan SEO-011/012; tidak mengulang pekerjaan selesai atau menambah fitur.**.
+- Status: aktif. Fokus saat ini: **SEO-005 audit performa awal selesai; SEO-002 menunggu kuota, SEO-003 menunggu data. Prioritas aktif SEO-008 optimasi penawaran dan SEO-011/012 konten berkualitas; tidak mengulang pekerjaan selesai atau menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -68,7 +68,7 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 | SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [!] Audit awal selesai (10/10); owner melaporkan Quota exceeded 26 Nov. Jumlah request tambahan dan verdict belum dilaporkan. Lanjutkan saat kuota tersedia. |
 | SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Screenshot owner 26 Nov 09.17 WITA: periode 28 hari, Web, Processing data / No data. Metrik N/A, bukan nol. Periksa kembali 27–28 Nov jika data sudah tersedia; lanjut SEO-004/005 tanpa menunggu. |
 | SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [x] Verifikasi awal selesai berdasarkan konfirmasi owner dan laporan 25 Nov: page_view tercatat, whatsapp_click aktif, generate_lead ditambahkan sebagai key event. Atribusi booking aktual dipantau pada SEO-020; konfigurasi tambahan hanya jika diperlukan. |
-| SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [~] Homepage mobile 97, desktop 100 (25 Nov); owner 26 Nov melaporkan lima halaman layanan lain 96–100, Lembongan mobile 87/LCP 4,1 s. Perbaikan responsive cover; retest hanya Lembongan setelah deploy. CWV field belum tersedia. |
+| SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [x] Audit awal selesai: homepage mobile 97/desktop 100 (25 Nov); lima halaman layanan lain 96–100 (26 Nov, laporan owner); Lembongan 87 → 97 setelah perbaikan (laporan owner). LCP pascaperbaikan, skor desktop tiap layanan dan CWV field belum tersedia; pantau bila ada regresi. |
 
 Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan layar yang relevan. Lakukan audit publik yang independen sambil menunggu; jangan mengarang hasil. Tidak perlu membuat integrasi API/dashboard sebelum membuktikan ekspor manual tidak memadai. Setelah perbaikan indexasi, ajukan request indexing hanya untuk URL prioritas baru/berubah secara wajar; bukan berkali-kali setiap hari.
 
@@ -126,7 +126,7 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 | SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
 | SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; penawaran harga/durasi/fasilitas perlu validasi owner/operator |
 | SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal; CI/deploy/live smoke lulus. Audit link keseluruhan dan artikel terbit masih diperlukan |
-| SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [ ] |
+| SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [x] Perbaikan teknis teridentifikasi pada cover Lembongan: skor 87 → 97; CI/deploy/smoke lulus. Evaluasi lanjutan bila ada temuan nyata. |
 
 Kandidat awal peta kata kunci (hipotesis, bukan ranking atau volume terukur):
 
@@ -290,6 +290,12 @@ Pedoman keputusan:
 - D1 read-only: cover published Lembongan 527627 bytes. Audit kode menemukan renderExperiencePage belum memasang srcset untuk cover utama walaupun build responsive WebP sudah ada. Perbaiki hanya template aktivitas dinamis: srcset/sizes pada HTML awal, mempertahankan JPEG fallback, eager/high priority, rasio/layout serta sumber foto. Tidak mengubah data/URL/gambar asli atau template statis yang lulus. Tambahkan unit dan smoke assertions.
 - Kriteria: CI/deploy/live smoke lulus; retest PageSpeed Lembongan mobile setelah deployment, target performance >=90 dan LCP <=2,5 s. Jika tidak tercapai, lihat rincian LCP dan resource image aktual; jangan mengoptimasi tanpa bukti. Tidak mengklaim skor sesudah perbaikan sebelum diukur.
 - Berikutnya SEO-008 dan SEO-011/012; SEO-002/003 masih bergantung pada kuota dan data Google. Tidak menambah fitur.
+
+### 2026-11-26 — SEO-005/010: hasil retest Lembongan
+- Owner melaporkan skor PageSpeed setelah perbaikan 97 (baseline screenshot 87, +10 poin). Lima layanan lainnya sebelumnya dilaporkan 96–100. Target skor >=90 terpenuhi. LCP pascaperbaikan tidak dilaporkan; tidak menyatakan target LCP tercapai. Skor per halaman lain dan field CWV tidak tersedia; tidak mengarang angka.
+- Release aplikasi 6ee527af18f201583005a523840317157d9beba8: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45736127105), [Deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45736127158), [Verify lulus](https://github.com/rama160/Marketing-turism/actions/runs/45736253975).
+- Tutup audit performa awal dan perbaikan teknis yang teridentifikasi; tidak mengejar skor 100 atau mengulang audit tanpa indikasi regresi. Metrik lapangan dan desktop yang belum tersedia dicatat sebagai keterbatasan baseline, dipantau pada evaluasi berikutnya bila relevan.
+- Prioritas aktif SEO-008: optimasi halaman penjualan yang sudah ada berdasarkan informasi produk terverifikasi, tanpa mengubah harga kosong menjadi perkiraan. SEO-011/012: review dan publish artikel berkualitas. SEO-002/003 dilanjutkan ketika kuota/data tersedia. Tidak mengubah aplikasi, harga atau database pada sesi pencatatan ini.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
