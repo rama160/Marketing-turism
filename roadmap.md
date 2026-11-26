@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.28 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.29 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. Prioritas independen SEO-018 outreach editorial dengan persetujuan owner dan SEO-019 konfirmasi kelayakan interaksi tatap muka. SEO-003/020 cek data ketika tersedia; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
+- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. Prioritas independen SEO-018 outreach editorial dengan persetujuan owner dan SEO-019 evaluasi selesai (tidak eligible, N/A; owner hanya menerima booking online). SEO-003/020 cek data ketika tersedia; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -169,7 +169,7 @@ Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang d
 | SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] WhatsApp jalur utama; form website dihapus, endpoint legacy 410 terverifikasi smoke; uji chat/booking nyata belum dilakukan |
 | SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] Testimoni langsung tampil/hide/show: CI/deploy/Verify lulus; D1 0 total/0 tampil. Uji pelanggan/Android dan ulasan nyata belum ada |
 | SEO-018 | P2 | Identifikasi mitra relevan (hotel/villa/homestay, operator, travel guide); tawarkan referensi yang bermanfaat | Daftar target, kontak melalui owner approval, respons dan link aktif relevan tercatat | [~] Lima prospek dan draft outreach siap; prioritaskan dua direktori Lembongan, tawarkan artikel itinerary bilingual pertama sebagai referensi editorial. Belum dikirim, belum ada backlink terverifikasi dari prospek ini; persetujuan owner diperlukan sebelum kontak/biaya. |
-| SEO-019 | P2 | Evaluasi Google Business Profile hanya jika memenuhi aturan kelayakan interaksi pelanggan | Kelayakan terdokumentasi; tanpa alamat palsu atau listing bisnis online-only | [!] Aturan resmi Google diperiksa 26 Nov: wajib interaksi pelanggan langsung, bisnis online-only/lead generation tidak memenuhi syarat. Model perantara NPE belum memastikan kontak tatap muka oleh usaha sendiri; tunggu konfirmasi owner. Jangan buat profil sebelum kelayakan terbukti. |
+| SEO-019 | P2 | Evaluasi Google Business Profile hanya jika memenuhi aturan kelayakan interaksi pelanggan | Kelayakan terdokumentasi; tanpa alamat palsu atau listing bisnis online-only | [x] Evaluasi selesai — N/A: owner mengonfirmasi 26 Nov NPE hanya menerima booking; pelayanan langsung oleh operator lokal. Model online-only tidak eligible menurut panduan resmi Google. Tidak membuat profil, evaluasi ulang hanya jika model layanan berubah. |
 
 Tidak membeli link untuk ranking, tidak spam grup/komentar, tidak menggunakan jaringan backlink, tidak mengirim outreach tanpa mandat. Aktivitas sosial hanya mendukung penemuan, kunjungan dan referensi; bukan bukti ranking.
 
@@ -388,6 +388,10 @@ Pedoman keputusan:
 - SEO-018: gunakan lima prospek existing, bukan riset ulang. Prioritaskan NusaLembongan.org dan The Lembongan Traveller dengan referensi artikel nyata https://nusapenidaexperiences.com/en/articles/lembongan-two-days-fa0f5e50 . Pesan editorial yang disesuaikan: "Hello, I represent Nusa Penida Experiences. We recently published a practical two-day Lembongan and Ceningan travel guide covering island tour planning and fast boat transfers. If useful for your readers, would you consider it as an editorial travel resource? https://nusapenidaexperiences.com/en/articles/lembongan-two-days-fa0f5e50 . We would appreciate your listing or editorial criteria. Thank you." Tidak dikirim, tidak membeli backlink, tidak klaim kemitraan atau respons.
 - SEO-019: cek panduan resmi https://support.google.com/business/answer/13763036 , https://support.google.com/business/answer/7039811 , https://support.google.com/business/answer/9157481 . Interaksi tatap muka pelanggan diperlukan; online-only dan lead generation tidak eligible. Bila NPE sendiri melayani langsung di lokasi pelanggan dan memenuhi seluruh syarat, evaluasi service-area business dengan alamat disembunyikan bila tidak menerima pelanggan di alamat; bila murni perantara online yang menyerahkan seluruh layanan langsung kepada operator independen, jangan buat profil. Perlu konfirmasi owner apakah usaha sendiri bertemu dan melayani tamu secara langsung secara rutin. Tidak memakai alamat operator tanpa hak, tidak membuat profil atau klaim izin.
 - Prioritas berikut: outreach dengan persetujuan owner, konfirmasi kelayakan GBP, cek GSC Performance 27–28 Nov jika ada data. Tidak mengubah kode, DB, harga, artikel, biaya atau melakukan komunikasi eksternal.
+
+### 2026-11-26 — SEO-019 keputusan kelayakan final
+- Owner mengonfirmasi NPE hanya menerima booking, tanpa pelayanan tatap muka oleh usaha sendiri; operator lokal melaksanakan wisata. Berdasarkan https://support.google.com/business/answer/13763036 dan https://support.google.com/business/answer/7039811, bisnis online-only tidak memenuhi syarat Google Business Profile. Evaluasi SEO-019 selesai, implementasi N/A. Jangan membuat profil dengan alamat fiktif atau operator lain. Evaluasi ulang hanya bila model usaha berubah.
+- Fokus SEO-018: lima calon mitra existing, referensi artikel pertama, outreach menunggu persetujuan owner. SEO-002/013 kuota habis, SEO-003/020 menunggu data Google. Tetap artikel berkualitas, testimoni asli, konversi WhatsApp. Tidak mengubah aplikasi/DB, membuat profil, membeli backlink atau mengirim pesan eksternal.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
