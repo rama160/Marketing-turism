@@ -1,3 +1,6 @@
+## Instruksi aktif SEO-006A — 26 November 2026
+- Release 9e771b2 CI/deploy/Verify sukses. Live hourly report 24h di D1 17.00 WITA DONE; semua empat bagian MEASURED, 1 impression, 0 clicks, posisi 64, nusa penida west island tour /west-tour.html; sesuai screenshot GSC owner. Provisional, bukan baseline final. NEXT SEO-006A cek Keyword Planner gratis/bersumber. Pantau final 28d, uji periode manual dan diagnosis Reddit paralel; belum ada diagnosis provider baru. Ikuti roadmap v1.0.40; tidak ulang setup, tidak biaya atau publikasi tanpa izin.
+
 ## SEO-003B performance coverage — 26 November 2026
 - Eight requested improvements implemented in existing workspace: bounded period reports, hourly provisional separated from final, independent aggregate/query/page/pairs, new query detection, heuristic language hints, existing final ranking, safe Reddit diagnostics and existing authorized alternatives, auto/manual via existing cron. Migration 0029 additive. CI/deploy/live GSC pending; read report cache and verify UI before SEO-006A. Do not assume Reddit recovery or invent metrics. Roadmap v1.0.39.
 

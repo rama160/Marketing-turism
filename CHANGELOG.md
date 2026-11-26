@@ -1,3 +1,6 @@
+## 26 November 2026 — Verify live hourly Google report
+- Release 9e771b2 CI/deploy/Verify succeeded; hourly report in D1 matches owner GSC UI, all four sections measured. Final baseline, other live periods and public provider diagnostics remain open. Roadmap v1.0.40 advances to SEO-006A; documentation only.
+
 ## 26 November 2026 — SEO-003B performance coverage and research diagnostics
 - Add owner-only GSC period cache (24h hourly_all, 7/28 days, 3 months, custom; final/fresh), independent property/query/page/pair metrics, new keyword and language hints, bounded cooldown, hourly/daily reuse. Keep ranking baseline final only. Record safe Reddit failure categories and alternative source statuses. Add migration 0029, tests and dashboard asset revision. Live validation pending.
 
