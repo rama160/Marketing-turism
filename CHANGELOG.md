@@ -1,3 +1,6 @@
+## 26 November 2026 — Start SEO-006A with current Google Ads access model
+- Official access audit: developer tokens sunset 9 Sep 2026; project-level access, Basic and brand verification required for keyword planning; client authorization still required. Owner enable API and verify access before implementation. No campaigns, billing or credentials changed. Roadmap v1.0.41; documentation only.
+
 ## 26 November 2026 — Verify live hourly Google report
 - Release 9e771b2 CI/deploy/Verify succeeded; hourly report in D1 matches owner GSC UI, all four sections measured. Final baseline, other live periods and public provider diagnostics remain open. Roadmap v1.0.40 advances to SEO-006A; documentation only.
 

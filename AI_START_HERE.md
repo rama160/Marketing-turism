@@ -1,3 +1,6 @@
+## Instruksi aktif SEO-006A — Google Ads API setup (26 November 2026)
+- Developer token sunset 9 Sep 2026: akses Ads API kini per Cloud project. Owner enable Google Ads API project NPE existing, cek Overview, Explorer lalu Basic (brand verification dan izin riset keyword), client account dan izin read-only. Tidak perlu manager account hanya untuk API. API tidak berbiaya, tetapi UI dapat meminta billing; jangan membuat kampanye atau menyetujui biaya. Volume belum terukur, jalur manual bersumber bila akses belum tersedia. Roadmap v1.0.41 mengungguli instruksi lama tentang developer token. GSC tidak diubah.
+
 ## Instruksi aktif SEO-006A — 26 November 2026
 - Release 9e771b2 CI/deploy/Verify sukses. Live hourly report 24h di D1 17.00 WITA DONE; semua empat bagian MEASURED, 1 impression, 0 clicks, posisi 64, nusa penida west island tour /west-tour.html; sesuai screenshot GSC owner. Provisional, bukan baseline final. NEXT SEO-006A cek Keyword Planner gratis/bersumber. Pantau final 28d, uji periode manual dan diagnosis Reddit paralel; belum ada diagnosis provider baru. Ikuti roadmap v1.0.40; tidak ulang setup, tidak biaya atau publikasi tanpa izin.
 
