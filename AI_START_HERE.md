@@ -1,3 +1,6 @@
+## Bukti terbaru SEO-003B — 26 November 2026
+- Screenshot GSC owner 24 jam: 1 impression, 0 clicks, CTR 0%, average position 64, query nusa penida west island tour. Provisional, bukan baseline final; periode 27 Okt–23 Nov belum dibandingkan UI. Lanjut gate kualitas dan perbaikan cakupan sesuai roadmap v1.0.37 sebelum SEO-006A. Jangan menyimpan screenshot sebagai observasi API.
+
 ## Audit aktif SEO-003B — 26 November 2026
 - Owner meminta verifikasi kualitas sebelum SEO-006A. Raw Google rows 0, 24 SEED, Reddit SOURCE_UNAVAILABLE; periode final berakhir sebelum publikasi terbaru. Koneksi lulus tetapi baseline belum. Bandingkan agregat GSC UI pada periode sama dan data terbaru; diagnosis agregat tanpa query dan fresh bila perlu. Jangan klaim nol impresi dari NO_ROWS. Ikuti roadmap v1.0.36.
 

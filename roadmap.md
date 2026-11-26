@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.36 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.37 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -470,6 +470,11 @@ Pedoman keputusan:
 - Audit src/seo-keywords.mjs: permintaan Search Analytics hanya dataState final, type web, dimensions query/page, 300 baris, 27 Okt–23 Nov. D1 publikasi aktivitas dinamis pertama 24 Nov, artikel pertama 26 Nov. Indexasi awal 25 Nov menurut riwayat owner, bukan bukti tanggal pertama indeks. Periode belum mencakup publikasi terbaru. Google menyatakan data biasanya terlambat 2–3 hari dan query anonim dapat dikecualikan: https://support.google.com/webmasters/answer/17010575 dan https://developers.google.com/webmaster-tools/v1/searchanalytics/query .
 - Koneksi lulus, baseline ranking belum lulus. NO_ROWS tidak membuktikan property tanpa impresi karena detail query/page bisa disembunyikan; kode belum mengambil agregat property tanpa dimensi query atau data terbaru provisional. Filter lokal canonical/privasi tidak menyebabkan run ini kosong (raw=0), tetapi perlu bedakan raw>0 vs accepted=0 untuk run berikut. Riset publik Reddit gagal, bukan nol minat; seed bukan volume pasar.
 - Gate tambahan atas permintaan owner: bandingkan Performance > Search results property Domain NPE, Web, tanpa filter, custom 27 Okt–23 Nov, lihat total clicks/impressions dan tab Queries/Pages; cek rentang terbaru 24–26 Nov terpisah bila tersedia. Bila perlu tambahkan diagnosis agregat property final dan fresh terpisah pada workspace existing, jangan mengubah baseline final atau mengklaim data provisional final. Akses UI GSC owner tidak tersedia bagi AI; tidak membaca secret atau menjalankan panggilan Google langsung di luar Worker. SEO-006A ditunda sampai verifikasi kualitas ini atau owner mengizinkan jalur independen. Dokumentasi saja.
+
+### 2026-11-26 — Bukti impresi Google terbaru dari owner
+- Screenshot Performance Search Console 16.22 WITA, Web (text), rentang 24 hours waktu lokal: total 1 impression, 0 clicks, CTR 0%, average position 64; query yang terlihat "nusa penida west island tour", 1 impression, 0 clicks. Data terbaru bersifat provisional, sampel tunggal, URL/country/device tidak tampak. Bukan baseline final, bukan volume pasar, bukan posisi live yang stabil. Jangan memasukkan metrik screenshot ke snapshot otomatis.
+- Periode dashboard final 27 Okt–23 Nov tidak mencakup impresi terbaru 26 Nov. NO_ROWS periode lama tetap konsisten dengan bukti baru, tetapi perbandingan UI periode identik belum dilakukan. Gate SEO-003B kualitas tetap terbuka: cocokkan Performance custom 27 Okt–23 Nov; lihat Pages untuk query terbaru. Prioritaskan agregat property final, data terbaru provisional (dataState all; hourly_all hanya jika dikelompokkan hour), halaman dan query secara terpisah, jangan gabungkan dengan snapshot final atau duplikasi kandidat. Rujukan https://developers.google.com/webmaster-tools/v1/searchanalytics/query dan https://support.google.com/webmasters/answer/17011364 . SEO-006A tetap menunggu gate kualitas sesuai permintaan owner.
+- Perubahan sesi ini dokumentasi saja, belum ada perubahan pengambilan data atau pemetaan keyword.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

@@ -1,3 +1,6 @@
+## 26 November 2026 — Record first visible Search Console impression
+- Document owner UI evidence (24-hour provisional report, one impression, zero clicks, average position 64; query nusa penida west island tour). Existing final snapshot ends 23 Nov; no contradiction, same-period UI comparison pending. Documentation only.
+
 ## 26 November 2026 — Audit first GSC result quality
 - Read-only database/source audit: raw Google rows 0, 24 seed plans, unavailable Reddit RSS, final period excludes new activity/article publication. Require owner UI comparison and distinguish aggregate/fresh data before moving to Keyword Planner. Documentation only.
 
