@@ -1,3 +1,6 @@
+## 26 November 2026 — GSC configuration verified
+- Roadmap v1.0.34: owner provisioned API, restricted service account and JSON; both Cloudflare secret bindings verified by metadata only. No D1 keyword run yet; next authenticated research and validation (SEO-003B). Confirm key-creation policy restoration. Documentation only.
+
 ## 26 November 2026 — Lock ranking-first SEO roadmap
 - Update existing roadmap v1.0.33 with ordered gates, sub-task IDs, metrics provenance, owner approval, 28-day measurement, 90/180-day evaluation and exact next action. Record verified Cloudflare GSC_PROPERTY, missing service-account JSON, no snapshots and successful CI/deploy/live smoke for 720bd376. Update AI_START_HERE active instruction. Documentation only; no code or public content change.
 

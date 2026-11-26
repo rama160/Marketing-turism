@@ -1,3 +1,6 @@
+# Update aktif SEO-003B — 26 November 2026
+- Kedua secret GSC tersedia dan terverifikasi melalui metadata Cloudflare; D1 belum memiliki snapshot. SEO-003A konfigurasi selesai; SEO-003B uji riset existing melalui dashboard owner, cek snapshot D1, baru lanjut SEO-006A sesuai gate roadmap.md §0. Konfirmasi pemulihan policy pembuatan key project ke Inherit parent's policy. Jangan baca/ungkap secret atau bypass admin auth.
+
 # Instruksi pengendali terkini — 26 November 2026
 - WAJIB baca [roadmap.md §0 Jalur eksekusi aktif](./roadmap.md) sebelum setiap pekerjaan SEO. Ini mengungguli urutan historis di bawah; jangan membuat roadmap/branch/menu duplikat.
 - NEXT: SEO-003A menunggu owner mengisi GSC_SERVICE_ACCOUNT_JSON; GSC_PROPERTY sudah dibuat dan diverifikasi. Lalu SEO-003B uji autentikasi, riset dan snapshot; lanjut SEO-006A/B/C, SEO-007/021, optimasi dan evaluasi menurut gate §0. Data kosong bukan nol; rilis bukan bukti ranking. Gunakan jalur gratis/bersumber dan persetujuan owner untuk perubahan publik/biaya. Update roadmap setiap sesi dengan bukti, blocker dan next action. Tujuan: Top 10 Google non-brand dan booking organik.
