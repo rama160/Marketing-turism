@@ -174,3 +174,13 @@ test("dashboard entry routes return direct private shell, not public homepage",a
  const legacy=await worker.fetch(new Request("https://marketing-turism-agent.finchat-ai-gateway.workers.dev/dashboard.html"),{ASSETS:assets});
  assert.equal(legacy.status,301);assert.equal(legacy.headers.get("location"),"https://nusapenidaexperiences.com/dashboard.html");
 });
+
+test("Google branding disclosure is public, bilingual and linked from owner workspace without exposing admin access",()=>{
+ const home=file("index.html"),privacy=file("privacy.html"),terms=file("terms.html"),dash=file("dashboard.html");
+ assert.ok(home.includes('id="seo-agent-information"')&&home.includes('href="/privacy.html#google-api-data"')&&home.includes('href="/privacy.html"'));
+ assert.ok(home.includes("NPE Studio (NPE SEO Agent)")&&home.includes("does not currently retrieve production data"));
+ for(const term of ['id="google-api-data"',"webmasters.readonly","Cloudflare D1","90 hari","Workers AI","Limited Use","mailto:asriramavirgo98@gmail.com","Revocation stops future access","Ads data is not yet stored"])assert.ok(privacy.includes(term),term);
+ assert.ok(terms.includes('id="seo-agent-terms"')&&terms.includes('href="/privacy.html#google-api-data"'));
+ assert.ok(dash.includes('id="kwGoogleDataNotice"')&&dash.includes('href="/privacy.html#google-api-data"'));
+ for(const page of [home,privacy,terms])assert.ok(!page.includes('href="/dashboard.html"'));
+});

@@ -1,3 +1,6 @@
+## 26 November 2026 — Google brand verification preparation
+- Add bilingual NPE Studio purpose, Google API privacy and internal app terms, in-product notice, regression and live smoke coverage; distinguish active Search Console and pending Ads. Preserve public booking content and backend behavior. Roadmap v1.0.42; deployment and brand approval pending.
+
 ## 26 November 2026 — Start SEO-006A with current Google Ads access model
 - Official access audit: developer tokens sunset 9 Sep 2026; project-level access, Basic and brand verification required for keyword planning; client authorization still required. Owner enable API and verify access before implementation. No campaigns, billing or credentials changed. Roadmap v1.0.41; documentation only.
 

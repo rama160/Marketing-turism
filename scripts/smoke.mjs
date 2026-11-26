@@ -36,6 +36,7 @@ if(ready.accepting_leads!==false||ready.turnstile_required!==true||!ready.busine
  const landingMarkup=await get("/");
  if(!landingMarkup.includes('data-action="customer_review"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
 const privacyTrust=await get("/privacy.html"),termsTrust=await get("/terms.html"),cancelTrust=await get("/cancellation.html");
+if(!home.includes('id="seo-agent-information"')||!home.includes('href="/privacy.html#google-api-data"')||!privacyTrust.includes('id="google-api-data"')||!privacyTrust.includes("Limited Use")||!privacyTrust.includes("webmasters.readonly")||!termsTrust.includes('id="seo-agent-terms"'))throw Error("Google brand public disclosures missing");
 if(privacyTrust.includes("formulir penerimaan guest dinonaktifkan")||!privacyTrust.includes("bukan formulir pemesanan website")||!termsTrust.includes("tidak ada konfirmasi booking atau pembayaran otomatis")||!cancelTrust.includes("DRAF · BELUM DISETUJUI"))throw Error("Trust page status mismatches manual enquiry flow");
 for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])if(!landingMarkup.includes('data-whatsapp-package="'+service+'"'))throw Error("Missing contextual enquiry link: "+service);
 if(!landingMarkup.includes('npeAboutProcess')||!landingMarkup.includes('npeFaqGrid'))throw Error("Current site missing owner transparency or bilingual FAQ");
@@ -144,6 +145,7 @@ for(const id of imageChecks){
 const page=await get("/");
 if(!page.includes("NUSA PENIDA")||!page.includes("reviewForm")||page.includes('id="leadForm"'))throw Error("Guest page not served");
 const dashboard=await get("/dashboard.html");
+if(!dashboard.includes('id="kwGoogleDataNotice"')||!dashboard.includes('href="/privacy.html#google-api-data"'))throw Error("Google API in-product privacy notice missing");
 const app=await get("/app.js");
 const guestScript=await get("/guest.js"),dashboardStyles=await get("/dashboard.css");
 // Dedicated Published-first owner editor and visible optional price must be in deployed assets.

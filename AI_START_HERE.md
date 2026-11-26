@@ -1,3 +1,6 @@
+## SEO-006A brand verification preparation — 26 November 2026
+- Explorer approved, Branding saved. Owner authorized homepage/privacy/terms and in-product disclosure updates before verification. Read roadmap v1.0.42; verify CI/deploy/live public URLs, then owner completes Verification Center and Basic access. No changes to API credentials/processing or campaigns; Ads integration remains pending. Ensure actual data handling matches published policy, including inference and retention. No claim of Google approval.
+
 ## Instruksi aktif SEO-006A — Google Ads API setup (26 November 2026)
 - Developer token sunset 9 Sep 2026: akses Ads API kini per Cloud project. Owner enable Google Ads API project NPE existing, cek Overview, Explorer lalu Basic (brand verification dan izin riset keyword), client account dan izin read-only. Tidak perlu manager account hanya untuk API. API tidak berbiaya, tetapi UI dapat meminta billing; jangan membuat kampanye atau menyetujui biaya. Volume belum terukur, jalur manual bersumber bila akses belum tersedia. Roadmap v1.0.41 mengungguli instruksi lama tentang developer token. GSC tidak diubah.
 
