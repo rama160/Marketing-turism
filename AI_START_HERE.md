@@ -15,6 +15,9 @@
 ## 26 November 2026 — Optimize Lembongan activity cover LCP
 - Owner PageSpeed report: other five service pages 96–100; Lembongan Island Tour mobile 87, LCP 4.1 s, FCP/Speed Index 0.8 s, TBT 0, CLS 0; accessibility/best practices/SEO 100. D1 read-only reports the published cover is 527627 bytes. Dynamic experience detail cover lacked srcset despite prebuilt WebP variants. Reuse existing responsivePhotoSet in server-rendered HTML, retain original fallback, eager/high priority and current layout; add unit/live regression. No changes to images in KV, CMS records, prices, other templates, or paid services. Release and post-change PageSpeed pending.
 
+## 26 November 2026 — SEO-008 sales copy and trip durations
+- Owner confirms 4–5 h per Penida land route and 3–4 h Lembongan land tour (excluding crossings). Preserve existing routes; 3 selected snorkeling sites depending on sea/package; estimated 2–3 h, wildlife disclaimer, separate land day. Boat estimates researched: Sanur–Lembongan 30–45 min; Lembongan–Gili both directions 2–4 h depending on ports and stops. No fixed sailing times, prices, guaranteed sightings or unverified inclusions. Update bilingual defaults, metadata and competitive guide. Dynamic Lembongan/boat content requires separate version-guarded CMS update; release pending.
+
 ---
 
 ## Homepage destination card editor

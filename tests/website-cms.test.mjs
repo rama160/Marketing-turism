@@ -805,3 +805,14 @@ test("published experience cover selects WebP variants from initial HTML and ret
  const missing=renderExperiencePage({...draft,photo_url:"/photos/website/invalid"},"en","https://example.com");
  assert.doesNotMatch(missing,/srcset=/);
 });
+
+test("sales copy includes owner-confirmed land durations and conditional three-spot snorkeling",async()=>{
+ const {readFileSync}=await import("node:fs");
+ for(const key of ["west","east","island","snorkeling"]){
+  const html=renderEnglishTourPage(key,"https://example.com");
+  assert.match(html,key==="snorkeling"?/2–3 hours/:/4–5 hour/);
+  const id=readFileSync("public/"+(key==="snorkeling"?key:key+"-tour")+".html","utf8");
+  assert.match(id,key==="snorkeling"?/2–3 jam/:/4–5 jam/);
+  if(key==="snorkeling"){assert.match(html,/Mangrove Point/);assert.match(html,/wild animals; sightings are not guaranteed/);assert.match(id,/satwa liar; penampakannya tidak dijamin/);}
+ }
+});
