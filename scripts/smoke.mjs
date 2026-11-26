@@ -70,6 +70,11 @@ for(const url of indexedURLs){
  const html=await response.text();
  if(!html.includes('rel="canonical" href="'+url+'"')||!html.includes('hreflang="id"')||!html.includes('hreflang="en"'))throw Error("Missing canonical/hreflang: "+url);
  const match=new URL(url).pathname.match(/^\/(en|id)\/experiences\/([^/]+)$/);
+ const experience=match&&websiteCatalog.items.find(a=>a.slug===match[2]);
+ if(experience?.photo_url&&/^\/photos\/website\/[0-9a-f-]{36}$/.test(experience.photo_url)){
+  const cover=html.match(/<img[^>]+fetchpriority="high"[^>]*>/)?.[0]||"";
+  if(!cover.includes(experience.photo_url+"?npew=480 480w")||!cover.includes(experience.photo_url+"?npew=800 800w")||!cover.includes('loading="eager"'))throw Error("Responsive initial experience cover missing: "+url);
+ }
  const child=match&&websiteCatalog.items.find(a=>a.slug===match[2]&&a.parent_activity);
  if(child){
   const lang=match[1],p=child.parent_activity;

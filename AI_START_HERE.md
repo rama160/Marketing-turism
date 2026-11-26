@@ -12,6 +12,9 @@
 ## 26 November 2026 — Installed dashboard launch recovery
 - Owner reports installed dashboard opens public site. Keep canonical /dashboard.html manifest start and add explicit stable identity/scope, remove public shortcut, open explicit Website preview separately, remove manifest from offline cache and revalidate. Serve dashboard aliases directly via private no-store/noindex HTML shell from build template, preserving host migration and auth. Recover legacy standalone root only on devices marked by visiting the owner dashboard; normal guests and explicit website preview are unaffected. Existing home-screen shortcuts without marker may need reinstallation. No token stored, no SEO URL or DB change. CI/deploy and physical Android launch pending.
 
+## 26 November 2026 — Optimize Lembongan activity cover LCP
+- Owner PageSpeed report: other five service pages 96–100; Lembongan Island Tour mobile 87, LCP 4.1 s, FCP/Speed Index 0.8 s, TBT 0, CLS 0; accessibility/best practices/SEO 100. D1 read-only reports the published cover is 527627 bytes. Dynamic experience detail cover lacked srcset despite prebuilt WebP variants. Reuse existing responsivePhotoSet in server-rendered HTML, retain original fallback, eager/high priority and current layout; add unit/live regression. No changes to images in KV, CMS records, prices, other templates, or paid services. Release and post-change PageSpeed pending.
+
 ---
 
 ## Homepage destination card editor

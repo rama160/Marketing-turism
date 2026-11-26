@@ -789,3 +789,19 @@ test("published destination pages link to their actual parent tour in each langu
   assert.ok(renderExperiencePage(staticChild,lang,origin,[staticChild]).includes('data-npe-parent-tour href="'+(lang==="en"?"/en/tours/snorkeling":"/snorkeling.html")+'"'));
  }
 });
+
+test("published experience cover selects WebP variants from initial HTML and retains JPEG fallback",()=>{
+ const photo="/photos/website/"+draft.media_id;
+ for(const lang of ["id","en"]){
+  const html=renderExperiencePage({...draft,photo_url:photo},lang,"https://example.com");
+  const cover=html.match(/<img[^>]+fetchpriority="high"[^>]*>/)?.[0];
+  assert.ok(cover);
+  assert.ok(cover.includes('src="'+photo+'"'));
+  for(const width of [240,480,800,1200])assert.ok(cover.includes(photo+"?npew="+width+" "+width+"w"));
+  assert.match(cover,/sizes="\(max-width: 700px\) calc\(100vw - 32px\)/);
+  assert.match(cover,/loading="eager"/);
+  assert.match(cover,/width="1200" height="675"/);
+ }
+ const missing=renderExperiencePage({...draft,photo_url:"/photos/website/invalid"},"en","https://example.com");
+ assert.doesNotMatch(missing,/srcset=/);
+});
