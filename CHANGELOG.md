@@ -1,3 +1,6 @@
+## 26 November 2026 — Lock ranking-first SEO roadmap
+- Update existing roadmap v1.0.33 with ordered gates, sub-task IDs, metrics provenance, owner approval, 28-day measurement, 90/180-day evaluation and exact next action. Record verified Cloudflare GSC_PROPERTY, missing service-account JSON, no snapshots and successful CI/deploy/live smoke for 720bd376. Update AI_START_HERE active instruction. Documentation only; no code or public content change.
+
 ## 26 November 2026 — Ranking-first SEO opportunities
 - Extend existing keyword workspace with measured non-brand target-pair Top 3/10, quick wins at average positions >10–30, ordered action recommendations and non-overlapping 28-day snapshot deltas. Missing data remains N/A; no new menu, schema, cron, public edits or paid service. GSC credentials and live data pending; CI/deploy not verified.
 
