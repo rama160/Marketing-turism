@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.42 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.43 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -500,6 +500,9 @@ Pedoman keputusan:
 - Owner screenshots confirm Google Ads API Enabled, Explorer approved for project 365517218977, Google Auth Platform created and Branding saved (Nusa Penida Experiences, logo white background, homepage /, privacy /privacy.html, terms /terms.html, authorized domain nusapenidaexperiences.com). Basic requires brand verification; not submitted/approved yet.
 - Owner authorized improvements before submission. Reviewed Google official brand requirements https://support.google.com/cloud/answer/13464321 and data policy https://developers.google.com/terms/api-services-user-data-policy. Existing public index, privacy and terms were inspected; add bilingual concise app purpose/Google data disclosures on homepage, detailed bilingual Google API data use section in existing privacy, internal app terms and in-product link in existing keyword workspace. Describe active GSC read-only, pending Ads integration, actual D1/Workers secrets, final 90-day cleanup vs overwrite-only cache and persistent derived plans, selected target keyword used in Workers AI draft inference, limited use, no personalized ad targeting/data sale/model training, revocation/deletion via owner contact. Existing visitor booking, review, analytics and cancellation content preserved. No OAuth client, new access scope, credentials, Ads campaigns, prices or backend processing changes. Support email from saved Branding, already designated by owner.
 - Add regression and external smoke checks. Public web fetch unavailable from research tool; verify live URLs through existing GitHub Verify workflow after deployment. Brand review remains owner action; no approval guarantee. Confirm retention/deletion controls before Ads integration, and ensure actual practices match disclosures (including data sent to AI processor and permitted use). Next: CI/deploy/Verify, open 3 public URLs without login, Audience/Verification Center and submit branding if eligible; Basic access after verification.
+
+### 2026-11-26 — SEO-006A live verification test repair
+- CI 45804003201 and deploy 45804003498 succeeded on 190f12b; Verify 45804167295 failed at scripts/smoke.mjs:39 with ReferenceError: Cannot access 'home' before initialization. This is a test ordering bug, not evidence of failed deployment or Google authorization. Use already fetched landingMarkup from line 36 for brand disclosure assertions, preserve all assertions, add regression for initialization order. No public content, API scopes, credentials or data changed. Re-run CI/deploy/Verify and do not submit brand review until live checks pass.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

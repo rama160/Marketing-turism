@@ -1,3 +1,6 @@
+## 26 November 2026 — Fix brand verification live smoke initialization order
+- CI and deployment succeeded; Verify failed because the newly added homepage assertion referenced home before initialization. Reuse existing landingMarkup and add regression; keep live checks intact. Roadmap v1.0.43. New release verification pending.
+
 ## 26 November 2026 — Google brand verification preparation
 - Add bilingual NPE Studio purpose, Google API privacy and internal app terms, in-product notice, regression and live smoke coverage; distinguish active Search Console and pending Ads. Preserve public booking content and backend behavior. Roadmap v1.0.42; deployment and brand approval pending.
 

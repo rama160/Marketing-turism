@@ -184,3 +184,12 @@ test("Google branding disclosure is public, bilingual and linked from owner work
  assert.ok(dash.includes('id="kwGoogleDataNotice"')&&dash.includes('href="/privacy.html#google-api-data"'));
  for(const page of [home,privacy,terms])assert.ok(!page.includes('href="/dashboard.html"'));
 });
+
+test("Google brand smoke assertions use already initialized live landing markup",()=>{
+ const smoke=readFileSync(new URL("../scripts/smoke.mjs",import.meta.url),"utf8");
+ const landing=smoke.indexOf('const landingMarkup=await get("/")');
+ const check=smoke.split("\n").find(line=>line.includes('throw Error("Google brand public disclosures missing")'));
+ assert.ok(landing>=0&&check&&smoke.indexOf(check)>landing);
+ assert.ok(check.includes("!landingMarkup.includes")&&!check.includes("!home.includes"));
+ assert.ok(check.includes("privacyTrust.includes")&&check.includes("termsTrust.includes"));
+});
