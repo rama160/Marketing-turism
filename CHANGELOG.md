@@ -1,3 +1,6 @@
+## SEO-006A — verified baseline and comparison readiness
+- Store 10 owner-exported keyword volume ranges in production D1, preserve source and metrics notes. Add all-language scope, diversified seeds and compatible-period baseline comparison; show baseline separately even when API disabled. No campaign or billing changes. Automatic API use remains gated pending actual permission. Roadmap v1.0.46.
+
 ## SEO-006A/006B — Document verified release and official access gates
 - CI/deploy/Verify succeeded for 8ed6db0. Record manual UI as validation only; require automated measured discovery for completion. Prepare policy inquiry and Trends Alpha application in parallel; no submission or production API call, no code/secrets/billing changes. Roadmap v1.0.45.
 

@@ -242,7 +242,7 @@ export async function publicResearchStatus(db){
 // SEO-006A: read-only keyword planning. Basic access is not confirmation of permissible use.
 // Owner must obtain confirmation that the declared purpose is allowed before enabling the flag.
 const plannerMarkets={GLOBAL:[],ID:["geoTargetConstants/2360"],AU:["geoTargetConstants/2036"],US:["geoTargetConstants/2840"],GB:["geoTargetConstants/2826"]};
-const plannerLanguages={en:"languageConstants/1000",id:"languageConstants/1025"};
+const plannerLanguages={all:null,en:"languageConstants/1000",id:"languageConstants/1025"};
 const plannerTTL=90*86400000,plannerWeek=7*86400000;
 function plannerConfig(env){
  const configured=!!env.GSC_SERVICE_ACCOUNT_JSON&&/^\d{10}$/.test(String(env.GOOGLE_ADS_CUSTOMER_ID||""));
@@ -275,6 +275,32 @@ export function parsePlannerRows(data,kind,requested=[]){
  const measured=rows.filter(r=>r.avg_monthly_searches!==null||r.monthly.some(m=>m.searches!==null)).length;
  return {status:measured?"MEASURED":rows.length?"METRICS_UNAVAILABLE":raw.length?"FILTERED":"NO_ROWS",raw_rows:raw.length,measured,rows,truncated:raw.length>300||!!data.nextPageToken};
 }
+// Round-robin across service clusters; no one alphabetical cluster monopolizes idea seeds.
+export function diversePlannerSeeds(plans,keywords){
+ const allowed=new Set(keywords),groups=new Map(),out=[],seen=new Set();
+ for(const p of plans){if(!allowed.has(p.keyword))continue;const group=groups.get(p.cluster)||[];group.push(p.keyword);groups.set(p.cluster,group);}
+ for(let i=0;i<100&&out.length<20;i++){let found=false;for(const group of groups.values()){if(i>=group.length)continue;found=true;const k=group[i];if(!seen.has(k)&&out.length<20){seen.add(k);out.push(k);}}if(!found)break;}
+ return out;
+}
+// Compare only an explicitly scoped manual baseline against a compatible API report.
+export function comparePlannerBaseline(plans,report){
+ const scope=report?.scope;if(scope?.market!=="GLOBAL"||scope?.locale!=="all"||scope?.network!=="GOOGLE_SEARCH")return [];
+ const rows=report?.sections?.historical?.rows||[];
+ return plans.filter(p=>p.manual?.source?.startsWith("Google Keyword Planner – Keyword Stats ")&&p.manual.country==="Global (All locations)"&&p.manual.notes?.includes("All languages")&&p.manual.volume_min!=null&&p.manual.volume_max!=null).map(p=>{
+  const m=p.manual,period=String(m.period||"").match(/^(\d{4}-\d{2})-01 – (\d{4}-\d{2})-\d{2}$/),matches=rows.filter(r=>norm(r.keyword)===p.normalized||(r.close_variants||[]).some(v=>norm(v)===p.normalized));
+  let status="NO_API_ROW",estimate=null;
+  if(matches.length>1)status="AMBIGUOUS_GROUP";
+  else if(matches.length===1){const r=matches[0];estimate=r.avg_monthly_searches;
+   const months=[...new Set((r.monthly||[]).map(v=>v.month))].sort(),expected=[];
+   if(period){const start=new Date(period[1]+"-01T00:00:00Z");if(Number.isFinite(start.getTime()))for(let i=0;i<48;i++){const month=start.toISOString().slice(0,7);if(month>period[2])break;expected.push(month);start.setUTCMonth(start.getUTCMonth()+1);}}
+   if(!period||!expected.length||expected.at(-1)!==period[2]||JSON.stringify(months)!==JSON.stringify(expected))status="PERIOD_UNVERIFIED";
+   else if((r.close_variants||[]).some(v=>norm(v)!==p.normalized)||norm(r.keyword)!==p.normalized)status="VARIANT_GROUP";
+   else if(estimate==null)status="METRICS_UNAVAILABLE";
+   else status=estimate>=m.volume_min&&estimate<=m.volume_max?"WITHIN_RANGE":"OUTSIDE_RANGE";
+  }
+  return {keyword:p.keyword,min:m.volume_min,max:m.volume_max,estimate,status,period:m.period};
+ });
+}
 function plannerError(e){return ["CONFIG","AUTH","ACCESS","QUOTA","REQUEST","RESPONSE","NETWORK","NO_SEEDS"].includes(e?.message)?e.message:"NETWORK";}
 async function plannerRequest(request,env,token,operation,body){
  if(!["generateKeywordHistoricalMetrics","generateKeywordIdeas"].includes(operation))throw Error("CONFIG");
@@ -302,19 +328,21 @@ export async function collectKeywordPlanner(db,env,input={}, {manual=false,now=D
  try{
   await ensureKeywordSeeds(db);
   // Only owner-authored or built-in tourism seeds, never raw GSC query exports or guest information.
-  const plans=(await db.prepare("SELECT keyword FROM seo_keyword_plans WHERE active=1 AND locale=? AND origin IN ('SEED','OWNER') ORDER BY priority,keyword LIMIT 100").bind(scope.locale).all()).results;
+  const plans=(await db.prepare("SELECT keyword,cluster FROM seo_keyword_plans WHERE active=1 AND (?='all' OR locale=?) AND origin IN ('SEED','OWNER') ORDER BY priority,keyword LIMIT 100").bind(scope.locale,scope.locale).all()).results;
   const keywords=[...new Set(plans.map(p=>p.keyword).filter(s=>typeof s==="string"&&safeQuery(s)&&Object.values(clusters).some(re=>re.test(s))))];
   if(!keywords.length)throw Error("NO_SEEDS");
   report.requested_keywords=keywords;report.seed_limit=100;
   const token=await gscToken(env,request,now,"https://www.googleapis.com/auth/adwords");
-  const common={geoTargetConstants:plannerMarkets[scope.market],language:plannerLanguages[scope.locale],keywordPlanNetwork:"GOOGLE_SEARCH",includeAdultKeywords:false};
+  const common={geoTargetConstants:plannerMarkets[scope.market],...(plannerLanguages[scope.locale]?{language:plannerLanguages[scope.locale]}:{}),keywordPlanNetwork:"GOOGLE_SEARCH",includeAdultKeywords:false};
   try{report.sections.historical=parsePlannerRows(await plannerRequest(request,env,token,"generateKeywordHistoricalMetrics",{...common,keywords}),"historical",keywords);}catch(e){report.sections.historical={status:"ERROR",error:plannerError(e),rows:[]};}
   // Keyword planning has separate rate limits. Do not repeat a denied/throttled request.
   if(["AUTH","ACCESS","QUOTA"].includes(report.sections.historical.error))report.sections.ideas={status:"SKIPPED",rows:[]};
   else{
    await pause();
-   try{report.sections.ideas=parsePlannerRows(await plannerRequest(request,env,token,"generateKeywordIdeas",{...common,keywordSeed:{keywords:keywords.slice(0,20)},pageSize:100}),"ideas");}catch(e){report.sections.ideas={status:"ERROR",error:plannerError(e),rows:[]};}
+   try{report.sections.ideas=parsePlannerRows(await plannerRequest(request,env,token,"generateKeywordIdeas",{...common,keywordSeed:{keywords:diversePlannerSeeds(plans,keywords)},pageSize:100}),"ideas");}catch(e){report.sections.ideas={status:"ERROR",error:plannerError(e),rows:[]};}
   }
+  const baseline=(await db.prepare("SELECT keyword,normalized,manual_json FROM seo_keyword_plans WHERE manual_json!='{}'").all()).results.map(p=>({...p,manual:JSON.parse(p.manual_json)}));
+  report.baseline_comparison=comparePlannerBaseline(baseline,report);
   const failed=Object.values(report.sections).filter(s=>["ERROR","SKIPPED"].includes(s.status)).length;
   status=failed===0?"DONE":failed===2?"ERROR":"PARTIAL";
  }catch(e){report.error=plannerError(e);}

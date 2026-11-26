@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage,plannerScope,parsePlannerRows,readKeywordPlanner,collectKeywordPlanner} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage,plannerScope,parsePlannerRows,readKeywordPlanner,collectKeywordPlanner,comparePlannerBaseline,diversePlannerSeeds} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -84,4 +84,16 @@ test("planner missing data stays null, close variants remain grouped, manual ran
  assert.throws(()=>validateKeyword({...input,manual:{volume_min:100,volume_max:10}},["/en/tours/west"]),/rentang/);
  const m=validateKeyword({...input,manual:{volume_min:10,volume_max:100,source:"Google Keyword Planner export",period:"12 months",country:"Global",device:"All",checked:"2026-11-26"}},["/en/tours/west"]).manual;
  assert.equal(m.volume,null);assert.equal(m.volume_max,100);
+});
+
+test("all-language planner scope and diverse seeds; baseline comparisons require equivalent period and variants",()=>{
+ assert.equal(plannerScope({market:"GLOBAL",locale:"all"}).key,"GLOBAL:all");
+ const seeds=Array.from({length:25},(_,i)=>({keyword:"west "+i,cluster:"west"})).concat([{keyword:"boat test",cluster:"boat"}]);
+ assert.ok(diversePlannerSeeds(seeds,seeds.map(p=>p.keyword)).includes("boat test"));
+ const p={keyword:"nusa penida tour",normalized:"nusa penida tour",manual:{source:"Google Keyword Planner – Keyword Stats test.csv",country:"Global (All locations)",notes:"All languages",period:"2025-11-01 – 2026-10-31",volume_min:1000,volume_max:10000}};
+ const r={scope:plannerScope({market:"GLOBAL",locale:"all"}),sections:{historical:{rows:[{keyword:p.keyword,close_variants:[],avg_monthly_searches:5000,monthly:Array.from({length:12},(_,i)=>({month:new Date(Date.UTC(2025,10+i,1)).toISOString().slice(0,7),searches:5000}))}]}}};
+ assert.equal(comparePlannerBaseline([p],r)[0].status,"WITHIN_RANGE");
+ r.sections.historical.rows[0].close_variants=["nusa penida tours"];assert.equal(comparePlannerBaseline([p],r)[0].status,"VARIANT_GROUP");
+ r.sections.historical.rows[0].monthly.pop();assert.equal(comparePlannerBaseline([p],r)[0].status,"PERIOD_UNVERIFIED");
+ r.scope=plannerScope({market:"GLOBAL",locale:"en"});assert.deepEqual(comparePlannerBaseline([p],r),[]);
 });

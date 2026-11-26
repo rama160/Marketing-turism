@@ -2369,15 +2369,23 @@ function renderKeywords(){
 
 
 let kwPlannerBusy=false,kwPlannerGeneration=0;
-function plannerInput(){return {market:$("#kwPlannerMarket").value||"GLOBAL",locale:$("#kwPlannerLocale").value||"en"};}
+function plannerInput(){return {market:$("#kwPlannerMarket").value||"GLOBAL",locale:$("#kwPlannerLocale").value||"all"};}
+function renderPlannerBaseline(){
+ const plans=kwData.plans.filter(p=>p.manual?.source?.startsWith("Google Keyword Planner – Keyword Stats ")&&p.manual.volume_min!=null&&p.manual.volume_max!=null);
+ const fmt=n=>Number(n).toLocaleString("id-ID");
+ $("#kwPlannerBaseline").innerHTML=plans.map(p=>'<article class="panel kwCard"><strong>'+esc(p.keyword)+'</strong><p>'+fmt(p.manual.volume_min)+'–'+fmt(p.manual.volume_max)+' / bulan</p><small>'+esc([p.manual.source,p.manual.period,p.manual.country,p.manual.checked].filter(Boolean).join(" · "))+'</small><p class="feedback">'+esc(p.manual.notes||"")+'</p></article>').join("")||"<p>Belum ada baseline CSV.</p>";
+}
 function renderPlannerReport(r){
+ renderPlannerBaseline();
+ const comparison=r?.baseline_comparison||[],labels={NO_API_ROW:"Belum ada baris API",AMBIGUOUS_GROUP:"Kelompok ambigu",PERIOD_UNVERIFIED:"Periode berbeda / belum terverifikasi",VARIANT_GROUP:"Varian digabung; jangan bandingkan langsung",METRICS_UNAVAILABLE:"Metrik API tidak tersedia",WITHIN_RANGE:"Dalam rentang baseline (bukan bukti akurasi pasti)",OUTSIDE_RANGE:"Di luar rentang; periksa perubahan estimasi"};
+ $("#kwPlannerComparison").innerHTML=comparison.map(x=>'<p><strong>'+esc(x.keyword)+'</strong> · '+esc(labels[x.status]||x.status)+' · API '+esc(x.estimate??"N/A")+' · baseline '+esc(x.min+"–"+x.max)+' · '+esc(x.period)+'</p>').join("")||"<p>Belum ada hasil API yang sebanding (Global · semua bahasa · Google Search).</p>";
  const status={NOT_CONFIGURED:"Secret Customer ID atau kredensial belum lengkap.",APPROVAL_REQUIRED:"Konfigurasi tersedia. Aktivasi API menunggu konfirmasi permissible use dari Google untuk tujuan riset yang direncanakan. Gunakan jalur manual jika tersedia.",NOT_RUN:"Belum ada laporan.",RUNNING:"Riset berjalan.",DONE:"Laporan selesai.",PARTIAL:"Sebagian permintaan gagal.",ERROR:"Riset gagal."}[r?.status]||"Belum tersedia.";
  say("#kwPlannerStatus",status+(r?.scope?" · "+r.scope.market+" / "+r.scope.locale.toUpperCase()+" · "+r.scope.network:"")+(r?.checked_at?" · "+r.checked_at:"")+(r?.cooldown?" · Laporan terakhir masih berlaku.":"")+(r?.error?" · "+r.error:""),r?.status==="DONE");
  $("#kwPlannerRun").disabled=kwPlannerBusy||r?.status==="APPROVAL_REQUIRED"||r?.status==="NOT_CONFIGURED";
  for(const [key,id] of [["historical","#kwPlannerHistory"],["ideas","#kwPlannerIdeas"]]){
   const s=r?.sections?.[key],rows=s?.rows||[],fmt=v=>v==null?"N/A":Number(v).toLocaleString("id-ID");
   $(id).innerHTML='<p class="feedback">'+esc(s?s.status+(s.error?" · "+s.error:"")+(s.raw_rows!=null?" · "+s.raw_rows+" baris mentah, "+s.measured+" terukur":"")+(s.truncated?" · hasil dibatasi":""):"Belum tersedia")+'</p>'+rows.map(o=>{
-   const known=kwData.plans.some(p=>p.locale===r.scope.locale&&p.normalized===o.keyword.normalize("NFKC").trim().toLowerCase().replace(/\s+/g," "));
+   const known=kwData.plans.some(p=>(r.scope.locale==="all"||p.locale===r.scope.locale)&&p.normalized===o.keyword.normalize("NFKC").trim().toLowerCase().replace(/\s+/g," "));
    return '<article class="panel kwCard"><strong>'+esc(o.keyword)+'</strong><p>Estimasi pencarian/bulan: <strong>'+esc(fmt(o.avg_monthly_searches))+'</strong> · Competition Ads: '+esc(o.ads_competition??"N/A")+' ('+esc(fmt(o.ads_competition_index))+')</p>'+
     (o.close_variants?.length?'<small>Variasi dekat (angka bersama): '+esc(o.close_variants.join(", "))+'</small>':"")+
     (o.monthly?.length?'<details><summary>Riwayat bulanan</summary>'+o.monthly.map(m=>'<p>'+esc(m.month)+' · '+esc(fmt(m.searches))+'</p>').join("")+'</details>':"")+

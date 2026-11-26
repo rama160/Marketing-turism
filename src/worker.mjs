@@ -918,7 +918,7 @@ export default {
    catch(_){console.error("SEO_KEYWORD_RESEARCH_UNAVAILABLE");}
    try{await collectKeywordPerformance(env.DB,env,{preset:"28d",mode:"final"});}
    catch(_){console.error("SEO_FINAL_PERFORMANCE_UNAVAILABLE");}
-   try{await collectKeywordPlanner(env.DB,env,{market:"GLOBAL",locale:Math.floor(Date.now()/86400000)%2?"en":"id"});}
+   try{await collectKeywordPlanner(env.DB,env,{market:"GLOBAL",locale:["all","en","id"][Math.floor(Date.now()/86400000)%3]});}
    catch(_){console.error("SEO_KEYWORD_PLANNER_UNAVAILABLE");}
    try{await generateResearchArticle(env.DB,env);}
    catch(_){console.error("SEO_DRAFT_RESEARCH_UNAVAILABLE");}

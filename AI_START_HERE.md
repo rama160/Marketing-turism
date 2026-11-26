@@ -1,3 +1,6 @@
+## SEO-006A — 10 measured manual baseline rows verified in D1
+- Roadmap v1.0.46; source original Keyword Stats CSV and screenshot Global/all languages, 2025-11-01–2026-10-31. 30 plans (4 updates, 6 inserts). All-language planner and baseline comparison prepared; keep approval gate unset because Google policy explicitly limits use to campaigns creation/management/reporting. Live API not validated; do not claim SEO-006A done. CI/deploy pending for this code.
+
 ## SEO-006A/006B — gerbang otomatisasi
 - Roadmap v1.0.45: CI/deploy/Verify 8ed6db0 lulus. Owner menghendaki penemuan keyword dan volume otomatis; manual CSV hanya pembanding. Konfirmasi Google Ads API Compliance/support atas tujuan SEO-only sebelum enable flag; jangan menganggap CID sebagai MCC atau menambah Standard. Siapkan Trends Alpha secara paralel melalui halaman resmi; belum ada credential/endpoint resmi yang tersedia bagi NPE. Jangan mengarang volume, tidak mengaktifkan kampanye atau biaya. Owner harus mengirim formulir; belum dikirim. 
 
