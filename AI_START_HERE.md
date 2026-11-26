@@ -1,3 +1,6 @@
+## SEO-006A/006B — gerbang otomatisasi
+- Roadmap v1.0.45: CI/deploy/Verify 8ed6db0 lulus. Owner menghendaki penemuan keyword dan volume otomatis; manual CSV hanya pembanding. Konfirmasi Google Ads API Compliance/support atas tujuan SEO-only sebelum enable flag; jangan menganggap CID sebagai MCC atau menambah Standard. Siapkan Trends Alpha secara paralel melalui halaman resmi; belum ada credential/endpoint resmi yang tersedia bagi NPE. Jangan mengarang volume, tidak mengaktifkan kampanye atau biaya. Owner harus mengirim formulir; belum dikirim. 
+
 ## SEO-006A guarded Keyword Planner — 26 November 2026
 - Basic approved and Ads read-only access/account/Customer ID secret confirmed. Planner v26 code and manual range support prepared. Google policies require approved intended use; Basic approval alone is not SEO-only permission. Keep GOOGLE_ADS_KEYWORD_RESEARCH_APPROVED unset until Google confirms intended usage; no live Ads calls or campaigns. Verify CI/deploy and use official manual Keyword Planner results with provenance meanwhile. Roadmap v1.0.44; no secret changes.
 

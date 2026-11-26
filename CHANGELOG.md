@@ -1,3 +1,6 @@
+## SEO-006A/006B — Document verified release and official access gates
+- CI/deploy/Verify succeeded for 8ed6db0. Record manual UI as validation only; require automated measured discovery for completion. Prepare policy inquiry and Trends Alpha application in parallel; no submission or production API call, no code/secrets/billing changes. Roadmap v1.0.45.
+
 ## 26 November 2026 — Prepare guarded Keyword Planner integration
 - Add owner-only Ads historical metrics/ideas v26 and separate bounded cache 0030, market/language selector, manual estimates/ranges, status and tests. Confirm Basic, read-only access and secret metadata; production calls gated pending permissible-use confirmation. No campaign operations or billing changes. Roadmap v1.0.44.
 
