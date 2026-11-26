@@ -1,3 +1,6 @@
+## 26 November 2026 — Publish verified tour copy in existing CMS
+- D1 root activities Lembongan and Boat Ticket updated version 2→3 with revision snapshots and unchanged photos/prices; read-back confirmed. Fix test fixture expected original West title to match updated text, retaining escaping assertion. First release CI/deploy failed on stale assertion; corrected release not yet verified.
+
 ## 26 November 2026 — SEO-008 sales copy and trip durations
 - Owner confirms 4–5 h per Penida land route and 3–4 h Lembongan land tour (excluding crossings). Preserve existing routes; 3 selected snorkeling sites depending on sea/package; estimated 2–3 h, wildlife disclaimer, separate land day. Boat estimates researched: Sanur–Lembongan 30–45 min; Lembongan–Gili both directions 2–4 h depending on ports and stops. No fixed sailing times, prices, guaranteed sightings or unverified inclusions. Update bilingual defaults, metadata and competitive guide. Dynamic Lembongan/boat content requires separate version-guarded CMS update; release pending.
 

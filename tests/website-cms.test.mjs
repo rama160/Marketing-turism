@@ -571,7 +571,7 @@ test("legacy CMS SSR retains original markup and escapes published text",async()
  assert.equal(legacyTourRoute("/dashboard.html"),null);
  const html=renderLegacyTourPage(readFileSync("public/west-tour.html","utf8"),page,"https://example.com",{"westPage.title":"Wisata Barat Baru","westPage.lead":"Lihat <script>alert(1)</script>"},[{slug:"new-stop",parent_activity:"static:west",title_id:"Spot Baru"}]);
  assert.match(html,/<title>Wisata Barat Baru \| Nusa Penida Experiences<\/title>/);
- assert.match(html,/data-npe-default="Wisata Barat Nusa Penida">Wisata Barat Baru/);
+ assert.match(html,/data-npe-default="Wisata Nusa Penida Barat">Wisata Barat Baru/);
  assert.match(html,/Lihat &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
  assert.match(html,/https:\/\/example.com\/west-tour.html/);
  assert.match(html,/https:\/\/example.com\/en\/tours\/west/);

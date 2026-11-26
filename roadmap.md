@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.13 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.14 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -124,7 +124,7 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 |---|---|---|---|---|
 | SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
 | SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
-| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui, verifikasi release dan CMS aktivitas masih diperlukan; harga/fasilitas spesifik tetap dikonfirmasi |
+| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui; aktivitas dinamis D1 versi 3 terverifikasi; CI awal gagal karena ekspektasi teks judul lama, diperbaiki; verifikasi release diperlukan; harga/fasilitas spesifik tetap dikonfirmasi |
 | SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal; CI/deploy/live smoke lulus. Audit link keseluruhan dan artikel terbit masih diperlukan |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [x] Perbaikan teknis teridentifikasi pada cover Lembongan: skor 87 → 97; CI/deploy/smoke lulus. Evaluasi lanjutan bila ada temuan nyata. |
 
@@ -300,6 +300,11 @@ Pedoman keputusan:
 ### 2026-11-26 — SEO-008: optimasi copy penjualan
 - Owner konfirmasi Penida land tour 4–5 jam per rute, Lembongan 3–4 jam; tidak termasuk fast boat. Pertahankan destinasi existing West/East, Lembongan Dream Beach, Devil’s Tear, Yellow Bridge, Mangrove Point darat; Panorama/Mahagiri tambahan bila waktu memungkinkan. Snorkeling pilih 3 dari 5 spot website (Manta Bay, Manta Point, Gamat Bay, Crystal Bay, Mangrove Point) sesuai paket/rute/kondisi, tidak menjamin manta satwa liar. Estimasi snorkeling 2–3 jam dari referensi https://nusapenidatransport.com/tour/nusa-penida-snorkeling-tour/ dan https://www.snorkelinginbali.com/tours ; rute jauh bisa berbeda. Boat Sanur–Lembongan 30–45 menit (https://setiafastferry.com/timetable/ dan https://sailtix.com/routes/sanur-to-nusa-lembongan); Lembongan–Gili PP sekitar 2–4 jam, berdasarkan jadwal https://ekajayafastferry.com/schedule.aspx (beda arah, pulau, singgah). Jadwal aktual selalu dikonfirmasi. Durasi tidak termasuk check-in/transfer; tidak ada klaim harga, include/exclude yang belum dikonfirmasi.
 - Perbarui judul, ringkasan, deskripsi ID/EN di homepage dan empat halaman statis, fallback EN dan guide. CMS aktivitas dinamis Lembongan/boat perlu update terpisah menggunakan version guard dan revision history. Tidak mengubah URL, foto, tarif, struktur aktivitas, approval artikel atau desain. CI/deploy/smoke belum diverifikasi saat commit. SEO-008 tetap in progress sampai konten CMS dan live diverifikasi.
+
+### 2026-11-26 — SEO-008 publikasi konten CMS dan koreksi pengujian
+- Dua aktivitas root diperbarui melalui D1 sesuai instruksi owner: boat-ticket dan nusa-lembongan-island-tour, masing-masing versi 2 → 3 dengan guard versi/draft sama, revision history, draft dan published sinkron. Read-back lulus; foto dan harga kosong tetap sama. Judul/summary/description bilingual, metadata manual spesifik dan durasi sesuai riset; rute Bali–Gili sekitar 1,5–5 jam bergantung pelabuhan dan singgah (https://ekajayafastferry.com/schedule.aspx). Tidak mengklaim operator tertentu sebagai mitra.
+- CI 45737813899 gagal pada assertion judul default West lama; deploy 45737813930 gagal sebelum deploy dan Verify dilewati. Koreksi assertion agar tetap menguji escaping dan default baru, bukan mengabaikan regresi. Perubahan D1 telah tersimpan; template statis menunggu release berhasil. Jangan klaim seluruh live selesai sampai CI/deploy/Verify lulus.
+- SEO-008 masih in progress; harga dan fasilitas spesifik tidak diasumsikan. Setelah release, SEO-011/012 dan SEO-009 dilanjutkan; GSC data/kuota tetap tertahan.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
