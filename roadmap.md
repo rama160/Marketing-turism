@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.6 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.7 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-002 pengajuan tertahan kuota; lanjut pekerjaan independen SEO-004/006/007/009 sesuai instruksi owner, tanpa fitur baru**.
+- Status: aktif. Fokus saat ini: **P0: SEO-003/004/005 pengukuran; SEO-002 lanjut ketika kuota tersedia. P1 independen: SEO-008 audit penawaran, SEO-011/012 artikel pertama dan SEO-009 audit link; tidak menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -27,7 +27,7 @@ Sasaran utama: halaman penjualan/panduan NPE yang relevan mencapai 10 posisi org
 | Enquiry organik yang valid | Belum diketahui | Pertumbuhan terhadap baseline; tetapkan target setelah data tersedia | GA4 Organic Search + catatan leads |
 | Booking terkonfirmasi dari organik | Belum diketahui | Pertumbuhan jumlah dan nilai booking aktual; jangan samakan klik dengan penjualan | Catatan booking dengan atribusi yang diketahui |
 | Core Web Vitals mobile | Data lapangan belum tersedia/terverifikasi | LCP ≤2,5 s; INP ≤200 ms; CLS ≤0,1 pada persentil ke-75 jika tersedia | CrUX/GSC; PSI lab sebagai diagnostik |
-| Integritas website | CI, deploy dan live smoke lulus pada commit 23c7283 | Tidak ada regresi keamanan, SEO, CMS, gambar atau booking | GitHub Actions/live smoke |
+| Integritas website | CI, deploy dan live smoke lulus pada commit aplikasi 1ff4eca (26 Nov) | Tidak ada regresi keamanan, SEO, CMS, gambar atau booking | GitHub Actions/live smoke |
 
 Posisi rata-rata GSC bukan bukti bahwa semua pencarian muncul di halaman pertama. Catat negara, perangkat, query dan URL, serta periode yang sama; sampel SERP manual hanya pelengkap, tidak disamakan dengan GSC. Ambang 30 impressions dan target waktu merupakan usulan internal, revisi berdasarkan data; jangan memalsukan metrik. Jika data kosong tandai N/A/belum tersedia, bukan nol. Pisahkan kueri brand dan non-brand.
 
@@ -67,7 +67,7 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 | SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
 | SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [!] Audit awal selesai (10/10); owner melaporkan Quota exceeded 26 Nov. Jumlah request tambahan dan verdict belum dilaporkan. Lanjutkan saat kuota tersedia. |
 | SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Data GSC Performance belum tersedia; independen dari kuota request, minta ekspor saat owner siap |
-| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [~] Gap filter route artikel diperbaiki; CI/deploy dan Realtime akun belum dikonfirmasi |
+| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [~] Filter artikel diperbaiki; CI/deploy/live smoke lulus. Realtime, attribution dan konfigurasi GA4 masih perlu bukti |
 | SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
 
 Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan layar yang relevan. Lakukan audit publik yang independen sambil menunggu; jangan mengarang hasil. Tidak perlu membuat integrasi API/dashboard sebelum membuktikan ekspor manual tidak memadai. Setelah perbaikan indexasi, ajukan request indexing hanya untuk URL prioritas baru/berubah secara wajar; bukan berkali-kali setiap hari.
@@ -124,8 +124,8 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 |---|---|---|---|---|
 | SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
 | SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
-| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [ ] |
-| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal ditambahkan; CI/deploy/live smoke dan audit keseluruhan belum dikonfirmasi |
+| SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; penawaran harga/durasi/fasilitas perlu validasi owner/operator |
+| SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [~] Tautan child → parent lokal; CI/deploy/live smoke lulus. Audit link keseluruhan dan artikel terbit masih diperlukan |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [ ] |
 
 Kandidat awal peta kata kunci (hipotesis, bukan ranking atau volume terukur):
@@ -146,8 +146,8 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [ ] |
-| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Owner mengizinkan riset dan draft otomatis terbatas; approval dan publish terpisah; uji release diperlukan |
+| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1: 0 artikel, 0 terbit; panduan existing dan calon topik dicatat, hasil riset pertama belum tersedia |
+| SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; belum ada draft produksi, uji Android dan review/publish artikel nyata belum dilakukan |
 | SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
 
@@ -262,6 +262,14 @@ Pedoman keputusan:
 - Sesuai permintaan owner, cover artikel hanya dipilih dari perangkat dan diunggah langsung dari editor. Gunakan kompresi browser yang memprioritaskan kualitas, max 1600 px, rasio asli, JPEG 0,90–0,78, target 300 KB, fallback maksimal 850 KB, file asli tidak disentuh. Tidak mencari/mengambil gambar eksternal, tidak menambah menu/layanan. Cover existing tetap; tidak mencakup galeri gambar isi artikel. Hak pakai wajib dikonfirmasi.
 - Hapus artikel permanen pada semua status; untuk published wajib konfirmasi spesifik, version guard, keluarkan dari daftar dan sitemap, URL ID/EN 404; gambar bersama tetap aman. Tidak menghapus artikel aktual. Perubahan cover tetap draft hingga approval dan publish ulang.
 - Status: kode dan regression tests ditambahkan, CI/deploy/live belum dikonfirmasi. SEO-002 masih tertahan kuota, tidak mengubah prioritas SEO lainnya.
+
+### 2026-11-26 — Verifikasi release dan prioritas berikutnya
+- Release aplikasi `1ff4eca8a262f310da0511263f9137d89ad4900a`: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45725185505), [Deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45725185519), [Verify Cloudflare lulus](https://github.com/rama160/Marketing-turism/actions/runs/45725287322). Release riset otomatis sebelumnya `0397a3a` juga lulus ketiganya. Smoke bukan bukti penggunaan cover melalui Android atau keberhasilan AI di produksi.
+- D1 read-only: 0 artikel total, 0 published, tabel seo_research_runs belum berisi record saat pemeriksaan. Cron existing 02:00 UTC (10:00 WITA) memuat generator; belum ada bukti satu run. Owner dapat menekan Riset & buat draft di Artikel SEO bila ingin menjalankan lebih awal (batas mingguan tetap berlaku). Upload foto dari device, review, approve dan publish manual. Jangan menambah fitur atau mengklaim artikel terbit sebelum data tersedia.
+- SEO-004/009: live smoke lulus untuk filter analytics artikel dan link child → parent. GA4 Realtime/konversi akun dan audit link artikel nyata belum diverifikasi.
+- SEO-008 audit penawaran: data site_content harga ID untuk snorkeling, island, west, east berupa string kosong; dua aktivitas root Lembongan dan Boat Ticket mempunyai price_label_en kosong dan price_verified=0. Pertahankan pilihan harga kosong, jangan isi tarif net atau perkiraan. Lembongan memiliki deskripsi empat destinasi dan panduan pickup/rute; Boat Ticket memiliki penjelasan rute Sanur–Lembongan/Bali–Gili dan batasan jadwal. Panduan existing West/East/Island/Snorkeling memuat contoh rute, pertanyaan fasilitas, perbandingan dan catatan keselamatan. Gap: detail penawaran yang benar-benar disediakan, durasi, titik jemput, kapasitas, include/exclude dan harga jual jika owner ingin menampilkan. Tidak mengubah copy atau harga tanpa konfirmasi.
+- Next P0: SEO-003 ekspor Performance GSC 28 hari (clicks/impressions/CTR/position, queries/pages/country/device); SEO-004 uji Realtime page_view dan whatsapp_click setelah consent, tanpa mengirim data tamu atau booking palsu; SEO-005 PSI mobile/desktop untuk beranda, snorkeling, west/east, island, Lembongan dan fast boat. Skor historis bukan pengukuran baru. SEO-002 lanjutkan checklist 18 URL saat kuota tersedia; tidak mengulang 10 URL yang selesai.
+- Next P1: validasi penawaran enam klaster dengan owner/operator, perkuat halaman existing (SEO-008); siapkan draft pertama melalui CMS (SEO-011/012), verifikasi HTTP/canonical/hreflang/sitemap dan link setelah publish (SEO-013). Baru lakukan trust/backlink sesuai prioritas roadmap. Tidak ada perubahan kode, D1, publikasi atau harga dalam review ini; hanya dokumentasi. Ranking, impressions, clicks, enquiry dan booking organik masih belum terukur.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
