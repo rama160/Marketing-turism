@@ -1,3 +1,6 @@
+## 26 November 2026 — Align remaining dashboard asset regression assertion
+- CI/deploy 241 pass, 1 fail: website-cms.test.mjs still expected old script URL. Update exact revision assertion, retain application changes and all tests. Release and live GSC verification pending.
+
 ## 26 November 2026 — SEO-003B blank keyword workspace
 - Refresh dashboard JS revision, surface loading/failures and safe GSC diagnostics, track raw Google rows vs accepted pairs, bootstrap newly configured GSC through existing hourly cron. Add owner navigation and button regression plus mocked Google/SQLite tests. Cache is a hypothesis; actual production snapshot and CI/deploy pending.
 

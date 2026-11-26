@@ -457,6 +457,9 @@ Pedoman keputusan:
 - Revisi URL script dashboard tanpa mengubah version aplikasi 3.36.0; tampilkan loading, error dan status GSC secara eksplisit. Jangan timpa kegagalan load dengan pesan sukses; ERROR tidak hijau. Tambah diagnosis aman CONFIG/AUTH/ACCESS/REQUEST/NETWORK/STORAGE dan jumlah raw rows sebelum filter (tanpa secret). Gunakan hourly cron existing untuk bootstrap pertama jika GSC terkonfigurasi dan belum ada run/hasil NOT_CONFIGURED; tetap guard per jam dan daily normal, tanpa menambah cron. Tes frontend login → keyword → tombol riset dan error, tes SQLite + OAuth/Search Analytics mock serta skip bootstrap ulang. CI/deploy/live belum diverifikasi. Tidak menyentuh data produksi, secret atau public content.
 - Next: verifikasi CI/deploy/smoke, kemudian baca snapshot D1 setelah owner menjalankan Riset atau hourly cron existing. SEO-003B tetap belum selesai sampai MEASURED/NO_ROWS terverifikasi; pemulihan policy key creation oleh owner belum dikonfirmasi.
 
+### 2026-11-26 — SEO-003B release test alignment
+- CI 45780861940 and deploy 45780862286 failed before deployment: 241/242 tests passed, sole failure website-cms.test.mjs line 477 expects old dashboard asset URL. Align the assertion with exact new asset revision (`v=3.36.0&amp;rev=seo003b`); keep photo chooser and no-store tests intact. No application, credentials or production data changes. Re-run CI/deploy/Verify; SEO-003B remains open until live Google snapshot is verified.
+
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
 - ID tugas / status / commit / link URL atau workflow:
