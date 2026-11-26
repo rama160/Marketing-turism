@@ -1,3 +1,6 @@
+## SEO-006C — initial benchmark and evidence workspace
+- Roadmap v1.0.47. Owner reports Ads compliance and Trends Alpha forms submitted; both decisions pending. Google automated rank scraping prohibited, Custom Search closed. Add 18 public web benchmark records (no Google rank) via 0031; owner-only contextual Google manual evidence and existing keyword panel. CI/deploy/Verify pending; real localized SERP/automated discovery remain open. Review NPE price/inclusions/pickup and route-specific details only after confirmation. No paid API or public changes.
+
 ## SEO-006A — 10 measured manual baseline rows verified in D1
 - Roadmap v1.0.46; source original Keyword Stats CSV and screenshot Global/all languages, 2025-11-01–2026-10-31. 30 plans (4 updates, 6 inserts). All-language planner and baseline comparison prepared; keep approval gate unset because Google policy explicitly limits use to campaigns creation/management/reporting. Live API not validated; do not claim SEO-006A done. CI/deploy pending for this code.
 

@@ -1,4 +1,4 @@
-import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance,readKeywordPlanner,collectKeywordPlanner} from "./seo-keywords.mjs";
+import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance,readKeywordPlanner,collectKeywordPlanner,listCompetitorEvidence,saveCompetitorEvidence} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
@@ -287,6 +287,8 @@ async function route(req,env,ctx){
  if(path==="/api/admin/seo/keywords"&&method==="GET")return json(await listKeywords(db,env));
  if(path==="/api/admin/seo/keywords"&&method==="POST")return json(await saveKeyword(db,await parse(req)),201);
  if(path==="/api/admin/seo/keywords/research"&&method==="POST")return json(await runKeywordResearch(db,env,{manual:true}));
+ if(path==="/api/admin/seo/keywords/competitors"&&method==="GET")return json(await listCompetitorEvidence(db));
+ if(path==="/api/admin/seo/keywords/competitors"&&method==="POST")return json(await saveCompetitorEvidence(db,await parse(req)),201);
  if(path==="/api/admin/seo/keywords/planner"&&method==="GET")return json(await readKeywordPlanner(db,env,Object.fromEntries(u.searchParams)));
  if(path==="/api/admin/seo/keywords/planner"&&method==="POST")return json(await collectKeywordPlanner(db,env,await parse(req),{manual:true}));
  if(path==="/api/admin/seo/keywords/performance"&&method==="GET")return json(await readKeywordPerformance(db,Object.fromEntries(u.searchParams)));

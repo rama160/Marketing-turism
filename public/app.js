@@ -2368,6 +2368,24 @@ function renderKeywords(){
 }
 
 
+
+let kwCompetitorData=[],kwCompetitorGeneration=0,kwCompetitorBusy=false;
+function renderCompetitors(){
+ const cluster=$("#kwCompetitorCluster").value,source=$("#kwCompetitorSource").value;
+ const rows=kwCompetitorData.filter(r=>(!cluster||r.cluster===cluster)&&(!source||r.source===source));
+ const web=kwCompetitorData.filter(r=>r.source==="WEB_RESEARCH").length,google=kwCompetitorData.filter(r=>r.source==="GOOGLE_MANUAL").length;
+ say("#kwCompetitorStatus",web+" bukti web · "+google+" observasi Google organik manual · "+rows.length+" ditampilkan. Ranking otomatis Google belum tersedia.",true);
+ $("#kwCompetitorRows").innerHTML=rows.map(r=>'<article class="panel kwCard"><small>'+esc(r.cluster+" · "+r.keyword+" · "+r.result_type)+'</small><h4>'+esc(r.name)+'</h4><p>'+esc(r.source==="GOOGLE_MANUAL"?"Google organik #"+r.rank+" · "+r.country+" · "+r.language+" · "+r.device:"Benchmark web · posisi Google N/A · negara/perangkat tidak ditentukan")+' · '+esc(r.checked)+'</p><p><a href="'+esc(r.url)+'" target="_blank" rel="noopener noreferrer">Buka sumber kompetitor ↗</a> · <a href="'+esc(r.target_path)+'" target="_blank" rel="noopener noreferrer">Halaman NPE ↗</a></p><p>'+esc(r.evidence)+'</p><p><strong>Peluang:</strong> '+esc(r.opportunity)+'</p></article>').join("")||"<p>Belum ada bukti untuk filter ini.</p>";
+}
+async function loadCompetitors(){
+ if(!ownerSignedIn)return;const generation=++kwCompetitorGeneration;
+ try{const r=await api("admin/seo/keywords/competitors");if(generation!==kwCompetitorGeneration||!ownerSignedIn)return;kwCompetitorData=r.rows||[];$("#kwCompetitorTarget").innerHTML='<option value="">Pilih halaman</option>'+kwData.paths.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join("");renderCompetitors();}
+ catch(e){if(generation===kwCompetitorGeneration&&ownerSignedIn)say("#kwCompetitorStatus",e.message);}
+}
+for(const id of ["#kwCompetitorCluster","#kwCompetitorSource"])$(id).onchange=renderCompetitors;
+$("#kwCompetitorReload").onclick=()=>void loadCompetitors();
+$("#kwCompetitorForm").onsubmit=async e=>{e.preventDefault();if(kwCompetitorBusy||!ownerSignedIn)return;kwCompetitorBusy=true;try{await api("admin/seo/keywords/competitors","POST",Object.fromEntries(new FormData($("#kwCompetitorForm"))));$("#kwCompetitorForm").reset();await loadCompetitors();}catch(err){say("#kwCompetitorStatus",err.message);}finally{kwCompetitorBusy=false;}};
+
 let kwPlannerBusy=false,kwPlannerGeneration=0;
 function plannerInput(){return {market:$("#kwPlannerMarket").value||"GLOBAL",locale:$("#kwPlannerLocale").value||"all"};}
 function renderPlannerBaseline(){
@@ -2461,7 +2479,7 @@ async function loadKeywords(){
  try{
   const result=await api("admin/seo/keywords");
   if(!Array.isArray(result.plans)||!Array.isArray(result.paths)||!Array.isArray(result.observations))throw Error("Respons riset tidak lengkap. Muat ulang dashboard.");
-  kwData=result;renderKeywords();renderPublicSources();void loadKeywordPerformance();void loadPlannerReport();say("#kwFeedback","",true);return true;
+  kwData=result;renderKeywords();renderPublicSources();void loadKeywordPerformance();void loadPlannerReport();void loadCompetitors();say("#kwFeedback","",true);return true;
  }catch(e){say("#kwStatus","Gagal memuat riset.",false);say("#kwFeedback",e.message);return false;}
 }
 $("#kwNew").onclick=()=>kwEdit();

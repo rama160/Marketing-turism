@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage,plannerScope,parsePlannerRows,readKeywordPlanner,collectKeywordPlanner,comparePlannerBaseline,diversePlannerSeeds} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch,performanceRange,summarizePerformanceRows,collectKeywordPerformance,readKeywordPerformance,queryLanguage,plannerScope,parsePlannerRows,readKeywordPlanner,collectKeywordPlanner,comparePlannerBaseline,diversePlannerSeeds,validateCompetitorEvidence,listCompetitorEvidence,saveCompetitorEvidence} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -96,4 +96,25 @@ test("all-language planner scope and diverse seeds; baseline comparisons require
  r.sections.historical.rows[0].close_variants=["nusa penida tours"];assert.equal(comparePlannerBaseline([p],r)[0].status,"VARIANT_GROUP");
  r.sections.historical.rows[0].monthly.pop();assert.equal(comparePlannerBaseline([p],r)[0].status,"PERIOD_UNVERIFIED");
  r.scope=plannerScope({market:"GLOBAL",locale:"en"});assert.deepEqual(comparePlannerBaseline([p],r),[]);
+});
+
+test("competitor evidence separates web research from actual manual Google organic positions",async()=>{
+ const sqlite=new DatabaseSync(":memory:");
+ sqlite.exec("CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE seo_articles(slug TEXT,published_json TEXT);");
+ const sql=readFileSync("database/migrations/0031_seo_competitors.sql","utf8");sqlite.exec(sql);sqlite.exec(sql);
+ const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}}};
+ try{
+  const initial=await listCompetitorEvidence(db);assert.equal(initial.rows.length,18);assert.ok(initial.rows.every(r=>r.source==="WEB_RESEARCH"&&r.rank===null));
+  const input={cluster:"west",keyword:"nusa penida west tour",target_path:"/en/tours/west",country:"ID",language:"en",device:"mobile",checked:"2026-11-26",rank:1,result_type:"OPERATOR",name:"Example",url:"https://example.com/tour",evidence:"Observed organic page",opportunity:"Compare package inclusions"};
+  assert.throws(()=>validateCompetitorEvidence({...input,rank:0},["/en/tours/west"]),/Lengkapi/);
+  assert.throws(()=>validateCompetitorEvidence({...input,device:""},["/en/tours/west"]),/Lengkapi/);
+  assert.throws(()=>validateCompetitorEvidence({...input,url:"javascript:alert(1)"},["/en/tours/west"]),/HTTPS/);
+  assert.throws(()=>validateCompetitorEvidence({...input,target_path:"/not-published"},[]),/Lengkapi/);
+  assert.equal(validateCompetitorEvidence({...input,source:"WEB_RESEARCH"},["/en/tours/west"],Date.parse("2026-11-26T12:00Z")).source,"GOOGLE_MANUAL");
+  // Use an old date for CI environments with a real clock earlier than the research date.
+  input.checked="2026-01-01";
+  await saveCompetitorEvidence(db,input);await assert.rejects(()=>saveCompetitorEvidence(db,input),/sudah/);
+  await assert.rejects(()=>saveCompetitorEvidence(db,{...input,url:"https://another.example.com/tour"}),/Posisi/);
+  const after=await listCompetitorEvidence(db);assert.equal(after.rows.length,19);assert.equal(after.rows.find(r=>r.source==="GOOGLE_MANUAL").rank,1);
+ }finally{sqlite.close();}
 });

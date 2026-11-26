@@ -198,6 +198,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
   else if(p==="admin/finance")body={payables:[],changes:[]};
   else if(p==="admin/business")body={business:null};
   else if(p==="admin/seo/keywords")body={plans:[{id:"test-kw",keyword:"West Nusa Penida tour",normalized:"west nusa penida tour",active:1,locale:"en",cluster:"west",intent:"BUY",priority:2,origin:"SEED",target_path:"/en/tours/west",manual:{}}],paths:["/en/tours/west"],observations:[],gsc_configured:true};
+  else if(p==="admin/seo/keywords/competitors")body={rows:[{cluster:"west",keyword:"nusa penida west tour",target_path:"/en/tours/west",source:"WEB_RESEARCH",rank:null,checked:"2026-11-26",result_type:"OPERATOR",name:"Example",url:"https://example.com/tour",evidence:"Public price",opportunity:"Clarify price"}]};
   else if(p.startsWith("admin/seo/keywords/planner"))body={status:"APPROVAL_REQUIRED",scope:{market:"GLOBAL",locale:"en",network:"GOOGLE_SEARCH"}};
   else if(p.startsWith("admin/seo/keywords/performance"))body={status:"DONE",range:{mode:"fresh",start:"2026-11-25",end:"2026-11-26"},sections:{total:{status:"MEASURED",rows:[{impressions:1,clicks:0,position:64,ctr:0}]},queries:{status:"MEASURED",rows:[{query:"nusa penida west island tour",impressions:1,clicks:0,position:64,ctr:0}]}}};
   else if(p==="admin/seo/keywords/research")body={status:"DONE",gsc_status:"ERROR",gsc_error:"ACCESS",rows:0};
@@ -244,6 +245,7 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(get("#tab-keywords").hidden,false);assert.equal(get("#dashHeadingTitle").textContent,"Konten yang menghasilkan");
  assert.match(get("#kwList").innerHTML,/West Nusa Penida tour/);assert.match(get("#kwStatus").textContent,/GSC terkonfigurasi/);
+ assert.ok(get("#kwCompetitorPanel"));assert.ok(get("#kwCompetitorReload"));
  assert.ok(get("#kwPlannerRun"));assert.ok(get("#kwPlannerMarket"));
  await get("#kwPerfRun").click();assert.match(get("#kwPerfMetrics").innerHTML,/64/);assert.match(get("#kwPerfQueries").innerHTML,/Keyword baru terdeteksi/);
  await get("#kwRun").click();assert.match(get("#kwFeedback").textContent,/GSC ERROR.*Periksa akses/);assert.equal(get("#kwRun").disabled,false);

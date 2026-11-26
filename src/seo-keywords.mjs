@@ -389,3 +389,27 @@ export async function keywordArticlePriorities(db){
   }return out;
  }catch{return {};}
 }
+
+// SEO-006C: recorded evidence only; no automated Google SERP requests.
+export function validateCompetitorEvidence(input,paths,now=Date.now()){
+ const cluster=String(input.cluster||""),keyword=clean(input.keyword,140),target_path=clean(input.target_path,240);
+ const country=String(input.country||"").toUpperCase(),language=String(input.language||""),device=String(input.device||""),checked=String(input.checked||"");
+ const rank=Number(input.rank),result_type=String(input.result_type||""),name=clean(input.name,120),evidence=clean(input.evidence,1200),opportunity=clean(input.opportunity,1200);
+ let url;try{url=new URL(String(input.url||""));}catch{throw Error("URL kompetitor tidak valid.");}
+ if(url.protocol!=="https:"||url.username||url.password||url.port||url.hash||url.hostname==="nusapenidaexperiences.com"||url.hostname.endsWith(".nusapenidaexperiences.com")||!url.hostname.includes(".")||url.toString().length>1500)throw Error("Gunakan URL HTTPS publik kompetitor.");
+ if(!Object.hasOwn(clusters,cluster)||!safeQuery(keyword)||!paths.includes(target_path)||!(/^[A-Z]{2}$/.test(country))||!["en","id"].includes(language)||!["mobile","desktop"].includes(device)||!dateOK(checked)||checked>new Date(now+8*3600000).toISOString().slice(0,10)||!Number.isInteger(rank)||rank<1||rank>10||!["OPERATOR","AGENCY","OTA","GUIDE","OTHER"].includes(result_type)||!name||!evidence||!opportunity)throw Error("Lengkapi keyword, halaman, negara ISO, bahasa, perangkat, tanggal, posisi organik 1–10, jenis hasil, bukti dan peluang.");
+ return {cluster,keyword:norm(keyword),target_path,source:"GOOGLE_MANUAL",country,language,device,checked,rank,result_type,name,url:url.toString(),evidence,opportunity};
+}
+export async function listCompetitorEvidence(db){
+ const r=await db.prepare("SELECT * FROM seo_competitor_evidence ORDER BY checked DESC,cluster,source,rank,id LIMIT 500").all();
+ return {rows:r.results,source_status:"MANUAL_GOOGLE_REQUIRED",limit:500,notice:"WEB_RESEARCH bukan posisi Google; GOOGLE_MANUAL adalah observasi owner pada cakupan yang dicatat. Tidak ada skor organic difficulty atau klaim ranking otomatis."};
+}
+export async function saveCompetitorEvidence(db,input){
+ const r=validateCompetitorEvidence(input,await keywordPaths(db));
+ if(Number((await db.prepare("SELECT count(*) AS n FROM seo_competitor_evidence").first()).n)>=500)throw Error("Batas 500 bukti tercapai; arsipkan melalui pemeliharaan sebelum menambah.");
+ const conflict=await db.prepare("SELECT id FROM seo_competitor_evidence WHERE source='GOOGLE_MANUAL' AND keyword=? AND country=? AND language=? AND device=? AND checked=? AND rank=? AND url!=?").bind(r.keyword,r.country,r.language,r.device,r.checked,r.rank,r.url).first();
+ if(conflict)throw Error("Posisi sudah dicatat untuk konteks ini; gunakan tanggal/observasi yang benar.");
+ const result=await db.prepare("INSERT OR IGNORE INTO seo_competitor_evidence(id,cluster,keyword,target_path,source,country,language,device,checked,rank,result_type,name,url,evidence,opportunity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(crypto.randomUUID(),r.cluster,r.keyword,r.target_path,r.source,r.country,r.language,r.device,r.checked,r.rank,r.result_type,r.name,r.url,r.evidence,r.opportunity).run();
+ if(result.meta?.changes!==1)throw Error("Bukti sudah tersimpan untuk konteks ini.");
+ return {saved:true};
+}

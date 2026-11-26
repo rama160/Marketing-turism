@@ -1,3 +1,6 @@
+## SEO-006C — external competitor evidence and contextual SERP workspace
+- Add 0031 evidence table and 18 source-backed benchmark observations across six clusters. Owner-only filtered dashboard and manual contextual organic observation, no automated Google queries or invented rankings. Record Ads/Trends applications submitted by owner; no approvals yet. Roadmap v1.0.47.
+
 ## SEO-006A — verified baseline and comparison readiness
 - Store 10 owner-exported keyword volume ranges in production D1, preserve source and metrics notes. Add all-language scope, diversified seeds and compatible-period baseline comparison; show baseline separately even when API disabled. No campaign or billing changes. Automatic API use remains gated pending actual permission. Roadmap v1.0.46.
 
