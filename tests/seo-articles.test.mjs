@@ -110,3 +110,27 @@ test("related guide navigation is localized, bounded, escaped and excludes unpub
  assert.match(renderRelatedArticleLinks(items,"boat","en"),/href="\/en\/articles\/first"/);
  assert.equal(renderRelatedArticleLinks(items,"east","en"),"");
 });
+
+test("legacy failed research can retry manually, diagnoses stages and locks after one successful draft",async()=>{
+ const {DatabaseSync}=await import("node:sqlite");const {readFileSync}=await import("node:fs");const {generateResearchArticle,publishedArticles}=await import("../src/seo-articles.mjs");
+ const sqlite=new DatabaseSync(":memory:");sqlite.exec("CREATE TABLE website_media(id TEXT PRIMARY KEY); CREATE TABLE website_activities(slug TEXT,status TEXT,published_json TEXT);CREATE TABLE growth_opportunities(headline TEXT,source TEXT,discovered_at TEXT);");
+ sqlite.exec(readFileSync("database/migrations/0026_seo_articles.sql","utf8"));
+ const db={prepare(sql){const stmt=sqlite.prepare(sql);const wrap=args=>({first:async()=>stmt.get(...args),all:async()=>({results:stmt.all(...args)}),run:async()=>({meta:{changes:stmt.run(...args).changes}})});return {...wrap([]),bind:(...args)=>wrap(args)}} ,async batch(stmts){sqlite.exec("BEGIN");try{for(const s of stmts)await s.run();sqlite.exec("COMMIT");}catch(e){sqlite.exec("ROLLBACK");throw e;}}};
+ let calls=0,mode="invalid";
+ const env={SEO_ARTICLE_DRAFTS_ENABLED:"true",AI:{run:async(model,config)=>{calls++;assert.equal(config.response_format.type,"json_object");return {response:mode==="invalid"?"not JSON":JSON.stringify({...draft,body_en:"Practical travel advice. ".repeat(40),body_id:"Saran perjalanan wisata. ".repeat(40)})}}}};
+ const opts={now:Date.UTC(2026,10,26),request:async(url)=>{assert.equal(new URL(url).searchParams.get("exchars"),"1200");return {ok:true,json:async()=>({query:{pages:[{title:"Nusa Penida",extract:"Island background and factual geography for editorial research. ".repeat(3)}]}})};}};
+ try{
+  sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-23","FAILED","Legacy error");
+  assert.equal((await generateResearchArticle(db,env,opts)).status,"WEEK_LIMIT");
+  assert.equal(calls,0);
+  const failed=await generateResearchArticle(db,env,{...opts,manual:true});assert.equal(failed.status,"AI_FORMAT_ERROR");assert.match(failed.detail,/Percobaan 2\/3/);
+  mode="valid";
+  const result=await generateResearchArticle(db,env,{...opts,manual:true});assert.equal(result.status,"DRAFT_CREATED");assert.match(result.detail,/Percobaan 3\/3/);
+  assert.equal((await generateResearchArticle(db,env,{...opts,manual:true})).status,"WEEK_LIMIT");assert.equal(calls,2);assert.equal((await publishedArticles(db)).length,0);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM seo_articles").get().n,1);
+  sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-30","SOURCE_UNAVAILABLE","Percobaan 3/3 · Test");
+  assert.equal((await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,10,30),manual:true})).status,"WEEK_LIMIT");
+  const failedSource=await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,11,7),request:async()=>({ok:true,json:async()=>({error:{code:"test"}})})});
+  assert.equal(failedSource.status,"SOURCE_UNAVAILABLE");assert.equal(calls,2);
+ }finally{sqlite.close();}
+});

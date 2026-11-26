@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.20 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.21 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -146,7 +146,7 @@ Prioritas awal EN untuk wisatawan internasional dan ID untuk kebutuhan lokal; ne
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 0 artikel, 0 terbit; riset minggu 23 Nov memilih lembongan-two-days tetapi FAILED; penyebab belum terdiagnosis |
+| SEO-011 | P1 | Audit inventaris artikel dan panduan yang sudah terbit; pilih gap berdasarkan kueri dan kebutuhan pelanggan | Backlog tanpa artikel/URL duplikat, alasan pemilihan per artikel | [~] D1 26 Nov: 0 artikel, 0 terbit; riset minggu 23 Nov memilih lembongan-two-days tetapi FAILED; ditemukan parameter Wikimedia di luar batas; penyebab live yang tepat belum dipastikan; perbaikan dan retry disiapkan |
 | SEO-012 | P1 | Siapkan artikel orisinal bilingual di CMS existing, 1–2 topik/minggu sebagai batas awal, bukan kuota wajib | Setiap artikel punya intent, sumber fakta, nilai tambah, foto berizin, judul/meta, link ke produk; review owner sebelum publish | [~] Workflow draft/approval/publish, upload cover dan hapus: CI/deploy/live smoke lulus; riset produksi pertama FAILED; lock mingguan menahan retry. Diagnosis tahap kegagalan dan retry terbatas diperlukan; review/publish artikel nyata belum dilakukan |
 | SEO-013 | P1 | Setelah publikasi verifikasi status 200, canonical, hreflang, sitemap dan link dari halaman lain; cek indexasi setelah wajar | URL dan tanggal publish tercatat, bukti indeks bila tersedia | [ ] |
 | SEO-014 | P2 | Perkuat halaman yang memperoleh impressions, bukan membuat artikel serupa | Catat query/URL, CTR/position sebelum, revisi, hasil 28 hari setelah | [ ] |
@@ -347,6 +347,11 @@ Pedoman keputusan:
 - Release a5ecbd32b43e83b937c3fcf598f4c5175829dcbb: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741357607), [deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741357642), [Verify lulus](https://github.com/rama160/Marketing-turism/actions/runs/45741466594). Tidak mengulang pengembangan; uji Android oleh owner/pelanggan dan transaksi nyata belum dibuktikan.
 - D1 read-only: website_reviews 0 total/0 visible; seo_articles 0 total/0 published. seo_research_runs minggu 2026-11-23: FAILED, topic lembongan-two-days, detail “Riset atau AI gagal; tidak ada publikasi otomatis.” Audit generator: catch generik tidak membedakan kegagalan sumber, AI, JSON/validasi atau DB; INSERT OR IGNORE lock mingguan mencegah retry normal walau gagal. Penyebab spesifik belum diketahui. Tidak reset lock, tidak menjalankan AI, tidak membuat review/draft palsu.
 - Prioritas berikut SEO-011/012: diagnosis tahap dan error yang aman tanpa secret/PII, perbaiki sebab nyata, retry terbatas hanya failure dan cegah draft duplikat, verifikasi draft tersimpan; persetujuan/upload foto/publish tetap owner. SEO-013 cek URL/sitemap/tautan setelah artikel terbit. SEO-018 outreach 5 prospek menunggu owner; SEO-019 evaluasi kelayakan lokasi/interaksi pelanggan sebelum membuat profil, tanpa alamat palsu. SEO-002/003 lanjut saat kuota/data tersedia. SEO-020 evaluasi berkala setelah baseline tersedia. Perubahan dokumentasi saja.
+
+### 2026-11-26 — SEO-011/012: pemulihan riset gagal
+- Screenshot owner 10.31 WITA menunjukkan FAILED dan pesan Riset minggu ini sudah dijalankan. Audit menemukan exchars 1800 melampaui batas 1200 (https://www.mediawiki.org/wiki/Extension:TextExtracts), generic catch dan lock mingguan yang mencegah retry. Tidak dapat memastikan penyebab exception historis dari log yang tersedia. Perbaiki parameter, respons API error, JSON mode Workers AI (https://developers.cloudflare.com/workers-ai/features/json-mode/) dan validasi enam string. Model fast tetap didukung menurut changelog 8 Mei 2026 (https://developers.cloudflare.com/changelog/post/2026-05-08-planned-model-deprecations/).
+- Retry manual maksimal 3 percobaan total/minggu, row FAILED lama dihitung sebagai percobaan pertama, atomic CAS menghindari double click; sukses tetap maksimal satu draft, cron tidak mengulang kegagalan otomatis. Status error terpisah, tidak membocorkan rahasia atau raw response. Tidak mengubah schema, menghapus lock, membuat artikel palsu, atau mempublikasikan artikel. Review/upload cover/publish tetap owner.
+- Release CI/deploy/Verify dan retry production belum terbukti. Setelah release lulus, klik Riset & buat draft sekali, periksa draft atau status error yang spesifik.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

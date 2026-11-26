@@ -284,7 +284,7 @@ async function route(req,env,ctx){
   return json(updated);
  }
  if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
- if(path==="/api/admin/website/articles/research"&&method==="POST")return json(await generateResearchArticle(db,env));
+ if(path==="/api/admin/website/articles/research"&&method==="POST")return json(await generateResearchArticle(db,env,{manual:true}));
  const articleAdmin=path.match(/^\/api\/admin\/website\/articles(?:\/([0-9a-f-]+))?(?:\/(approve|reject|publish|unpublish|delete))?$/);
  if(articleAdmin){
   const [,id,action]=articleAdmin;

@@ -2223,7 +2223,7 @@ async function loadSeoArticles(){
   const row=(copy.items||[]).find(x=>x.key==="layout.order.articles"&&x.locale==="id");seoOrderVersion=row?.version||0;
   seoOrder=orderedKeys(seoItems.filter(x=>x.published).map(x=>"article:"+x.id),readOrder({"layout.order.articles":row?.value},"articles"));drawSeoOrder();
   const latest=r.latest_research;
-  $("#seoResearchStatus").textContent="Riset otomatis: maksimal 1 draft/minggu, tidak pernah auto-publish. "+(latest?latest.week+" · "+latest.status+" · "+(latest.detail||""):"Belum ada riwayat riset.");
+  $("#seoResearchStatus").textContent="Riset otomatis: maksimal 1 draft/minggu. Jika gagal, gunakan tombol riset untuk mencoba ulang (total 3 percobaan/minggu). Tidak pernah auto-publish. "+(latest?latest.week+" · "+latest.status+" · "+(latest.detail||""):"Belum ada riwayat riset.");
   drawSeoList();
  }catch(e){say("#seoFeedback",e.message);}
 }
@@ -2248,7 +2248,7 @@ function drawSeoList(){
 $("#seoFilter").onchange=drawSeoList;
 $("#seoResearch").onclick=async()=>{
  const b=$("#seoResearch");b.disabled=true;
- try{const result=await api("admin/website/articles/research","POST",{});await loadSeoArticles();$("#seoFilter").value="review";drawSeoList();say("#seoFeedback",result.detail||result.status,result.status==="DRAFT_CREATED");}
+ try{const result=await api("admin/website/articles/research","POST",{});await loadSeoArticles();$("#seoFilter").value="review";drawSeoList();say("#seoFeedback",result.detail||result.status,["DRAFT_CREATED","RUNNING"].includes(result.status));}
  catch(e){say("#seoFeedback",e.message);}finally{b.disabled=false;}
 };
 $("#seoNew").onclick=()=>editSeoArticle();
