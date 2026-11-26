@@ -124,7 +124,8 @@ test("premium tourism visuals use real credited destination images and honest ac
  assert.match(logo,/Approved transparent logo/);
  assert.match(read("dashboard.html"),/id="quickSave"/);
  assert.match(read("app.js"),/admin\/site-content/);
- assert.match(home,/Penerimaan permintaan|Pengiriman lead akan tersedia/);
+ assert.match(home,/Hubungi kami melalui WhatsApp untuk permintaan informasi dan pemesanan/);
+ assert.match(home,/id="reviewForm"/);assert.doesNotMatch(home,/id="leadForm"/);
 });
 test("all large cover images render as genuine img elements with safe mobile fallbacks",()=>{
  const home=read("index.html"),css=read("styles.css"),loader=read("photo-loader.js");
@@ -259,7 +260,8 @@ test("official WhatsApp Business contact and catalog links are visible, separate
  assert.match(dashboard,/data-tab="whatsapp"/);
  assert.ok(home.includes(link), "Direct chat link missing");
  assert.ok(home.includes(catalog), "Official catalog link missing");
- assert.equal((home.match(/data-whatsapp-chat/g)||[]).length,3);
+ assert.equal((home.match(/data-whatsapp-chat/g)||[]).length,5);
+ for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])assert.ok(home.includes('data-whatsapp-package="'+service+'"'));
  for(const file of ["snorkeling.html","island-tour.html","west-tour.html","east-tour.html"]){
   const page=read(file);
   assert.ok(page.includes('data-whatsapp-chat'),file+" direct chat CTA missing");

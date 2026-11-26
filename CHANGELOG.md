@@ -1,3 +1,6 @@
+## 26 November 2026 — Review feature regression fixture alignment
+- Initial CI found four stale assertions for the retired public enquiry form, cancellation label case and previous WhatsApp CTA count. Review validation/visibility tests passed. Align fixtures to the requested WhatsApp-only flow while retaining cancellation links, anti-bot, no-admin-exposure and contextual CTA checks. Add route rejection tests. Release pending.
+
 ## 26 November 2026 — Customer testimonials and WhatsApp-only enquiries
 - Owner requests immediate self-submitted public reviews with hide/show controls and removal of website enquiry form. Add isolated review D1 migration, public no-store API, Turnstile action/hostname validation, daily HMAC rate limit, consent and completed-trip declaration, plain text only, reject contact details/links, owner session and version-guarded moderation. No verified-booking claim, fake reviews, rating schema or review-as-lead analytics. Replace public form with review section and retain WhatsApp; disable legacy intake with separate flag (existing internal booking/terms safeguards unaffected). Update privacy/terms, bilingual copy, dashboard content Testimoni tab, regression/smoke. No existing data deletion. Deployment and Android test pending.
 

@@ -29,3 +29,13 @@ test("review publishes immediately, owner hide/show controls public output, rate
  assert.equal((await listReviews(db)).items.length,3);
  }finally{sqlite.close();}
 });
+
+test("public review route refuses missing proof and retired enquiry cannot create a lead",async()=>{
+ const {default:worker}=await import("../src/worker.mjs");
+ const env={DB:{prepare(){throw Error("No database write allowed on rejected requests");}},TURNSTILE_SECRET:"test-only",PUBLIC_WEB_ENQUIRIES_DISABLED:"true"};
+ const request=(path,body)=>new Request("https://nusapenidaexperiences.com"+path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+ assert.equal((await worker.fetch(request("/api/public/reviews",sample),env,{})).status,403);
+ assert.equal((await worker.fetch(request("/api/public/leads",{}),env,{})).status,410);
+ const admin=await worker.fetch(new Request("https://nusapenidaexperiences.com/api/admin/website/reviews"),{...env,ADMIN_TOKEN:"test-owner-token-long-enough"},{});
+ assert.equal(admin.status,401);
+});

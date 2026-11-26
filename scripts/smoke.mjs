@@ -29,10 +29,10 @@ const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
 if(health.version!=="3.36.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
-if(ready.accepting_leads!==false||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
+if(ready.accepting_leads!==false||ready.turnstile_required!==true||!ready.business_contact)throw Error("Public enquiry mode or contact incorrect: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
  const deniedGuestWithoutTurnstile=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({}),signal:AbortSignal.timeout(20000)});
- if(deniedGuestWithoutTurnstile.status!==410)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+deniedGuestWithoutTurnstile.status);
+ if(deniedGuestWithoutTurnstile.status!==410)throw Error("Legacy public enquiry endpoint must be disabled: HTTP "+deniedGuestWithoutTurnstile.status);
  const landingMarkup=await get("/");
  if(!landingMarkup.includes('data-action="customer_review"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
 const privacyTrust=await get("/privacy.html"),termsTrust=await get("/terms.html"),cancelTrust=await get("/cancellation.html");

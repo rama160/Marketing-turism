@@ -591,7 +591,7 @@ test("legacy route binds only generated non-HTML source and protects internal pa
  }}};
  const res=await worker.fetch(new Request("https://example.com/"),env,{});
  assert.equal(res.status,200);
- assert.match(await res.text(),/data-action="lead_enquiry"/);
+ const html=await res.text();assert.match(html,/data-action="customer_review"/);assert.doesNotMatch(html,/id="leadForm"/);
  const alias=await worker.fetch(new Request("https://example.com/west-tour?utm_source=facebook"),env,{});
  assert.equal(alias.status,301);
  assert.equal(alias.headers.get("location"),"https://example.com/west-tour.html?utm_source=facebook");

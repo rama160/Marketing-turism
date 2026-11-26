@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.18 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.19 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -339,6 +339,9 @@ Pedoman keputusan:
 - Owner meminta pelanggan menulis review sendiri, langsung tampil dan owner dapat hide/show, serta form enquiry dihapus. Tambah Testimoni di Konten & Kampanye, form review homepage, nama depan/samaran, layanan, rating 1–5, teks, deklarasi telah menggunakan layanan, persetujuan publikasi, Turnstile deferred, validasi teks dan pembatas 3 per hari dengan HMAC IP (tanpa IP mentah; bersihkan key lama pada submit berikutnya). Tidak klaim booking terverifikasi; owner tidak dapat mengubah teks/rating, hanya visibilitas dengan session dan version guard. Review hidden tidak dikirim API publik. Tidak membuat ulasan uji di produksi atau rating schema, tidak kirim review ke GA4 sebagai lead.
 - Form lead hilang; WhatsApp dan katalog tetap, endpoint public/leads ditolak 410 di produksi melalui flag PUBLIC_WEB_ENQUIRIES_DISABLED (PUBLIC_LEADS_ENABLED dipertahankan untuk ketentuan penawaran internal). Privacy/terms/copy dan smoke diselaraskan; migration 0027 additive. Review dimuat API no-store agar hide tidak bocor lewat cache. CI/deploy/Verify dan uji perangkat belum terkonfirmasi. Moderasi berdasarkan spam, privasi atau pelanggaran, bukan skor negatif. Tidak menghapus data historis.
 - SEO-015/016/017 tetap in progress hingga verifikasi dan review nyata; SEO-018 prospek belum dikirim, SEO-002/003 menunggu Google.
+
+### 2026-11-26 — Koreksi CI testimoni
+- CI 45741234334 gagal 4 assertion lama (form lead, label pembatalan, jumlah CTA WhatsApp, action Turnstile). Tes validasi/review langsung tampil/hide/show/limit lulus. CI release trust sebelumnya juga gagal pada fixture jumlah CTA. Koreksi fixture sesuai perubahan owner, tetap uji keamanan, tautan kebijakan, CTA, dan tambahkan penolakan API. Tidak menghapus review atau mengubah data lama. Release terbaru belum diverifikasi.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

@@ -400,7 +400,7 @@ $("#businessForm").onsubmit=async e=>{
  b.privacy_approved=e.target.querySelector('[name=privacy_approved]').checked;
  b.refund_policy_approved=e.target.querySelector('[name=refund_policy_approved]').checked;
  if(!confirm("Konfirmasi data resmi usaha dan persetujuan kebijakan sesuai kenyataan?"))return;
- try{await api("admin/business","PATCH",b);await refresh();say("#adminFeedback","Pengaturan usaha disimpan. Form tamu publik memakai Turnstile dan tetap meminta persetujuan.",true)}
+ try{await api("admin/business","PATCH",b);await refresh();say("#adminFeedback","Pengaturan usaha disimpan. Testimoni publik memakai Turnstile dan persetujuan; permintaan wisata melalui WhatsApp.",true)}
  catch(e){say("#adminFeedback",e.message)}
 };
 function renderOwnerPhotos(){

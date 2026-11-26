@@ -100,7 +100,9 @@ test("separating website does not change critical routes, operator prices, or ma
  assert.ok(file("dashboard.html").includes("Keluar"));
  const publicPage=file("index.html");
  assert.ok(publicPage.includes("https://wa.me/628561752525"));
- assert.ok(publicPage.includes("Kebijakan Pembatalan"));
+ assert.match(publicPage,/href="\/cancellation\.html"/);
+ assert.match(publicPage,/Kebijakan pembatalan/i);
+ assert.doesNotMatch(publicPage,/id="leadForm"/);
 });
 
 test("repository release identity and guest assets stay aligned with current production",()=>{
