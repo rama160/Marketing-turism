@@ -1,3 +1,6 @@
+## 26 November 2026 — Correct English tour catalog test fixture
+- CI failed one outdated fixture expecting hardcoded Lembongan text without published catalog. Pass a representative published catalog and assert actual localized anchors, retaining existing metadata/privacy checks. No production code or database changes. Release pending.
+
 ## 26 November 2026 — Crawlable internal links and related published guides
 - Prior sales copy CI/deploy/Verify passed. Render published dynamic destinations/roots on EN tour pages; use actual published article links to show relevant localized guide anchors on sale pages. Add unit checks and live homepage reachability traversal of sitemap URLs. No new pages, menu, D1 mutation or paid services; release pending.
 

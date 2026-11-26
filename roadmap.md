@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.15 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.16 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -311,6 +311,11 @@ Pedoman keputusan:
 - Audit kode: halaman English static tour belum merender dynamic child anchors; Mangrove Point EN berpotensi orphan di HTML awal. Root dynamic EN hardcoded dua slug, tidak mencerminkan katalog perubahan. Perbaiki anchor dari aktivitas published yang sudah tersedia; tidak mengubah URL/desain/DB. Artikel hanya dari published snapshot dengan explicit link key cocok, maksimum 3 per halaman jual; tidak tampil ketika kosong. Draft tidak dapat tampil. Tambah regression dan live smoke graph traversal dari homepage melalui <a href>, tidak menghitung sitemap/hreflang sebagai internal navigation. Status CI/deploy/graph belum diverifikasi saat commit.
 - D1 read-only: 9 aktivitas published; 0 artikel total/terbit, belum ada riwayat seo_research_runs. Pukul 09.49 WITA sebelum jadwal 10.00 WITA yang sebelumnya dicatat. Jangan klaim riset gagal tanpa record; tidak memasukkan draft manual atau menjalankan cron lewat DB. Owner dapat menggunakan Riset & buat draft pada dashboard existing; review, upload cover dan publish manual. SEO-011/012 belum selesai.
 - Next: verifikasi release/graph, lanjut SEO-011–013 dengan artikel pertama dan SEO-015/016 trust/konversi. SEO-002/003 tetap menunggu kuota/data. Tidak ada fitur menu baru, perubahan harga, artikel publik atau DB pada sesi ini.
+
+### 2026-11-26 — SEO-009 koreksi fixture CI
+- CI 45738442723: 226 lulus, 1 gagal. Test lama renderEnglishTourPage memanggil renderer tanpa katalog published tetapi mengharapkan nama Lembongan yang sebelumnya hardcoded. Deploy 45738442682 gagal, Verify 45738475311 skipped. Release produksi sebelumnya 703d494 lulus; tidak mengubah konten atau D1.
+- Sesuaikan fixture test lama dengan katalog published yang berisi Lembongan dan Boat Ticket, pertahankan seluruh assertion SEO, privasi, metadata, deterministic rendering; tambah assertion href keduanya. Test baru untuk katalog kosong tetap memastikan tidak membuat tautan aktivitas yang belum terbit. Tidak mengubah renderer atau melemahkan smoke reachability.
+- CI/deploy/Verify koreksi belum terkonfirmasi saat commit. SEO-009 tetap in progress hingga verifikasi live graph lulus.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

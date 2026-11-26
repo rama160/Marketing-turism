@@ -522,8 +522,9 @@ test("published parent gallery transparently distinguishes optional stops",()=>{
 
 test("English tour pages are indexable, reciprocal, truthful, and do not expose owner data",()=>{
  assert.deepEqual(englishTourKeys,["","west","east","snorkeling","island"]);
+ const publishedCatalog=[{slug:"nusa-lembongan-island-tour",parent_activity:"",title_en:"Nusa Lembongan Island Tour"},{slug:"boat-ticket",parent_activity:"",title_en:"Fast Boat Tickets"}];
  for(const key of englishTourKeys){
-  const html=renderEnglishTourPage(key,"https://example.com");
+  const html=renderEnglishTourPage(key,"https://example.com",{},publishedCatalog);
   assert.match(html,/<html lang="en">/);
   assert.match(html,/hreflang="id"/);
   assert.match(html,/hreflang="en"/);
@@ -534,7 +535,9 @@ test("English tour pages are indexable, reciprocal, truthful, and do not expose 
   assert.match(html,/https:\/\/wa\.me\/628561752525/);
   assert.match(html,/Nusa Lembongan Island Tour/);
   assert.doesNotMatch(html,/Admin Token|booking database|"reviewCount"|"aggregateRating"/);
-  assert.equal(renderEnglishTourPage(key,"https://example.com"),html);
+  assert.match(html,/href="\/en\/experiences\/nusa-lembongan-island-tour"/);
+  assert.match(html,/href="\/en\/experiences\/boat-ticket"/);
+  assert.equal(renderEnglishTourPage(key,"https://example.com",{},publishedCatalog),html);
  }
  assert.equal(renderEnglishTourPage("unknown","https://example.com"),null);
 });
