@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.21 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.22 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -352,6 +352,11 @@ Pedoman keputusan:
 - Screenshot owner 10.31 WITA menunjukkan FAILED dan pesan Riset minggu ini sudah dijalankan. Audit menemukan exchars 1800 melampaui batas 1200 (https://www.mediawiki.org/wiki/Extension:TextExtracts), generic catch dan lock mingguan yang mencegah retry. Tidak dapat memastikan penyebab exception historis dari log yang tersedia. Perbaiki parameter, respons API error, JSON mode Workers AI (https://developers.cloudflare.com/workers-ai/features/json-mode/) dan validasi enam string. Model fast tetap didukung menurut changelog 8 Mei 2026 (https://developers.cloudflare.com/changelog/post/2026-05-08-planned-model-deprecations/).
 - Retry manual maksimal 3 percobaan total/minggu, row FAILED lama dihitung sebagai percobaan pertama, atomic CAS menghindari double click; sukses tetap maksimal satu draft, cron tidak mengulang kegagalan otomatis. Status error terpisah, tidak membocorkan rahasia atau raw response. Tidak mengubah schema, menghapus lock, membuat artikel palsu, atau mempublikasikan artikel. Review/upload cover/publish tetap owner.
 - Release CI/deploy/Verify dan retry production belum terbukti. Setelah release lulus, klik Riset & buat draft sekali, periksa draft atau status error yang spesifik.
+
+### 2026-11-26 — SEO-011/012: sumber riset cadangan
+- Screenshot owner 10.36 WITA: percobaan 2/3, SOURCE_UNAVAILABLE, koneksi atau respons Wikimedia gagal. Belum ada draft; penyebab jaringan spesifik tidak diketahui, tetapi tahap sumber terkonfirmasi. Tambah Action API → REST summary → referensi geografi stabil Indonesia Travel yang diperiksa 26 Nov. Gunakan sumber cadangan hanya dengan provenance REVIEWED_REFERENCE; simpan tanggal dan kegagalan endpoint. Topik masih dipilih dari sinyal pertanyaan publik dan katalog, tidak mengklaim volume pencarian atau riset daring baru jika fallback. Tidak gunakan cache untuk harga/jadwal/kondisi aktual.
+- Referensi: https://www.indonesia.travel/id/id/travel-ideas/adventure/di-indonesia-aja-rekomendasi-wisata-di-nusa-lembongan-dan-ceningan-puas-jelajah-seharian ; https://www.indonesia.travel/id/id/travel-ideas/adventure/nusa-penida ; https://www.indonesia.travel/id/en/destination/bali-nusa-tenggara/west-nusa-tenggara/lombok---gili-trawangan-and-the-gilis ; https://www.mediawiki.org/wiki/Wikimedia_REST_API .
+- Tidak reset lock, tidak menghapus data, tidak menambah biaya/provider AI. Satu kesempatan tersisa minggu ini. Setelah deploy/Verify lulus, owner klik riset sekali; jika AI/DB gagal, diagnosis tahap yang ditampilkan. CI/deploy/live draft belum terverifikasi. Tidak ada publikasi otomatis.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

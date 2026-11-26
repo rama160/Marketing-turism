@@ -1,3 +1,6 @@
+## 26 November 2026 — Recover article research from unavailable external source
+- Owner retry 2/3 shows SOURCE_UNAVAILABLE, confirming source-stage failure rather than AI or DB. Add bounded Wikimedia Action → REST summary → reviewed Indonesia Travel reference fallback for stable geography. Record source type, checked date and failed provider stages in draft research metadata; dashboard explicitly labels cached reference. Never claim cached reference is fresh live research; no dynamic prices/times from cache. Existing one draft/week, three attempts, approval and cover requirements preserved. Regression verifies offline recovery and no auto-publication. CI/deploy/live retry pending.
+
 ## 26 November 2026 — Restore failed SEO research retries
 - Fix Wikimedia exchars 1800→1200 per documented API bounds; handle API error object. Keep existing supported fast Workers AI model, request JSON mode, validate all six bilingual strings; record safe source/AI/format/validation/database stage-specific errors. Existing weekly row CAS allows manual retry after failure (max 3 attempts, legacy failure counts as 1); cron remains once/week and successful drafts never retry. No schema change, no lock reset, no automatic publication. Add regression for legacy failure, manual retry, successful lock and exhausted limit. Release and live retry pending.
 

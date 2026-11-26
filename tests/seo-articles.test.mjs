@@ -130,7 +130,24 @@ test("legacy failed research can retry manually, diagnoses stages and locks afte
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM seo_articles").get().n,1);
   sqlite.prepare("INSERT INTO seo_research_runs(week,status,detail) VALUES(?,?,?)").run("2026-11-30","SOURCE_UNAVAILABLE","Percobaan 3/3 · Test");
   assert.equal((await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,10,30),manual:true})).status,"WEEK_LIMIT");
-  const failedSource=await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,11,7),request:async()=>({ok:true,json:async()=>({error:{code:"test"}})})});
-  assert.equal(failedSource.status,"SOURCE_UNAVAILABLE");assert.equal(calls,2);
+  const recoveredSource=await generateResearchArticle(db,env,{...opts,now:Date.UTC(2026,11,7),request:async()=>({ok:true,json:async()=>({error:{code:"test"}})})});
+  assert.equal(recoveredSource.status,"DRAFT_CREATED");assert.equal(calls,3);
+  const saved=sqlite.prepare("SELECT draft_json FROM seo_articles WHERE id=?").get(recoveredSource.id);
+  assert.equal(JSON.parse(saved.draft_json)._research.source_kind,"REVIEWED_REFERENCE");
+  assert.equal((await publishedArticles(db)).length,0);
  }finally{sqlite.close();}
+});
+
+test("research sources fail over to REST, then reviewed tourism reference with honest provenance",async()=>{
+ const {collectArticleSource}=await import("../src/seo-articles.mjs");
+ const calls=[];
+ const rest=await collectArticleSource("Nusa Lembongan",async url=>{
+  calls.push(url);
+  if(calls.length===1)throw Error("network unavailable");
+  return {ok:true,json:async()=>({title:"Nusa Lembongan",extract:"Stable geography from a live response. ".repeat(4)})};
+ });
+ assert.equal(rest.kind,"WIKIMEDIA_REST");assert.equal(calls.length,2);assert.equal(rest.failures.length,1);
+ const fallback=await collectArticleSource("Nusa Lembongan",async()=>{throw Error("network unavailable");});
+ assert.equal(fallback.kind,"REVIEWED_REFERENCE");assert.equal(fallback.checked,"2026-11-26");assert.match(fallback.url,/www\.indonesia\.travel/);assert.equal(fallback.failures.length,2);
+ assert.equal(await collectArticleSource("Unknown location",async()=>{throw Error("offline");}),null);
 });
