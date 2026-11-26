@@ -1,3 +1,4 @@
+import {listKeywords,saveKeyword,runKeywordResearch} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
@@ -283,6 +284,11 @@ async function route(req,env,ctx){
   await audit(db,"website_review",updated.id,updated.visible?"SHOW":"HIDE");
   return json(updated);
  }
+ if(path==="/api/admin/seo/keywords"&&method==="GET")return json(await listKeywords(db,env));
+ if(path==="/api/admin/seo/keywords"&&method==="POST")return json(await saveKeyword(db,await parse(req)),201);
+ if(path==="/api/admin/seo/keywords/research"&&method==="POST")return json(await runKeywordResearch(db,env,{manual:true}));
+ const keywordAdmin=path.match(/^\/api\/admin\/seo\/keywords\/([0-9a-f-]{36})$/);
+ if(keywordAdmin&&method==="PATCH")return json(await saveKeyword(db,await parse(req),keywordAdmin[1]));
  if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
  if(path==="/api/admin/website/articles/research"&&method==="POST")return json(await generateResearchArticle(db,env,{manual:true}));
  const articleAdmin=path.match(/^\/api\/admin\/website\/articles(?:\/([0-9a-f-]+))?(?:\/(approve|reject|publish|unpublish|delete))?$/);
@@ -900,6 +906,8 @@ export default {
   if(event.cron==="0 2 * * *"){
    try{await runMetaDiagnostic(env.DB,env,"DAILY_CRON");}
    catch(_){console.error("META_DIAGNOSTIC_UNAVAILABLE");}
+   try{await runKeywordResearch(env.DB,env);}
+   catch(_){console.error("SEO_KEYWORD_RESEARCH_UNAVAILABLE");}
    try{await generateResearchArticle(env.DB,env);}
    catch(_){console.error("SEO_DRAFT_RESEARCH_UNAVAILABLE");}
   }

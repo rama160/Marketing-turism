@@ -41,7 +41,7 @@ const NPE_WORKSPACES={
 };
 const NPE_PAGE_GROUP={
  summary:"home",leads:"sales",quotes:"sales",bookings:"sales",finance:"sales",whatsapp:"sales",
- campaigns:"content",marketing:"content",website:"content",articles:"content",reviews:"content",
+ campaigns:"content",marketing:"content",website:"content",articles:"content",keywords:"content",reviews:"content",
  growth:"growth",market:"growth",analytics:"analytics",
  business:"settings",operators:"settings",rates:"settings"
 };
@@ -82,6 +82,7 @@ function changeTab(name){
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
  if(name==="website"&&ownerSignedIn){void loadWebsiteCMS();}
  if(name==="articles"&&ownerSignedIn)void loadSeoArticles();
+ if(name==="keywords"&&ownerSignedIn)void loadKeywords();
  if(name==="reviews"&&ownerSignedIn)void loadOwnerReviews();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
@@ -2326,3 +2327,40 @@ async function loadOwnerReviews(reset=true){
 }
 $("#reviewReload").onclick=()=>void loadOwnerReviews();
 $("#ownerReviewMore").onclick=()=>void loadOwnerReviews(false);
+
+/* Owner-only SEO keyword workspace; no guessed volume, no editable automatic observations. */
+let kwData={plans:[],paths:[],observations:[]},kwEditing=null,kwBusy=false;
+const kwForm=$("#kwForm");
+function kwEdit(item=null){
+ kwEditing=item;kwForm.reset();kwForm.hidden=false;
+ $("#kwTarget").innerHTML='<option value="">Belum dipetakan</option>'+kwData.paths.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join("");
+ if(item){for(const [k,v] of Object.entries({...item,...item.manual})){const el=kwForm.elements.namedItem(k);if(el&&k!=="active")el.value=v??"";}kwForm.elements.namedItem("active").checked=!!item.active;}
+ $("#kwHeading").textContent=item?"Edit · "+item.keyword:"Tambah keyword manual";$("#kwHeading").focus({preventScroll:true});kwForm.scrollIntoView({block:"start"});say("#kwEditFeedback","",true);
+}
+function renderKeywords(){
+ const q=$("#kwSearch").value.trim().toLowerCase(),lang=$("#kwLanguage").value,active=$("#kwActive").value;
+ const {plans,observations,latest,snapshot,gsc_configured}=kwData;
+ const observed=plans.filter(p=>observations.some(o=>o.normalized===p.normalized)).length;
+ $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual.volume!==null&&p.manual.volume!==undefined).length]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
+ $("#kwStatus").textContent=(gsc_configured?"GSC terkonfigurasi":"GSC belum terhubung — set secret service account di Cloudflare")+
+  " · Riset terakhir: "+(latest?latest.created_at+" UTC · "+latest.gsc_status:"belum dijalankan")+
+  " · Snapshot GSC: "+(snapshot?snapshot.period_start+" – "+snapshot.period_end+" (global, semua perangkat; maks. 300 pasangan query–URL)":"N/A")+
+  " · Sinyal publik: "+(latest?.signals?.status==="MEASURED"?"sampel "+latest.signals.sample+" posting, 14 hari":"N/A");
+ const visible=plans.filter(p=>(!q||p.keyword.toLowerCase().includes(q)||p.target_path.includes(q))&&(!lang||p.locale===lang)&&(active===""||String(p.active)===active));
+ $("#kwList").innerHTML=visible.map(p=>{
+  const rows=observations.filter(o=>o.normalized===p.normalized),m=p.manual||{},signal=latest?.signals?.counts?.[p.cluster],mapped=p.target_path&&kwData.paths.includes(p.target_path),conflict=rows.length>1||rows.some(o=>mapped&&o.path!==p.target_path);
+  return '<article class="panel kwCard"><small>'+esc(p.locale.toUpperCase()+" · "+p.cluster+" · "+p.intent+" · P"+p.priority+" · "+p.origin)+'</small><h4>'+esc(p.keyword)+'</h4><p><strong>Sasaran:</strong> '+esc(mapped?p.target_path:p.target_path?"URL lama tidak lagi terbit":"Belum dipetakan")+'</p>'+
+   '<p>Volume/bulan: <strong>'+esc(m.volume??"N/A")+'</strong> · Difficulty: <strong>'+esc(m.difficulty??"N/A")+'</strong><br>Sinyal klaster: '+esc(signal??"N/A")+(m.source?'<br><small>'+esc([m.source,m.period,m.country,m.device,m.checked].filter(Boolean).join(" · "))+'</small>':"")+'</p>'+
+   (rows.length?'<div class="kwObserved"><strong>GSC — URL aktual</strong>'+rows.map(o=>'<p>'+esc(o.path)+'<br><small>'+o.impressions+' impressions · '+o.clicks+' klik · '+(o.clicks/o.impressions*100).toFixed(1)+'% CTR · posisi '+o.position.toFixed(1)+'</small></p>').join("")+'</div>':'<p class="feedback">GSC: N/A (tidak ada baris terukur)</p>')+
+   (conflict?'<p class="feedback">Periksa potensi konflik URL/intent; tidak otomatis dianggap kanibalisasi.</p>':"")+
+   (m.competitors?'<p><strong>Kompetitor/gap:</strong> '+esc(m.competitors)+'</p>':"")+
+   '<button type="button" class="outline small" data-kw-edit="'+esc(p.id)+'">Edit / petakan</button></article>';
+ }).join("")||"<p>Belum ada keyword pada filter ini.</p>";
+ $("#kwList").querySelectorAll("[data-kw-edit]").forEach(b=>b.onclick=()=>kwEdit(plans.find(p=>p.id===b.dataset.kwEdit)));
+}
+async function loadKeywords(){if(!ownerSignedIn)return;try{kwData=await api("admin/seo/keywords");renderKeywords();}catch(e){say("#kwFeedback",e.message);}}
+$("#kwNew").onclick=()=>kwEdit();
+$("#kwClose").onclick=()=>{kwForm.hidden=true;kwEditing=null;};
+for(const id of ["#kwSearch","#kwLanguage","#kwActive"])$(id).oninput=renderKeywords;
+$("#kwRun").onclick=async()=>{if(kwBusy)return;kwBusy=true;$("#kwRun").disabled=true;try{const r=await api("admin/seo/keywords/research","POST",{});await loadKeywords();say("#kwFeedback",r.detail||("Riset: "+r.status+" · GSC "+r.gsc_status+" · "+r.rows+" pasangan terukur · sinyal "+r.signal_status),r.status==="DONE"||r.status==="RECENT");}catch(e){say("#kwFeedback",e.message);}finally{kwBusy=false;$("#kwRun").disabled=false;}};
+kwForm.onsubmit=async e=>{e.preventDefault();const button=kwForm.querySelector('[type="submit"]');button.disabled=true;const d=Object.fromEntries(new FormData(kwForm));const manual=Object.fromEntries(["volume","difficulty","source","period","country","device","checked","competitors","notes"].map(k=>[k,d[k]]));try{await api("admin/seo/keywords"+(kwEditing?"/"+kwEditing.id:""),kwEditing?"PATCH":"POST",{...d,manual,active:kwForm.elements.namedItem("active").checked,expected_version:kwEditing?.version});kwForm.hidden=true;kwEditing=null;await loadKeywords();say("#kwFeedback","Keyword disimpan. Tidak mengubah halaman publik.",true);}catch(err){say("#kwEditFeedback",err.message);}finally{button.disabled=false;}};

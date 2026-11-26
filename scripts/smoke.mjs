@@ -328,6 +328,8 @@ if(!Array.isArray(liveReviews.items)||liveReviews.items.some(x=>Object.hasOwn(x,
 const rejectedReview=await fetch(base+"/api/public/reviews",{method:"POST",headers:{"content-type":"application/json"},body:"{}",signal:AbortSignal.timeout(20000)});
 if(rejectedReview.status!==403)throw Error("Review anti-bot failed closed check");
 await get("/api/admin/website/reviews",401);
+await get("/api/admin/seo/keywords",401);
+if(!dashboard.includes('id="tab-keywords"')||!app.includes("admin/seo/keywords"))throw Error("Keyword workspace missing");
 if(!dashboard.includes('id="tab-reviews"')||!app.includes('admin/website/reviews'))throw Error("Review visibility controls missing");
 console.log("SUCCESS v3.36.0 LIVE: WhatsApp enquiry, public review listing and Turnstile rejection, protected CMS and booking APIs.");
 

@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.30 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.31 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. SEO-018 opsional, ditangani mandiri oleh owner tanpa ketergantungan pada daftar mitra tetap; SEO-019 evaluasi selesai (tidak eligible, N/A; owner hanya menerima booking online). Prioritas berikut SEO-003/020 cek data ketika tersedia dan evaluasi SEO berbasis bukti; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
+- Status: aktif. Fokus saat ini: **SEO-002/013 request indexasi tertahan kuota (konfirmasi owner 26 Nov); verifikasi teknis 32/32 lulus. SEO-018 opsional, ditangani mandiri oleh owner tanpa ketergantungan pada daftar mitra tetap; SEO-019 evaluasi selesai (tidak eligible, N/A; owner hanya menerima booking online). Prioritas owner baru SEO-006/007 workspace keyword terukur otomatis/manual, lalu SEO-003/020 cek data ketika tersedia dan evaluasi SEO berbasis bukti; SEO-011/012 artikel pertama terbit, review terjemahan berikutnya; SEO-015/016/017 uji nyata pending. Tidak mengulang pekerjaan selesai atau menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -122,8 +122,8 @@ Gate: catat verdict per URL, tanggal request dan tindak lanjut. Target seluruh U
 
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
-| SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Sampel 10 query dan tambahan Lembongan; lihat catatan riset. Negara/device/rank Google aktual belum diperoleh |
-| SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Peta keyword awal diperluas; validasi dengan GSC setelah data tersedia |
+| SEO-006 | P1 | Riset intent dan SERP untuk 10–20 kueri; 3–5 kompetitor per klaster | Catat tanggal/negara/perangkat, tipe hasil, URL pesaing, kebutuhan pengunjung dan gap; volume hanya jika sumber jelas | [~] Workspace riset keyword otomatis/manual dibangun; 24 hipotesis bilingual, sinyal klaster terukur, GSC read-only opsional, manual volume/difficulty/kompetitor bersumber. Release dan akses GSC belum diverifikasi. |
+| SEO-007 | P1 | Buat peta keyword → URL canonical existing; cegah kanibalisasi | Satu halaman utama per intent dan bahasa; URL baru hanya bila intent belum terlayani | [~] Workspace edit intent/URL canonical/prioritas/topik, deteksi potensi konflik URL aktual GSC, arsip; generator artikel konsumsi prioritas. Release dan data GSC belum diverifikasi. |
 | SEO-008 | P1 | Perbaiki halaman penjualan prioritas: judul, ringkasan, itinerary, lokasi berangkat, inclusions/exclusions, opsi private/sharing, harga terverifikasi, keselamatan, FAQ dan CTA | Isi spesifik, akurat dan lebih membantu; persetujuan owner/operator; URL tidak berubah tanpa alasan | [~] Audit kode dan data CMS publik 26 Nov; owner konfirmasi durasi land tour dan 3 spot kondisional; copy ID/EN diperbarui; aktivitas dinamis D1 versi 3 terverifikasi; CI/deploy/Verify commit 703d494 lulus. Copy awal selesai; fasilitas/harga spesifik belum dikonfirmasi, tetap tidak diasumsikan |
 | SEO-009 | P1 | Perbaiki tautan internal HTML yang dapat dirayapi dari Beranda, tur dan artikel relevan | Tidak ada orphan page prioritas; anchor natural; link 200 ke canonical | [x] Verify 45749519570: 32/32 URL sitemap terjangkau dari homepage melalui HTML anchors, termasuk artikel pertama ID/EN. Pantau bila ada regresi. |
 | SEO-010 | P1 | Periksa dan kurangi masalah teknis aktual yang menghambat indexasi/UX | Bukti sebelum/sesudah, CI/deploy/live smoke jika kode berubah | [x] Perbaikan teknis teridentifikasi pada cover Lembongan: skor 87 → 97; CI/deploy/smoke lulus. Evaluasi lanjutan bila ada temuan nyata. |
@@ -396,6 +396,11 @@ Pedoman keputusan:
 ### 2026-11-26 — SEO-018 opsional dan dikelola owner
 - Owner menegaskan mitra bersifat opsional karena dapat berubah dan dapat dihubungi sendiri. SEO-018 bukan lagi prioritas wajib atau blocker; daftar lima prospek lama dipertahankan sebagai referensi historis, bukan target tetap. Tidak menghubungi mitra, membuat integrasi outreach, atau mengklaim backlink baru.
 - Lanjut SEO-003/020 saat data GSC tersedia (cek 27–28 Nov bila tersedia), SEO-002/013 ketika kuota tersedia, SEO-011/012 artikel mingguan sesuai review owner, SEO-017 ulasan nyata. SEO-014/021/022 membutuhkan baseline sebelum optimasi ranking. Tidak mengulang pekerjaan teknis yang sudah lulus atau menambah fitur tanpa kebutuhan. Perubahan dokumentasi saja.
+
+### 2026-11-26 — SEO-006/007 workspace riset keyword
+- Owner meminta otomatis + manual, terukur, dapat dilihat/edit dashboard. Satu menu Konten & Kampanye → Riset Kata Kunci, 24 seed ID/EN sebagai hipotesis, bukan volume/rank. Pemetaan URL hanya canonical published, satu keyword per bahasa, edit versi/arsip, klaster/intent/prioritas/topik artikel. Manual volume/difficulty/kompetitor memerlukan sumber, periode, negara, perangkat, tanggal cek. Tidak mengubah copy atau URL publik otomatis.
+- Existing daily cron + tombol riset (manual maks per jam): hitung jumlah headline yang cocok per klaster pada sampel max 200 selama 14 hari, hanya jika RSS terkini tersedia. Bukan volume pencarian. GSC Search Analytics query/page 28 hari final, global/all devices, maksimum 300 baris; optional GSC_PROPERTY (sc-domain:nusapenidaexperiences.com atau https://nusapenidaexperiences.com/) dan secret GSC_SERVICE_ACCOUNT_JSON; read-only scope, tidak meminta indexing. GSC belum terhubung; owner aktifkan API, buat service account, berikan akses baca property, masukkan JSON hanya via Worker secret. Jangan kirim private key di chat/repo. Referensi https://developers.google.com/webmaster-tools/v1/searchanalytics/query dan https://developers.google.com/identity/protocols/oauth2/service-account .
+- Data otomatis snapshot terpisah dari edit manual; tampilkan N/A bila tidak ada data; simpan snapshot sukses terakhir, kandidat GSC tidak dipetakan otomatis, potensi konflik query–URL perlu review. Volume/difficulty tidak dihasilkan AI; sumber manual diperlukan, bukan Google Ads competition yang disamakan dengan difficulty organik. Generator artikel memakai prioritas topik owner dan impressions GSC yang tersedia, tetap 1 draft/minggu dan review/publish manual. Tambah migration 0028, API owner-only, unit/smoke; CI/deploy dan uji produksi belum terverifikasi. Tidak membeli layanan, tidak mengubah harga/foto/artikel existing.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
