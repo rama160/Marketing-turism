@@ -2342,11 +2342,13 @@ function renderKeywords(){
  const {plans,observations,latest,snapshot,gsc_configured,ranking,previous}=kwData;
  const rankingById=new Map((ranking?.pairs||[]).map((p,i)=>[p.id,{...p,order:i}]));
  const observed=plans.filter(p=>observations.some(o=>o.normalized===p.normalized)).length;
- $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual.volume!==null&&p.manual.volume!==undefined).length],["Top 3 · pasangan target",ranking?.measured?ranking.top3:"N/A"],["Top 10 · pasangan target",ranking?.measured?ranking.top10:"N/A"],["Peluang posisi >10–30",ranking?.measured?ranking.quickWins:"N/A"]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
+ $("#kwMetrics").innerHTML=[["Keyword aktif",plans.filter(p=>p.active).length],["Terpetakan",plans.filter(p=>p.active&&p.target_path&&kwData.paths.includes(p.target_path)).length],["Keyword dengan data GSC",observed],["Metrik volume manual",plans.filter(p=>p.manual?.volume!==null&&p.manual?.volume!==undefined).length],["Top 3 · pasangan target",ranking?.measured?ranking.top3:"N/A"],["Top 10 · pasangan target",ranking?.measured?ranking.top10:"N/A"],["Peluang posisi >10–30",ranking?.measured?ranking.quickWins:"N/A"]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+v+'</h3></div>').join("");
  $("#kwStatus").textContent=(gsc_configured?"GSC terkonfigurasi":"GSC belum terhubung — set secret service account di Cloudflare")+
   " · Riset terakhir: "+(latest?latest.created_at+" UTC · "+latest.gsc_status:"belum dijalankan")+
   " · Snapshot GSC: "+(snapshot?snapshot.period_start+" – "+snapshot.period_end+" (global, semua perangkat; maks. 300 pasangan query–URL)":"N/A")+
   " · Pembanding 28 hari non-overlap: "+(previous?previous.period_start+" – "+previous.period_end:"N/A")+" · Posisi = rata-rata GSC, bukan SERP live. Hanya pasangan target non-brand terukur."+
+  (latest?.signals?.gsc_error?" · Diagnosis GSC: "+gscKeywordError(latest.signals.gsc_error):"")+
+  (Number.isInteger(latest?.signals?.gsc_raw_rows)?" · Baris Google sebelum filter: "+latest.signals.gsc_raw_rows:"")+
   " · Sinyal publik: "+(latest?.signals?.status==="MEASURED"?"sampel "+latest.signals.sample+" posting, 14 hari":"N/A");
  const visible=plans.filter(p=>(!q||p.keyword.toLowerCase().includes(q)||p.target_path.includes(q))&&(!lang||p.locale===lang)&&(active===""||String(p.active)===active)).sort((a,b)=>(rankingById.get(a.id)?.order??999)-(rankingById.get(b.id)?.order??999));
  $("#kwList").innerHTML=visible.map(p=>{
@@ -2364,9 +2366,31 @@ function renderKeywords(){
  $("#kwAllObserved").innerHTML=observations.filter(o=>!q||o.query.toLowerCase().includes(q)||o.path.includes(q)).map(o=>'<article class="panel kwCard"><strong>'+esc(o.query)+'</strong><p>'+esc(o.path)+'</p><small>'+o.impressions+' impressions · '+o.clicks+' klik · '+(o.clicks/o.impressions*100).toFixed(1)+'% CTR · posisi '+o.position.toFixed(1)+'</small></article>').join("")||"<p>Belum ada pasangan terukur.</p>";
  $("#kwList").querySelectorAll("[data-kw-edit]").forEach(b=>b.onclick=()=>kwEdit(plans.find(p=>p.id===b.dataset.kwEdit)));
 }
-async function loadKeywords(){if(!ownerSignedIn)return;try{kwData=await api("admin/seo/keywords");renderKeywords();}catch(e){say("#kwFeedback",e.message);}}
+function gscKeywordError(code){
+ const labels={CONFIG:"Format JSON atau private key tidak valid",AUTH:"Google menolak autentikasi service account",ACCESS:"Periksa akses property dan Search Console API",REQUEST:"Search Analytics gagal atau dibatasi",NETWORK:"Koneksi Google tidak tersedia",STORAGE:"Gagal memproses atau menyimpan snapshot"};
+ return labels[code]||"Pengambilan data gagal";
+}
+async function loadKeywords(){
+ if(!ownerSignedIn)return false;
+ say("#kwStatus","Memuat data kata kunci…",true);
+ try{
+  const result=await api("admin/seo/keywords");
+  if(!Array.isArray(result.plans)||!Array.isArray(result.paths)||!Array.isArray(result.observations))throw Error("Respons riset tidak lengkap. Muat ulang dashboard.");
+  kwData=result;renderKeywords();say("#kwFeedback","",true);return true;
+ }catch(e){say("#kwStatus","Gagal memuat riset.",false);say("#kwFeedback",e.message);return false;}
+}
 $("#kwNew").onclick=()=>kwEdit();
 $("#kwClose").onclick=()=>{kwForm.hidden=true;kwEditing=null;};
 for(const id of ["#kwSearch","#kwLanguage","#kwActive"])$(id).oninput=renderKeywords;
-$("#kwRun").onclick=async()=>{if(kwBusy)return;kwBusy=true;$("#kwRun").disabled=true;try{const r=await api("admin/seo/keywords/research","POST",{});await loadKeywords();say("#kwFeedback",r.detail||("Riset: "+r.status+" · GSC "+r.gsc_status+" · "+r.rows+" pasangan terukur · sinyal "+r.signal_status),r.status==="DONE"||r.status==="RECENT");}catch(e){say("#kwFeedback",e.message);}finally{kwBusy=false;$("#kwRun").disabled=false;}};
-kwForm.onsubmit=async e=>{e.preventDefault();const button=kwForm.querySelector('[type="submit"]');button.disabled=true;const d=Object.fromEntries(new FormData(kwForm));const manual=Object.fromEntries(["volume","difficulty","impressions","clicks","position","source","period","country","device","checked","competitors","notes"].map(k=>[k,d[k]]));try{await api("admin/seo/keywords"+(kwEditing?"/"+kwEditing.id:""),kwEditing?"PATCH":"POST",{...d,manual,active:kwForm.elements.namedItem("active").checked,expected_version:kwEditing?.version});kwForm.hidden=true;kwEditing=null;await loadKeywords();say("#kwFeedback","Keyword disimpan. Tidak mengubah halaman publik.",true);}catch(err){say("#kwEditFeedback",err.message);}finally{button.disabled=false;}};
+$("#kwRun").onclick=async()=>{
+ if(kwBusy||!ownerSignedIn)return;
+ kwBusy=true;$("#kwRun").disabled=true;say("#kwFeedback","Menghubungi Google Search Console…",true);
+ try{
+  const r=await api("admin/seo/keywords/research","POST",{});
+  if(!await loadKeywords())return;
+  const state=r.gsc_status||kwData.latest?.gsc_status,error=r.gsc_error||kwData.latest?.signals?.gsc_error;
+  const message=state==="MEASURED"?"Google terhubung · "+(r.rows??kwData.latest?.gsc_rows??0)+" pasangan query–URL tersimpan.":state==="NO_ROWS"?"Google terhubung · belum ada pasangan query–URL yang lolos filter.":state==="ERROR"?"GSC ERROR · "+gscKeywordError(error):state==="NOT_CONFIGURED"?"GSC belum terkonfigurasi.":"Riset belum menghasilkan snapshot selesai.";
+  say("#kwFeedback",(r.status==="RECENT"?"Riset terakhir masih berlaku. ":"")+message,state==="MEASURED"||state==="NO_ROWS");
+ }catch(e){say("#kwFeedback","Riset gagal: "+e.message);}finally{kwBusy=false;$("#kwRun").disabled=false;}
+};
+kwForm.onsubmit=async e=>{e.preventDefault();const button=kwForm.querySelector('[type="submit"]');button.disabled=true;const d=Object.fromEntries(new FormData(kwForm));const manual=Object.fromEntries(["volume","difficulty","impressions","clicks","position","source","period","country","device","checked","competitors","notes"].map(k=>[k,d[k]]));try{await api("admin/seo/keywords"+(kwEditing?"/"+kwEditing.id:""),kwEditing?"PATCH":"POST",{...d,manual,active:kwForm.elements.namedItem("active").checked,expected_version:kwEditing?.version});kwForm.hidden=true;kwEditing=null;if(await loadKeywords())say("#kwFeedback","Keyword disimpan. Tidak mengubah halaman publik.",true);}catch(err){say("#kwEditFeedback",err.message);}finally{button.disabled=false;}};

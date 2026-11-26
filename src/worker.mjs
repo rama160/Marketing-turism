@@ -1,4 +1,4 @@
-import {listKeywords,saveKeyword,runKeywordResearch} from "./seo-keywords.mjs";
+import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
@@ -888,6 +888,8 @@ export default {
   const day=new Date().toISOString().slice(0,10);
   // Only previously approved immutable snapshots are eligible. Never retry ambiguous POSTs.
   if(event.cron==="0 * * * *"){
+   try{await bootstrapKeywordResearch(env.DB,env);}
+   catch(_){console.error("SEO_KEYWORD_BOOTSTRAP_UNAVAILABLE");}
    // Reuse existing hourly trigger; discovery is bounded to once per two hours.
    if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
     const discovery=researchBuyerQuestions(env.DB,env).catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));

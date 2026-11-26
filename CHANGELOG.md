@@ -1,3 +1,6 @@
+## 26 November 2026 — SEO-003B blank keyword workspace
+- Refresh dashboard JS revision, surface loading/failures and safe GSC diagnostics, track raw Google rows vs accepted pairs, bootstrap newly configured GSC through existing hourly cron. Add owner navigation and button regression plus mocked Google/SQLite tests. Cache is a hypothesis; actual production snapshot and CI/deploy pending.
+
 ## 26 November 2026 — GSC configuration verified
 - Roadmap v1.0.34: owner provisioned API, restricted service account and JSON; both Cloudflare secret bindings verified by metadata only. No D1 keyword run yet; next authenticated research and validation (SEO-003B). Confirm key-creation policy restoration. Documentation only.
 

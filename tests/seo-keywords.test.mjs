@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
 import {readFileSync} from "node:fs";
-import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities} from "../src/seo-keywords.mjs";
+import {validateKeyword,parseGscRows,ensureKeywordSeeds,saveKeyword,listKeywords,runKeywordResearch,keywordArticlePriorities,rankingOpportunities,bootstrapKeywordResearch} from "../src/seo-keywords.mjs";
 const input={keyword:"West Nusa Penida tour",locale:"en",cluster:"west",intent:"BUY",priority:1,target_path:"/en/tours/west"};
 test("manual metrics require evidence and canonical localized target",()=>{
  assert.equal(validateKeyword(input,["/en/tours/west"]).manual.volume,null);
@@ -28,6 +28,20 @@ test("seed, owner version guard, automatic public signal snapshot and unconfigur
  v=await listKeywords(db,{});assert.equal(v.latest.signals.counts.lembongan,1);assert.equal(v.observations.length,0);
  assert.ok((await keywordArticlePriorities(db))["lembongan-two-days"]);
  const seedRow=v.plans.find(x=>x.origin==="SEED");await saveKeyword(db,{...seedRow,keyword:"Renamed seed keyword",active:false,expected_version:seedRow.version},seedRow.id);v=await listKeywords(db,{});assert.equal(v.plans.length,25);assert.equal(v.plans.find(x=>x.id===seedRow.id).active,0);assert.ok(!v.plans.some(x=>x.keyword===seedRow.keyword));
+ // Bootstrap uses the real existing D1 schema; malformed credentials fail safely.
+ sqlite.exec("DELETE FROM seo_keyword_observations;DELETE FROM seo_keyword_runs;");
+ const env={GSC_PROPERTY:"sc-domain:nusapenidaexperiences.com",GSC_SERVICE_ACCOUNT_JSON:"invalid-json"};
+ const bad=await bootstrapKeywordResearch(db,env);assert.equal(bad.gsc_status,"ERROR");assert.equal(bad.gsc_error,"CONFIG");
+ assert.equal((await listKeywords(db,env)).latest.signals.gsc_error,"CONFIG");
+ assert.equal((await bootstrapKeywordResearch(db,env)).status,"SKIPPED");
+ sqlite.exec("DELETE FROM seo_keyword_runs;");
+ const pair=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
+ const key=Buffer.from(await crypto.subtle.exportKey("pkcs8",pair.privateKey)).toString("base64");
+ env.GSC_SERVICE_ACCOUNT_JSON=JSON.stringify({client_email:"unit@example.iam.gserviceaccount.com",private_key:"-----BEGIN PRIVATE KEY-----\n"+key+"\n-----END PRIVATE KEY-----"});
+ const calls=[];
+ const success=await bootstrapKeywordResearch(db,env,{request:async(url,opts)=>{calls.push(url);if(url.includes("oauth2.googleapis.com"))return Response.json({access_token:"unit-test-token"});assert.equal(opts.headers.authorization,"Bearer unit-test-token");return Response.json({rows:[{keys:["nusa penida west tour","https://nusapenidaexperiences.com/en/tours/west"],clicks:1,impressions:10,position:12}]});}});
+ assert.equal(success.gsc_status,"MEASURED");assert.equal(success.rows,1);assert.equal(calls.length,2);
+ assert.equal((await listKeywords(db,env)).observations.length,1);assert.equal((await bootstrapKeywordResearch(db,env)).status,"SKIPPED");
  }finally{sqlite.close();}
 });
 

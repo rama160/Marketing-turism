@@ -197,6 +197,8 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
   else if(p==="admin/site-content")body={fields:[["hero.title","Title"]],items:[]};
   else if(p==="admin/finance")body={payables:[],changes:[]};
   else if(p==="admin/business")body={business:null};
+  else if(p==="admin/seo/keywords")body={plans:[{id:"test-kw",keyword:"West Nusa Penida tour",normalized:"west nusa penida tour",active:1,locale:"en",cluster:"west",intent:"BUY",priority:2,origin:"SEED",target_path:"/en/tours/west",manual:{}}],paths:["/en/tours/west"],observations:[],gsc_configured:true};
+  else if(p==="admin/seo/keywords/research")body={status:"DONE",gsc_status:"ERROR",gsc_error:"ACCESS",rows:0};
   else body={items:[]};
   return new Response(JSON.stringify(body),{status:200,headers:{"content-type":"application/json"}});
  };
@@ -236,6 +238,11 @@ test("dashboard boot and tab interactions execute in a browser-like DOM, includi
  assert.equal(session.has("tourAdmin"),false,"raw token is never stored");
  assert.equal(hasSession,true,"persistent cookie-backed session should be active");
  assert.ok(get("#stats").innerHTML.includes("Operator"),"live summary cards did not render");
+ tabButtons.find(x=>x.dataset.tab==="keywords").click();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(get("#tab-keywords").hidden,false);assert.equal(get("#dashHeadingTitle").textContent,"Konten yang menghasilkan");
+ assert.match(get("#kwList").innerHTML,/West Nusa Penida tour/);assert.match(get("#kwStatus").textContent,/GSC terkonfigurasi/);
+ await get("#kwRun").click();assert.match(get("#kwFeedback").textContent,/GSC ERROR.*Periksa akses/);assert.equal(get("#kwRun").disabled,false);
  tabButtons.find(x=>x.dataset.tab==="bookings").click();
  tabButtons.find(x=>x.dataset.tab==="rates").click();
  history.back();assert.equal(get("#tab-bookings").hidden,false);assert.equal(hasSession,true,"Back must not revoke the session");

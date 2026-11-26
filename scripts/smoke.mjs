@@ -177,7 +177,7 @@ if(!editorManifest.id?.["hero.title"]||!editorManifest.en?.["hero.title"]||
  !editorManifest.photos?.hero||!editorManifest.photos?.["west-kelingking"])
  throw Error("Live published content snapshot incomplete: site editor would display blank copy");
 const manifest=JSON.parse(await get("/manifest.webmanifest"));
-if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.36.0"')||
+if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3.36.0&amp;rev=seo003b"')||
  !dashboard.includes('id="adminArea"')||!dashboard.includes('id="tab-growth"')||
  !dashboard.includes('id="unlockPanel"')||!dashboard.includes('href="/?view=website"')||
  !dashboard.includes('id="dashMenuToggle"')||!dashboardStyles.includes(".dashMobileToolbar"))
@@ -329,7 +329,7 @@ const rejectedReview=await fetch(base+"/api/public/reviews",{method:"POST",heade
 if(rejectedReview.status!==403)throw Error("Review anti-bot failed closed check");
 await get("/api/admin/website/reviews",401);
 await get("/api/admin/seo/keywords",401);
-if(!dashboard.includes('id="tab-keywords"')||!app.includes("admin/seo/keywords"))throw Error("Keyword workspace missing");
+if(!dashboard.includes('id="tab-keywords"')||!app.includes("admin/seo/keywords")||!(await get("/app.js?v=3.36.0&rev=seo003b")).includes("gscKeywordError"))throw Error("Keyword workspace missing");
 if(!dashboard.includes('id="tab-reviews"')||!app.includes('admin/website/reviews'))throw Error("Review visibility controls missing");
 console.log("SUCCESS v3.36.0 LIVE: WhatsApp enquiry, public review listing and Turnstile rejection, protected CMS and booking APIs.");
 

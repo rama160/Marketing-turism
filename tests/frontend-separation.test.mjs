@@ -62,7 +62,7 @@ test("owner dashboard loads directly, without embedded guest form; all major ope
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-pane:/);
  assert.ok(styles.includes(".dashCompactShortcuts"));
  assert.ok(styles.includes(".dashPaneNav"));
- assert.ok(page.includes('src="/app.js?v=3.36.0"'));
+ assert.ok(page.includes('src="/app.js?v=3.36.0&amp;rev=seo003b"'));
  assert.ok(!page.includes('id="leadForm"'));
  assert.ok(!page.includes('class="hero premiumHero"'));
  assert.match(script,/sessionStorage\.setItem\("npe-dashboard-tab",name\)/);
@@ -114,7 +114,7 @@ test("repository release identity and guest assets stay aligned with current pro
  assert.equal(pkg.version,"3.36.0");
  assert.ok(worker.includes('version:"'+pkg.version+'"'));
  assert.ok(smoke.includes('health.version!=="'+pkg.version+'"'));
- assert.ok(dashboard.includes('/app.js?v='+pkg.version+'"'));
+ assert.ok(dashboard.includes('/app.js?v='+pkg.version+'&amp;rev=seo003b"'));
  assert.ok(dashboard.includes('/dashboard.css?v='+pkg.version+'"'));
  assert.ok(dashboard.includes("NPE STUDIO"));
  assert.ok(dashboard.includes("v3.36"));

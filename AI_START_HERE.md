@@ -1,3 +1,6 @@
+## SEO-003B dashboard recovery — 26 November 2026
+- Owner reported blank keyword workspace; D1 plans/runs/observations zero, schema and GSC bindings present. Cache hypothesis not confirmed. Dashboard asset revision, explicit loading/error, safe GSC diagnostic codes and bounded first-run bootstrap on existing hourly cron. Tests added; verify release and actual D1 Google snapshot before advancing SEO-006A. No secret or auth bypass, no new cron.
+
 # Update aktif SEO-003B — 26 November 2026
 - Kedua secret GSC tersedia dan terverifikasi melalui metadata Cloudflare; D1 belum memiliki snapshot. SEO-003A konfigurasi selesai; SEO-003B uji riset existing melalui dashboard owner, cek snapshot D1, baru lanjut SEO-006A sesuai gate roadmap.md §0. Konfirmasi pemulihan policy pembuatan key project ke Inherit parent's policy. Jangan baca/ungkap secret atau bypass admin auth.
 

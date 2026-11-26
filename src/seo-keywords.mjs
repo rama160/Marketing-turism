@@ -65,10 +65,10 @@ const b64url=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(
 const enc=s=>b64url(new TextEncoder().encode(s));
 const configured=env=>!!env.GSC_SERVICE_ACCOUNT_JSON&&["sc-domain:nusapenidaexperiences.com",origin+"/"].includes(env.GSC_PROPERTY);
 async function gscToken(env,request,now){
- const credentials=JSON.parse(env.GSC_SERVICE_ACCOUNT_JSON);
- if(!/^[^\s@]+@[^\s@]+\.gserviceaccount\.com$/.test(credentials.client_email||"")||typeof credentials.private_key!=="string")throw Error("CONFIG");
+ let credentials;try{credentials=JSON.parse(env.GSC_SERVICE_ACCOUNT_JSON);}catch{throw Error("CONFIG");}
+ if(!credentials||!/^[^\s@]+@[^\s@]+\.gserviceaccount\.com$/.test(credentials.client_email||"")||typeof credentials.private_key!=="string")throw Error("CONFIG");
  const pem=credentials.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,"");
- const key=await crypto.subtle.importKey("pkcs8",Uint8Array.from(atob(pem),c=>c.charCodeAt(0)),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
+ let key;try{key=await crypto.subtle.importKey("pkcs8",Uint8Array.from(atob(pem),c=>c.charCodeAt(0)),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);}catch{throw Error("CONFIG");}
  const iat=Math.floor(now/1000),unsigned=enc(JSON.stringify({alg:"RS256",typ:"JWT"}))+"."+enc(JSON.stringify({iss:credentials.client_email,scope:"https://www.googleapis.com/auth/webmasters.readonly",aud:"https://oauth2.googleapis.com/token",iat,exp:iat+3000}));
  const sig=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned));
  const r=await request("https://oauth2.googleapis.com/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:unsigned+"."+b64url(sig)}),signal:AbortSignal.timeout(10000)});
@@ -107,11 +107,14 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
   }
  }catch{}
  if(configured(env)){
+  let stage="NETWORK";
   try{
    const token=await gscToken(env,request,now);
    const response=await request("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(env.GSC_PROPERTY)+"/searchAnalytics/query",{method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/json"},body:JSON.stringify({startDate:start,endDate:end,type:"web",dataState:"final",dimensions:["query","page"],rowLimit:300}),signal:AbortSignal.timeout(15000)});
    if(!response.ok)throw Error(response.status===403?"ACCESS":"REQUEST");
-   const data=await response.json();rows=parseGscRows(data,paths);gsc=rows.length?"MEASURED":"NO_ROWS";
+   stage="REQUEST";const data=await response.json();
+   if(!data||typeof data!=="object"||(data.rows!==undefined&&!Array.isArray(data.rows)))throw Error("REQUEST");
+   signals.gsc_raw_rows=data.rows?.length??0;rows=parseGscRows(data,paths);gsc=rows.length?"MEASURED":"NO_ROWS";stage="STORAGE";
    // Bounded batches; an incomplete run is never returned as a successful snapshot.
    for(let i=0;i<rows.length;i+=50)await db.batch(rows.slice(i,i+50).map(x=>db.prepare("INSERT INTO seo_keyword_observations(run_id,query,normalized,path,clicks,impressions,position) VALUES(?,?,?,?,?,?,?)").bind(lock,x.query,x.normalized,x.path,x.clicks,x.impressions,x.position)));
    // Discovered queries are candidates, not automatically approved URL assignments.
@@ -121,12 +124,19 @@ export async function runKeywordResearch(db,env,{manual=false,now=Date.now(),req
     const locale=x.path.startsWith("/en/")?"en":"id",cluster=Object.keys(clusters).find(k=>k!=="penida"&&clusters[k].test(x.query))||"penida";
     return db.prepare("INSERT OR IGNORE INTO seo_keyword_plans(id,keyword,normalized,locale,cluster,intent,target_path,priority,origin) VALUES(?,?,?,?,?,'PLAN','',2,'GSC')").bind(crypto.randomUUID(),x.query,x.normalized,locale,cluster);
    }));
-  }catch{gsc="ERROR";rows=[];await db.prepare("DELETE FROM seo_keyword_observations WHERE run_id=?").bind(lock).run();}
+  }catch(e){gsc="ERROR";rows=[];signals.gsc_error=["CONFIG","AUTH","ACCESS","REQUEST"].includes(e?.message)?e.message:stage;await db.prepare("DELETE FROM seo_keyword_observations WHERE run_id=?").bind(lock).run();}
  }
  await db.prepare("UPDATE seo_keyword_runs SET state='DONE',signal_json=?,gsc_status=?,gsc_rows=? WHERE id=?").bind(JSON.stringify(signals),gsc,rows.length,lock).run();
  // Keep 90 days of snapshots. Explicitly delete children because D1 behavior is not assumed.
  await db.batch([db.prepare("DELETE FROM seo_keyword_observations WHERE run_id IN (SELECT id FROM seo_keyword_runs WHERE created_at<datetime('now','-90 days'))"),db.prepare("DELETE FROM seo_keyword_runs WHERE created_at<datetime('now','-90 days')")]);
- return {status:"DONE",gsc_status:gsc,rows:rows.length,signal_status:signals.status};
+ return {status:"DONE",gsc_status:gsc,rows:rows.length,signal_status:signals.status,gsc_error:signals.gsc_error??null};
+}
+// Existing hourly cron may bootstrap a newly configured property once; the normal daily schedule remains.
+export async function bootstrapKeywordResearch(db,env,options={}){
+ if(!configured(env))return {status:"NOT_CONFIGURED"};
+ const latest=await db.prepare("SELECT state,gsc_status FROM seo_keyword_runs ORDER BY created_at DESC LIMIT 1").first();
+ if(latest&&(latest.state!=="DONE"||latest.gsc_status!=="NOT_CONFIGURED"))return {status:"SKIPPED"};
+ return runKeywordResearch(db,env,{...options,manual:true});
 }
 // Ranking actions use observed query–URL pairs only; no estimated Google rank or volume.
 export function rankingOpportunities(plans,observations,previous=[]){

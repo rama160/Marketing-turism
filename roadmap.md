@@ -452,6 +452,11 @@ Pedoman keputusan:
 - Owner screenshot: project npe-seo-agent-515906, Search Console API Enabled, service account Enabled, akun owner Verified dan service account Restricted. Owner melaporkan key JSON berhasil dibuat serta disimpan ke Cloudflare. Cloudflare settings read-only mengonfirmasi kedua binding secret_text; D1 seo_keyword_runs belum memiliki snapshot. Tidak membaca nilai key. Policy legacy sempat dibuka khusus project; pemulihan Inherit parent's policy belum dikonfirmasi.
 - SEO-003A konfigurasi selesai; SEO-003B in progress. Owner perlu menjalankan Riset melalui dashboard authenticated (akses admin session tidak tersedia pada sesi AI); kemudian cek status/row count/periode di D1. NO_ROWS bukan ranking nol; ERROR perlu diagnosis. Tidak mengubah aplikasi, harga, cron atau mengajukan index.
 
+### 2026-11-26 — SEO-003B dashboard kosong: perbaikan
+- Owner screenshot menampilkan Riset Kata Kunci tanpa metrik/list/status, header masih Overview. Read-only D1: 0 plans, 0 runs, 0 observations; ketiga tabel dan kedua GSC secret bindings tersedia. Belum ada bukti request riset sampai DB; penyebab cache JavaScript lama diduga (URL app.js versi sama antar-release), tidak dikonfirmasi dari perangkat.
+- Revisi URL script dashboard tanpa mengubah version aplikasi 3.36.0; tampilkan loading, error dan status GSC secara eksplisit. Jangan timpa kegagalan load dengan pesan sukses; ERROR tidak hijau. Tambah diagnosis aman CONFIG/AUTH/ACCESS/REQUEST/NETWORK/STORAGE dan jumlah raw rows sebelum filter (tanpa secret). Gunakan hourly cron existing untuk bootstrap pertama jika GSC terkonfigurasi dan belum ada run/hasil NOT_CONFIGURED; tetap guard per jam dan daily normal, tanpa menambah cron. Tes frontend login → keyword → tombol riset dan error, tes SQLite + OAuth/Search Analytics mock serta skip bootstrap ulang. CI/deploy/live belum diverifikasi. Tidak menyentuh data produksi, secret atau public content.
+- Next: verifikasi CI/deploy/smoke, kemudian baca snapshot D1 setelah owner menjalankan Riset atau hourly cron existing. SEO-003B tetap belum selesai sampai MEASURED/NO_ROWS terverifikasi; pemulihan policy key creation oleh owner belum dikonfirmasi.
+
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
 - ID tugas / status / commit / link URL atau workflow:
