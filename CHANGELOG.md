@@ -1,3 +1,6 @@
+## 26 November 2026 — Customer testimonials and WhatsApp-only enquiries
+- Owner requests immediate self-submitted public reviews with hide/show controls and removal of website enquiry form. Add isolated review D1 migration, public no-store API, Turnstile action/hostname validation, daily HMAC rate limit, consent and completed-trip declaration, plain text only, reject contact details/links, owner session and version-guarded moderation. No verified-booking claim, fake reviews, rating schema or review-as-lead analytics. Replace public form with review section and retain WhatsApp; disable legacy intake with separate flag (existing internal booking/terms safeguards unaffected). Update privacy/terms, bilingual copy, dashboard content Testimoni tab, regression/smoke. No existing data deletion. Deployment and Android test pending.
+
 ## 26 November 2026 — Trust and conversion clarity, review/backlink operating plan
 - Align outdated pilot/disabled-form wording with manual enquiry readiness, public contact and payment safeguards; keep cancellation draft and legal details pending. Add contextual WhatsApp routes for Lembongan/boat outside existing Penida-only form; do not alter booking API or data. Tests/smoke added. Record authentic review SOP and five outreach prospects in roadmap, no external messages sent. CI/deploy pending.
 

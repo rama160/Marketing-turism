@@ -8,11 +8,12 @@ test("guest tourism homepage does not expose agent dashboard links, forms or adm
  for(const term of ["id=\"adminToggle\"","id=\"adminArea\"","id=\"adminContent\"","id=\"cmsPublish\"","id=\"tab-growth\"","id=\"adminToken\"","Dashboard agen","src=\"/app.js\""]){
   assert.ok(!page.includes(term),"Guest site accidentally exposed "+term);
  }
- assert.ok(page.includes('id="leadForm"'));
+ assert.ok(!page.includes('id="leadForm"'));
+ assert.ok(page.includes('id="reviewForm"'));
  assert.ok(page.includes('src="/guest.js"'));
  assert.ok(page.includes('src="/language.js"'));
- assert.ok(page.includes('data-action="lead_enquiry"'));
- assert.match(guest,/publicAPI\("leads","POST"/);
+ assert.ok(page.includes('data-action="customer_review"'));
+ assert.match(guest,/publicAPI\("reviews","POST"/);
  assert.match(guest,/publicAPI\("readiness"\)/);
  assert.doesNotMatch(guest,/location\.replace\("\/dashboard\.html"\)/);
  assert.doesNotMatch(guest,/ADMIN_TOKEN|tourAdmin|\/api\/admin\/|admin\/growth/);
@@ -129,19 +130,19 @@ test("guest challenge loads on demand, renders once, and keeps the token gate",a
  const {runInNewContext}=await import("node:vm");
  const guest=file("guest.js"),page=file("index.html");
  assert.doesNotMatch(page,/<script[^>]*src="https:\/\/challenges\.cloudflare\.com\/turnstile/);
- const source=guest.slice(guest.indexOf("function prepareGuestChallenge("),guest.indexOf("function initPublicGuestForm("));
+ const source=guest.slice(guest.indexOf("function prepareGuestChallenge("),guest.indexOf("const locale="));
  const listeners={},scripts=[],renders=[],resets=[];
- const widget={dataset:{sitekey:"site",action:"lead_enquiry"}};
+ const widget={dataset:{sitekey:"site",action:"customer_review"}};
  const form={querySelector:()=>widget,addEventListener:(name,fn)=>listeners[name]=fn};
  const window={turnstile:{render:(el,options)=>{renders.push({el,options});return "widget-1";},reset:id=>resets.push(id)}};
  const challenge=runInNewContext(source+"\nprepareGuestChallenge(form)",{form,window,document:{documentElement:{lang:"en"},createElement:()=>({remove(){}}),head:{appendChild:s=>scripts.push(s)}},say(){}});
  assert.equal(scripts.length,0);
  listeners.focusin();listeners.pointerdown();assert.equal(scripts.length,1);
  assert.match(scripts[0].src,/render=explicit$/);
- scripts[0].onload();assert.equal(renders.length,1);assert.equal(renders[0].options.action,"lead_enquiry");
+ scripts[0].onload();assert.equal(renders.length,1);assert.equal(renders[0].options.action,"customer_review");
  challenge.ensure();assert.equal(scripts.length,1);challenge.reset();assert.deepEqual(resets,["widget-1"]);
  assert.match(guest,/if\(!body\["cf-turnstile-response"\]\)\{challenge.ensure\(\);/);
- assert.ok(guest.indexOf('if(!body["cf-turnstile-response"])')<guest.indexOf('publicAPI("leads","POST"'));
+ assert.ok(guest.indexOf('if(!body["cf-turnstile-response"])')<guest.indexOf('publicAPI("reviews","POST"'));
 });
 
 test("legacy installed owner launch recovers without redirecting public browser or explicit preview",async()=>{

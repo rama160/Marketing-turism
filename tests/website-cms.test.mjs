@@ -845,13 +845,13 @@ test("trust copy matches manual enquiry flow and preserves draft cancellation po
  const read=p=>readFileSync("public/"+p,"utf8");
  const privacy=read("privacy.html"),terms=read("terms.html"),home=read("index.html"),guest=read("guest.js");
  assert.doesNotMatch(privacy,/formulir penerimaan guest dinonaktifkan/);
- assert.match(privacy,/Formulir bukan booking atau pembayaran otomatis/);
+ assert.match(privacy,/bukan formulir pemesanan website/);
  assert.match(privacy,/Rincian periode retensi/);
  assert.match(terms,/tidak ada konfirmasi booking atau pembayaran otomatis/);
  assert.match(terms,/bukan ketentuan final yang otomatis berlaku/);
  assert.match(read("cancellation.html"),/DRAF · BELUM DISETUJUI/);
  for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])assert.ok(home.includes('data-whatsapp-package="'+service+'"'));
- assert.match(home,/id="leadSubmit" disabled/);
- assert.match(guest,/response\.accepting_leads!==true/);
- assert.match(guest,/\[response\.business_name,response\.business_contact\]/);
+ assert.doesNotMatch(home,/id="leadForm"/);
+ assert.match(home,/id="reviewForm"/);
+ assert.match(guest,/\[r\.business_name,r\.business_contact\]/);
 });

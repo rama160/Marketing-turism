@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.17 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.18 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -166,8 +166,8 @@ Standar artikel: bantu keputusan riil wisatawan, gunakan pengalaman lokal yang d
 | ID | Prioritas | Pekerjaan | Kriteria selesai | Status |
 |---|---|---|---|---|
 | SEO-015 | P1 | Perkuat trust: identitas bisnis/role agen, kontak, kebijakan pemesanan/pembatalan, operator dan sumber foto | Fakta terverifikasi; tidak klaim izin, rating atau kemitraan yang belum ada | [~] Copy trust diselaraskan; release dan detail retensi/kebijakan final perlu verifikasi |
-| SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] CTA Lembongan/boat ditambah; uji guest nyata/booking belum dilakukan |
-| SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] SOP dan template ID/EN siap; ulasan guest nyata menunggu |
+| SEO-016 | P1 | Uji alur mobile dari halaman tur/artikel → WA atau formulir → enquiry → booking | CTA jelas, tidak rusak, atribusi sejauh tersedia dan booking manual tervalidasi | [~] WhatsApp jalur utama; form website dihapus dan endpoint legacy ditutup dengan flag khusus; review bukan lead; uji guest nyata/booking belum dilakukan |
+| SEO-017 | P2 | Minta ulasan asli setelah pelanggan menyelesaikan perjalanan; publikasi hanya dengan hak/persetujuan | Ulasan genuine, tidak diinsentifkan; tidak ada rating palsu | [~] SOP dan template siap; owner minta review langsung tampil, hide/show; fitur dan proteksi diterapkan, belum ada ulasan nyata |
 | SEO-018 | P2 | Identifikasi mitra relevan (hotel/villa/homestay, operator, travel guide); tawarkan referensi yang bermanfaat | Daftar target, kontak melalui owner approval, respons dan link aktif relevan tercatat | [~] Lima prospek resmi dan draft outreach siap; belum dikirim |
 | SEO-019 | P2 | Evaluasi Google Business Profile hanya jika memenuhi aturan kelayakan interaksi pelanggan | Kelayakan terdokumentasi; tanpa alamat palsu atau listing bisnis online-only | [ ] |
 
@@ -334,6 +334,11 @@ Pedoman keputusan:
 - Draft outreach EN: "Hello, I represent Nusa Penida Experiences, a local travel booking service coordinating with local operators. We offer island tour and snorkeling information and fast boat booking enquiries for Penida and Lembongan. Would your team be interested in reviewing our practical travel information for guests? Our website is https://nusapenidaexperiences.com/. If relevant, we would welcome an editorial mention or resource link at your discretion. Please let us know your criteria and any listing fees. No obligation. Thank you."
 - Tracker awal: kelima prospek = READY FOR OWNER REVIEW; sent = 0; replies = 0; active links verified = 0 (hanya untuk prospek ini, bukan keseluruhan profil backlink). Setelah persetujuan, catat tanggal kirim, status, URL referensi, traffic referral jika tersedia; evaluasi satu follow-up yang sopan setelah 7–10 hari bila sesuai. Tidak outreach otomatis.
 - Next: verifikasi release, owner review rincian privasi/pembatalan dan lakukan uji WA/form nyata bila siap; minta review hanya dari guest selesai; owner memilih prospek untuk outreach. SEO-002/003 tetap bergantung data/kuota Google. Tidak ada penambahan dashboard, DB, artikel publik atau pembelian layanan.
+
+### 2026-11-26 — SEO-015/016/017: testimoni publik dan WhatsApp
+- Owner meminta pelanggan menulis review sendiri, langsung tampil dan owner dapat hide/show, serta form enquiry dihapus. Tambah Testimoni di Konten & Kampanye, form review homepage, nama depan/samaran, layanan, rating 1–5, teks, deklarasi telah menggunakan layanan, persetujuan publikasi, Turnstile deferred, validasi teks dan pembatas 3 per hari dengan HMAC IP (tanpa IP mentah; bersihkan key lama pada submit berikutnya). Tidak klaim booking terverifikasi; owner tidak dapat mengubah teks/rating, hanya visibilitas dengan session dan version guard. Review hidden tidak dikirim API publik. Tidak membuat ulasan uji di produksi atau rating schema, tidak kirim review ke GA4 sebagai lead.
+- Form lead hilang; WhatsApp dan katalog tetap, endpoint public/leads ditolak 410 di produksi melalui flag PUBLIC_WEB_ENQUIRIES_DISABLED (PUBLIC_LEADS_ENABLED dipertahankan untuk ketentuan penawaran internal). Privacy/terms/copy dan smoke diselaraskan; migration 0027 additive. Review dimuat API no-store agar hide tidak bocor lewat cache. CI/deploy/Verify dan uji perangkat belum terkonfirmasi. Moderasi berdasarkan spam, privasi atau pelanggaran, bukan skor negatif. Tidak menghapus data historis.
+- SEO-015/016/017 tetap in progress hingga verifikasi dan review nyata; SEO-018 prospek belum dikirim, SEO-002/003 menunggu Google.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:

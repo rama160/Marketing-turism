@@ -41,7 +41,7 @@ const NPE_WORKSPACES={
 };
 const NPE_PAGE_GROUP={
  summary:"home",leads:"sales",quotes:"sales",bookings:"sales",finance:"sales",whatsapp:"sales",
- campaigns:"content",marketing:"content",website:"content",articles:"content",
+ campaigns:"content",marketing:"content",website:"content",articles:"content",reviews:"content",
  growth:"growth",market:"growth",analytics:"analytics",
  business:"settings",operators:"settings",rates:"settings"
 };
@@ -82,6 +82,7 @@ function changeTab(name){
  if(name==="whatsapp"&&ownerSignedIn)void loadWhatsAppInbox();
  if(name==="website"&&ownerSignedIn){void loadWebsiteCMS();}
  if(name==="articles"&&ownerSignedIn)void loadSeoArticles();
+ if(name==="reviews"&&ownerSignedIn)void loadOwnerReviews();
  if(name==="summary"&&ownerSignedIn)void loadQuickEditor();
  if(name==="analytics"&&ownerSignedIn)void loadDashboardAnalytics();
  if(name==="growth"&&ownerSignedIn)void loadSavedFacebookGroups().catch(err=>say("#growthGroupFeedback","Gagal memuat grup: "+err.message));
@@ -2289,3 +2290,32 @@ seoForm.onsubmit=async e=>{
  try{const item=await api("admin/website/articles"+(seoEditing?"/"+seoEditing.id:""),seoEditing?"PATCH":"POST",seoFormPayload());await loadSeoArticles();editSeoArticle(item);say("#seoFeedback","Draft tersimpan. Perubahan membatalkan persetujuan lama. Setujui dahulu, lalu Publish manual.",true);}
  catch(err){say("#seoFeedback",err.message);}finally{button.disabled=false;}
 };
+
+let ownerReviewItems=[],ownerReviewOffset=0,ownerReviewsLoading=false;
+async function loadOwnerReviews(reset=true){
+ if(ownerReviewsLoading)return;ownerReviewsLoading=true;
+ try{
+  const r=await api("admin/website/reviews?offset="+(reset?0:ownerReviewOffset));
+  ownerReviewItems=reset?r.items:ownerReviewItems.concat(r.items);ownerReviewOffset=r.next_offset;
+  $("#ownerReviewMore").hidden=ownerReviewOffset===null;
+  const root=$("#ownerReviewList");root.replaceChildren();
+  for(const row of ownerReviewItems){
+   const card=document.createElement("article");card.className="panel";
+   const title=document.createElement("h4");title.textContent=row.name+" · "+row.rating+"/5";
+   const status=document.createElement("p");status.textContent=(row.visible?"Tampil publik":"Disembunyikan")+" · "+row.service+" · "+row.created_at;
+   const text=document.createElement("p");text.textContent=row.body;text.style.whiteSpace="pre-wrap";text.style.overflowWrap="anywhere";
+   const button=document.createElement("button");button.type="button";button.className="outline small";button.textContent=row.visible?"Sembunyikan":"Tampilkan";
+   button.onclick=async()=>{
+    if(!confirm(row.visible?"Sembunyikan ulasan ini dari publik?":"Tampilkan kembali ulasan ini?"))return;
+    button.disabled=true;
+    try{await api("admin/website/reviews/"+row.id,"PATCH",{visible:!row.visible,expected_version:row.version,owner_confirmed:true});await loadOwnerReviews();say("#ownerReviewFeedback","Status ulasan diperbarui.",true);}
+    catch(e){say("#ownerReviewFeedback",e.message);}finally{button.disabled=false;}
+   };
+   card.append(title,status,text,button);root.append(card);
+  }
+  if(!ownerReviewItems.length)root.textContent="Belum ada ulasan pelanggan.";
+ }catch(e){say("#ownerReviewFeedback",e.message);}
+ finally{ownerReviewsLoading=false;}
+}
+$("#reviewReload").onclick=()=>void loadOwnerReviews();
+$("#ownerReviewMore").onclick=()=>void loadOwnerReviews(false);

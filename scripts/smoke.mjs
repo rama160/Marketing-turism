@@ -29,14 +29,14 @@ const health=JSON.parse(await get("/api/health"));
 if(health.db!==true||health.status!=="ok")throw Error("D1 binding not healthy: "+JSON.stringify(health));
 if(health.version!=="3.36.0")throw Error("Cloudflare release version mismatch: "+health.version);
 const ready=JSON.parse(await get("/api/public/readiness"));
-if(ready.accepting_leads!==true||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
+if(ready.accepting_leads!==false||ready.turnstile_required!==true||!ready.business_contact)throw Error("Live guest lead form not ready: "+JSON.stringify({accepting_leads:ready.accepting_leads,turnstile_required:ready.turnstile_required,hasContact:!!ready.business_contact}));
  // Verify unauthenticated/spam attempts are rejected before ever writing guest data.
  const deniedGuestWithoutTurnstile=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({}),signal:AbortSignal.timeout(20000)});
- if(deniedGuestWithoutTurnstile.status!==403)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+deniedGuestWithoutTurnstile.status);
+ if(deniedGuestWithoutTurnstile.status!==410)throw Error("Turnstile fails-open or lead endpoint unexpectedly accepts invalid requests: HTTP "+deniedGuestWithoutTurnstile.status);
  const landingMarkup=await get("/");
- if(!landingMarkup.includes('data-action="lead_enquiry"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
+ if(!landingMarkup.includes('data-action="customer_review"')||!landingMarkup.includes('data-sitekey="0x4AAAAAAFYd9j0rAcoO31Rh"'))throw Error("Guest anti-bot widget missing from live form");
 const privacyTrust=await get("/privacy.html"),termsTrust=await get("/terms.html"),cancelTrust=await get("/cancellation.html");
-if(privacyTrust.includes("formulir penerimaan guest dinonaktifkan")||!privacyTrust.includes("Formulir bukan booking atau pembayaran otomatis")||!termsTrust.includes("tidak ada konfirmasi booking atau pembayaran otomatis")||!cancelTrust.includes("DRAF · BELUM DISETUJUI"))throw Error("Trust page status mismatches manual enquiry flow");
+if(privacyTrust.includes("formulir penerimaan guest dinonaktifkan")||!privacyTrust.includes("bukan formulir pemesanan website")||!termsTrust.includes("tidak ada konfirmasi booking atau pembayaran otomatis")||!cancelTrust.includes("DRAF · BELUM DISETUJUI"))throw Error("Trust page status mismatches manual enquiry flow");
 for(const service of ["Nusa Lembongan Island Tour","Fast Boat Tickets"])if(!landingMarkup.includes('data-whatsapp-package="'+service+'"'))throw Error("Missing contextual enquiry link: "+service);
 if(!landingMarkup.includes('npeAboutProcess')||!landingMarkup.includes('npeFaqGrid'))throw Error("Current site missing owner transparency or bilingual FAQ");
 for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"]){
@@ -142,7 +142,7 @@ for(const id of imageChecks){
  }
 }
 const page=await get("/");
-if(!page.includes("NUSA PENIDA")||!page.includes("leadForm"))throw Error("Guest page not served");
+if(!page.includes("NUSA PENIDA")||!page.includes("reviewForm")||page.includes('id="leadForm"'))throw Error("Guest page not served");
 const dashboard=await get("/dashboard.html");
 const app=await get("/app.js");
 const guestScript=await get("/guest.js"),dashboardStyles=await get("/dashboard.css");
@@ -184,7 +184,7 @@ if(manifest.start_url!=="/dashboard.html"||!dashboard.includes('src="/app.js?v=3
  throw Error("Standalone agent dashboard or navigation missing");
 if(/id="(?:adminArea|adminToggle|adminContent|adminToken|cmsPublish|tab-growth)"/.test(page)||
  page.includes('Dashboard agen')||page.includes('src="/app.js?v=3.36.0"')||
- !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("leads","POST"')||
+ !page.includes('src="/guest.js"')||!guestScript.includes('publicAPI("reviews","POST"')||
  guestScript.includes("ADMIN_TOKEN")||guestScript.includes("tourAdmin")||guestScript.includes("admin/"))
  throw Error("Guest page leaked admin UI/script or public enquiry controller missing");
 // NPE Studio must keep a single website button while preserving the owner workspace.
@@ -322,8 +322,14 @@ await get("/api/admin/market",401);
 await get("/api/admin/analytics",401);
 await get("/api/admin/bookings/demo/manifest",401);
 const req=await fetch(base+"/api/public/leads",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:"DO NOT CREATE",contact:"test",consent:false}),signal:AbortSignal.timeout(20000)});
-if(req.status!==403)throw Error("Public guest anti-bot proof must be required before lead creation, got HTTP "+req.status);
-console.log("SUCCESS v3.36.0 LIVE: consented guest intake active, Turnstile fail-closed (403), public photos, catalog, privacy, protected CMS and booking APIs.");
+if(req.status!==410)throw Error("Legacy public enquiry must be disabled: HTTP "+req.status);
+const liveReviews=JSON.parse(await get("/api/public/reviews"));
+if(!Array.isArray(liveReviews.items)||liveReviews.items.some(x=>Object.hasOwn(x,"rate_key")||Object.hasOwn(x,"visible")))throw Error("Public review list invalid");
+const rejectedReview=await fetch(base+"/api/public/reviews",{method:"POST",headers:{"content-type":"application/json"},body:"{}",signal:AbortSignal.timeout(20000)});
+if(rejectedReview.status!==403)throw Error("Review anti-bot failed closed check");
+await get("/api/admin/website/reviews",401);
+if(!dashboard.includes('id="tab-reviews"')||!app.includes('admin/website/reviews'))throw Error("Review visibility controls missing");
+console.log("SUCCESS v3.36.0 LIVE: WhatsApp enquiry, public review listing and Turnstile rejection, protected CMS and booking APIs.");
 
 const analytics=await get("/analytics.js");if(!analytics.includes("G-5232NFPSPV")||!analytics.includes("generate_lead")||!analytics.includes("whatsapp_click"))throw Error("GA4 asset missing");
 for(const path of ["/","/en/tours/snorkeling","/privacy.html"]){const page=await get(path);if(!page.includes('/analytics.js?v=3.36.0'))throw Error("GA4 missing "+path);}

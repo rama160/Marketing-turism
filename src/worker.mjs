@@ -1,3 +1,4 @@
+import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
 import {payablesForLines,validateChange,allowedChangeTransition,OperationsError} from "./operations.mjs";
@@ -200,14 +201,33 @@ async function route(req,env,ctx){
  }
  if(path==="/api/public/readiness"&&method==="GET"){
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
-  const live=env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
+  const live=env.PUBLIC_WEB_ENQUIRIES_DISABLED!=="true"&&env.PUBLIC_LEADS_ENABLED==="true"&&!!env.TURNSTILE_SECRET&&!!info?.legal_name&&!!info?.public_contact&&info.privacy_approved===1&&info.refund_policy_approved===1;
   return json({accepting_leads:!!live,business_name:info?.legal_name||"",trade_brand:info?.trade_brand||"Penivara Experiences",payment_methods:{bank_transfer:"manual_only",qris:"NOT_CONFIGURED"},business_contact:info?.public_contact||"",privacy_page:"/privacy.html",terms_page:"/terms.html",turnstile_required:true});
  }
  if(path==="/api/public/intent"&&method==="POST"){
   const outcome=await recordChatIntent(req,db);
   return json(outcome.data,outcome.status);
  }
+ if(path==="/api/public/reviews"&&method==="GET")return json(await listReviews(db,{offset:Number(u.searchParams.get("offset")||0)}));
+ if(path==="/api/public/reviews"&&method==="POST"){
+  if(!env.TURNSTILE_SECRET)return bad("Review verification temporarily unavailable",503);
+  const b=await parse(req),token=str(b["cf-turnstile-response"],2048);
+  if(!token||token.length<12)return bad("Review verification required",403);
+  validateReview(b);
+  try{
+   const form=new URLSearchParams({secret:env.TURNSTILE_SECRET,response:token});
+   const checked=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body:form,signal:AbortSignal.timeout(8000)});
+   if(!checked.ok)return bad("Review verification temporarily unavailable",503);
+   const v=await checked.json();
+   if(v.success!==true||v.hostname!==u.hostname||v.action!=="customer_review")return bad("Review verification failed",403);
+  }catch{return bad("Review verification temporarily unavailable",503);}
+  const key=await dailyReviewKey(env.TURNSTILE_SECRET,req.headers.get("cf-connecting-ip")||"unknown");
+  await db.prepare("UPDATE website_reviews SET rate_key=NULL WHERE rate_key IS NOT NULL AND created_at<datetime('now','-2 days')").run();
+  const saved=await createReview(db,b,key);
+  return saved?json(saved,201):bad("Daily review limit reached",429);
+ }
  if(path==="/api/public/leads"&&method==="POST"){
+  if(env.PUBLIC_WEB_ENQUIRIES_DISABLED==="true")return bad("Website enquiries now use WhatsApp: https://wa.me/628561752525",410);
   const info=await db.prepare("SELECT legal_name,public_contact,privacy_approved,refund_policy_approved,trade_brand FROM business_profile WHERE id=1").first();
   if(env.PUBLIC_LEADS_ENABLED!=="true"||!env.TURNSTILE_SECRET||!info?.legal_name||!info?.public_contact||info.privacy_approved!==1||info.refund_policy_approved!==1)return bad("Form guest belum siap menerima data; hubungi kontak resmi agen",503);
   const b=await parse(req);
@@ -255,6 +275,13 @@ async function route(req,env,ctx){
   const b=await parse(req),result=await waAdminSend(db,env,b);
   if(result.ok)await audit(db,"whatsapp",String(b.client_nonce||""),"OWNER_SUBMITTED_REPLY",{via:"official_cloud_api"});
   return result;
+ }
+ if(path==="/api/admin/website/reviews"&&method==="GET")return json(await listReviews(db,{owner:true,offset:Number(u.searchParams.get("offset")||0)}));
+ const reviewAdmin=path.match(/^\/api\/admin\/website\/reviews\/([0-9a-f-]{36})$/);
+ if(reviewAdmin&&method==="PATCH"){
+  const updated=await moderateReview(db,reviewAdmin[1],await parse(req));
+  await audit(db,"website_review",updated.id,updated.visible?"SHOW":"HIDE");
+  return json(updated);
  }
  if(path==="/api/admin/website/articles"&&method==="GET")return json(await listArticles(db));
  if(path==="/api/admin/website/articles/research"&&method==="POST")return json(await generateResearchArticle(db,env));
