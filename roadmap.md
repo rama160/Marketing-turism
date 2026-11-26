@@ -1,12 +1,12 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.9 | Diperbarui: 26 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.10 | Diperbarui: 26 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
 - Pemilik keputusan dan persetujuan publikasi: owner NPE.
 - Pelaksana: owner dan AI yang mendapat akses serta mandat pada sesi kerja.
-- Status: aktif. Fokus saat ini: **P0: SEO-003/004/005 pengukuran; SEO-002 lanjut ketika kuota tersedia. P1 independen: SEO-008 audit penawaran, SEO-011/012 artikel pertama dan SEO-009 audit link; tidak menambah fitur.**.
+- Status: aktif. Fokus saat ini: **P0: SEO-004 verifikasi awal selesai; SEO-005 gunakan baseline homepage 25 Nov, audit hanya template yang belum diperiksa; SEO-003 menunggu data dan SEO-002 menunggu kuota. P1: SEO-008 dan SEO-011/012; tidak mengulang pekerjaan selesai atau menambah fitur.**.
 - Siklus: evaluasi mingguan dan pembaruan dokumen setiap pekerjaan; evaluasi tren setiap 28 hari.
 - Anggaran: manfaatkan alat gratis dan infrastruktur yang ada; biaya baru memerlukan persetujuan owner.
 
@@ -45,7 +45,7 @@ Tanggal 26 November 2026, commit aplikasi `23c72839d4d5106794c9b3ac330b72fe5e934
 | CMS artikel bilingual, foto, URL/SEO otomatis, draft/publish | Implementasi tersedia | Jumlah artikel yang benar-benar terbit dan terindeks belum diukur |
 | Editor kartu, detail dan pengurutan | CI/deploy/smoke lulus | Uji Android owner masih diperlukan bila dipakai |
 | Panduan kompetitif existing tours | Implementasi tersedia | Verifikasi fakta produk, kesenjangan konten dan data GSC |
-| GA4, event whatsapp_click/generate_lead | Implementasi consent-based tersedia | Realtime, konfigurasi, tautan GSC dan atribusi belum dibuktikan |
+| GA4, event whatsapp_click/generate_lead | GA4 aktif menurut riwayat 25 Nov: page_view tercatat, whatsapp_click aktif, generate_lead ditambahkan sebagai key event | Atribusi booking dan tautan GSC belum dikonfirmasi; tidak mengulang verifikasi awal |
 | PSI mobile | Catatan owner: satu run 100 pada semua kategori, LCP 1,8 s | Hasil lab historis bervariasi; bukan data lapangan atau bukti ranking |
 | Search Console | Verifikasi berhasil menurut catatan percakapan 25 Nov 2026 | Tipe property dan akses baca langsung AI belum dikonfirmasi; ekspor performa masih diperlukan |
 | Sitemap dan indexasi awal | Sitemap berhasil dikirim/dibaca; 28 URL ditemukan, 10/10 URL diperiksa dilaporkan terindeks (25 Nov 2026) | Status 18 URL lain dan URL baru belum diketahui; jangan mengulang permintaan indeks 10 halaman tanpa alasan |
@@ -67,8 +67,8 @@ Status: [ ] TODO; [~] IN PROGRESS; [!] BLOCKED (catat pemilik tindakan); [x] DON
 | SEO-001 | P0 | Verifikasi kepemilikan GSC website `nusapenidaexperiences.com` | Verifikasi berhasil | [x] Selesai menurut laporan 25 Nov; akses baca langsung/jenis property tidak dipastikan, ekspor untuk SEO-003 |
 | SEO-002 | P0 | Audit sitemap dan indexasi 10 URL awal; lanjutkan pemantauan coverage | Sitemap diterima, 10 URL awal terindeks; coverage URL lain dicatat bila data tersedia | [!] Audit awal selesai (10/10); owner melaporkan Quota exceeded 26 Nov. Jumlah request tambahan dan verdict belum dilaporkan. Lanjutkan saat kuota tersedia. |
 | SEO-003 | P0 | Ekspor GSC Search results: query, page, country, device, 28 hari terakhir dan periode pembanding jika tersedia; simpan agregat tanpa data pribadi | Tabel baseline; data kurang ditandai; pisahkan brand/non-brand | [!] Screenshot owner 26 Nov 09.17 WITA: periode 28 hari, Web, Processing data / No data. Metrik N/A, bukan nol. Periksa kembali 27–28 Nov jika data sudah tersedia; lanjut SEO-004/005 tanpa menunggu. |
-| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [~] Filter artikel diperbaiki; CI/deploy/live smoke lulus. Realtime, attribution dan konfigurasi GA4 masih perlu bukti |
-| SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [ ] |
+| SEO-004 | P0 | Uji GA4 consent, Realtime, Organic Search, whatsapp_click dan generate_lead; cek enhanced measurement agar tidak duplikat; link GSC jika owner setuju | Bukti event sesuai definisi, tidak membocorkan PII; klik ≠ booking | [x] Verifikasi awal selesai berdasarkan konfirmasi owner dan laporan 25 Nov: page_view tercatat, whatsapp_click aktif, generate_lead ditambahkan sebagai key event. Atribusi booking aktual dipantau pada SEO-020; konfigurasi tambahan hanya jika diperlukan. |
+| SEO-005 | P0 | Tetapkan URL prioritas dari sitemap aktual, catat PSI mobile/desktop per template dan CWV jika ada | Baseline dan daftar masalah nyata; tidak mengulang redesign | [~] Homepage mobile 97, desktop 100 (catatan 25 Nov); cek hanya template lain yang belum memiliki baseline. CWV field belum tersedia. |
 
 Jika akses GSC/GA4 belum tersedia, owner dapat memberikan ekspor atau tangkapan layar yang relevan. Lakukan audit publik yang independen sambil menunggu; jangan mengarang hasil. Tidak perlu membuat integrasi API/dashboard sebelum membuktikan ekspor manual tidak memadai. Setelah perbaikan indexasi, ajukan request indexing hanya untuk URL prioritas baru/berubah secara wajar; bukan berkali-kali setiap hari.
 
@@ -279,6 +279,11 @@ Pedoman keputusan:
 - Screenshot owner pukul 09.17 WITA: Performance, 28 days, Search type Web (text), Last update 3 hours ago; pesan “Processing data, please check again in a day or so”, tabel Queries “No data”. SEO-003 tetap BLOCKED oleh pemrosesan Google; clicks, impressions, CTR, position dan query belum tersedia (N/A, bukan nol). Tidak menyimpulkan ranking/indexasi dari laporan kosong. Periksa kembali 27–28 November atau ketika data tersedia; tidak perlu verifikasi domain/sitemap ulang karena kondisi ini.
 - Release pemulihan dashboard `c18522102406965093c01f79b91766aad4b839a1`: [CI lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733867157), [Deploy lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733867192), [Verify Cloudflare lulus](https://github.com/rama160/Marketing-turism/actions/runs/45733962505). Uji buka ikon aplikasi pada Android owner masih belum dilaporkan.
 - Prioritas berikut: SEO-004 verifikasi GA4 Realtime dan event setelah consent; SEO-005 audit performa mobile/desktop aktual. SEO-002 lanjut saat kuota tersedia; SEO-003 kembali saat Google menyajikan data. Tidak ada perubahan kode/data produksi dan tidak ada klaim KPI baru.
+
+### 2026-11-26 — Rekonsiliasi pekerjaan GA4 dan PageSpeed sebelumnya
+- Owner menegaskan SEO-004 sudah dilakukan kemarin dan tidak boleh diulang. Riwayat percakapan 25 Nov (laporan asisten pukul 08.44 UTC) mencatat GA4 aktif, page_view diuji/tercatat, whatsapp_click aktif, generate_lead ditambahkan sebagai key event. Tandai verifikasi awal selesai; angka realtime, bukti konversi booking aktual, pemeriksaan duplikasi dan link GSC tidak ditemukan dalam cuplikan riwayat. Jangan mengklaim pengujian tambahan tersebut selesai; tangani hanya jika ada kebutuhan nyata melalui SEO-020. Screenshot asli tidak tersedia pada sesi rekonsiliasi.
+- Riwayat 25 Nov (laporan pukul 13.30 UTC) mencatat PageSpeed homepage mobile meningkat 72 menjadi 97; FCP 0,9 s, LCP 2,5 s, TBT 0 ms, CLS 0,001; accessibility, best practices dan SEO 100. Desktop sebelumnya 100, FCP 0,7 s, LCP 0,9 s, TBT 0 ms, CLS 0,007. Ini baseline lab historis, bukan pengukuran baru atau CWV field. Catatan run mobile 100/LCP 1,8 s sebelumnya dipertahankan sebagai run berbeda; tidak dicampur dengan run 97.
+- Next: SEO-005 hanya melengkapi baseline template yang belum diperiksa (tour, aktivitas, artikel setelah terbit); tidak mengulang homepage tanpa indikasi regresi. SEO-008 optimasi penawaran existing dan SEO-011/012 artikel pertama dapat berjalan. SEO-003 masih menunggu pemrosesan Google dan SEO-002 menunggu kuota. Tidak ada perubahan aplikasi atau database.
 
 ### Template review berikutnya (isi nyata)
 - Tanggal WITA / periode data / sumber:
