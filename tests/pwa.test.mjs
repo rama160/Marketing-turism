@@ -64,8 +64,8 @@ test("starting selling prices appear only on photo previews, are clear about the
  assert.match(home,/penawaran mulai dan belum mengikat/);
  assert.match(css,/\.spot-cover>\.price-preview/);
  assert.match(i18n,/price\.snorkeling/);
- assert.match(i18n,/Rp350,000\/person/);
- assert.match(i18n,/Rp800,000\/car/);
+ assert.match(i18n,/Rp350\.000\/person/);
+ assert.match(i18n,/Rp800\.000\/car/);
  assert.doesNotMatch(i18n,/Tarif net awal mobil adalah Rp600.000|Rp600,000 for a full vehicle/);
 });
 
