@@ -747,7 +747,7 @@ ${!key?renderPriceComparison(siteCopy,"en",activities):""}${children}${renderCom
 <section class="npeFaq"><h2>Frequently asked questions</h2><div class="npeFaqGrid">${faq}</div></section>
 <nav class="panel"><h2>Explore other tours and islands</h2><p>${nav}</p>
 ${rootLinks?"<p>"+rootLinks+"</p>":""}<p><a href="/en/articles">Island travel guides</a></p></nav>
-</section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cancellation.html">Cancellation policy</a></footer><script type="module" src="/website-content.js?v=3.36.0&rev=guest-seo3"></script></body></html>`;
+</section></main><footer>Nusa Penida Experiences · <a href="/privacy.html#google-api-data">Privacy and Google data use</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cancellation.html">Cancellation policy</a></footer><script type="module" src="/website-content.js?v=3.36.0&rev=guest-seo3"></script></body></html>`;
  return addResponsivePhotos(layout,false);
 }
 

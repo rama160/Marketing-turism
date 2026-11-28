@@ -529,26 +529,26 @@ test("site content CMS: public read, owner-only writes, versioned audit, and inj
 
 test("public photo price labels are owner-editable but never permit anonymous edits",async()=>{
  const {request,sqlite}=fixture();
- const anonymous=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Sharing Rp350.000/orang",expected_version:0,owner_confirmed:true},false);
+ const anonymous=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Sharing Rp 350.000/orang",expected_version:0,owner_confirmed:true},false);
  assert.equal(anonymous.httpStatus,401);
  for(const [key,locale,value] of [
-  ["price.snorkeling","id","Sharing Rp350.000/orang"],
-  ["price.snorkeling","en","Sharing Rp350,000/person"],
-  ["price.west","id","Mulai Rp800.000/mobil"],
-  ["price.east","id","Mulai Rp800.000/mobil"],
-  ["price.island","id","Mulai Rp800.000/mobil"]]){
+  ["price.snorkeling","id","Sharing Rp 350.000/orang"],
+  ["price.snorkeling","en","Sharing Rp 350,000/person"],
+  ["price.west","id","Mulai Rp 800.000/mobil"],
+  ["price.east","id","Mulai Rp 800.000/mobil"],
+  ["price.island","id","Mulai Rp 800.000/mobil"]]){
   const saved=await request("/api/admin/site-content","POST",{key,locale,value,expected_version:0,owner_confirmed:true});
   assert.equal(saved.httpStatus,200,JSON.stringify(saved));
  }
  const id=await request("/api/public/site-content?lang=id","GET",undefined,false);
  const en=await request("/api/public/site-content?lang=en","GET",undefined,false);
- assert.equal(id.items["price.snorkeling"],"Sharing Rp350.000/orang");
- assert.equal(id.items["price.island"],"Mulai Rp800.000/mobil");
- assert.equal(en.items["price.snorkeling"],"Sharing Rp350.000/person");
- assert.equal(en.items["price.island"],"From Rp800.000/car");
+ assert.equal(id.items["price.snorkeling"],"Sharing Rp 350.000/orang");
+ assert.equal(id.items["price.island"],"Mulai Rp 800.000/mobil");
+ assert.equal(en.items["price.snorkeling"],"Sharing Rp 350.000/person");
+ assert.equal(en.items["price.island"],"From Rp 800.000/car");
  const fields=await request("/api/admin/site-content");
  assert.ok(fields.fields.some(([key])=>key==="price.west"));
- const stale=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Rp10.000/orang",expected_version:0,owner_confirmed:true});
+ const stale=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Rp 10.000/orang",expected_version:0,owner_confirmed:true});
  assert.equal(stale.httpStatus,409);
  assert.equal(sqlite.prepare("SELECT count(*) c FROM site_content_revisions").get().c,5);
  sqlite.close();
@@ -1460,8 +1460,8 @@ test("legacy price fallback follows a published amount across languages and pres
  const {request,sqlite}=fixture();
  const save=(key,locale,value,expected_version=0)=>request("/api/admin/site-content","POST",{key,locale,value,expected_version,owner_confirmed:true});
  assert.equal((await save("price.west","id","450.000 / orang")).httpStatus,200);
- assert.equal((await request("/api/public/site-content?lang=id","GET",undefined,false)).items["price.west"],"Rp450.000/orang");
- assert.equal((await request("/api/public/site-content?lang=en","GET",undefined,false)).items["price.west"],"Rp450.000/person");
+ assert.equal((await request("/api/public/site-content?lang=id","GET",undefined,false)).items["price.west"],"Rp 450.000/orang");
+ assert.equal((await request("/api/public/site-content?lang=en","GET",undefined,false)).items["price.west"],"Rp 450.000/person");
  assert.equal((await save("price.west","en","")).httpStatus,200);
  assert.equal((await request("/api/public/site-content?lang=en","GET",undefined,false)).items["price.west"],"");
  sqlite.close();

@@ -53,19 +53,19 @@ test("guest tour guides show experiences instead of private supplier calculation
  }
  assert.doesNotMatch(island,/Rp600.000|Rp700.000|Rp85.715|pricing-table|PENIVARA/);
 });
-test("starting selling prices appear only on photo previews, are clear about their units and editable by owner",()=>{
+test("selling prices appear on photo previews, are clear about their units and editable by owner",()=>{
  const home=read("index.html"),css=read("styles.css"),i18n=read("language.js");
  assert.equal((home.match(/data-copy="price.snorkeling"/g)||[]).length,2);
  for(const key of ["price.island","price.west","price.east"])assert.equal((home.match(new RegExp('data-copy="'+key+'"','g'))||[]).length,1);
- assert.match(home,/Rp350.000\/orang/);
- assert.match(home,/Rp800.000\/mobil/);
+ assert.match(home,/Rp 350.000\/orang/);
+ assert.match(home,/Rp 450.000\/orang/);
  assert.match(home,/class="price-preview package-price"/);
  assert.match(home,/class="price-preview" data-copy="price.west"/);
  assert.match(home,/penawaran mulai dan belum mengikat/);
  assert.match(css,/\.spot-cover>\.price-preview/);
  assert.match(i18n,/price\.snorkeling/);
- assert.match(i18n,/Rp350\.000\/person/);
- assert.match(i18n,/Rp800\.000\/car/);
+ assert.match(i18n,/Rp 350\.000\/person/);
+ assert.match(i18n,/Rp 450\.000\/person/);
  assert.doesNotMatch(i18n,/Tarif net awal mobil adalah Rp600.000|Rp600,000 for a full vehicle/);
 });
 
