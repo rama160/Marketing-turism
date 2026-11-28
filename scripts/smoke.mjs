@@ -59,7 +59,7 @@ const island=await get("/island-tour.html");
 const west=await get("/west-tour.html");const east=await get("/east-tour.html");
 if(![snorkeling,island,west,east].every(page=>page.includes("npeFaqGrid")&&page.includes('data-whatsapp-package=')))throw Error("Tour FAQ or contextual WhatsApp CTA missing");
 if(!west.includes("Kelingking")||!west.includes("Broken Beach")||(!west.includes("Wikimedia Commons")&&!west.includes('data-npe-owner-photo="true"')))throw Error("West gallery missing");
-if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||(!east.includes("Wikimedia Commons")&&!east.includes('data-npe-owner-photo="true"')))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp700.000")||island.includes("Rp600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
+if(!east.includes("Diamond Beach")||!east.includes("Atuh Beach")||(!east.includes("Wikimedia Commons")&&!east.includes('data-npe-owner-photo="true"')))throw Error("East gallery missing");if(!island.includes("Island Tour")||island.includes("Rp 700.000")||island.includes("Rp 600.000")||!island.includes("/west-tour.html")||!island.includes("/east-tour.html"))throw Error("Island tour guide/pricing missing");
 const robots=await get("/robots.txt");if(!robots.includes("Sitemap: "+base+"/sitemap.xml"))throw Error("Robots sitemap host mismatch");const websiteSitemap=await get("/sitemap.xml");if(websiteSitemap.includes("workers.dev"))throw Error("Legacy host leaked into sitemap");
 for(const path of ["/en/tours","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/en/tours/island"])if(!websiteSitemap.includes(path))throw Error("English tour URL missing from sitemap "+path);
 if(!websiteSitemap.includes("/snorkeling.html")||websiteSitemap.includes("/dashboard.html"))throw Error("Dynamic sitemap missing public pages or exposes admin URL");
@@ -217,7 +217,7 @@ for(const key of ["price.snorkeling","price.island","price.west","price.east"]){
 // Prices are owner-editable, including intentionally blank prices. Verify published values, not old defaults.
 const publishedCopy=JSON.parse(await get("/api/public/site-content?lang=id")).items;
 const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const defaultPrices={"price.snorkeling":"Sharing Rp350.000/orang","price.island":"Mulai Rp800.000/mobil","price.west":"Mulai Rp800.000/mobil","price.east":"Mulai Rp800.000/mobil"};
+const defaultPrices={"price.snorkeling":"Sharing Rp 350.000/orang","price.island":"Rp 450.000/orang","price.west":"Rp 450.000/orang","price.east":"Rp 450.000/orang"};
 for(const [key,fallback] of Object.entries(defaultPrices)){
  const price=Object.hasOwn(publishedCopy,key)?publishedCopy[key]:fallback;
  const tag=[...home.matchAll(/<span\b[^>]*\bdata-copy="([^"]+)"[^>]*>([^<]*)<\/span>/g)].find(m=>m[1]===key);
@@ -225,7 +225,7 @@ for(const [key,fallback] of Object.entries(defaultPrices)){
 }
 if(!home.includes("penawaran mulai dan belum mengikat"))throw Error("Price disclaimer missing");
 for(const [page,path] of [[island,"island-tour"],[west,"west-tour"],[east,"east-tour"],[snorkeling,"snorkeling"]]){
- if(/Rp600\\.000|Rp700\\.000|Hitung Sharing tanpa menebak|margin minimum|keuntungan minimum agen|Tarif net awal/i.test(page))throw Error("Supplier net/margin exposed on "+path);
+ if(/Rp 600\\.000|Rp 700\\.000|Hitung Sharing tanpa menebak|margin minimum|keuntungan minimum agen|Tarif net awal/i.test(page))throw Error("Supplier net/margin exposed on "+path);
 }
 const langJS=await get("/language.js");
 

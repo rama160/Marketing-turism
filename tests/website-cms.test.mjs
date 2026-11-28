@@ -14,19 +14,19 @@ test("draft validates bilingual content and preserves pricing limits",()=>{
  assert.equal(validateWebsiteDraft(draft).slug,draft.slug);
  assert.throws(()=>validateWebsiteDraft({...draft,slug:"../admin"}),/Slug/);
  assert.throws(()=>validateWebsiteDraft({...draft,title_en:"<script>alert(1)</script>"}),/title_en/);
- assert.equal(validateWebsiteDraft({...draft,price_label_en:"From IDR 1",price_label_id:"Mulai Rp1"}).price_verified,false);
+ assert.equal(validateWebsiteDraft({...draft,price_label_en:"From IDR 1",price_label_id:"Mulai Rp 1"}).price_verified,false);
  assert.equal(validateWebsiteDraft(draft).price_amount,null,"empty price must be accepted");
  assert.equal(validateWebsiteDraft({...draft,price_amount:""}).price_amount,null);
  const price=validateWebsiteDraft({...draft,price_amount:"350000",price_unit:"PERSON",price_from:true,price_verified:true});
  assert.equal(price.price_amount,350000);
- assert.equal(price.price_label_id,"Mulai Rp350.000/orang");
- assert.equal(price.price_label_en,"From Rp350.000/person");
+ assert.equal(price.price_label_id,"Mulai Rp 350.000/orang");
+ assert.equal(price.price_label_en,"From Rp 350.000/person");
  const unverified=validateWebsiteDraft({...draft,price_amount:"350000",price_verified:false});
  assert.equal(unverified.price_verified,false,"unverified price can be saved in a draft");
  assert.throws(()=>validateWebsiteDraft({...draft,price_amount:"0"}),/Harga jual/);
  assert.throws(()=>validateWebsiteDraft({...draft,price_amount:"1000.5"}),/Harga jual/);
  assert.throws(()=>validateWebsiteDraft({...draft,price_unit:"BAD"}),/Satuan harga/);
- assert.equal(validateWebsiteDraft({...draft,price_label_en:"From IDR 400,000",price_label_id:"Mulai Rp400.000",price_verified:true}).price_verified,true);
+ assert.equal(validateWebsiteDraft({...draft,price_label_en:"From IDR 400,000",price_label_id:"Mulai Rp 400.000",price_verified:true}).price_verified,true);
 });
 test("HTML output escapes injected content and exposes bilingual canonical URLs",()=>{
  const a={...draft,slug:"lembongan-island",photo_url:"/photos/website/"+draft.media_id};
@@ -96,7 +96,7 @@ test("published editor snapshot is populated from the real public pages and tran
  assert.match(defaults.id["snorkelingPage.title"],/Snorkeling/);
  assert.match(defaults.id["westSpot.kelingking.description"],/Tebing/i);
  assert.match(defaults.id["snorkelingSpot.mantaBay.description"],/manta/i);
- assert.match(defaults.en["price.snorkeling"],/Rp350\.000/);
+ assert.match(defaults.en["price.snorkeling"],/Rp 350\.000/);
  assert.equal(Object.keys(defaults.photos).length,18);
  assert.match(defaults.photos["west-kelingking"].url,/^\/photos\//);
  assert.match(defaults.photos["hero"].url,/^\/photos\//);
@@ -860,19 +860,19 @@ test("public prices use Rp and full rupiah without changing approved numbers or 
  const {formatRupiah,normalizePublicPriceLabel}=await import("../src/site-content.mjs");
  const {activityPublicPrice}=await import("../src/website-cms.mjs");
  const {readFileSync}=await import("node:fs");
- assert.equal(normalizePublicPriceLabel("350.000 / orang","id"),"Rp350.000/orang");
- assert.equal(normalizePublicPriceLabel("450.000 / orang","en",{fallback:true}),"Rp450.000/person");
- assert.equal(normalizePublicPriceLabel("From IDR 250/person","en"),"From Rp250/person");
+ assert.equal(normalizePublicPriceLabel("350.000 / orang","id"),"Rp 350.000/orang");
+ assert.equal(normalizePublicPriceLabel("450.000 / orang","en",{fallback:true}),"Rp 450.000/person");
+ assert.equal(normalizePublicPriceLabel("From IDR 250/person","en"),"From Rp 250/person");
  assert.equal(normalizePublicPriceLabel("","en",{fallback:true}),"");
  assert.equal(normalizePublicPriceLabel("Ask for quote","id",{fallback:true}),"");
- assert.equal(formatRupiah(450,"PERSON",true,"id"),"Mulai Rp450/orang");
- assert.equal(formatRupiah(250000,"TICKET",false,"en"),"Rp250.000/ticket");
+ assert.equal(formatRupiah(450,"PERSON",true,"id"),"Mulai Rp 450/orang");
+ assert.equal(formatRupiah(250000,"TICKET",false,"en"),"Rp 250.000/ticket");
  assert.equal(activityPublicPrice({price_verified:false,price_amount:350000,price_unit:"PERSON"},"id"),"");
  const a={...draft,slug:"new-priced-detail",photo_url:"/photos/website/example",price_verified:true,price_amount:450000,price_unit:"PERSON",price_from:true};
  for(const lang of ["id","en"]){
   const html=renderExperiencePage(a,lang,"https://example.com");
-  assert.match(html,/<div class="npe-price-cover"><img[^>]*><span class="price-preview">(?:Mulai|From) Rp450\.000\/(?:orang|person)<\/span><\/div>/);
-  assert.doesNotMatch(html,/<p><strong>(?:Mulai|From) Rp450/);
+  assert.match(html,/<div class="npe-price-cover"><img[^>]*><span class="price-preview">(?:Mulai|From) Rp 450\.000\/(?:orang|person)<\/span><\/div>/);
+  assert.doesNotMatch(html,/<p><strong>(?:Mulai|From) Rp 450/);
   assert.doesNotMatch(renderExperiencePage({...a,price_verified:false},lang,"https://example.com"),/class="price-preview"/);
  }
  const client=readFileSync("public/website-content.js","utf8");
@@ -885,8 +885,8 @@ test("SEO audit: localized home, current price table and unknown price",async()=
  const {readFileSync}=await import("node:fs"),base=readFileSync("public/index.html","utf8");
  const html=renderLegacyTourPage(base,legacyTourRoute("/"),"https://example.com",{"price.west":"450.000 / orang","price.east":"","price.snorkeling":"350.000 / orang"});
  assert.match(html,/Paket Wisata Nusa Penida/);assert.doesNotMatch(html,/data-npe-lang="en"/);
- assert.match(html,/npePriceCompare/);assert.match(html,/Rp450\.000\/orang/);assert.match(html,/Tanya harga/);
+ assert.match(html,/npePriceCompare/);assert.match(html,/Rp 450\.000\/orang/);assert.match(html,/Tanya harga/);
  assert.match(html,/hreflang="en"/);assert.doesNotMatch(html,/Integrasi Google Ads API \/ Keyword Planner direncanakan/);
- const en=renderEnglishTourPage("","https://example.com",{"price.west":"Rp450.000/person"});
- assert.match(en,/Nusa Penida Tours &amp; Snorkeling/);assert.match(en,/Rp450\.000\/person/);assert.match(en,/Compare tours and starting prices/);
+ const en=renderEnglishTourPage("","https://example.com",{"price.west":"Rp 450.000/person"});
+ assert.match(en,/Nusa Penida Tours &amp; Snorkeling/);assert.match(en,/Rp 450\.000\/person/);assert.match(en,/Compare tours and starting prices/);
 });

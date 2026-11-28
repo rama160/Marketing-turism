@@ -48,7 +48,7 @@ Object.assign(englishHome,{
  "sea.title":"Snorkeling 3 Spots",
  "sea.description":"Approximately 2–3 hours at three selected sites. Manta sightings are not guaranteed.",
 });
-Object.assign(englishHome,{"price.snorkeling":"Sharing Rp350.000/person","price.island":"From Rp800.000/car","price.west":"From Rp800.000/car","price.east":"From Rp800.000/car"});
+Object.assign(englishHome,{"price.snorkeling":"Sharing Rp 350.000/person","price.island":"Rp 450.000/person","price.west":"Rp 450.000/person","price.east":"Rp 450.000/person"});
 const idDefaults={
   "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
   "snorkelingPage.title": "Snorkeling Nusa Penida: 3 Spot Pilihan",
@@ -78,7 +78,7 @@ Object.assign(idDefaults,{
  "regions.title":"Destinasi yang sayang untuk dilewatkan",
  "regions.description":"Temukan panorama ikonik di Barat, pesona pantai di Timur, atau keajaiban bawah laut Nusa Penida. Pilih pengalaman favorit Anda; detail rute dan fasilitas akan dikonfirmasi bersama operator."
 });
-Object.assign(idDefaults,{"price.snorkeling":"Sharing Rp350.000/orang","price.island":"Mulai Rp800.000/mobil","price.west":"Mulai Rp800.000/mobil","price.east":"Mulai Rp800.000/mobil"});
+Object.assign(idDefaults,{"price.snorkeling":"Sharing Rp 350.000/orang","price.island":"Rp 450.000/orang","price.west":"Rp 450.000/orang","price.east":"Rp 450.000/orang"});
 const englishText = {
  "Paket":"Experiences","Hubungi":"Enquire","Dashboard agen":"Agent dashboard","Beranda":"Home",
  "Snorkeling 3 spot atau island tour dengan operator lokal. Pilih tanggal, jumlah peserta, dan sampaikan kebutuhan Anda. Tim kami akan mengonfirmasi fasilitas, ketersediaan, dan harga.":"Discover snorkeling or island tours with local operators. We confirm arrangements, availability and prices before booking.",
@@ -223,7 +223,7 @@ Object.assign(englishText,{
  "Harga yang ditampilkan merupakan penawaran mulai dan belum mengikat. Ketersediaan, jumlah peserta, fasilitas, cuaca, dan biaya tambahan dikonfirmasi sebelum pemesanan. Snorkeling Private: minta penawaran sesuai spot.": "Displayed prices are starting offers, not final quotations. Availability, group size, inclusions, weather, and extras must be confirmed before booking. For Private snorkeling, request a quote for your preferred spot.",
  "Pilih Sharing untuk berkesempatan bergabung dengan wisatawan lain, atau Private untuk pengalaman eksklusif, termasuk perjalanan seorang diri.": "Choose Sharing to potentially join other travelers or Private for an exclusive escape, including solo journeys.",
  "Wisata Barat dan Timur ditawarkan sebagai rute terpisah. Kapasitas kendaraan mengikuti tempat duduk aman yang diverifikasi, maksimal tujuh tamu. Harga yang ditampilkan di beranda adalah harga mulai per mobil; makan siang dan tiket fast boat belum otomatis termasuk.": "West and East are separate tour routes. Vehicle capacity is subject to verified safe seating, with up to seven guests. Homepage prices start per vehicle; lunch and fast boat tickets are additional.",
- "Kapasitas kendaraan maksimal tujuh tamu jika telah dikonfirmasi aman. Harga mulai per mobil dapat dilihat pada kartu foto beranda; makan siang dan fast boat belum termasuk. Akses ke titik foto Rumah Pohon akan diperiksa bersama operator agar fasilitas yang ditawarkan sesuai kondisi di lapangan.": "Vehicles carry up to seven guests only with verified safe seating. Starting prices per vehicle appear on the homepage photo cards; lunch and fast boat tickets are extra. Tree House viewpoints and access are confirmed with the operator.",
+ "Kapasitas kendaraan maksimal tujuh tamu jika telah dikonfirmasi aman. Harga mulai per mobil dapat dilihat pada kartu foto beranda; makan siang dan fast boat belum termasuk. Akses ke titik foto Rumah Pohon akan diperiksa bersama operator agar fasilitas yang ditawarkan sesuai kondisi di lapangan.": "Vehicles carry up to seven guests only with verified safe seating. Current prices and units appear on the homepage photo cards; lunch and fast boat tickets are extra. Tree House viewpoints and access are confirmed with the operator.",
  "Harga promosi wisata darat ditampilkan pada kartu foto di beranda. Makan siang, tiket fast boat, biaya masuk destinasi bila berlaku, dan layanan tambahan belum otomatis termasuk. Kami akan memastikan rute, kapasitas kendaraan, fasilitas, cuaca, serta ketersediaan operator sebelum memberikan penawaran akhir.": "Island tour starting prices are displayed on homepage photo cards. Lunch, fast boat transfers, applicable entrance fees and other extras are not automatically included. Routes, safe capacity, weather, inclusions and operator availability are verified before we issue a final quotation."
 });
 

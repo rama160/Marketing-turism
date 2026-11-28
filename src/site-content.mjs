@@ -94,17 +94,17 @@ const priceUnits={id:{PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"},en
 export function formatRupiah(amount,unit="PERSON",from=false,locale="id"){
  if(!Number.isSafeInteger(amount)||amount<1||amount>1000000000||!Object.hasOwn(priceUnits.id,unit))return "";
  const lang=locale==="en"?"en":"id";
- return (from?(lang==="en"?"From ":"Mulai "):"")+"Rp"+new Intl.NumberFormat("id-ID").format(amount)+"/"+priceUnits[lang][unit];
+ return (from?(lang==="en"?"From ":"Mulai "):"")+"Rp "+new Intl.NumberFormat("id-ID").format(amount)+"/"+priceUnits[lang][unit];
 }
 export function normalizePublicPriceLabel(value,locale="id",{fallback=false}={}){
  const raw=String(value??"").trim();if(!raw)return "";
  const match=raw.match(/^(?:(Sharing|Private|Mulai(?:\s+dari)?|From)\s+)?(?:(?:Rp\.?|IDR)\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s*\/\s*(orang|person|mobil|car|grup|group|tiket|ticket))?$/i);
- if(!match)return fallback?"":raw.replace(/\bIDR\s+(?=\d)/gi,"Rp");
+ if(!match)return fallback?"":raw.replace(/\b(?:IDR|Rp\.?)\s*(\d{1,3}(?:[.,]\d{3})+|\d+)/gi,(_,n)=>"Rp "+new Intl.NumberFormat("id-ID").format(Number(n.replace(/[.,]/g,""))));
  const number=Number(match[2].replace(/[.,]/g,""));if(!Number.isSafeInteger(number)||number<1||number>1000000000)return fallback?"":raw;
  const lang=locale==="en"?"en":"id",unit=Object.keys(priceUnits.id).find(k=>[priceUnits.id[k],priceUnits.en[k]].includes(String(match[3]||"").toLowerCase()));
  const prefix=String(match[1]||"").toLowerCase(),from=/^(mulai|from)/.test(prefix);
  const name=prefix==="sharing"?"Sharing ":prefix==="private"?"Private ":from?(lang==="en"?"From ":"Mulai "):"";
- return name+"Rp"+new Intl.NumberFormat("id-ID").format(number)+(unit?"/"+priceUnits[lang][unit]:"");
+ return name+"Rp "+new Intl.NumberFormat("id-ID").format(number)+(unit?"/"+priceUnits[lang][unit]:"");
 }
 export function validateSiteEdit(b){
  const key=String(b?.key??""),locale=String(b?.locale??""),value=String(b?.value??"").trim();
