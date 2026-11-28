@@ -482,7 +482,7 @@ test("photo chooser shows only two sources, no photo descriptions and cache-safe
  assert.match(html,/id="cmsActivityMedia" hidden/);
  assert.match(html,/id="cmsAddCategory"/);
  assert.match(js,/admin\/website\/categories/);
- assert.match(html,/src="\/app\.js\?v=3\.36\.0&amp;rev=seo-index-monitor1"/);
+ assert.match(html,/src="\/app\.js\?v=3\.36\.0&amp;rev=seo-rank-agent1"/);
  assert.match(headers,/\/dashboard\.html\s+Cache-Control: no-store/);
 });
 

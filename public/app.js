@@ -2368,7 +2368,19 @@ function kwEdit(item=null){
  if(item){for(const [k,v] of Object.entries({...item,...item.manual})){const el=kwForm.elements.namedItem(k);if(el&&k!=="active")el.value=v??"";}kwForm.elements.namedItem("active").checked=!!item.active;}
  $("#kwHeading").textContent=item?"Edit · "+item.keyword:"Tambah keyword manual";$("#kwHeading").focus({preventScroll:true});kwForm.scrollIntoView({block:"start"});say("#kwEditFeedback","",true);
 }
+function drawRankReview(r){
+ const status=$("#kwRankReviewStatus"),metrics=$("#kwRankReviewMetrics"),pairs=$("#kwRankReviewPairs"),pages=$("#kwRankReviewPages");
+ if(!r){status.textContent="Belum ada review otomatis. Periksa setelah siklus agen berikutnya.";metrics.replaceChildren();pairs.replaceChildren();pages.replaceChildren();return;}
+ const period=p=>p?p.start+" – "+p.end:"N/A";
+ status.textContent="Diperiksa "+r.checked_at+" · Final "+period(r.final_period)+" ("+r.final_status+") · Sementara "+period(r.fresh_period)+" ("+r.fresh_status+") · Pembanding "+period(r.previous_period);
+ metrics.innerHTML=[["URL dipantau",r.coverage],["Top 10 terukur",r.top10],["Quick win terukur",r.quick_wins],["Pemulihan Top 10",r.recover],["Sinyal awal",r.early]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+esc(v)+'</h3></div>').join("");
+ const labels={PROTECT_TOP10:"Pertahankan Top 10",RECOVER_TOP10:"Pulihkan Top 10",QUICK_WIN:"Peluang Top 10",EARLY_TOP10:"Sinyal awal Top 10",EARLY_QUICK_WIN:"Sinyal awal peluang",CHECK_CANONICAL_INTENT:"Periksa bahasa/lokasi/URL",REVIEW_UNMAPPED:"Petakan intent",BUILD_RELEVANCE:"Perkuat relevansi",MONITOR_LOW_SAMPLE:"Pantau sampel kecil",PRIOR_TOP10_NO_DATA:"Data Top 10 sebelumnya belum terlihat",NO_DATA:"Belum ada data"};
+ pairs.innerHTML=(r.pairs||[]).map(p=>'<article class="panel kwCard"><small>'+esc(labels[p.action]||p.action)+' · '+esc(p.mode==="FINAL"?"Final":"Sementara")+'</small><h4>'+esc(p.query)+'</h4><p>'+esc(p.path)+'</p><p>Posisi '+esc(p.position==null?"N/A":p.position.toFixed(1))+' · '+esc(p.impressions??"N/A")+' impresi · '+esc(p.clicks??"N/A")+' klik'+(p.prior_position!=null?" · posisi sebelumnya "+esc(p.prior_position.toFixed(1)):"")+'</p>'+(p.expected_path&&p.expected_path!==p.path?'<p>Sasaran: '+esc(p.expected_path)+'</p>':'')+'<p>'+esc(p.recommendation)+'</p></article>').join("")||"<p>Belum ada pasangan terukur.</p>";
+ pages.innerHTML=(r.pages||[]).map(p=>'<article class="panel kwCard"><small>'+esc(labels[p.action]||p.action)+' · Index '+esc(p.indexing)+'</small><p><a href="'+esc(p.path)+'" target="_blank" rel="noopener noreferrer">'+esc(p.path)+'</a></p><p>'+esc(p.target_keywords.join(" · ")||"Belum ada keyword dipetakan")+'</p><p>'+esc(p.recommendation)+'</p></article>').join("");
+}
+
 function renderKeywords(){
+ drawRankReview(kwData.rank_review);
  const q=$("#kwSearch").value.trim().toLowerCase(),lang=$("#kwLanguage").value,active=$("#kwActive").value;
  const {plans,observations,latest,snapshot,gsc_configured,ranking,previous}=kwData;
  const rankingById=new Map((ranking?.pairs||[]).map((p,i)=>[p.id,{...p,order:i}]));

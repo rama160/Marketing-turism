@@ -1,6 +1,6 @@
 # Roadmap SEO — Nusa Penida Experiences (NPE)
 
-**Dokumen pengendali pekerjaan SEO | Versi 1.0.48 | Diperbarui: 28 November 2026 (WITA)**
+**Dokumen pengendali pekerjaan SEO | Versi 1.0.49 | Diperbarui: 28 November 2026 (WITA)**
 
 - Website resmi: https://nusapenidaexperiences.com
 - Repo: rama160/Marketing-turism, branch `main`.
@@ -559,3 +559,8 @@ Pedoman keputusan:
 - Gate: CI/deploy/Verify and actual Google URL Inspection response + D1 cache required; status remains in progress. Owner may request indexing for unindexed URLs via Search Console. Preserve existing 006A/B/C gates.
 
 - First monitor release `2fd5b8f`: CI/deploy failed solely on three existing exact cache revision assertions; 251/254 tests passed, including three monitor tests. Update expected asset revision without weakening checks; rerun release and verify live indexing separately.
+
+### 28 November 2026 — SEO-007/008/020/021 percepatan dan retensi Top 10
+- Owner mengotorisasi optimasi semua aktivitas dan penguatan agent. GSC produksi snapshot sementara 28 Nov: 15 impresi, 0 klik, posisi 62, 11 query; Devil’s Tears posisi 11 (1), Dream Beach kueri salah pulau posisi 5 (1), Gili→Lembongan posisi 41 (2) pada halaman ID; snorkeling 8 impresi halaman EN, posisi 77.75. Sinyal, bukan baseline stabil. Index monitor 4 API INDEXED, owner menyatakan seluruh URL termasuk 4 artikel indexed; release 98ed50f CI/deploy/Verify lulus.
+- 0033 memperbarui 9 aktivitas/detail CMS yang diaudit dengan version guard, draft=published, revisi tersimpan, metadata ID/EN spesifik dan panduan praktis, tanpa perubahan URL, foto, harga, supplier atau booking. Empat tur statis ID/EN sudah memiliki panduan/FAQ dan CTA; fokus pemetaan keyword dan tautan relevan. AUTO metadata baru untuk detail Lembongan memuat lokasi. Isi berbasis fakta existing, Google Search Essentials, panduan keselamatan publik NusaLembongan.org/visitlembonganisland.com; tidak mengarang jadwal, tiket, tarif atau inklusi. Mapping backfill hanya existing kosong atau insert baru; tidak overwrite target owner.
+- Agen menggunakan cron existing: 24h fresh hourly, 7d fresh daily, 28d final daily, review tersimpan per UTC day hingga 180 hari; hanya ≥30 impresi final untuk Top 10/quick win stabil, sinyal awal terpisah, perlindungan/recovery berdasarkan pembanding 28d non-overlap, cek bahasa/lokasi/intent, coverage seluruh URL, tidak auto-publish. Approval artikel/biaya dan gerbang Ads/Trends tetap. CI/deploy/Verify dan D1 live perlu konfirmasi; dampak ranking belum terukur.

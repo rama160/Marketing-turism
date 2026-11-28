@@ -1,3 +1,4 @@
+import {readRankReview} from "./seo-rank-agent.mjs";
 // Owner planning is separate from immutable measured observations. No AI-generated metrics.
 const origin="https://nusapenidaexperiences.com";
 const norm=v=>String(v??"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g," ");
@@ -376,7 +377,7 @@ export async function listKeywords(db,env){
  const previous=snapshot?await db.prepare("SELECT id,period_start,period_end FROM seo_keyword_runs WHERE state='DONE' AND gsc_status='MEASURED' AND period_end<? ORDER BY period_end DESC,created_at DESC LIMIT 1").bind(snapshot.period_start).first():null;
  const previousRows=previous?(await db.prepare("SELECT normalized,path,clicks,impressions,position FROM seo_keyword_observations WHERE run_id=?").bind(previous.id).all()).results:[];
  const ranking=rankingOpportunities(plans.filter(p=>paths.includes(p.target_path)),observations,previousRows);
- return {public_sources:await publicResearchStatus(db),ranking,previous:previous?{period_start:previous.period_start,period_end:previous.period_end}:null,plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
+ return {rank_review:await readRankReview(db),public_sources:await publicResearchStatus(db),ranking,previous:previous?{period_start:previous.period_start,period_end:previous.period_end}:null,plans,paths,latest:latest?{...latest,signals:JSON.parse(latest.signal_json),signal_json:undefined}:null,snapshot:snapshot?{period_start:snapshot.period_start,period_end:snapshot.period_end,created_at:snapshot.created_at,gsc_status:snapshot.gsc_status}:null,observations,gsc_configured:configured(env),limit:300};
 }
 export async function keywordArticlePriorities(db){
  try{

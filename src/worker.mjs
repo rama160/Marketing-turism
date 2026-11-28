@@ -1,5 +1,6 @@
+import {refreshRankReview} from "./seo-rank-agent.mjs";
 import {readIndexing,collectIndexing} from "./seo-indexing.mjs";
-import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance,readKeywordPlanner,collectKeywordPlanner,listCompetitorEvidence,saveCompetitorEvidence} from "./seo-keywords.mjs";
+import {keywordPaths,listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance,readKeywordPlanner,collectKeywordPlanner,listCompetitorEvidence,saveCompetitorEvidence} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
 import {calculate,aiSuggestion,PricingError} from "./pricing.mjs";
@@ -903,6 +904,8 @@ export default {
    catch(_){console.error("SEO_INDEXING_UNAVAILABLE");}
    try{await collectKeywordPerformance(env.DB,env,{preset:"24h"});}
    catch(_){console.error("SEO_FRESH_PERFORMANCE_UNAVAILABLE");}
+   try{await refreshRankReview(env.DB,await keywordPaths(env.DB));}
+   catch(_){console.error("SEO_RANK_REVIEW_UNAVAILABLE");}
    // Reuse existing hourly trigger; discovery is bounded to once per two hours.
    if(env.GROWTH_PUBLIC_RESEARCH_ENABLED==="true"){
     const discovery=researchBuyerQuestions(env.DB,env).catch(_=>console.error("GROWTH_PUBLIC_RESEARCH_UNAVAILABLE"));
@@ -925,6 +928,10 @@ export default {
    catch(_){console.error("SEO_KEYWORD_RESEARCH_UNAVAILABLE");}
    try{await collectKeywordPerformance(env.DB,env,{preset:"28d",mode:"final"});}
    catch(_){console.error("SEO_FINAL_PERFORMANCE_UNAVAILABLE");}
+   try{await collectKeywordPerformance(env.DB,env,{preset:"7d",mode:"fresh"});}
+   catch(_){console.error("SEO_WEEKLY_FRESH_UNAVAILABLE");}
+   try{await refreshRankReview(env.DB,await keywordPaths(env.DB));}
+   catch(_){console.error("SEO_RANK_REVIEW_UNAVAILABLE");}
    try{await collectKeywordPlanner(env.DB,env,{market:"GLOBAL",locale:["all","en","id"][Math.floor(Date.now()/86400000)%3]});}
    catch(_){console.error("SEO_KEYWORD_PLANNER_UNAVAILABLE");}
    try{await generateResearchArticle(env.DB,env);}
