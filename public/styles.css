@@ -286,3 +286,6 @@ html[lang="id"] [data-npe-lang="en"],html[lang="en"] [data-npe-lang="id"]{displa
 
 /* Shared photo price ribbon, including new CMS detail pages. */
 .npe-price-cover{position:relative;isolation:isolate;overflow:hidden;border-radius:18px}.npe-price-cover>img{display:block}.scene-card .npe-price-cover{border-radius:0}
+
+/* Shared photo viewer, also used by new CMS destinations. */
+.npeZoomable{cursor:zoom-in}.npeZoomable:focus-visible{outline:3px solid #f9d078;outline-offset:-4px}.npePhotoViewer{box-sizing:border-box;position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border:0;padding:52px 12px 20px;background:#07151c;color:#fff}.npePhotoViewer[open]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}.npePhotoViewer::backdrop{background:#07151c}.npeViewerImage{display:block;max-width:100%;max-height:calc(100dvh - 120px);width:auto;height:auto;object-fit:contain}.npeViewerCaption{margin:0;max-width:90%;text-align:center;font-size:14px}.npeViewerClose{position:absolute;top:12px;right:16px;border:1px solid #ffffff90;border-radius:50%;width:42px;height:42px;background:#182c35;color:white;font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer}.npeViewerClose:focus-visible{outline:3px solid #f9d078}

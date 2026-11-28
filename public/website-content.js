@@ -220,3 +220,20 @@ document.addEventListener?.("click",event=>{
    body:payload,keepalive:true,credentials:"omit"}).catch(()=>{});
  }catch(_){}
 },{capture:true});
+
+// Accessible photo viewer; delegation also handles CMS destinations added after page load.
+function installDestinationViewer(){
+ if(typeof HTMLDialogElement==="undefined"||!document.body)return;
+ const selector=".scene-card img,.destination-thumb img,.packageArt img,.spot-cover img,.npeExperiencePage figure img,.npe-price-cover img";
+ const dialog=el("dialog","npePhotoViewer"),photo=el("img","npeViewerImage"),close=el("button","npeViewerClose","×"),caption=el("p","npeViewerCaption");
+ close.type="button";dialog.setAttribute("aria-modal","true");caption.id="npe-photo-caption";dialog.setAttribute("aria-describedby",caption.id);dialog.append(photo,caption,close);document.body.append(dialog);
+ let trigger=null;
+ const decorate=()=>{const en=currentLanguage()==="en";dialog.setAttribute("aria-label",en?"Destination photo":"Foto destinasi");close.setAttribute("aria-label",en?"Close photo":"Tutup foto");for(const img of document.querySelectorAll(selector)){img.tabIndex=0;img.setAttribute("role","button");img.setAttribute("aria-label",(en?"View photo: ":"Lihat foto: ")+(img.alt||""));img.classList.add("npeZoomable");}};
+ const open=img=>{if(dialog.open)return;let url;try{url=new URL(img.getAttribute("src")||img.currentSrc,location.origin);}catch{return;}if(url.origin!==location.origin||!url.pathname.startsWith("/photos/"))return;trigger=img;url.searchParams.delete("npew");photo.src=url.href;photo.alt=img.alt;caption.textContent=img.alt;dialog.showModal();close.focus();};
+ close.onclick=()=>dialog.close();dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close();});
+ dialog.addEventListener("close",()=>{photo.removeAttribute("src");caption.textContent="";if(trigger?.isConnected)trigger.focus({preventScroll:true});trigger=null;});
+ document.addEventListener("click",e=>{const img=e.target.closest?.(selector);if(!img)return;e.preventDefault();open(img);});
+ document.addEventListener("keydown",e=>{const img=e.target.closest?.(selector);if(img&&(e.key==="Enter"||e.key===" ")){e.preventDefault();open(img);}});
+ decorate();new MutationObserver(decorate).observe(document.body,{childList:true,subtree:true});window.addEventListener("npe:language",decorate);
+}
+installDestinationViewer();
