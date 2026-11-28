@@ -2370,7 +2370,7 @@ function kwEdit(item=null){
 }
 function drawRankReview(r){
  const status=$("#kwRankReviewStatus"),metrics=$("#kwRankReviewMetrics"),pairs=$("#kwRankReviewPairs"),pages=$("#kwRankReviewPages");
- if(!r){status.textContent="Belum ada review otomatis. Periksa setelah siklus agen berikutnya.";metrics.replaceChildren();pairs.replaceChildren();pages.replaceChildren();return;}
+ if(!r){status.textContent="Belum ada review otomatis. Periksa setelah siklus agen berikutnya.";metrics.innerHTML="";pairs.innerHTML="";pages.innerHTML="";return;}
  const period=p=>p?p.start+" – "+p.end:"N/A";
  status.textContent="Diperiksa "+r.checked_at+" · Final "+period(r.final_period)+" ("+r.final_status+") · Sementara "+period(r.fresh_period)+" ("+r.fresh_status+") · Pembanding "+period(r.previous_period);
  metrics.innerHTML=[["URL dipantau",r.coverage],["Top 10 terukur",r.top10],["Quick win terukur",r.quick_wins],["Pemulihan Top 10",r.recover],["Sinyal awal",r.early]].map(([k,v])=>'<div class="panel"><small>'+esc(k)+'</small><h3>'+esc(v)+'</h3></div>').join("");

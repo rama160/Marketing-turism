@@ -1,4 +1,5 @@
 ## 28 November 2026 — SEO-007/008/020/021 ranking acceleration
+- First release fcd43b0 CI failed one browser-like dashboard test at empty review; fix empty-state clearing and verify populated review panel. Do not claim deployed until checks pass.
 - Owner authorizes optimization and rank retention. 0033 guards audited 9 synced published versions, adds bilingual specific metadata and practical copy with revisions, no URL/price/photo/booking changes. Map existing missing keywords, add destination targets; do not overwrite mapped owner targets. Existing static pages already have competitive guides; preserve. Rank agent uses existing cron/cache and actual query–URL pairs, stable threshold 30 final impressions, early signals separate, location/language mismatch, non-overlap 28d Top 10 retention/recovery, all URLs and indexing, no automatic publication. Verify CI/deploy/Verify, D1 9 content changes and real rank review; no ranking guarantee. Ads/Trends gates remain.
 
 ## 28 November 2026 — SEO-002/013 indexing monitor
