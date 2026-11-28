@@ -20,7 +20,7 @@ test("draft validates bilingual content and preserves pricing limits",()=>{
  const price=validateWebsiteDraft({...draft,price_amount:"350000",price_unit:"PERSON",price_from:true,price_verified:true});
  assert.equal(price.price_amount,350000);
  assert.equal(price.price_label_id,"Mulai Rp350.000/orang");
- assert.equal(price.price_label_en,"From IDR 350.000/person");
+ assert.equal(price.price_label_en,"From Rp350.000/person");
  const unverified=validateWebsiteDraft({...draft,price_amount:"350000",price_verified:false});
  assert.equal(unverified.price_verified,false,"unverified price can be saved in a draft");
  assert.throws(()=>validateWebsiteDraft({...draft,price_amount:"0"}),/Harga jual/);
@@ -96,7 +96,7 @@ test("published editor snapshot is populated from the real public pages and tran
  assert.match(defaults.id["snorkelingPage.title"],/Snorkeling/);
  assert.match(defaults.id["westSpot.kelingking.description"],/Tebing/i);
  assert.match(defaults.id["snorkelingSpot.mantaBay.description"],/manta/i);
- assert.match(defaults.en["price.snorkeling"],/Rp350,000/);
+ assert.match(defaults.en["price.snorkeling"],/Rp350\.000/);
  assert.equal(Object.keys(defaults.photos).length,18);
  assert.match(defaults.photos["west-kelingking"].url,/^\/photos\//);
  assert.match(defaults.photos["hero"].url,/^\/photos\//);
@@ -854,4 +854,29 @@ test("trust copy matches manual enquiry flow and preserves draft cancellation po
  assert.doesNotMatch(home,/id="leadForm"/);
  assert.match(home,/id="reviewForm"/);
  assert.match(guest,/\[r\.business_name,r\.business_contact\]/);
+});
+
+test("public prices use Rp and full rupiah without changing approved numbers or reviving blank prices",async()=>{
+ const {formatRupiah,normalizePublicPriceLabel}=await import("../src/site-content.mjs");
+ const {activityPublicPrice}=await import("../src/website-cms.mjs");
+ const {readFileSync}=await import("node:fs");
+ assert.equal(normalizePublicPriceLabel("350.000 / orang","id"),"Rp350.000/orang");
+ assert.equal(normalizePublicPriceLabel("450.000 / orang","en",{fallback:true}),"Rp450.000/person");
+ assert.equal(normalizePublicPriceLabel("From IDR 250/person","en"),"From Rp250/person");
+ assert.equal(normalizePublicPriceLabel("","en",{fallback:true}),"");
+ assert.equal(normalizePublicPriceLabel("Ask for quote","id",{fallback:true}),"");
+ assert.equal(formatRupiah(450,"PERSON",true,"id"),"Mulai Rp450/orang");
+ assert.equal(formatRupiah(250000,"TICKET",false,"en"),"Rp250.000/ticket");
+ assert.equal(activityPublicPrice({price_verified:false,price_amount:350000,price_unit:"PERSON"},"id"),"");
+ const a={...draft,slug:"new-priced-detail",photo_url:"/photos/website/example",price_verified:true,price_amount:450000,price_unit:"PERSON",price_from:true};
+ for(const lang of ["id","en"]){
+  const html=renderExperiencePage(a,lang,"https://example.com");
+  assert.match(html,/<div class="npe-price-cover"><img[^>]*><span class="price-preview">(?:Mulai|From) Rp450\.000\/(?:orang|person)<\/span><\/div>/);
+  assert.doesNotMatch(html,/<p><strong>(?:Mulai|From) Rp450/);
+  assert.doesNotMatch(renderExperiencePage({...a,price_verified:false},lang,"https://example.com"),/class="price-preview"/);
+ }
+ const client=readFileSync("public/website-content.js","utf8");
+ assert.match(client,/appendPublicPrice\(art,activity,lang\)/);
+ assert.match(client,/appendPublicPrice\(figure,a,lang\)/);
+ assert.match(client,/appendPublicPrice\(cover,a,lang\)/);
 });

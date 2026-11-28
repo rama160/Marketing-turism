@@ -8,6 +8,10 @@ function responsiveSource(img,url){
  img.srcset=[240,480,800,1200].map(w=>url+"?npew="+w+" "+w+"w").join(", ");
 }
 const currentLanguage=()=>window.NusaLanguage?.language||document.documentElement.lang||"id";
+function appendPublicPrice(cover,activity,lang){
+ const label=activity.price_verified&&activity["price_label_"+lang];
+ if(label)cover.appendChild(el("span","price-preview",label));
+}
 async function loadWebsitePhotos(){
  try{
   const response=await fetch("/api/public/website/slots",{cache:"no-store"});
@@ -77,7 +81,7 @@ function drawPublicActivities(){
   inner.appendChild(el("span","tag",lang==="en"?"Experience":"Aktivitas Wisata"));
   inner.appendChild(el("h3","",activity["title_"+lang]));
   inner.appendChild(el("p","",activity["summary_"+lang]));
-  if(activity.price_verified&&activity["price_label_"+lang])inner.appendChild(el("strong","",activity["price_label_"+lang]));
+  appendPublicPrice(art,activity,lang);
   const a=el("a","textLink",lang==="en"?"View experience →":"Lihat pengalaman →");
   a.href="/"+lang+"/experiences/"+encodeURIComponent(activity.slug);
   inner.appendChild(a);card.append(art,inner);root.appendChild(card);
@@ -97,10 +101,9 @@ function drawPublicDetails(){
  if(section&&!section.matches(".scene-grid"))section.hidden=!details.length;
  for(const a of details){
   const card=el("article","scene-card");card.dataset.npeDynamicDetail=a.id;
-  const figure=el("figure"),img=el("img");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
-  figure.append(img);const body=el("div","scene-body");
+  const figure=el("figure","npe-price-cover"),img=el("img");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
+  figure.append(img);appendPublicPrice(figure,a,lang);const body=el("div","scene-body");
   body.append(el("h2","",a["title_"+lang]),el("p","",a["summary_"+lang]),el("p","",a["description_"+lang]));
-  if(a.price_verified&&a["price_label_"+lang])body.append(el("strong","",a["price_label_"+lang]));
   const link=el("a","textLink",lang==="en"?"View details →":"Lihat detail →");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);body.append(link);card.append(figure,body);root.append(card);
  }
 }
@@ -137,7 +140,7 @@ function addPublicRegionCards(){
   const cover=el("div","spot-cover"),img=el("img","spot-cover-image");img.loading="lazy";img.decoding="async";img.width=1200;img.height=675;img.alt=a["title_"+lang];responsiveSource(img,a.photo_url);img.src=a.photo_url;
   const overlay=el("div","spot-overlay"),text=el("div");text.append(el("h3","",a["title_"+lang]),el("p","",a["summary_"+lang]));
   const link=el("a","spot-link",lang==="en"?"View tour ↗":"Lihat tur ↗");link.href="/"+lang+"/experiences/"+encodeURIComponent(a.slug);overlay.append(text,link);cover.append(img,overlay);
-  if(a.price_verified&&a["price_label_"+lang])cover.append(el("span","price-preview",a["price_label_"+lang]));
+  appendPublicPrice(cover,a,lang);
   card.append(cover);
   const thumbs=el("div","spot-thumbs"),children=publicActivities.filter(x=>x.parent_activity==="activity:"+a.slug&&x.photo_url);
   const detailConfig=readOrder(layoutCopy,"detail:activity:"+a.slug),byKey=new Map(children.map(x=>[activityKey(x.id),x]));

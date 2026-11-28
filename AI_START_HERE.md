@@ -1,3 +1,6 @@
+## Public price ribbon consistency — 28 November 2026
+- Owner requests public activity/detail prices use Rp and snorkeling photo-overlay placement. Both languages use same grouping and amounts; shared badge on package/detail/region covers and detail hero; preview matches. Missing legacy price translation follows published amount; explicit blanks retained. D1 read-only: legacy bare 350.000/orang and 450.000/orang; boat-ticket numeric 250, Lembongan numeric 450, both verified. DO NOT multiply by 1000 without owner confirmation. No DB amounts changed. Direct web fetch inaccessible, code/D1 used; CI/deploy pending.
+
 ## SEO-006C — initial benchmark and evidence workspace
 - Roadmap v1.0.47. Owner reports Ads compliance and Trends Alpha forms submitted; both decisions pending. Google automated rank scraping prohibited, Custom Search closed. Add 18 public web benchmark records (no Google rank) via 0031; owner-only contextual Google manual evidence and existing keyword panel. CI/deploy/Verify pending; real localized SERP/automated discovery remain open. Review NPE price/inclusions/pickup and route-specific details only after confirmation. No paid API or public changes.
 

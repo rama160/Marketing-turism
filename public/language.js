@@ -48,7 +48,7 @@ Object.assign(englishHome,{
  "sea.title":"Snorkeling 3 Spots",
  "sea.description":"Approximately 2–3 hours at three selected sites. Manta sightings are not guaranteed.",
 });
-Object.assign(englishHome,{"price.snorkeling":"Sharing Rp350,000/person","price.island":"From Rp800,000/car","price.west":"From Rp800,000/car","price.east":"From Rp800,000/car"});
+Object.assign(englishHome,{"price.snorkeling":"Sharing Rp350.000/person","price.island":"From Rp800.000/car","price.west":"From Rp800.000/car","price.east":"From Rp800.000/car"});
 const idDefaults={
   "snorkelingPage.eyebrow": "SEA ADVENTURE · SHARING & PRIVATE",
   "snorkelingPage.title": "Snorkeling Nusa Penida: 3 Spot Pilihan",

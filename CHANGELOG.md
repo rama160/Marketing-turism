@@ -1,3 +1,6 @@
+## 28 November 2026 — Consistent Rp photo price ribbons
+- Normalize public ID/EN rupiah labels, move activity/detail prices to top-left photo ribbon matching snorkeling, including new CMS details and preview; missing legacy translation follows published amount. No price amounts, units or verified states changed. Boat Rp250 and Lembongan Rp450 require confirmation before correction. No new files or branches. Tests/deploy pending.
+
 ## SEO-006C — external competitor evidence and contextual SERP workspace
 - Add 0031 evidence table and 18 source-backed benchmark observations across six clusters. Owner-only filtered dashboard and manual contextual organic observation, no automated Google queries or invented rankings. Record Ads/Trends applications submitted by owner; no approvals yet. Roadmap v1.0.47.
 

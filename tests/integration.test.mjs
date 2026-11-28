@@ -544,8 +544,8 @@ test("public photo price labels are owner-editable but never permit anonymous ed
  const en=await request("/api/public/site-content?lang=en","GET",undefined,false);
  assert.equal(id.items["price.snorkeling"],"Sharing Rp350.000/orang");
  assert.equal(id.items["price.island"],"Mulai Rp800.000/mobil");
- assert.equal(en.items["price.snorkeling"],"Sharing Rp350,000/person");
- assert.equal(en.items["price.island"],undefined);
+ assert.equal(en.items["price.snorkeling"],"Sharing Rp350.000/person");
+ assert.equal(en.items["price.island"],"From Rp800.000/car");
  const fields=await request("/api/admin/site-content");
  assert.ok(fields.fields.some(([key])=>key==="price.west"));
  const stale=await request("/api/admin/site-content","POST",{key:"price.snorkeling",locale:"id",value:"Rp10.000/orang",expected_version:0,owner_confirmed:true});
@@ -1454,4 +1454,15 @@ test("existing published Meta post with verified zero views records metrics only
   assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM campaign_drafts").get().n,1);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM approved_social_queue").get().n,1,"new draft not automatically approved");
  }finally{globalThis.fetch=original;sqlite.close();}
+});
+
+test("legacy price fallback follows a published amount across languages and preserves explicit clearing",async()=>{
+ const {request,sqlite}=fixture();
+ const save=(key,locale,value,expected_version=0)=>request("/api/admin/site-content","POST",{key,locale,value,expected_version,owner_confirmed:true});
+ assert.equal((await save("price.west","id","450.000 / orang")).httpStatus,200);
+ assert.equal((await request("/api/public/site-content?lang=id","GET",undefined,false)).items["price.west"],"Rp450.000/orang");
+ assert.equal((await request("/api/public/site-content?lang=en","GET",undefined,false)).items["price.west"],"Rp450.000/person");
+ assert.equal((await save("price.west","en","")).httpStatus,200);
+ assert.equal((await request("/api/public/site-content?lang=en","GET",undefined,false)).items["price.west"],"");
+ sqlite.close();
 });

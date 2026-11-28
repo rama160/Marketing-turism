@@ -303,7 +303,7 @@
 .dashboardPage .npeCmsLivePreview{position:sticky;top:112px;border:1px solid #dae6e8;border-radius:13px;padding:14px;background:#f8fbfb;min-width:0;max-height:calc(100vh - 140px);overflow:auto}
 .dashboardPage .npeCmsLivePreview .eyebrow{font-size:10px}
 .dashboardPage #cmsActivityPreview{background:white;border:1px solid #e4eaed;border-radius:12px;overflow:hidden;margin-top:8px}
-.dashboardPage #cmsActivityPreview>img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.dashboardPage .npeCmsPreviewCover{position:relative;overflow:hidden}.dashboardPage .npeCmsPreviewCover>img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}.dashboardPage .npeCmsPreviewPrice{position:absolute;top:13px;left:12px;max-width:calc(100% - 24px);padding:9px 13px;border-radius:999px;background:linear-gradient(135deg,#f9d078,#eeb143);color:#082d40;font-size:12px;font-weight:800;box-shadow:0 4px 16px rgba(0,23,40,.4)}
 .dashboardPage .npeCmsPreviewBody{padding:13px;display:grid;gap:8px}
 .dashboardPage .npeCmsPreviewBody h4{font-size:17px;margin:0}
 .dashboardPage .npeCmsPreviewBody p{font-size:12px;line-height:1.6;margin:0}

@@ -89,6 +89,23 @@ export function validateHeroHighlights(value){
 const allowed=new Set([...CONTENT_FIELDS.map(([key])=>key),HERO_LIST_KEY]);
 const isAllowed=key=>allowed.has(key)||(key.startsWith(LAYOUT_PREFIX)&&validGroup(key.slice(LAYOUT_PREFIX.length)));
 export const SUPPORTED_LOCALES=["id","en"];
+// Display only: whole rupiah, consistent grouping, no conversion or thousands multiplier.
+const priceUnits={id:{PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"},en:{PERSON:"person",CAR:"car",GROUP:"group",TICKET:"ticket"}};
+export function formatRupiah(amount,unit="PERSON",from=false,locale="id"){
+ if(!Number.isSafeInteger(amount)||amount<1||amount>1000000000||!Object.hasOwn(priceUnits.id,unit))return "";
+ const lang=locale==="en"?"en":"id";
+ return (from?(lang==="en"?"From ":"Mulai "):"")+"Rp"+new Intl.NumberFormat("id-ID").format(amount)+"/"+priceUnits[lang][unit];
+}
+export function normalizePublicPriceLabel(value,locale="id",{fallback=false}={}){
+ const raw=String(value??"").trim();if(!raw)return "";
+ const match=raw.match(/^(?:(Sharing|Private|Mulai(?:\s+dari)?|From)\s+)?(?:(?:Rp\.?|IDR)\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s*\/\s*(orang|person|mobil|car|grup|group|tiket|ticket))?$/i);
+ if(!match)return fallback?"":raw.replace(/\bIDR\s+(?=\d)/gi,"Rp");
+ const number=Number(match[2].replace(/[.,]/g,""));if(!Number.isSafeInteger(number)||number<1||number>1000000000)return fallback?"":raw;
+ const lang=locale==="en"?"en":"id",unit=Object.keys(priceUnits.id).find(k=>[priceUnits.id[k],priceUnits.en[k]].includes(String(match[3]||"").toLowerCase()));
+ const prefix=String(match[1]||"").toLowerCase(),from=/^(mulai|from)/.test(prefix);
+ const name=prefix==="sharing"?"Sharing ":prefix==="private"?"Private ":from?(lang==="en"?"From ":"Mulai "):"";
+ return name+"Rp"+new Intl.NumberFormat("id-ID").format(number)+(unit?"/"+priceUnits[lang][unit]:"");
+}
 export function validateSiteEdit(b){
  const key=String(b?.key??""),locale=String(b?.locale??""),value=String(b?.value??"").trim();
  if((!allowed.has(key)&&!(key.startsWith(LAYOUT_PREFIX)&&validGroup(key.slice(LAYOUT_PREFIX.length))))||!SUPPORTED_LOCALES.includes(locale))throw Error("Field atau bahasa konten tidak valid");
@@ -97,12 +114,19 @@ export function validateSiteEdit(b){
  else if((!key.startsWith("price.")&&value.length<2)||value.length>1200||/[<>\u0000-\u001f\u007f]/.test(value))throw Error("Konten harus teks biasa; harga boleh dikosongkan untuk tidak menampilkan harga.");
  if(b.owner_confirmed!==true)throw Error("Persetujuan admin untuk publikasi diperlukan");
  if(!Number.isSafeInteger(b.expected_version)||b.expected_version<0)throw Error("Versi konten tidak valid");
- return {key,locale,value,expectedVersion:b.expected_version};
+ return {key,locale,value:key.startsWith("price.")?normalizePublicPriceLabel(value,locale):value,expectedVersion:b.expected_version};
 }
 export async function publicSiteContent(db,locale){
  const lang=SUPPORTED_LOCALES.includes(locale)?locale:"en";
  const rows=await db.prepare("SELECT key,value FROM site_content WHERE locale=?").bind(lang).all();
- return {locale:lang,items:Object.fromEntries(rows.results.filter(x=>isAllowed(x.key)).map(x=>[x.key,x.value]))};
+ const items=Object.fromEntries(rows.results.filter(x=>isAllowed(x.key)).map(x=>[x.key,x.key.startsWith("price.")?normalizePublicPriceLabel(x.value,lang):x.value]));
+ // Missing translation follows the published amount, never stale template price; explicit blank stays blank.
+ const priceKeys=CONTENT_FIELDS.map(([key])=>key).filter(key=>key.startsWith("price."));
+ if(priceKeys.some(key=>!Object.hasOwn(items,key))){
+  const other=await db.prepare("SELECT key,value FROM site_content WHERE locale=? AND key LIKE 'price.%'").bind(lang==="en"?"id":"en").all();
+  for(const row of other.results)if(priceKeys.includes(row.key)&&!Object.hasOwn(items,row.key))items[row.key]=normalizePublicPriceLabel(row.value,lang,{fallback:true});
+ }
+ return {locale:lang,items};
 }
 export async function adminSiteContent(db){
  const rows=await db.prepare("SELECT key,locale,value,version,updated_at FROM site_content ORDER BY key,locale").all();

@@ -1145,8 +1145,9 @@ function refreshActivityPreview(){
  const image=$("#cmsActivityImage");
  image.hidden=!cover;if(cover){image.src=cover.url;image.alt=cover.alt_en;}
  const url=cover?.url||"/photo-unavailable.svg";
- e.innerHTML='<img src="'+esc(url)+'" alt="'+esc(cover?.alt_en||title)+'" loading="lazy"><div class="npeCmsPreviewBody"><small>'+esc(cmsCategoryLabel(cmsRead("category")))+'</small><h4>'+esc(title)+'</h4><p>'+esc(desc)+'</p>'+
-  (amount&&Number(amount)>0?'<strong>'+esc($("#cmsPricePreview").textContent.split(" · ")[0])+'</strong>':'<small>Harga: Tanya via WhatsApp</small>')+'</div>';
+ const priceBadge=amount&&Number.isSafeInteger(Number(amount))&&Number(amount)>0?'<span class="npeCmsPreviewPrice">'+esc($("#cmsPricePreview").textContent.split(" · ")[0])+'</span>':"";
+ e.innerHTML='<div class="npeCmsPreviewCover"><img src="'+esc(url)+'" alt="'+esc(cover?.alt_en||title)+'" loading="lazy">'+priceBadge+'</div><div class="npeCmsPreviewBody"><small>'+esc(cmsCategoryLabel(cmsRead("category")))+'</small><h4>'+esc(title)+'</h4><p>'+esc(desc)+'</p>'+
+  (!priceBadge?'<small>Harga: Tanya via WhatsApp</small>':'')+'</div>';
 }
 for(const el of cmsForm.querySelectorAll("input,textarea,select"))el.addEventListener("input",refreshActivityPreview);
 $("#cmsClearPrice").onclick=()=>{

@@ -1,4 +1,4 @@
-import {HERO_LIST_KEY,HERO_ICONS,validateHeroHighlights} from "./site-content.mjs";
+import {HERO_LIST_KEY,HERO_ICONS,validateHeroHighlights,formatRupiah,normalizePublicPriceLabel} from "./site-content.mjs";
 import {readResponsivePhoto,addResponsivePhotos,responsivePhotoSet} from "./photos.mjs";
 import {renderRelatedArticleLinks} from "./seo-articles.mjs";
 // Independent website content publishing. Never mutate operator rates, quote snapshots or bookings.
@@ -137,12 +137,11 @@ export function validateWebsiteDraft(input){
  if(hasLabel&&(!plain(data.price_label_id,120)||!plain(data.price_label_en,120)))
   throw Error("Label harga harus lengkap dalam bahasa Indonesia dan Inggris");
  if(data.price_amount!==null){
-  const formatted=new Intl.NumberFormat("id-ID").format(data.price_amount);
-  const idUnit={PERSON:"orang",CAR:"mobil",GROUP:"grup",TICKET:"tiket"}[data.price_unit];
-  const enUnit={PERSON:"person",CAR:"car",GROUP:"group",TICKET:"ticket"}[data.price_unit];
-  // Numeric price is authoritative: labels are generated so the amount cannot contradict the display.
-  data.price_label_id=(data.price_from?"Mulai ":"")+"Rp"+formatted+"/"+idUnit;
-  data.price_label_en=(data.price_from?"From ":"")+"IDR "+formatted+"/"+enUnit;
+  data.price_label_id=formatRupiah(data.price_amount,data.price_unit,data.price_from,"id");
+  data.price_label_en=formatRupiah(data.price_amount,data.price_unit,data.price_from,"en");
+ }else{
+  data.price_label_id=normalizePublicPriceLabel(data.price_label_id,"id");
+  data.price_label_en=normalizePublicPriceLabel(data.price_label_en,"en");
  }
  data.price_verified=input.price_verified===true&&(data.price_amount!==null||hasLabel);
  data.supplier_confirmed=input.supplier_confirmed===true;
@@ -155,9 +154,15 @@ async function verifyParent(db,data){
  const a=JSON.parse(parent.published_json);
  if(a.parent_activity||a.category!==data.category)throw Error("Induk harus aktivitas utama dengan kategori yang sama");
 }
+export function activityPublicPrice(a,locale){
+ if(a.price_verified!==true)return "";
+ const lang=locale==="en"?"en":"id";
+ if(a.price_amount!==null&&a.price_amount!==undefined)return formatRupiah(a.price_amount,a.price_unit,a.price_from!==false,lang);
+ return normalizePublicPriceLabel(a["price_label_"+lang],lang);
+}
 function publicValue(row){
  const a=JSON.parse(row.published_json);
- return {id:row.id,...a,photo_url:a.media_id?"/photos/website/"+a.media_id:null,published_at:row.published_at};
+ return {id:row.id,...a,price_label_id:activityPublicPrice(a,"id"),price_label_en:activityPublicPrice(a,"en"),photo_url:a.media_id?"/photos/website/"+a.media_id:null,published_at:row.published_at};
 }
 export async function listWebsiteActivities(db){
  const r=await db.prepare("SELECT id,slug,draft_json,published_json,status,version,published_at,created_at,updated_at FROM website_activities ORDER BY updated_at DESC LIMIT 150").all();
@@ -650,7 +655,7 @@ export function renderLegacyTourPage(html,page,origin,copy={},activities=[],veri
  const links=related.filter(a=>slugRE.test(a.slug)&&!body.includes('href="/id/experiences/'+a.slug+'"')).map(a=>'<a class="textLink" href="/id/experiences/'+a.slug+'">'+escapeHTML(a.title_id)+'</a>');
  if(links.length)body=body.replace("</main>",()=>'<nav class="section" aria-label="Pengalaman wisata terkait"><h2>Jelajahi pengalaman lainnya</h2><p>'+links.join(" · ")+"</p></nav></main>");
  if(page.key)body=body.replace("</main>",()=>renderCompetitiveGuide(page.key,"id",true)+renderRelatedArticleLinks(articles,page.key,"id")+"</main>");
- const rendered=addResponsivePhotos(applyPublishedPhotoSlots(head+body,photoSlots,"id"),page.canonical==="/");
+ const rendered=addResponsivePhotos(applyPublishedPhotoSlots(head+body,photoSlots,"id"),page.canonical==="/").replaceAll("website-content.js?v=3.36.0","website-content.js?v=3.36.0&rev=price-ribbon1");
  // The preload points at the exact final image, not the template's original.
  if(page.canonical==="/"){
   const hero=rendered.match(/<img\b[^>]*data-npe-slot="hero"[^>]*>/i)?.[0]||"";
@@ -696,7 +701,7 @@ export function renderEnglishTourPage(key,origin,siteCopy={},activities=[],artic
  const nav=englishTourKeys.map(k=>'<a class="textLink" href="/en/tours'+(k?"/"+k:"")+'">'+esc(k?englishTourPages[k].h1:"All experiences")+"</a>").join(" · ");
  const rootLinks=activities.filter(a=>!a.parent_activity&&slugRE.test(a.slug)).map(a=>'<a class="textLink" href="/en/experiences/'+esc(a.slug)+'">'+esc(a.title_en)+'</a>').join(" · ");
  const childLinks=key?activities.filter(a=>a.parent_activity==="static:"+key&&slugRE.test(a.slug)).map(a=>'<a class="textLink" href="/en/experiences/'+esc(a.slug)+'">'+esc(a.title_en)+'</a>').join(" · "):"";
- const children=childLinks?'<nav class="panel" aria-label="Destinations on this tour"><h2>Explore the destinations</h2><p>'+childLinks+'</p></nav>':"";
+ const children=childLinks?'<nav class="panel" aria-label="Destinations on this tour"><h2>Explore the destinations</h2><p>'+childLinks+'</p></nav><section data-npe-detail-parent="static:'+esc(key)+'" hidden><div class="scene-grid"></div></section>':"";
  const lists=page.highlights.map(t=>"<li>"+esc(t)+"</li>").join("");
  const faq=page.questions.map(([q,a])=>'<details class="npeFaqItem"><summary>'+esc(q)+'</summary><p>'+esc(a)+"</p></details>").join("");
  const image=origin+"/photos/"+page.photo;
@@ -721,7 +726,7 @@ ${children}${renderCompetitiveGuide(key,"en")}${renderRelatedArticleLinks(articl
 <section class="npeFaq"><h2>Frequently asked questions</h2><div class="npeFaqGrid">${faq}</div></section>
 <nav class="panel"><h2>Explore other tours and islands</h2><p>${nav}</p>
 ${rootLinks?"<p>"+rootLinks+"</p>":""}<p><a href="/en/articles">Island travel guides</a></p></nav>
-</section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cancellation.html">Cancellation policy</a></footer><script type="module" src="/website-content.js?v=3.36.0"></script></body></html>`;
+</section></main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cancellation.html">Cancellation policy</a></footer><script type="module" src="/website-content.js?v=3.36.0&rev=price-ribbon1"></script></body></html>`;
  return addResponsivePhotos(layout,false);
 }
 
@@ -730,6 +735,7 @@ export function renderExperiencePage(activity,locale,origin,related=[],articles=
  const isEN=lang==="en",p=isEN?"en":"id",title=activity["title_"+p],summary=activity["summary_"+p],desc=activity["description_"+p];
  const seoTitle=activity["seo_title_"+p]||title+" | Nusa Penida Experiences";
  const seoDesc=activity["seo_description_"+p]||summary;
+ const displayPrice=activityPublicPrice(activity,lang);
  const coverSet=responsivePhotoSet(activity.photo_url||"");
  // The large experience cover is visible above the fold. Select a responsive variant in the initial HTML, not after JS runs.
  const coverResponsive=coverSet?' srcset="'+escapeHTML(coverSet)+'" sizes="(max-width: 700px) calc(100vw - 32px), (max-width: 1480px) calc(100vw - 64px), 1416px"':"";
@@ -754,7 +760,7 @@ export function renderExperiencePage(activity,locale,origin,related=[],articles=
  const articleKey=activity.slug==="nusa-lembongan-island-tour"?"lembongan":activity.slug==="boat-ticket"?"boat":"";
  const articleMarkup=articleKey?renderRelatedArticleLinks(articles,articleKey,lang):"";
  const relatedMarkup=relatedLinks?'<nav class="panel" aria-label="'+(isEN?"Related experiences":"Pengalaman wisata terkait")+'"><h2>'+(isEN?"Explore more island experiences":"Jelajahi pengalaman wisata lainnya")+'</h2><p>'+relatedLinks+'</p></nav>':"";
- return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><meta property="og:image" content="'+escapeHTML(activity.photo_url?origin+activity.photo_url:origin+"/icon.svg")+'"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/styles.css"><link rel="icon" type="image/svg+xml" href="/icon.svg"><script type="application/ld+json">'+schema+'</script><script src="/photo-loader.js?v=5" defer></script><script src="/analytics.js?v=3.36.0" defer></script></head><body><header class="top"><a class="brand" href="/"><img class="brandLogo" src="/icon.svg" width="122" height="76" alt="Nusa Penida Experiences logo"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><img src="'+escapeHTML(activity.photo_url)+'"'+coverResponsive+' alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px"><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p>'+(activity.price_verified&&activity["price_label_"+p]?'<p><strong>'+escapeHTML(activity["price_label_"+p])+'</strong></p>':"")+'<p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" data-whatsapp-chat href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div>'+(!activity.parent_activity?'<section data-npe-detail-parent="activity:'+escapeHTML(activity.slug)+'" hidden><h2 class="gallery-heading">'+(isEN?"Explore the destinations":"Jelajahi destinasi")+'</h2><div class="scene-grid"></div></section>':"")+'</section>'+(!activity.parent_activity&&related.some(x=>x.parent_activity==="activity:"+activity.slug)?'<p class="npeGalleryDisclaimer">'+(isEN?"Destination photos show available points of interest; not every location is included in every itinerary. Confirm your selected route with the operator.":"Galeri menampilkan pilihan destinasi; tidak semua lokasi otomatis termasuk dalam setiap paket. Pastikan itinerary dengan operator.")+'</p>':"")+parentMarkup+renderCompetitiveGuide(activity.slug,lang)+relatedMarkup+articleMarkup+'</main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer><script type="module" src="/website-content.js?v=3.36.0"></script></body></html>';
+ return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow"><title>'+escapeHTML(seoTitle)+'</title><meta name="description" content="'+escapeHTML(seoDesc)+'"><link rel="canonical" href="'+escapeHTML(root)+'"><link rel="alternate" hreflang="en" href="'+escapeHTML(en)+'"><link rel="alternate" hreflang="id" href="'+escapeHTML(id)+'"><meta property="og:type" content="website"><meta property="og:title" content="'+escapeHTML(seoTitle)+'"><meta property="og:description" content="'+escapeHTML(seoDesc)+'"><meta property="og:url" content="'+escapeHTML(root)+'"><meta property="og:image" content="'+escapeHTML(activity.photo_url?origin+activity.photo_url:origin+"/icon.svg")+'"><meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/styles.css"><link rel="icon" type="image/svg+xml" href="/icon.svg"><script type="application/ld+json">'+schema+'</script><script src="/photo-loader.js?v=5" defer></script><script src="/analytics.js?v=3.36.0" defer></script></head><body><header class="top"><a class="brand" href="/"><img class="brandLogo" src="/icon.svg" width="122" height="76" alt="Nusa Penida Experiences logo"><span>NUSA PENIDA <b>EXPERIENCES</b></span></a><nav><a href="/#packages">'+(isEN?"Experiences":"Paket Wisata")+'</a><a href="/#request">'+(isEN?"Contact":"Kontak")+'</a></nav></header><main><section class="section npeExperiencePage"><span class="eyebrow">'+escapeHTML(activity.category.replaceAll("_"," "))+'</span><h1>'+escapeHTML(title)+'</h1><p class="regions-intro">'+escapeHTML(summary)+'</p><div class="npe-price-cover"><img src="'+escapeHTML(activity.photo_url)+'"'+coverResponsive+' alt="'+escapeHTML(title)+'" loading="eager" decoding="async" fetchpriority="high" width="1200" height="675" style="width:100%;max-height:560px;object-fit:cover;border-radius:18px">'+(displayPrice?'<span class="price-preview">'+escapeHTML(displayPrice)+'</span>':"")+'</div><div class="panel" style="margin-top:20px"><h2>'+(isEN?"About this experience":"Tentang pengalaman ini")+'</h2><p style="white-space:pre-line">'+escapeHTML(desc)+'</p><p>'+(isEN?"Availability, inclusions and final price are confirmed with our local operator before booking.":"Ketersediaan, fasilitas, dan harga akhir dikonfirmasi kepada operator sebelum pemesanan.")+'</p><a class="primary" data-whatsapp-chat href="https://wa.me/'+emailWhatsApp+'?text='+message+'" target="_blank" rel="noopener noreferrer">'+(isEN?"Ask on WhatsApp":"Tanya via WhatsApp")+'</a></div>'+(!activity.parent_activity?'<section data-npe-detail-parent="activity:'+escapeHTML(activity.slug)+'" hidden><h2 class="gallery-heading">'+(isEN?"Explore the destinations":"Jelajahi destinasi")+'</h2><div class="scene-grid"></div></section>':"")+'</section>'+(!activity.parent_activity&&related.some(x=>x.parent_activity==="activity:"+activity.slug)?'<p class="npeGalleryDisclaimer">'+(isEN?"Destination photos show available points of interest; not every location is included in every itinerary. Confirm your selected route with the operator.":"Galeri menampilkan pilihan destinasi; tidak semua lokasi otomatis termasuk dalam setiap paket. Pastikan itinerary dengan operator.")+'</p>':"")+parentMarkup+renderCompetitiveGuide(activity.slug,lang)+relatedMarkup+articleMarkup+'</main><footer>Nusa Penida Experiences · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer><script type="module" src="/website-content.js?v=3.36.0&rev=price-ribbon1"></script></body></html>';
 }
 export async function findPublishedExperience(db,slug){
  if(!slugRE.test(slug))return null;

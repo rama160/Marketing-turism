@@ -134,7 +134,7 @@ body{background:#f3f7fa;color:#17374b}
 
 
 /* v3.3 guest-friendly photo price ribbons. No supplier net or agency margin on public pages. */
-.packageArt .price-preview,.spot-cover>.price-preview{
+.packageArt .price-preview,.spot-cover>.price-preview,.npe-price-cover>.price-preview{
  position:absolute;z-index:3;display:inline-flex;align-items:center;justify-content:center;
  top:18px;left:16px;bottom:auto;right:auto;max-width:calc(100% - 32px);
  margin:0;padding:10px 16px;border-radius:999px;
@@ -145,7 +145,7 @@ body{background:#f3f7fa;color:#17374b}
 .spot-cover .spot-link{position:relative;z-index:4}
 .price-disclaimer{color:#466a78;font-size:13px;line-height:1.65;margin:14px 0 12px}
 @media(max-width:520px){
- .packageArt .price-preview,.spot-cover>.price-preview{font-size:12px;padding:9px 13px;top:13px;left:12px;max-width:calc(100% - 24px)}
+ .packageArt .price-preview,.spot-cover>.price-preview,.npe-price-cover>.price-preview{font-size:12px;padding:9px 13px;top:13px;left:12px;max-width:calc(100% - 24px)}
  .spot-cover .spot-overlay{padding-top:70px}
  .spot-cover .spot-link{margin-top:9px}
 }
@@ -283,3 +283,6 @@ html[lang="id"] [data-npe-lang="en"],html[lang="en"] [data-npe-lang="id"]{displa
 
 /* Travel guide index: editorial cards, original published cover and no extra JS. */
 .seoGuideIndex{max-width:1200px;margin-inline:auto;padding-block:clamp(24px,4vw,55px) clamp(42px,6vw,80px)}.seoGuideIndex>h1{font-size:clamp(30px,4.5vw,52px);line-height:1.12;letter-spacing:-.035em;margin:12px 0 0;color:#103947}.seoGuideIntro{max-width:700px;margin:12px 0 28px;color:#526b73}.seoGuideIntro p{font-size:clamp(14px,1.5vw,17px);margin:0;line-height:1.65}.seoGuideGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:stretch}.seoGuideCard{background:white;border:1px solid #dce8e8;border-radius:19px;overflow:hidden;min-width:0;box-shadow:0 10px 30px #07344d0d}.seoGuideLink{display:flex;flex-direction:column;height:100%;color:inherit;transition:background .18s ease}.seoGuideLink:hover{background:#f8fcfc}.seoGuideLink:focus-visible{outline:3px solid #087c90;outline-offset:-4px}.seoGuideVisual{aspect-ratio:16/9;background:#07344d;overflow:hidden;min-width:0}.seoGuidePhoto{display:block;width:100%;height:100%;object-fit:cover}.seoGuidePlaceholder{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#fff;letter-spacing:.13em;font-size:11px;background:linear-gradient(135deg,#07344d,#11687b)}.seoGuidePlaceholder img{object-fit:contain}.seoGuideCopy{padding:clamp(18px,3vw,32px);display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0;gap:12px}.seoGuideMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;color:#526b73;font-size:11px}.seoGuideMeta>span{font-weight:750;letter-spacing:.09em;color:#086776}.seoGuideCopy h2{font-size:clamp(21px,2.4vw,30px);line-height:1.22;color:#103947;margin:0;overflow-wrap:anywhere;letter-spacing:-.02em}.seoGuideCopy p{font-size:15px;line-height:1.65;color:#425c65;margin:0;overflow-wrap:anywhere}.seoGuideRead{display:inline-flex;align-items:center;gap:12px;background:#086776;color:#fff;padding:11px 16px;border-radius:9px;font-weight:650;font-size:13px;margin-top:auto}.seoGuideLink:hover .seoGuideRead{background:#07344d}.seoGuideFeatured{grid-column:1/-1}.seoGuideFeatured .seoGuideLink{display:grid;grid-template-columns:54% minmax(0,1fr);align-items:stretch}.seoGuideFeatured .seoGuideVisual{aspect-ratio:16/9;align-self:center}.seoGuideFeatured .seoGuideCopy{justify-content:center}.seoGuideFeatured .seoGuideRead{margin-top:8px}.seoGuideEmpty{padding:26px;border:1px solid #dce8e8;border-radius:16px;background:#fff}@media(max-width:800px){.seoGuideFeatured .seoGuideLink{display:flex}.seoGuideFeatured .seoGuideVisual{align-self:stretch}.seoGuideGrid{gap:16px}}@media(max-width:620px){.seoGuideIndex{padding-inline:16px}.seoGuideGrid{grid-template-columns:minmax(0,1fr)}.seoGuideCopy{padding:20px;gap:10px}.seoGuideCopy h2{font-size:23px}.seoGuideCopy p{font-size:14px}.seoGuideCard{border-radius:15px}.seoGuideIntro{margin-bottom:20px}}@media(prefers-reduced-motion:reduce){.seoGuideLink{transition:none}}
+
+/* Shared photo price ribbon, including new CMS detail pages. */
+.npe-price-cover{position:relative;isolation:isolate;overflow:hidden;border-radius:18px}.npe-price-cover>img{display:block}.scene-card .npe-price-cover{border-radius:0}
