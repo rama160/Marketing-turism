@@ -3,7 +3,7 @@ const origin="https://nusapenidaexperiences.com";
 const norm=v=>String(v??"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g," ");
 const clean=(v,n)=>String(v??"").trim().slice(0,n);
 const clusters={penida:/nusa penida|kelingking|broken beach|diamond beach|atuh beach/i,west:/west|barat|kelingking|broken beach|billabong/i,east:/east|timur|diamond beach|atuh beach/i,snorkeling:/snorkel|manta|gamat bay/i,lembongan:/lembongan|ceningan|yellow bridge|mangrove/i,boat:/fast boat|ferry|kapal|sanur|gili/i};
-export const keywordTopics=["lembongan-two-days","penida-snorkel-preparation","sanur-boat-preparation","penida-viewpoints-access","lembongan-mangrove-visit","gili-boat-planning"];
+export const keywordTopics=["lembongan-two-days","penida-snorkel-preparation","sanur-boat-preparation","penida-viewpoints-access","lembongan-mangrove-visit","gili-boat-planning","penida-west-day-route"];
 const basePaths=["/","/en/tours","/en/tours/island","/en/tours/west","/en/tours/east","/en/tours/snorkeling","/island-tour.html","/west-tour.html","/east-tour.html","/snorkeling.html","/en/articles","/id/articles"];
 const seed=[
  ["nusa penida private tour","en","penida","BUY","/en/tours/island"],["paket tour nusa penida","id","penida","BUY","/island-tour.html"],
@@ -380,12 +380,16 @@ export async function listKeywords(db,env){
 }
 export async function keywordArticlePriorities(db){
  try{
-  const plans=(await db.prepare("SELECT keyword,normalized,locale,topic,priority,target_path FROM seo_keyword_plans WHERE active=1 AND topic!='' ORDER BY priority,keyword").all()).results;
+  const plans=(await db.prepare("SELECT keyword,normalized,locale,topic,cluster,priority,target_path,manual_json FROM seo_keyword_plans WHERE active=1 ORDER BY priority,keyword").all()).results;
   const snap=await db.prepare("SELECT id,period_start,period_end FROM seo_keyword_runs WHERE state='DONE' AND gsc_status='MEASURED' ORDER BY created_at DESC LIMIT 1").first();
   const obs=snap?(await db.prepare("SELECT normalized,impressions,path FROM seo_keyword_observations WHERE run_id=?").bind(snap.id).all()).results:[];
-  const out={};for(const p of plans){
+  const out={};const fallbackTopics={penida:"penida-viewpoints-access",west:"penida-west-day-route",east:"penida-viewpoints-access",snorkeling:"penida-snorkel-preparation",lembongan:"lembongan-two-days",boat:"sanur-boat-preparation"};for(const p of plans){
+   const topic=p.topic||fallbackTopics[p.cluster];if(!topic)continue;
+   let manual={};try{manual=JSON.parse(p.manual_json||"{}");}catch{}
+   const scoped=manual.source?.startsWith("Google Keyword Planner")&&manual.country==="Global (All locations)"&&manual.notes?.includes("All languages")&&Number.isFinite(manual.volume_min)&&Number.isFinite(manual.volume_max)&&manual.volume_min<=manual.volume_max&&dateOK(manual.checked)&&Math.abs(Date.now()-Date.parse(manual.checked+"T00:00:00Z"))<=180*86400000;
+   const demand=scoped?manual.volume_min:null;
    const impressions=obs.filter(o=>o.normalized===p.normalized&&o.path===p.target_path).reduce((a,b)=>a+b.impressions,0);
-   const prev=out[p.topic];if(!prev||p.priority<prev.priority||p.priority===prev.priority&&impressions>prev.impressions)out[p.topic]={keyword:p.keyword,locale:p.locale,priority:p.priority,impressions:impressions||null,period:snap?[snap.period_start,snap.period_end]:null};
+   const prev=out[topic];if(!prev||p.priority<prev.priority||p.priority===prev.priority&&((demand??-1)>(prev.demand_min??-1)||(demand??-1)===(prev.demand_min??-1)&&impressions>(prev.impressions??0)))out[topic]={keyword:p.keyword,locale:p.locale,priority:p.priority,impressions:impressions||null,period:snap?[snap.period_start,snap.period_end]:null,demand_min:demand,demand_max:scoped?manual.volume_max:null,demand_source:scoped?manual.source:null,demand_period:scoped?manual.period:null,demand_market:scoped?manual.country:null,demand_checked:scoped?manual.checked:null};
   }return out;
  }catch{return {};}
 }
