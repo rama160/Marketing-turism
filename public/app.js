@@ -2219,8 +2219,38 @@ $("#seoOrderSave").onclick=async()=>{
  }catch(err){say("#seoOrderFeedback",err.message);}finally{btn.disabled=!seoOrder.length;}
 };
 
+
+let indexingData=null,indexingBusy=false;
+const indexLabels={INDEXED:"Terindeks",NOT_INDEXED:"Belum terindeks",ALTERNATE:"Canonical berbeda",UNKNOWN:"Tidak diketahui",UNCHECKED:"Belum diperiksa"};
+const indexKinds={PAGE:"Halaman",ACTIVITY:"Aktivitas / destinasi",ARTICLE:"Artikel",ARTICLE_LIST:"Daftar artikel"};
+function drawIndexMonitor(){
+ if(!indexingData)return;
+ const {items,counts,total,latest,configured}=indexingData;
+ $("#indexSummary").textContent=total+" URL · "+counts.INDEXED+" terindeks · "+counts.NOT_INDEXED+" belum terindeks · "+counts.UNCHECKED+" belum diperiksa · "+counts.ALTERNATE+" canonical berbeda · "+counts.UNKNOWN+" tidak diketahui"+(configured?"":" · GSC belum dikonfigurasi")+(latest?" · Run "+latest.started_at+" · "+latest.state+(latest.error?" ("+latest.error+")":""):" · Belum ada pemeriksaan Google");
+ const filter=$("#indexFilter").value;
+ const rows=items.filter(x=>filter==="all"||x.status===filter);
+ $("#indexRows").innerHTML=rows.length?rows.map(x=>'<div class="panel cmsPart"><strong>'+esc(indexLabels[x.status]||"Tidak diketahui")+' · '+esc(indexKinds[x.kind])+' · '+esc(x.language.toUpperCase())+'</strong><p style="overflow-wrap:anywhere"><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.url)+'</a></p><p class="feedback">'+esc(x.coverage||"Belum ada data Google")+(x.checked_at?" · Dicek "+esc(x.checked_at):"")+(x.last_crawl?" · Crawl "+esc(x.last_crawl):"")+(x.canonical&&x.canonical!==x.url?" · Canonical "+esc(x.canonical):"")+'</p><div class="actions"><button type="button" class="outline small" data-index-copy="'+esc(x.url)+'">Salin URL</button>'+(x.inspect_link?'<a class="textLink" href="'+esc(x.inspect_link)+'" target="_blank" rel="noopener noreferrer">Inspeksi Google ↗</a>':'')+'</div></div>').join(""):"<p>Tidak ada URL pada filter ini.</p>";
+ $("#indexRows").querySelectorAll("[data-index-copy]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.indexCopy);say("#indexFeedback","URL disalin.",true);}catch{say("#indexFeedback","Tidak dapat menyalin otomatis. Salin URL dari tautan.");}});
+}
+async function loadIndexMonitor(){
+ if(!ownerSignedIn||indexingBusy)return;
+ try{indexingData=await api("admin/seo/indexing");drawIndexMonitor();}catch(e){say("#indexFeedback","Gagal memuat monitor: "+e.message);}
+}
+$("#indexFilter").onchange=drawIndexMonitor;
+$("#indexReload").onclick=()=>loadIndexMonitor();
+$("#indexCheck").onclick=async()=>{
+ if(indexingBusy)return;
+ indexingBusy=true;$("#indexCheck").disabled=true;
+ say("#indexFeedback","Memeriksa maksimal 8 URL melalui Google…",true);
+ try{const r=await api("admin/seo/indexing","POST",{});const message=r.status==="DONE"?"Pemeriksaan selesai: "+r.checked+" URL.":r.status==="RECENT"?"Pemeriksaan sudah dijalankan pada jam UTC ini; muat ulang hasil.":r.status==="UP_TO_DATE"?"Semua URL sudah diperiksa dalam interval yang ditentukan.":r.status==="NOT_CONFIGURED"?"GSC belum dikonfigurasi.":"Pemeriksaan belum lengkap: "+(r.error||r.status)+"; hasil valid sebelumnya dipertahankan.";
+ say("#indexFeedback",message,["DONE","UP_TO_DATE","RECENT"].includes(r.status));}
+ catch(e){say("#indexFeedback",e.message);}
+ finally{indexingBusy=false;$("#indexCheck").disabled=false;await loadIndexMonitor();}
+};
+
 async function loadSeoArticles(){
  if(!ownerSignedIn)return;
+ void loadIndexMonitor();
  try{
   const [r,m,copy]=await Promise.all([api("admin/website/articles"),api("admin/website/media"),api("admin/site-content")]);
   seoItems=r.items||[];seoMedia=m.items||[];

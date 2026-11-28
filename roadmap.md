@@ -552,3 +552,8 @@ Pedoman keputusan:
 - [Google spam policies](https://developers.google.com/search/docs/essentials/spam-policies)
 
 **Prinsip akhir:** hasil bisnis dan visibilitas organik terukur lebih penting daripada banyaknya kode atau fitur. Roadmap ini hidup dan harus disesuaikan jika bukti mengubah prioritas.
+
+### 28 November 2026 — SEO-002/013 indexing monitor
+- Owner reports previously pending URLs indexed. Read-only D1 inventory: 9 published activities (2 root, 7 details), 1 published article, 10 static/tour canonicals and 2 article indexes = 32 canonical URLs ID/EN. No new Google URL verdict verified in this session. Public sitemap fetch inaccessible; inventory based on live D1 and sitemap renderer.
+- Implement owner-only monitor in Artikel SEO using existing GSC read-only scope, canonical sitemap inventory refreshed per read/run, hourly bounded batch 4, manual up to 8, one run per UTC hour, new URLs first, cached verdict/crawl/canonical and errors distinguished from not indexed. Additive migration 0032, no new secrets, no new cron, no automatic indexing submission. New drafts excluded; removed URLs disappear from current inventory.
+- Gate: CI/deploy/Verify and actual Google URL Inspection response + D1 cache required; status remains in progress. Owner may request indexing for unindexed URLs via Search Console. Preserve existing 006A/B/C gates.

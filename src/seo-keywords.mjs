@@ -417,3 +417,5 @@ export async function saveCompetitorEvidence(db,input){
  if(result.meta?.changes!==1)throw Error("Bukti sudah tersimpan untuk konteks ini.");
  return {saved:true};
 }
+
+export {gscToken, configured as gscConfigured};

@@ -1,3 +1,4 @@
+import {readIndexing,collectIndexing} from "./seo-indexing.mjs";
 import {listKeywords,saveKeyword,runKeywordResearch,bootstrapKeywordResearch,readKeywordPerformance,collectKeywordPerformance,readKeywordPlanner,collectKeywordPlanner,listCompetitorEvidence,saveCompetitorEvidence} from "./seo-keywords.mjs";
 import {listReviews,createReview,moderateReview,dailyReviewKey,validateReview} from "./website-reviews.mjs";
 import {listArticles,saveArticle,articleAction,publishedArticles,articleSitemap,renderArticlePage,generateResearchArticle} from "./seo-articles.mjs";
@@ -284,6 +285,8 @@ async function route(req,env,ctx){
   await audit(db,"website_review",updated.id,updated.visible?"SHOW":"HIDE");
   return json(updated);
  }
+ if(path==="/api/admin/seo/indexing"&&method==="GET")return json(await readIndexing(db,env));
+ if(path==="/api/admin/seo/indexing"&&method==="POST")return json(await collectIndexing(db,env));
  if(path==="/api/admin/seo/keywords"&&method==="GET")return json(await listKeywords(db,env));
  if(path==="/api/admin/seo/keywords"&&method==="POST")return json(await saveKeyword(db,await parse(req)),201);
  if(path==="/api/admin/seo/keywords/research"&&method==="POST")return json(await runKeywordResearch(db,env,{manual:true}));
@@ -896,6 +899,8 @@ export default {
   if(event.cron==="0 * * * *"){
    try{await bootstrapKeywordResearch(env.DB,env);}
    catch(_){console.error("SEO_KEYWORD_BOOTSTRAP_UNAVAILABLE");}
+   try{await collectIndexing(env.DB,env,{limit:4});}
+   catch(_){console.error("SEO_INDEXING_UNAVAILABLE");}
    try{await collectKeywordPerformance(env.DB,env,{preset:"24h"});}
    catch(_){console.error("SEO_FRESH_PERFORMANCE_UNAVAILABLE");}
    // Reuse existing hourly trigger; discovery is bounded to once per two hours.
