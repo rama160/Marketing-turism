@@ -1,3 +1,6 @@
+## 28 November 2026 — Owner: continue SEO without backlinks
+- SEO-018 suspended; no outreach, paid links, Gmail connection or backlink prerequisite. Archived prospects are not active work. Previous homepage cleanup e9efce9 CI/deploy/Verify succeeded. D1 4 checked INDEXED, no rank review yet, provisional 15 impressions / 0 clicks / avg 62. Manual bilingual preparation guide draft inserted as penida-snorkel-preparation-628af79d with official sources and links snorkeling/boat. Not published; owner must review and add rights-cleared cover, approve/publish; do not change weekly automatic research log. Map informational keywords after publication; retain commercial canonical. Six unmapped guide keywords and one Lembongan snorkeling BUY not forced onto irrelevant URLs. No runtime code change or ranking guarantee.
+
 ## 28 November 2026 — SEO-018 authorized editorial outreach and homepage cleanup
 - Remove standalone screenshot paragraph; retain short descriptive NPE Studio footer link and normal Privacy/Terms, all detailed disclosure on privacy and owner UI. No new permission, fee or credentials. See docs/seo-backlink-outreach.md for five rechecked prospects, individualized messages and evidence criteria. No external contact submitted; no confirmed new backlink. Verify CI/deploy/Verify and continue ranking monitor. Google policy/brand gate remains.
 

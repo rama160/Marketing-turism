@@ -1,4 +1,6 @@
-# SEO-018 — Editorial backlink outreach
+# SEO-018 — Editorial backlink outreach (ARCHIVED / SUSPENDED)
+
+**Owner instruction 28 November 2026, 16:52 WITA: continue SEO without backlink outreach. No sending, follow-up, integration, or fees. Historical material below is retained only for reference.**
 Updated 28 November 2026 (WITA). Owner authorized building quality backlinks. No payment or binding agreements authorized. Only one initial individualized contact per prospect; optional one polite follow-up after 7–10 days if appropriate. No mass messages, comment spam, bought ranking links or invented partner claims.
 
 ## Status
