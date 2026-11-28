@@ -1,4 +1,5 @@
 ## 28 November 2026 — SEO-002/013 indexing monitor
+- Initial release 2fd5b8f: CI and deploy failed on 3 existing dashboard cache revision assertions; 251/254 tests passed including all 3 new monitor tests. Align cache revision assertions; verify replacement release.
 - Read-only D1 confirms 32 expected sitemap URLs (10 static, 18 activities/details, 4 article list/detail). Owner says previous pending URLs indexed; individual Google verdicts not yet checked. Use new monitor in Artikel SEO; migration 0032, existing GSC credentials and hourly cron, no auto-submission. Verify CI/deploy/Verify, check actual URL Inspection API results and D1 before claiming completion. No new fees or branches.
 
 ## 28 November 2026 — Owner SEO audit PDF and guest content
