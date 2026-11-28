@@ -2,12 +2,12 @@
 // No external translation provider or visitor profiling; only the language preference is stored.
 const englishHome = {
  "hero.eyebrow":"EXPLORE · SNORKEL · DISCOVER",
- "hero.title":"Unforgettable adventures",
- "hero.subtitle":"in Nusa Penida.",
- "hero.description":"Picture turquoise seas, dramatic cliffs and the chance to encounter graceful manta rays in the wild. Discover Nusa Penida through an island escape made for the way you love to travel.",
+ "hero.title":"Nusa Penida Tours",
+ "hero.subtitle":"& Snorkeling",
+ "hero.description":"From Kelingking’s dramatic cliffs to colourful reefs and laid-back island beaches, find a trip that feels right for you. Choose private or shared tours, explore Nusa Lembongan or arrange fast boat tickets with our local partners.",
  "hero.cta":"Explore Experiences ↗",
  "packages.eyebrow":"CURATED EXPERIENCES",
- "packages.title":"Choose the adventure you've been dreaming of",
+ "packages.title":"Find your perfect island experience",
  "packages.description":"Iconic cliffside views or vibrant underwater wonders? Choose from Sharing and Private options, with schedules and inclusions confirmed before booking.",
  "snorkeling.title":"Nusa Penida 3-Spot Snorkeling",
  "snorkeling.description":"Approximately 2–3 hours of snorkeling at three sites selected for the package and sea conditions. Wild manta ray sightings are not guaranteed.",
@@ -69,13 +69,13 @@ const idDefaults={
 };
 Object.assign(idDefaults,{
  "hero.eyebrow":"EXPLORE · SNORKEL · DISCOVER",
- "hero.title":"Liburan tak terlupakan",
- "hero.subtitle":"di Nusa Penida.",
- "hero.description":"Bayangkan birunya laut, megahnya tebing, dan kesempatan bertemu pari manta di habitat alaminya. Jelajahi keindahan Nusa Penida dalam perjalanan yang dirancang sesuai gaya liburan Anda.",
- "hero.cta":"Jelajahi Pengalaman ↗",
- "packages.title":"Pilih petualangan yang paling Anda impikan",
- "packages.description":"Berburu panorama tebing ikonik atau menjelajahi keindahan bawah laut? Nikmati opsi Sharing dan Private, dengan jadwal serta fasilitas yang dikonfirmasi sebelum pemesanan.",
- "regions.title":"Setiap sudut pulau, cerita yang berbeda",
+ "hero.title":"Paket Wisata Nusa Penida",
+ "hero.subtitle":"& Snorkeling",
+ "hero.description":"Ingin melihat tebing Kelingking, menikmati pantai atau menjelajahi dunia bawah laut Nusa Penida? Pilih tur privat atau gabungan, kunjungi Nusa Lembongan, atau pesan tiket kapal cepat. Ceritakan rencana liburan Anda, kami bantu memilih perjalanan yang sesuai.",
+ "hero.cta":"Lihat paket wisata ↗",
+ "packages.title":"Pilih paket wisata favorit Anda",
+ "packages.description":"Lebih suka menjelajahi tebing dan pantai, atau menikmati dunia bawah laut? Pilih tur privat atau gabungan sesuai jumlah tamu. Kami bantu mengecek jadwal dan fasilitas sebelum Anda memesan.",
+ "regions.title":"Destinasi yang sayang untuk dilewatkan",
  "regions.description":"Temukan panorama ikonik di Barat, pesona pantai di Timur, atau keajaiban bawah laut Nusa Penida. Pilih pengalaman favorit Anda; detail rute dan fasilitas akan dikonfirmasi bersama operator."
 });
 Object.assign(idDefaults,{"price.snorkeling":"Sharing Rp350.000/orang","price.island":"Mulai Rp800.000/mobil","price.west":"Mulai Rp800.000/mobil","price.east":"Mulai Rp800.000/mobil"});
@@ -235,8 +235,8 @@ Object.assign(englishHome,{
 });
 Object.assign(idDefaults,{
  "whatsapp.eyebrow":"KONTAK LANGSUNG",
- "whatsapp.heading":"Punya rencana liburan? Chat kami di WhatsApp.",
- "whatsapp.description":"Ceritakan tanggal perjalanan, jumlah tamu, dan paket favorit Anda. Tim kami akan membantu menjelaskan pilihan tur serta mengecek ketersediaan. Tidak ada pemesanan atau pembayaran otomatis.",
+ "whatsapp.heading":"Siap merencanakan liburan ke pulau?",
+ "whatsapp.description":"Kirim tanggal liburan, jumlah tamu, dan destinasi impian Anda melalui WhatsApp. Kami bantu mencarikan pilihan yang cocok dan menjelaskan biaya sebelum Anda memutuskan.",
  "whatsapp.disclaimer":"Penawaran, spot, dan jadwal dikonfirmasi sebelum booking."
 });
 Object.assign(englishText,{
@@ -282,6 +282,7 @@ for(let n; (n=walker.nextNode());){
  const source=n.nodeValue;
  if(source.trim())originalNodes.push([n,source]);
 }
+const canonicalTourID=Boolean(document.querySelector('link[rel="alternate"][hreflang="en"]'))&&document.documentElement.lang==="id"&&["/","/snorkeling.html","/island-tour.html","/west-tour.html","/east-tour.html"].includes(location.pathname);
 const storedMode=localStorage.getItem("npe-language")||"auto";
 let mode=["auto","id","en"].includes(storedMode)?storedMode:"auto",current="id";
 const detect=()=>/^(id|in)(-|$)/i.test(navigator.languages?.[0]||navigator.language||"")?"id":"en";
@@ -301,12 +302,12 @@ const picker=document.createElement("label");
 picker.className="languagePicker";
 picker.setAttribute("aria-label","Language / Bahasa");
 picker.innerHTML='<span>🌐</span><select id="languageChoice" aria-label="Language / Bahasa"><option value="auto">Auto</option><option value="id">Bahasa Indonesia</option><option value="en">English</option></select>';
-document.querySelector(".top nav")?.prepend(picker);
+if(!canonicalTourID)document.querySelector(".top nav")?.prepend(picker);
 const select=picker.querySelector("select");
 if(select)select.value=mode;
 const idTitle=document.title;
 async function apply(){
- const lang=mode==="auto"?detect():mode;
+ const lang=canonicalTourID?"id":mode==="auto"?detect():mode;
  current=lang;
  document.documentElement.lang=lang;
  for(const [node,source] of originalNodes){
@@ -328,8 +329,8 @@ async function apply(){
   el.textContent=typeof translations[key]==="string"?translations[key]:(lang==="en"?englishHome[key]||englishText[originals[key]]||originals[key]:originals[key]);
  }
  for(const el of document.querySelectorAll("[data-hero-label-id]"))el.textContent=lang==="en"?el.dataset.heroLabelEn:el.dataset.heroLabelId;
- if(document.querySelector("[data-copy]"))document.title=lang==="en"?"Nusa Penida Experiences | Snorkeling & Island Tours":idTitle;
- else document.title=lang==="en"?(englishText[idTitle]||idTitle):idTitle;
+ if(!canonicalTourID&&document.querySelector("[data-copy]"))document.title=lang==="en"?"Nusa Penida Experiences | Snorkeling & Island Tours":idTitle;
+ else if(!canonicalTourID)document.title=lang==="en"?(englishText[idTitle]||idTitle):idTitle;
  window.dispatchEvent(new CustomEvent("npe:language",{detail:{language:lang,mode}}));
 }
 if(select)select.onchange=()=>{mode=select.value;localStorage.setItem("npe-language",mode);apply();};

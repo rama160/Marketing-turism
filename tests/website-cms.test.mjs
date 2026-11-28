@@ -91,8 +91,8 @@ test("published editor snapshot is populated from the real public pages and tran
  const {readFileSync}=await import("node:fs");
  execFileSync(process.execPath,["scripts/build.mjs"],{stdio:"pipe"});
  const defaults=JSON.parse(readFileSync("public/site-editor-defaults.json","utf8"));
- assert.match(defaults.id["hero.title"],/Liburan/);
- assert.match(defaults.en["hero.title"],/Unforgettable/i);
+ assert.match(defaults.id["hero.title"],/Paket Wisata/);
+ assert.match(defaults.en["hero.title"],/Nusa Penida Tours/i);
  assert.match(defaults.id["snorkelingPage.title"],/Snorkeling/);
  assert.match(defaults.id["westSpot.kelingking.description"],/Tebing/i);
  assert.match(defaults.id["snorkelingSpot.mantaBay.description"],/manta/i);
@@ -721,7 +721,7 @@ test("competitive guides reuse existing canonical routes, localised links and tr
    assert.equal((html.match(/<link rel="canonical"/g)||[]).length,1);
    assert.doesNotMatch(html,/data-npe-competitive-guide="unknown"|aggregateRating/);
   }
-  assert.match(id,/data-npe-lang="en"/);
+  assert.doesNotMatch(id,/data-npe-lang="en"/);
   assert.match(en,/href="\/en\/tours\//);
  }
  assert.equal(renderCompetitiveGuide("constructor"),"");
@@ -879,4 +879,14 @@ test("public prices use Rp and full rupiah without changing approved numbers or 
  assert.match(client,/appendPublicPrice\(art,activity,lang\)/);
  assert.match(client,/appendPublicPrice\(figure,a,lang\)/);
  assert.match(client,/appendPublicPrice\(cover,a,lang\)/);
+});
+
+test("SEO audit: localized home, current price table and unknown price",async()=>{
+ const {readFileSync}=await import("node:fs"),base=readFileSync("public/index.html","utf8");
+ const html=renderLegacyTourPage(base,legacyTourRoute("/"),"https://example.com",{"price.west":"450.000 / orang","price.east":"","price.snorkeling":"350.000 / orang"});
+ assert.match(html,/Paket Wisata Nusa Penida/);assert.doesNotMatch(html,/data-npe-lang="en"/);
+ assert.match(html,/npePriceCompare/);assert.match(html,/Rp450\.000\/orang/);assert.match(html,/Tanya harga/);
+ assert.match(html,/hreflang="en"/);assert.doesNotMatch(html,/Integrasi Google Ads API \/ Keyword Planner direncanakan/);
+ const en=renderEnglishTourPage("","https://example.com",{"price.west":"Rp450.000/person"});
+ assert.match(en,/Nusa Penida Tours &amp; Snorkeling/);assert.match(en,/Rp450\.000\/person/);assert.match(en,/Compare tours and starting prices/);
 });
